@@ -19,8 +19,38 @@
   }
 }
 
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100%;
+}
+
+body {
+  background-color: #0b1c3f;
+  color: #f8fafc;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  background: radial-gradient(
+      500px 500px at 15% 20%,
+      rgba(80, 140, 255, 0.45),
+      transparent 70%
+    ),
+    radial-gradient(
+      600px 600px at 85% 30%,
+      rgba(120, 200, 255, 0.35),
+      transparent 70%
+    ),
+    radial-gradient(
+      800px 800px at 50% 80%,
+      rgba(200, 230, 255, 0.6),
+      transparent 75%
+    ),
+    linear-gradient(
+      180deg,
+      #0b1c3f 0%,
+      #143a8c 35%,
+      #4fa3ff 65%,
+      #ffffff 100%
+    );
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center top;
 }
