@@ -2,11 +2,25 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+const hasSupabaseConfig = Boolean(supabaseUrl && supabaseAnonKey);
 
 export default function LoginPage() {
   const router = useRouter();
-  const supabaseClient = supabase;
+  const supabaseClient = useMemo(() => {
+    if (!hasSupabaseConfig) return null;
+    if (typeof window === "undefined") return null;
+    return createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    });
+  }, []);
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,8 +45,10 @@ export default function LoginPage() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!supabaseClient) {
-      setMessage("Supabase n’est pas encore configuré.");
+    if (!supabaseClient || !hasSupabaseConfig) {
+      setMessage(
+        "Configuration Supabase manquante. Vérifiez NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY."
+      );
       return;
     }
     setLoading(true);
@@ -49,10 +65,18 @@ export default function LoginPage() {
         return;
       }
       if (data.user) {
-        await supabaseClient.from("users").insert({
-          id: data.user.id,
-          email: data.user.email,
-        });
+        const { error: profileError } = await supabaseClient
+          .from("users")
+          .insert({
+            id: data.user.id,
+            email: data.user.email,
+          });
+        if (profileError && process.env.NODE_ENV !== "production") {
+          console.warn(
+            "[Supabase] Impossible de créer le profil user:",
+            profileError.message
+          );
+        }
       }
       setMessage(
         "Compte créé. Vérifie tes emails si la confirmation est activée."
@@ -68,10 +92,18 @@ export default function LoginPage() {
         return;
       }
       if (data.user) {
-        await supabaseClient.from("users").upsert({
-          id: data.user.id,
-          email: data.user.email,
-        });
+        const { error: profileError } = await supabaseClient
+          .from("users")
+          .upsert({
+            id: data.user.id,
+            email: data.user.email,
+          });
+        if (profileError && process.env.NODE_ENV !== "production") {
+          console.warn(
+            "[Supabase] Impossible de synchroniser le profil user:",
+            profileError.message
+          );
+        }
       }
       router.replace("/dashboard");
     }
@@ -92,9 +124,10 @@ export default function LoginPage() {
             <p className="mt-2 text-sm text-zinc-500">
               Accède à ton dashboard et lance ta campagne en quelques minutes.
             </p>
-            {!supabaseClient ? (
+            {!hasSupabaseConfig ? (
               <p className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-xs text-amber-700">
-                Supabase n’est pas encore configuré.
+                Configuration Supabase manquante. Ajoutez
+                NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY.
               </p>
             ) : null}
           </div>
