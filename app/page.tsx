@@ -126,16 +126,14 @@ const pricingPlans = [
 
 export default function Home() {
   return (
-    <div
-      className="min-h-screen text-slate-100"
-      style={{
-        backgroundImage: "url(/background.png)",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundAttachment: "fixed",
-      }}
-    >
+    <div className="min-h-screen bg-[#0b0b16] text-slate-100">
       <section className="relative flex min-h-screen flex-col pb-24 pt-0">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(124,58,237,0.28),transparent_55%)]" />
+          <div className="absolute -left-48 top-[-220px] h-[680px] w-[680px] rounded-full bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.35),transparent_70%)] blur-[220px]" />
+          <div className="absolute right-[-160px] top-10 h-[560px] w-[560px] rounded-full bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.22),transparent_70%)] blur-[190px]" />
+          <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] [background-size:48px_48px]" />
+        </div>
         <nav className="relative flex w-full items-center justify-between border-b border-white/10 bg-white/5 px-6 py-4 backdrop-blur lg:px-16">
           <div className="flex items-center gap-3">
             <Image
@@ -446,10 +444,7 @@ export default function Home() {
 
       <section
         id="cta"
-        className="px-6 py-24 lg:px-16"
-        style={{
-          background: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.25) 100%)",
-        }}
+        className="bg-[linear-gradient(180deg,rgba(11,12,20,0)_0%,rgba(11,12,20,1)_100%)] px-6 py-24 lg:px-16"
       >
         <div className="mx-auto max-w-5xl text-center">
           <h2 className="text-3xl font-semibold md:text-4xl">
