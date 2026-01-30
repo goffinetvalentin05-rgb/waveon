@@ -1,0 +1,166 @@
+{
+  "nav": {
+    "faq": "FAQ",
+    "pricing": "Pricing",
+    "login": "Log in"
+  },
+  "hero": {
+    "title": "Turn every satisfied customer into visible proof.",
+    "subtitle": "Waevon structures a simple, controlled exchange to improve your online reputation without pressuring your customers.",
+    "ctaDemo": "Request a demo",
+    "ctaHow": "See how it works"
+  },
+  "stats": {
+    "reviewsCollected": "Reviews collected",
+    "count": "1,052",
+    "thisWeek": "+18% this week",
+    "conversionRate": "Conversion rate",
+    "rateValue": "62%",
+    "activeCampaign": "Active campaign",
+    "participationsThisWeek": "128 participations this week",
+    "goal": "Goal",
+    "goalText": "Increase Google reviews with AI-powered responses"
+  },
+  "constat": {
+    "paragraph1": "We have observed that most businesses have satisfied customers, but online this reality is barely visible: few reviews are left, negative feedback takes up more space, and the final image does not reflect the daily work.",
+    "paragraph2": "Waevon fixes this gap."
+  },
+  "solution": {
+    "title": "Waevon turns satisfaction into visible proof.",
+    "body": "The customer performs a useful action for the business, then accesses a framed experience defined in advance. Nothing is imposed: everything is clear, transparent and under control."
+  },
+  "comment": {
+    "sectionTitle": "HOW IT WORKS",
+    "newComing": "Coming soon",
+    "steps": [
+      {
+        "number": "01",
+        "title": "Create a campaign",
+        "body": [
+          "The merchant creates a campaign from their Waevon account and chooses their goal, for example getting more Google reviews."
+        ]
+      },
+      {
+        "number": "02",
+        "title": "Share the QR code at the point of sale",
+        "body": [
+          "Waevon generates a QR code linked to the campaign.",
+          "It can be printed and placed on tables, at the counter or on an appropriate support.",
+          "A custom graphic support can also be designed to match the business image."
+        ]
+      },
+      {
+        "number": "03",
+        "title": "Configure and track from the dashboard",
+        "body": [
+          "From the dashboard, the merchant defines the rules of the experience: content, probabilities and parameters.",
+          "They then track their campaign progress in real time."
+        ]
+      },
+      {
+        "number": "04",
+        "title": "Automate review management",
+        "body": [
+          "When a customer leaves a review, Waevon can automatically respond thanks to artificial intelligence, with no manual action from the merchant."
+        ]
+      }
+    ]
+  },
+  "controle": {
+    "sectionTitle": "STAY IN CONTROL",
+    "points": [
+      "With Waevon, the merchant always stays in control.",
+      "They precisely define what they want to achieve and what they are willing to offer.",
+      "Participation rules, probabilities and objectives are set in advance.",
+      "Each campaign runs within a clear framework, with no surprises or drift.",
+      "The merchant views all their campaigns and results from a single dashboard."
+    ]
+  },
+  "avis": {
+    "sectionTitle": "REVIEWS / TESTIMONIALS",
+    "testimonials": [
+      {
+        "name": "Claire Martin",
+        "role": "Manager, Le Bistrot du Marché",
+        "quote": "Waevon made it much easier for us to collect reviews.\nSatisfied customers naturally participate and also appreciate getting something in return.\nIt's a win for them and for us."
+      },
+      {
+        "name": "Karim Benali",
+        "role": "Manager, Urban Burger",
+        "quote": "Before, we struggled to get reviews.\nWith Waevon, customers play along to leave a review or follow us on social media.\nIt's simple to explain and well accepted."
+      },
+      {
+        "name": "Sophie Laurent",
+        "role": "Founder, Studio Coiffure",
+        "quote": "Customers are happy to take part in the experience after their visit.\nOn our side, it helps us improve our visibility without pressuring anyone.\nEverything is easy to manage."
+      }
+    ]
+  },
+  "faq": {
+    "sectionTitle": "FAQ",
+    "items": [
+      {
+        "question": "Does Waevon force customers to leave a review?",
+        "answer": "No.\nThe customer is free to participate or not.\nWaevon offers an experience, never an obligation."
+      },
+      {
+        "question": "Do customers easily accept the concept?",
+        "answer": "Yes.\nThe exchange is clear and transparent.\nCustomers understand what they are doing and what they get in return."
+      },
+      {
+        "question": "Do I keep control over my campaigns?",
+        "answer": "Yes, completely.\nThe merchant defines the rules, parameters and objectives of each campaign from their dashboard."
+      },
+      {
+        "question": "Does it require daily time?",
+        "answer": "No.\nOnce the campaign is set up, everything is automated.\nTracking is done simply from the dashboard."
+      },
+      {
+        "question": "What happens with reviews left by customers?",
+        "answer": "Waevon can automatically manage responses to reviews thanks to artificial intelligence.\nThe merchant has nothing to do, unless they want to intervene."
+      }
+    ]
+  },
+  "tarif": {
+    "sectionTitle": "PRICING",
+    "title": "One plan to get started, one plan to scale.",
+    "recommended": "Recommended",
+    "plans": [
+      {
+        "name": "Monthly",
+        "description": "Same offer, monthly payment.",
+        "price": "25 CHF / month",
+        "features": [
+          "Campaign creation and management",
+          "QR codes for point of sale",
+          "Real-time dashboard",
+          "Automatic review responses",
+          "Custom experiences",
+          "Priority support"
+        ],
+        "cta": "Choose monthly",
+        "highlighted": false
+      },
+      {
+        "name": "Annual",
+        "description": "Same offer, better value.",
+        "price": "270 CHF / year",
+        "features": [
+          "Campaign creation and management",
+          "QR codes for point of sale",
+          "Real-time dashboard",
+          "Automatic review responses",
+          "Custom experiences",
+          "Priority support"
+        ],
+        "cta": "Choose annual",
+        "highlighted": true
+      }
+    ]
+  },
+  "cta": {
+    "title": "Make your customers' real satisfaction visible online.",
+    "subtitle": "Discover how Waevon can simply integrate into your business.",
+    "button": "Request a demo"
+  }
+}

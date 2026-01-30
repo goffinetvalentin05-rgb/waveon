@@ -1,25 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase/client";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
-const hasSupabaseConfig = Boolean(supabaseUrl && supabaseAnonKey);
+const hasSupabaseConfig = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 export default function LoginPage() {
   const router = useRouter();
-  const supabaseClient = useMemo(() => {
-    if (!hasSupabaseConfig) return null;
-    if (typeof window === "undefined") return null;
-    return createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-      },
-    });
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
   }, []);
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
@@ -27,25 +21,23 @@ export default function LoginPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const title = useMemo(
-    () => (mode === "login" ? "Connexion" : "Créer un compte"),
-    [mode]
-  );
+  const title = mode === "login" ? "Connexion" : "Créer un compte";
+  const isReady = mounted && hasSupabaseConfig;
 
   useEffect(() => {
-    if (!supabaseClient) return;
+    if (!mounted || !hasSupabaseConfig) return;
     const checkSession = async () => {
-      const { data } = await supabaseClient.auth.getSession();
+      const { data } = await supabase.auth.getSession();
       if (data.session) {
         router.replace("/dashboard");
       }
     };
     checkSession();
-  }, [router, supabaseClient]);
+  }, [router, mounted]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!supabaseClient || !hasSupabaseConfig) {
+    if (!hasSupabaseConfig) {
       setMessage(
         "Configuration Supabase manquante. Vérifiez NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY."
       );
@@ -55,7 +47,7 @@ export default function LoginPage() {
     setMessage(null);
 
     if (mode === "register") {
-      const { data, error } = await supabaseClient.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
@@ -65,7 +57,7 @@ export default function LoginPage() {
         return;
       }
       if (data.user) {
-        const { error: profileError } = await supabaseClient
+        const { error: profileError } = await supabase
           .from("users")
           .insert({
             id: data.user.id,
@@ -82,7 +74,7 @@ export default function LoginPage() {
         "Compte créé. Vérifie tes emails si la confirmation est activée."
       );
     } else {
-      const { data, error } = await supabaseClient.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -92,12 +84,12 @@ export default function LoginPage() {
         return;
       }
       if (data.user) {
-        const { error: profileError } = await supabaseClient
+        const { error: profileError } = await supabase
           .from("users")
-          .upsert({
-            id: data.user.id,
-            email: data.user.email,
-          });
+          .upsert(
+            { id: data.user.id, email: data.user.email },
+            { onConflict: "id" }
+          );
         if (profileError && process.env.NODE_ENV !== "production") {
           console.warn(
             "[Supabase] Impossible de synchroniser le profil user:",
@@ -144,7 +136,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 required
-                disabled={!supabaseClient}
+                disabled={!isReady}
               />
             </div>
             <div>
@@ -158,7 +150,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 required
-                disabled={!supabaseClient}
+                disabled={!isReady}
               />
             </div>
             {message ? (
@@ -169,7 +161,7 @@ export default function LoginPage() {
             <button
               className="w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-60"
               type="submit"
-              disabled={loading || !supabaseClient}
+              disabled={loading || !isReady}
             >
               {loading ? "Chargement..." : title}
             </button>

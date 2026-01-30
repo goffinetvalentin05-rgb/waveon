@@ -1,0 +1,166 @@
+{
+  "nav": {
+    "faq": "FAQ",
+    "pricing": "Preise",
+    "login": "Anmelden"
+  },
+  "hero": {
+    "title": "Machen Sie jeden zufriedenen Kunden zu sichtbarem Beweis.",
+    "subtitle": "Waevon strukturiert einen einfachen, kontrollierten Austausch, um Ihren Online-Ruf zu verbessern – ohne Druck auf Ihre Kunden.",
+    "ctaDemo": "Demo anfordern",
+    "ctaHow": "So funktioniert es"
+  },
+  "stats": {
+    "reviewsCollected": "Gesammelte Bewertungen",
+    "count": "1.052",
+    "thisWeek": "+18 % diese Woche",
+    "conversionRate": "Conversion-Rate",
+    "rateValue": "62 %",
+    "activeCampaign": "Aktive Kampagne",
+    "participationsThisWeek": "128 Teilnahmen diese Woche",
+    "goal": "Ziel",
+    "goalText": "Mehr Google-Bewertungen mit KI-Antworten"
+  },
+  "constat": {
+    "paragraph1": "Wir haben festgestellt, dass die meisten Unternehmen zufriedene Kunden haben, aber online ist diese Realität kaum sichtbar: wenige Bewertungen werden abgegeben, negatives Feedback nimmt mehr Platz ein, und das Gesamtbild spiegelt die tägliche Arbeit nicht wider.",
+    "paragraph2": "Waevon schließt diese Lücke."
+  },
+  "solution": {
+    "title": "Waevon macht Zufriedenheit zu sichtbarem Beweis.",
+    "body": "Der Kunde führt eine nützliche Aktion für das Unternehmen durch und erhält Zugang zu einer vordefinierten, klaren Erfahrung. Nichts wird aufgezwungen: alles ist transparent und unter Kontrolle."
+  },
+  "comment": {
+    "sectionTitle": "SO FUNKTIONIERT ES",
+    "newComing": "Demnächst",
+    "steps": [
+      {
+        "number": "01",
+        "title": "Kampagne erstellen",
+        "body": [
+          "Der Händler erstellt eine Kampagne in seinem Waevon-Konto und wählt sein Ziel, z. B. mehr Google-Bewertungen zu erhalten."
+        ]
+      },
+      {
+        "number": "02",
+        "title": "QR-Code am Verkaufsort verbreiten",
+        "body": [
+          "Waevon generiert einen mit der Kampagne verknüpften QR-Code.",
+          "Er kann gedruckt und auf Tischen, am Tresen oder auf einem passenden Träger platziert werden.",
+          "Ein individuelles Grafik-Support kann ebenfalls gestaltet werden, um zum Erscheinungsbild des Geschäfts zu passen."
+        ]
+      },
+      {
+        "number": "03",
+        "title": "Im Dashboard konfigurieren und verfolgen",
+        "body": [
+          "Im Dashboard legt der Händler die Regeln des Erlebnisses fest: Inhalte, Wahrscheinlichkeiten und Parameter.",
+          "Anschließend verfolgt er die Entwicklung seiner Kampagne in Echtzeit."
+        ]
+      },
+      {
+        "number": "04",
+        "title": "Bewertungsverwaltung automatisieren",
+        "body": [
+          "Wenn ein Kunde eine Bewertung hinterlässt, kann Waevon dank künstlicher Intelligenz automatisch antworten – ohne manuelles Zutun des Händlers."
+        ]
+      }
+    ]
+  },
+  "controle": {
+    "sectionTitle": "DIE KONTROLLE BEHALTEN",
+    "points": [
+      "Mit Waevon behält der Händler stets die Kontrolle.",
+      "Er definiert genau, was er erreichen möchte und was er anbieten kann.",
+      "Teilnahmeregeln, Wahrscheinlichkeiten und Ziele werden im Voraus festgelegt.",
+      "Jede Kampagne läuft in einem klaren Rahmen, ohne Überraschungen oder Abweichungen.",
+      "Der Händler sieht alle seine Kampagnen und Ergebnisse in einem einzigen Dashboard."
+    ]
+  },
+  "avis": {
+    "sectionTitle": "BEWERTUNGEN / REFERENZEN",
+    "testimonials": [
+      {
+        "name": "Claire Martin",
+        "role": "Leiterin, Le Bistrot du Marché",
+        "quote": "Waevon hat es uns viel leichter gemacht, Bewertungen zu sammeln.\nZufriedene Kunden nehmen natürlich teil und schätzen auch eine Gegenleistung.\nEin Gewinn für sie und für uns."
+      },
+      {
+        "name": "Karim Benali",
+        "role": "Verantwortlicher, Urban Burger",
+        "quote": "Vorher hatten wir Mühe, Bewertungen zu bekommen.\nMit Waevon machen die Kunden mit, um eine Bewertung zu hinterlassen oder uns zu folgen.\nEinfach zu erklären und gut akzeptiert."
+      },
+      {
+        "name": "Sophie Laurent",
+        "role": "Gründerin, Studio Coiffure",
+        "quote": "Die Kunden nehmen gerne an der Erfahrung nach ihrem Besuch teil.\nFür uns hilft es, unsere Sichtbarkeit zu verbessern, ohne jemanden unter Druck zu setzen.\nAlles lässt sich einfach verwalten."
+      }
+    ]
+  },
+  "faq": {
+    "sectionTitle": "FAQ",
+    "items": [
+      {
+        "question": "Zwingt Waevon Kunden, eine Bewertung zu hinterlassen?",
+        "answer": "Nein.\nDer Kunde entscheidet frei, ob er teilnimmt.\nWaevon bietet ein Erlebnis, nie eine Verpflichtung."
+      },
+      {
+        "question": "Akzeptieren Kunden das Konzept leicht?",
+        "answer": "Ja.\nDer Austausch ist klar und transparent.\nKunden verstehen, was sie tun und was sie dafür erhalten."
+      },
+      {
+        "question": "Behalte ich die Kontrolle über meine Kampagnen?",
+        "answer": "Ja, vollständig.\nDer Händler definiert Regeln, Parameter und Ziele jeder Kampagne im Dashboard."
+      },
+      {
+        "question": "Erfordert es täglichen Aufwand?",
+        "answer": "Nein.\nSobald die Kampagne eingerichtet ist, läuft alles automatisch.\nDie Nachverfolgung erfolgt einfach über das Dashboard."
+      },
+      {
+        "question": "Was passiert mit den Bewertungen der Kunden?",
+        "answer": "Waevon kann Antworten auf Bewertungen dank KI automatisch verwalten.\nDer Händler muss nichts tun, es sei denn, er möchte eingreifen."
+      }
+    ]
+  },
+  "tarif": {
+    "sectionTitle": "PREISE",
+    "title": "Ein Plan zum Start, ein Plan zum Skalieren.",
+    "recommended": "Empfohlen",
+    "plans": [
+      {
+        "name": "Monatlich",
+        "description": "Gleiches Angebot, monatliche Zahlung.",
+        "price": "25 CHF / Monat",
+        "features": [
+          "Kampagnen erstellen und verwalten",
+          "QR-Codes für den Verkaufsort",
+          "Echtzeit-Dashboard",
+          "Automatische Bewertungsantworten",
+          "Individuelle Erlebnisse",
+          "Prioritäts-Support"
+        ],
+        "cta": "Monatlich wählen",
+        "highlighted": false
+      },
+      {
+        "name": "Jährlich",
+        "description": "Gleiches Angebot, günstiger.",
+        "price": "270 CHF / Jahr",
+        "features": [
+          "Kampagnen erstellen und verwalten",
+          "QR-Codes für den Verkaufsort",
+          "Echtzeit-Dashboard",
+          "Automatische Bewertungsantworten",
+          "Individuelle Erlebnisse",
+          "Prioritäts-Support"
+        ],
+        "cta": "Jährlich wählen",
+        "highlighted": true
+      }
+    ]
+  },
+  "cta": {
+    "title": "Machen Sie die echte Zufriedenheit Ihrer Kunden online sichtbar.",
+    "subtitle": "Erfahren Sie, wie Waevon sich einfach in Ihr Geschäft integrieren lässt.",
+    "button": "Demo anfordern"
+  }
+}

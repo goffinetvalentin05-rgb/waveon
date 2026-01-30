@@ -1,0 +1,166 @@
+{
+  "nav": {
+    "faq": "FAQ",
+    "pricing": "Tarif",
+    "login": "Se connecter"
+  },
+  "hero": {
+    "title": "Transformez chaque client satisfait en preuve visible.",
+    "subtitle": "Waevon structure un échange simple et maîtrisé pour améliorer votre réputation en ligne, sans forcer vos clients.",
+    "ctaDemo": "Demander une démo",
+    "ctaHow": "Voir comment ça marche"
+  },
+  "stats": {
+    "reviewsCollected": "Avis collectés",
+    "count": "1 052",
+    "thisWeek": "+18% cette semaine",
+    "conversionRate": "Taux de conversion",
+    "rateValue": "62%",
+    "activeCampaign": "Campagne active",
+    "participationsThisWeek": "128 participations cette semaine",
+    "goal": "Objectif",
+    "goalText": "Augmenter les avis Google avec IA de réponse"
+  },
+  "constat": {
+    "paragraph1": "Nous avons constaté que la majorité des commerces ont des clients satisfaits, mais en ligne cette réalité se voit peu : peu d'avis sont laissés, les retours négatifs prennent plus de place, et l'image finale ne reflète pas le travail quotidien.",
+    "paragraph2": "C'est ce décalage que Waevon corrige."
+  },
+  "solution": {
+    "title": "Waevon transforme la satisfaction en preuve visible.",
+    "body": "Le client réalise une action utile pour le commerce, puis accède à une expérience encadrée et définie à l'avance. Rien n'est imposé : tout est clair, transparent et maîtrisé."
+  },
+  "comment": {
+    "sectionTitle": "COMMENT ÇA MARCHE",
+    "newComing": "Nouveauté à venir",
+    "steps": [
+      {
+        "number": "01",
+        "title": "Créez une campagne",
+        "body": [
+          "Le commerçant crée une campagne depuis son compte Waevon et choisit son objectif, par exemple obtenir plus d'avis Google."
+        ]
+      },
+      {
+        "number": "02",
+        "title": "Diffusez le QR code en point de vente",
+        "body": [
+          "Waevon génère un QR code lié à la campagne.",
+          "Il peut être imprimé et placé sur les tables, au comptoir ou sur un support adapté.",
+          "Un support graphique personnalisé peut également être conçu pour s'intégrer à l'image du commerce."
+        ]
+      },
+      {
+        "number": "03",
+        "title": "Configurez et suivez depuis le dashboard",
+        "body": [
+          "Depuis le tableau de bord, le commerçant définit les règles de l'expérience : contenus, probabilités et paramètres.",
+          "Il suit ensuite l'évolution de sa campagne en temps réel."
+        ]
+      },
+      {
+        "number": "04",
+        "title": "Automatisez la gestion des avis",
+        "body": [
+          "Lorsqu'un client laisse un avis, Waevon peut automatiquement y répondre grâce à l'intelligence artificielle, sans action manuelle du commerçant."
+        ]
+      }
+    ]
+  },
+  "controle": {
+    "sectionTitle": "GARDER LE CONTRÔLE",
+    "points": [
+      "Avec Waevon, le commerçant garde toujours le contrôle.",
+      "Il définit précisément ce qu'il souhaite obtenir et ce qu'il est prêt à proposer.",
+      "Les règles de participation, les probabilités et les objectifs sont configurés à l'avance.",
+      "Chaque campagne fonctionne dans un cadre clair, sans surprise ni dérive.",
+      "Le commerçant visualise l'ensemble de ses campagnes et leurs résultats depuis un tableau de bord unique."
+    ]
+  },
+  "avis": {
+    "sectionTitle": "AVIS / TÉMOIGNAGES",
+    "testimonials": [
+      {
+        "name": "Claire Martin",
+        "role": "Gérante, Le Bistrot du Marché",
+        "quote": "Waevon nous a permis de récolter des avis beaucoup plus facilement.\nLes clients satisfaits participent naturellement et apprécient aussi d'avoir un retour en échange.\nC'est gagnant pour eux comme pour nous."
+      },
+      {
+        "name": "Karim Benali",
+        "role": "Responsable, Urban Burger",
+        "quote": "Avant, on avait du mal à obtenir des avis.\nAvec Waevon, les clients jouent le jeu pour laisser un avis ou s'abonner sur nos réseaux.\nC'est simple à expliquer et bien accepté."
+      },
+      {
+        "name": "Sophie Laurent",
+        "role": "Fondatrice, Studio Coiffure",
+        "quote": "Les clients sont contents de participer à l'expérience après leur passage.\nDe notre côté, ça nous aide à améliorer notre visibilité sans forcer personne.\nTout se gère facilement."
+      }
+    ]
+  },
+  "faq": {
+    "sectionTitle": "FAQ",
+    "items": [
+      {
+        "question": "Est-ce que Waevon force les clients à laisser un avis ?",
+        "answer": "Non.\nLe client reste libre de participer ou non.\nWaevon propose une expérience, jamais une obligation."
+      },
+      {
+        "question": "Est-ce que les clients acceptent facilement le principe ?",
+        "answer": "Oui.\nL'échange est clair et transparent.\nLes clients comprennent ce qu'ils font et ce qu'ils obtiennent en retour."
+      },
+      {
+        "question": "Est-ce que je garde le contrôle sur mes campagnes ?",
+        "answer": "Oui, totalement.\nLe commerçant définit les règles, les paramètres et les objectifs de chaque campagne depuis son tableau de bord."
+      },
+      {
+        "question": "Est-ce que ça demande du temps au quotidien ?",
+        "answer": "Non.\nUne fois la campagne mise en place, tout est automatisé.\nLe suivi se fait simplement depuis le dashboard."
+      },
+      {
+        "question": "Que se passe-t-il avec les avis laissés par les clients ?",
+        "answer": "Waevon peut gérer automatiquement les réponses aux avis grâce à l'intelligence artificielle.\nLe commerçant n'a rien à faire, sauf s'il souhaite intervenir."
+      }
+    ]
+  },
+  "tarif": {
+    "sectionTitle": "TARIFS",
+    "title": "Un plan pour démarrer, un plan pour accélérer.",
+    "recommended": "Recommandé",
+    "plans": [
+      {
+        "name": "Mensuel",
+        "description": "Même offre, paiement mensuel.",
+        "price": "25 CHF / mois",
+        "features": [
+          "Création et gestion de campagnes",
+          "QR codes pour le point de vente",
+          "Tableau de bord en temps réel",
+          "Réponses automatiques aux avis",
+          "Expériences personnalisées",
+          "Support prioritaire"
+        ],
+        "cta": "Choisir le mensuel",
+        "highlighted": false
+      },
+      {
+        "name": "Annuel",
+        "description": "Même offre, plus avantageux.",
+        "price": "270 CHF / an",
+        "features": [
+          "Création et gestion de campagnes",
+          "QR codes pour le point de vente",
+          "Tableau de bord en temps réel",
+          "Réponses automatiques aux avis",
+          "Expériences personnalisées",
+          "Support prioritaire"
+        ],
+        "cta": "Choisir l'annuel",
+        "highlighted": true
+      }
+    ]
+  },
+  "cta": {
+    "title": "Faites enfin apparaître en ligne la satisfaction réelle de vos clients.",
+    "subtitle": "Découvrez comment Waevon peut s'intégrer simplement à votre activité.",
+    "button": "Demander une démo"
+  }
+}
