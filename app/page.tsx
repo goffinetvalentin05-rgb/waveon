@@ -5,14 +5,14 @@ const steps = [
     number: "01",
     title: "Créez une campagne",
     body: [
-      "Le commerçant crée une campagne depuis son compte WaveOn et choisit son objectif, par exemple obtenir plus d’avis Google.",
+      "Le commerçant crée une campagne depuis son compte Waevon et choisit son objectif, par exemple obtenir plus d’avis Google.",
     ],
   },
   {
     number: "02",
     title: "Diffusez le QR code en point de vente",
     body: [
-      "WaveOn génère un QR code lié à la campagne.",
+      "Waevon génère un QR code lié à la campagne.",
       "Il peut être imprimé et placé sur les tables, au comptoir ou sur un support adapté.",
       "Un support graphique personnalisé peut également être conçu pour s’intégrer à l’image du commerce.",
     ],
@@ -29,13 +29,13 @@ const steps = [
     number: "04",
     title: "Automatisez la gestion des avis",
     body: [
-      "Lorsqu’un client laisse un avis, WaveOn peut automatiquement y répondre grâce à l’intelligence artificielle, sans action manuelle du commerçant.",
+      "Lorsqu’un client laisse un avis, Waevon peut automatiquement y répondre grâce à l’intelligence artificielle, sans action manuelle du commerçant.",
     ],
   },
 ];
 
 const controlPoints = [
-  "Avec WaveOn, le commerçant garde toujours le contrôle.",
+  "Avec Waevon, le commerçant garde toujours le contrôle.",
   "Il définit précisément ce qu’il souhaite obtenir et ce qu’il est prêt à proposer.",
   "Les règles de participation, les probabilités et les objectifs sont configurés à l’avance.",
   "Chaque campagne fonctionne dans un cadre clair, sans surprise ni dérive.",
@@ -47,13 +47,13 @@ const testimonials = [
     name: "Claire Martin",
     role: "Gérante, Le Bistrot du Marché",
     quote:
-      "WaveOn nous a permis de récolter des avis beaucoup plus facilement.\nLes clients satisfaits participent naturellement et apprécient aussi d’avoir un retour en échange.\nC’est gagnant pour eux comme pour nous.",
+      "Waevon nous a permis de récolter des avis beaucoup plus facilement.\nLes clients satisfaits participent naturellement et apprécient aussi d’avoir un retour en échange.\nC’est gagnant pour eux comme pour nous.",
   },
   {
     name: "Karim Benali",
     role: "Responsable, Urban Burger",
     quote:
-      "Avant, on avait du mal à obtenir des avis.\nAvec WaveOn, les clients jouent le jeu pour laisser un avis ou s’abonner sur nos réseaux.\nC’est simple à expliquer et bien accepté.",
+      "Avant, on avait du mal à obtenir des avis.\nAvec Waevon, les clients jouent le jeu pour laisser un avis ou s’abonner sur nos réseaux.\nC’est simple à expliquer et bien accepté.",
   },
   {
     name: "Sophie Laurent",
@@ -65,9 +65,9 @@ const testimonials = [
 
 const faqs = [
   {
-    question: "Est-ce que WaveOn force les clients à laisser un avis ?",
+    question: "Est-ce que Waevon force les clients à laisser un avis ?",
     answer:
-      "Non.\nLe client reste libre de participer ou non.\nWaveOn propose une expérience, jamais une obligation.",
+      "Non.\nLe client reste libre de participer ou non.\nWaevon propose une expérience, jamais une obligation.",
   },
   {
     question: "Est-ce que les clients acceptent facilement le principe ?",
@@ -87,7 +87,7 @@ const faqs = [
   {
     question: "Que se passe-t-il avec les avis laissés par les clients ?",
     answer:
-      "WaveOn peut gérer automatiquement les réponses aux avis grâce à l’intelligence artificielle.\nLe commerçant n’a rien à faire, sauf s’il souhaite intervenir.",
+      "Waevon peut gérer automatiquement les réponses aux avis grâce à l’intelligence artificielle.\nLe commerçant n’a rien à faire, sauf s’il souhaite intervenir.",
   },
 ];
 
@@ -137,8 +137,8 @@ export default function Home() {
         <nav className="relative flex w-full items-center justify-between border-b border-white/10 bg-white/5 px-6 py-4 backdrop-blur lg:px-16">
           <div className="flex items-center gap-3">
             <Image
-              src="/logo_waveon.png"
-              alt="WaveOn"
+              src="/logo_waevon.png"
+              alt="Waevon"
               width={160}
               height={44}
               className="h-8 w-auto"
@@ -201,8 +201,8 @@ export default function Home() {
             </div>
             <div className="relative z-10 flex flex-col items-center text-center">
               <Image
-                src="/logo_waveon.png"
-                alt="WaveOn"
+                src="/logo_waevon.png"
+                alt="Waevon"
                 width={320}
                 height={88}
                 className="h-16 w-auto md:h-20"
@@ -212,7 +212,7 @@ export default function Home() {
                 Transformez chaque client satisfait en preuve visible.
               </h1>
               <p className="mt-6 max-w-2xl text-base text-slate-300 md:text-lg">
-                WaveOn structure un échange simple et maîtrisé pour améliorer
+                Waevon structure un échange simple et maîtrisé pour améliorer
                 votre réputation en ligne, sans forcer vos clients.
               </p>
               <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
@@ -245,7 +245,7 @@ export default function Home() {
               l’image finale ne reflète pas le travail quotidien.
             </p>
             <p className="mt-4 text-sm text-slate-400">
-              C’est ce décalage que WaveOn corrige.
+              C’est ce décalage que Waevon corrige.
             </p>
           </div>
         </div>
@@ -263,7 +263,7 @@ export default function Home() {
           <div className="space-y-3" />
           <div className="px-2 md:px-6">
             <h3 className="mt-4 text-2xl font-semibold text-white md:text-3xl">
-              WaveOn transforme la satisfaction en preuve visible.
+              Waevon transforme la satisfaction en preuve visible.
             </h3>
             <p className="mt-4 text-base text-slate-200">
               Le client réalise une action utile pour le commerce, puis accède à
@@ -452,7 +452,7 @@ export default function Home() {
             clients.
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-sm text-slate-300 md:text-base">
-            Découvrez comment WaveOn peut s’intégrer simplement à votre
+            Découvrez comment Waevon peut s’intégrer simplement à votre
             activité.
           </p>
           <div className="mt-10">

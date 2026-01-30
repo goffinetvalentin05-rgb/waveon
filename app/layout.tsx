@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Waveon",
+  title: "Waevon",
   description:
     "Transforme les clients en avis Google et abonnés Instagram grâce à une page interactive.",
 };

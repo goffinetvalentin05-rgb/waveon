@@ -1,4 +1,4 @@
-# Waveon (MVP)
+# Waevon (MVP)
 
 MVP SaaS B2B pour convertir les clients en avis Google et abonnés Instagram.
 

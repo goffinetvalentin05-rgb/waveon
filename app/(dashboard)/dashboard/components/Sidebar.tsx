@@ -28,9 +28,9 @@ export default function Sidebar({ onCreateCampaign }: SidebarProps) {
   return (
     <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-r lg:border-white/10 lg:bg-[#0f1020] lg:px-6 lg:py-8">
       <div className="flex items-center gap-3">
-        <Image src="/logo_waveon.png" alt="WaveOn" width={36} height={36} />
+        <Image src="/logo_waevon.png" alt="Waevon" width={36} height={36} />
         <div>
-          <p className="text-lg font-semibold text-white">WaveOn</p>
+          <p className="text-lg font-semibold text-white">Waevon</p>
           <p className="text-xs text-slate-400">Espace commerçant</p>
         </div>
       </div>

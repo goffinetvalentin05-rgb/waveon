@@ -116,7 +116,7 @@ export default function LoginPage() {
         <div className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm">
           <div className="mb-6">
             <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-              Waveon
+              Waevon
             </p>
             <h1 className="mt-2 text-2xl font-semibold text-zinc-900">
               {title}

@@ -46,19 +46,19 @@ export default function PublicCampaignClient({
   const visitedRef = useRef(false);
 
   useEffect(() => {
-    const storedToken = window.localStorage.getItem("waveon_client_token");
+    const storedToken = window.localStorage.getItem("waevon_client_token");
     if (storedToken) {
       setClientToken(storedToken);
       return;
     }
     const newToken = crypto.randomUUID();
-    window.localStorage.setItem("waveon_client_token", newToken);
+    window.localStorage.setItem("waevon_client_token", newToken);
     setClientToken(newToken);
   }, []);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(
-      `waveon_participation_${campaign.id}`
+      `waevon_participation_${campaign.id}`
     );
     if (stored) {
       setParticipationId(stored);
@@ -67,7 +67,7 @@ export default function PublicCampaignClient({
 
   useEffect(() => {
     const stored = window.localStorage.getItem(
-      `waveon_review_validated_${campaign.id}`
+      `waevon_review_validated_${campaign.id}`
     );
     if (stored === "true") {
       setReviewValidated(true);
@@ -136,7 +136,7 @@ export default function PublicCampaignClient({
     if (data?.participationId) {
       setParticipationId(data.participationId);
       window.localStorage.setItem(
-        `waveon_participation_${campaign.id}`,
+        `waevon_participation_${campaign.id}`,
         data.participationId
       );
     }
@@ -168,7 +168,7 @@ export default function PublicCampaignClient({
 
     setReviewValidated(Boolean(data?.validated));
     window.localStorage.setItem(
-      `waveon_review_validated_${campaign.id}`,
+      `waevon_review_validated_${campaign.id}`,
       "true"
     );
     setReviewLoading(false);
