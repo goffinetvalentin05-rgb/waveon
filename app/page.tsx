@@ -16,7 +16,7 @@ export default function Home() {
           <div className="absolute right-[-160px] top-10 h-[560px] w-[560px] rounded-full bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.22),transparent_70%)] blur-[190px]" />
           <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] [background-size:48px_48px]" />
         </div>
-        <nav className="relative flex w-full items-center justify-between border-b border-white/10 bg-white/5 px-6 py-4 backdrop-blur lg:px-16">
+        <nav className="relative z-30 flex w-full items-center justify-between border-b border-white/10 bg-white/5 px-6 py-4 backdrop-blur pointer-events-auto lg:px-16">
           <div className="flex items-center gap-3">
             <Image
               src="/logo_waevon.png"

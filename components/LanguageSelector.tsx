@@ -19,12 +19,12 @@ export function LanguageSelector() {
   };
 
   return (
-    <div className="relative">
+    <div className="relative z-10">
       <button
         ref={buttonRef}
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-white/25 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+        className="relative z-10 inline-flex min-h-[36px] min-w-[56px] cursor-pointer select-none items-center justify-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-white/25 hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-[#0b0b16]"
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-label="Choisir la langue"
