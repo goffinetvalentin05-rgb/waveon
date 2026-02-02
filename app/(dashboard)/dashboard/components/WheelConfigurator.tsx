@@ -233,6 +233,27 @@ export default function WheelConfigurator({ campaignId }: WheelConfiguratorProps
         }
       }
 
+      const { data: savedItems, error: fetchItemsError } = await supabase
+        .from("wheel_items")
+        .select("id")
+        .eq("wheel_id", wheelId)
+        .not("id", "is", null);
+
+      if (fetchItemsError) {
+        setError(fetchItemsError.message);
+        return;
+      }
+
+      const hasWheelItemIds =
+        savedItems && savedItems.length > 0 && savedItems.every((r) => r.id);
+
+      if (!hasWheelItemIds) {
+        setError(
+          "Aucun lot enregistré. Enregistrez au moins un lot avant d’initialiser la pool."
+        );
+        return;
+      }
+
       const { error: poolError } = await supabase.rpc("init_wheel_pool", {
         p_wheel_id: wheelId,
       });
