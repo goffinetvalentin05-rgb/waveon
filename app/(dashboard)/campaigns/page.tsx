@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import type { CampaignObjective } from "@/types/db";
 import CampaignCard from "../dashboard/components/CampaignCard";
@@ -28,11 +29,13 @@ const objectiveLabels: Record<CampaignObjective, string> = {
 };
 
 export default function CampaignsPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [campaigns, setCampaigns] = useState<CampaignRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const getTargetUrl = (campaign?: CampaignRow | null) =>
     campaign?.target_url || campaign?.link || "";
@@ -118,6 +121,41 @@ export default function CampaignsPage() {
     setUpdating(null);
   };
 
+  const handleEdit = (campaignId: string) => {
+    router.push(`/campaigns/${campaignId}/edit`);
+  };
+
+  const handleDeleteClick = (campaignId: string) => {
+    setDeleteConfirmId(campaignId);
+    setError(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirmId || !userId) return;
+    setUpdating(deleteConfirmId);
+    setError(null);
+
+    const { error: deleteError } = await supabase
+      .from("campaigns")
+      .delete()
+      .eq("id", deleteConfirmId)
+      .eq("user_id", userId);
+
+    setDeleteConfirmId(null);
+    if (deleteError) {
+      setError(deleteError.message);
+      setUpdating(null);
+      return;
+    }
+
+    await fetchCampaigns(userId);
+    setUpdating(null);
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmId(null);
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0b0b16] text-slate-300">
@@ -150,6 +188,35 @@ export default function CampaignsPage() {
           </span>
         </header>
 
+        {deleteConfirmId ? (
+          <div className="mt-6 rounded-xl border border-rose-500/30 bg-rose-500/10 p-4">
+            <p className="text-sm font-medium text-rose-200">
+              Supprimer la campagne «{" "}
+              {campaigns.find((c) => c.id === deleteConfirmId)?.business_name ??
+                "cette campagne"}
+              » ? Cette action est irréversible.
+            </p>
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                disabled={updating !== null}
+                className="rounded-full bg-rose-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-rose-600 disabled:opacity-60"
+              >
+                {updating ? "Suppression…" : "Confirmer"}
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteCancel}
+                disabled={updating !== null}
+                className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/90 transition hover:border-white/30"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         {error ? (
           <div className="mt-6 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
             {error}
@@ -181,6 +248,8 @@ export default function CampaignsPage() {
                   slug={campaign.slug}
                   createdAt={campaign.created_at}
                   detailHref={`/campaigns/${campaign.id}`}
+                  onEdit={() => handleEdit(campaign.id)}
+                  onDelete={() => handleDeleteClick(campaign.id)}
                   onActivate={
                     !isActive ? () => handleActivate(campaign.id) : undefined
                   }

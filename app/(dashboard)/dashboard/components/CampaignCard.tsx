@@ -10,6 +10,8 @@ type CampaignCardProps = {
   detailHref?: string;
   onActivate?: () => void;
   onDeactivate?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
   isBusy?: boolean;
 };
 
@@ -28,6 +30,8 @@ export default function CampaignCard({
   detailHref,
   onActivate,
   onDeactivate,
+  onEdit,
+  onDelete,
   isBusy,
 }: CampaignCardProps) {
   const created = new Date(createdAt).toLocaleDateString("fr-FR", {
@@ -65,38 +69,56 @@ export default function CampaignCard({
         </p>
       </div>
 
-      {(onActivate || onDeactivate) && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {detailHref ? (
-            <a
-              href={detailHref}
-              className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/90 transition hover:border-white/30"
-            >
-              Voir le dashboard
-            </a>
-          ) : null}
-          {onActivate ? (
-            <button
-              type="button"
-              onClick={onActivate}
-              disabled={isBusy}
-              className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/90 transition hover:border-white/30 disabled:opacity-60"
-            >
-              Activer
-            </button>
-          ) : null}
-          {onDeactivate ? (
-            <button
-              type="button"
-              onClick={onDeactivate}
-              disabled={isBusy}
-              className="rounded-full bg-gradient-to-r from-violet-500 via-indigo-500 to-blue-500 px-3 py-1.5 text-xs font-medium text-white transition hover:brightness-110 disabled:opacity-60"
-            >
-              Désactiver
-            </button>
-          ) : null}
-        </div>
-      )}
+      <div className="mt-4 flex flex-wrap gap-2">
+        {detailHref ? (
+          <a
+            href={detailHref}
+            className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/90 transition hover:border-white/30"
+          >
+            Voir le dashboard
+          </a>
+        ) : null}
+        {onEdit ? (
+          <button
+            type="button"
+            onClick={onEdit}
+            disabled={isBusy}
+            className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/90 transition hover:border-white/30 disabled:opacity-60"
+          >
+            Modifier
+          </button>
+        ) : null}
+        {onDelete ? (
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={isBusy}
+            className="rounded-full border border-rose-400/30 bg-rose-500/10 px-3 py-1.5 text-xs font-medium text-rose-200 transition hover:bg-rose-500/20 disabled:opacity-60"
+          >
+            Supprimer
+          </button>
+        ) : null}
+        {onActivate ? (
+          <button
+            type="button"
+            onClick={onActivate}
+            disabled={isBusy}
+            className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/90 transition hover:border-white/30 disabled:opacity-60"
+          >
+            Activer
+          </button>
+        ) : null}
+        {onDeactivate ? (
+          <button
+            type="button"
+            onClick={onDeactivate}
+            disabled={isBusy}
+            className="rounded-full bg-gradient-to-r from-violet-500 via-indigo-500 to-blue-500 px-3 py-1.5 text-xs font-medium text-white transition hover:brightness-110 disabled:opacity-60"
+          >
+            Désactiver
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
