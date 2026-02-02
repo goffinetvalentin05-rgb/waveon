@@ -20,13 +20,34 @@ type PublicCampaignClientProps = {
 
 const objectiveConfig: Record<
   CampaignObjective,
-  { label: string; cta: string }
+  { label: string; cta: string; unlockCta: string }
 > = {
-  google: { label: "Avis Google", cta: "Laisser un avis Google" },
-  instagram: { label: "Instagram", cta: "S’abonner sur Instagram" },
-  facebook: { label: "Facebook", cta: "S’abonner sur Facebook" },
-  tiktok: { label: "TikTok", cta: "S’abonner sur TikTok" },
+  google: {
+    label: "Avis Google",
+    cta: "Laisser un avis Google",
+    unlockCta: "Laisser un avis Google pour débloquer la roue",
+  },
+  instagram: {
+    label: "Instagram",
+    cta: "S'abonner sur Instagram",
+    unlockCta: "S'abonner sur Instagram pour débloquer la roue",
+  },
+  facebook: {
+    label: "Facebook",
+    cta: "S'abonner sur Facebook",
+    unlockCta: "S'abonner sur Facebook pour débloquer la roue",
+  },
+  tiktok: {
+    label: "TikTok",
+    cta: "S'abonner sur TikTok",
+    unlockCta: "S'abonner sur TikTok pour débloquer la roue",
+  },
 };
+
+function isValidReviewLink(url: string | null | undefined): boolean {
+  const trimmed = typeof url === "string" ? url.trim() : "";
+  return trimmed.length > 0;
+}
 
 export default function PublicCampaignClient({
   campaign,
@@ -43,7 +64,10 @@ export default function PublicCampaignClient({
   const [participationId, setParticipationId] = useState<string | null>(null);
   const [reviewValidated, setReviewValidated] = useState(false);
   const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
+  const [isWheelUnlocked, setIsWheelUnlocked] = useState(false);
   const visitedRef = useRef(false);
+
+  const reviewLinkValid = isValidReviewLink(targetUrl);
 
   useEffect(() => {
     const storedToken = window.localStorage.getItem("waevon_client_token");
@@ -55,6 +79,15 @@ export default function PublicCampaignClient({
     window.localStorage.setItem("waevon_client_token", newToken);
     setClientToken(newToken);
   }, []);
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(
+      `waevon_wheel_unlocked_${campaign.id}`
+    );
+    if (stored === "true") {
+      setIsWheelUnlocked(true);
+    }
+  }, [campaign.id]);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(
@@ -111,38 +144,48 @@ export default function PublicCampaignClient({
     void loadSpinStatus();
   }, [campaign.id, clientToken]);
 
-  const handleAction = async () => {
-    if (!targetUrl || !clientToken) return;
-    setActionLoading(true);
+  /**
+   * Opens the review/link in a new tab ONLY on user click (sync, no await before open).
+   * Then unlocks the wheel and creates participation in background.
+   */
+  const handleUnlockWheel = () => {
+    if (!reviewLinkValid || !clientToken) {
+      if (!reviewLinkValid) setActionError("Lien d'avis non configuré.");
+      return;
+    }
     setActionError(null);
+    const url = targetUrl.trim();
 
-    const response = await fetch("/api/participations", {
+    // 1. Open link immediately in the same user gesture (avoids popup blockers)
+    window.open(url, "_blank", "noopener,noreferrer");
+
+    // 2. Unlock wheel and persist
+    setIsWheelUnlocked(true);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(`waevon_wheel_unlocked_${campaign.id}`, "true");
+    }
+
+    // 3. Create participation in background (do not await before open)
+    setActionLoading(true);
+    fetch("/api/participations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         campaignId: campaign.id,
         clientToken,
       }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      setActionError(data?.error ?? "Impossible de démarrer.");
-      setActionLoading(false);
-      return;
-    }
-
-    if (data?.participationId) {
-      setParticipationId(data.participationId);
-      window.localStorage.setItem(
-        `waevon_participation_${campaign.id}`,
-        data.participationId
-      );
-    }
-
-    window.open(targetUrl, "_blank", "noopener,noreferrer");
-    setActionLoading(false);
+    })
+      .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+      .then(({ ok, data }) => {
+        if (ok && data?.participationId) {
+          setParticipationId(data.participationId);
+          window.localStorage.setItem(
+            `waevon_participation_${campaign.id}`,
+            data.participationId
+          );
+        }
+      })
+      .finally(() => setActionLoading(false));
   };
 
   const handleReviewConfirm = async () => {
@@ -255,66 +298,84 @@ export default function PublicCampaignClient({
           </div>
         ) : null}
 
-        {spinResult ? (
-          <div className="w-full rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-center text-sm text-emerald-700">
-            <p className="font-semibold">
-              {spinResult.type === "win" ? "Bravo !" : "Merci d’avoir joué !"}
-            </p>
-            <p className="mt-1">{spinResult.label}</p>
+        {!isWheelUnlocked ? (
+          <div className="w-full space-y-4">
+            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+              <p className="mb-4 text-center text-sm text-zinc-600">
+                Cliquez sur le bouton ci-dessous pour ouvrir la page d’avis,
+                puis la roue sera débloquée.
+              </p>
+              <button
+                type="button"
+                onClick={handleUnlockWheel}
+                disabled={!reviewLinkValid || actionLoading}
+                className="w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-60"
+              >
+                {actionLoading
+                  ? "Ouverture..."
+                  : objectiveConfig[objective].unlockCta}
+              </button>
+            </div>
+            <div className="pointer-events-none select-none opacity-50">
+              <WheelPreview
+                items={wheelItems}
+                baseParticipations={baseParticipations}
+                size={200}
+              />
+            </div>
           </div>
         ) : (
-          <div className="w-full space-y-3">
-            <button
-              className="w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-60"
-              onClick={handleAction}
-              type="button"
-              disabled={actionLoading}
-            >
-              {actionLoading
-                ? "Ouverture..."
-                : objectiveConfig[objective].cta}
-            </button>
-            <p className="text-xs text-zinc-400">
-              Objectif : {objectiveConfig[objective].label}
-            </p>
-
-            {participationId ? (
-              <button
-                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-100 disabled:opacity-60"
-                onClick={handleReviewConfirm}
-                type="button"
-                disabled={reviewLoading}
-              >
-                {reviewLoading
-                  ? "Validation..."
-                  : "J’ai laissé mon avis"}
-              </button>
-            ) : null}
-
-            {reviewValidated ? (
-              <button
-                className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-60"
-                onClick={handleSpin}
-                type="button"
-                disabled={spinLoading}
-              >
-                {spinLoading ? "Tirage..." : "Lancer la roue"}
-              </button>
+          <>
+            {spinResult ? (
+              <div className="w-full rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-center text-sm text-emerald-700">
+                <p className="font-semibold">
+                  {spinResult.type === "win"
+                    ? "Bravo !"
+                    : "Merci d'avoir joué !"}
+                </p>
+                <p className="mt-1">{spinResult.label}</p>
+              </div>
             ) : (
-              <p className="text-xs text-zinc-400">
-                Validez votre avis pour débloquer la roue.
-              </p>
-            )}
-          </div>
-        )}
+              <div className="w-full space-y-3">
+                {participationId ? (
+                  <button
+                    type="button"
+                    className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-100 disabled:opacity-60"
+                    onClick={handleReviewConfirm}
+                    disabled={reviewLoading}
+                  >
+                    {reviewLoading
+                      ? "Validation..."
+                      : "J'ai laissé mon avis"}
+                  </button>
+                ) : null}
 
-        <div className="w-full">
-          <WheelPreview
-            items={wheelItems}
-            baseParticipations={baseParticipations}
-            size={200}
-          />
-        </div>
+                {reviewValidated ? (
+                  <button
+                    type="button"
+                    className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-60"
+                    onClick={handleSpin}
+                    disabled={spinLoading}
+                  >
+                    {spinLoading ? "Tirage..." : "Lancer la roue"}
+                  </button>
+                ) : (
+                  <p className="text-xs text-zinc-400">
+                    Validez votre avis pour lancer la roue.
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="w-full">
+              <WheelPreview
+                items={wheelItems}
+                baseParticipations={baseParticipations}
+                size={200}
+              />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
