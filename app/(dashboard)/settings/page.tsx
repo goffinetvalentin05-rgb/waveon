@@ -4,6 +4,14 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import type { CampaignObjective } from "@/types/db";
 import Sidebar from "../dashboard/components/Sidebar";
+import BrandColorPicker from "@/components/BrandColorPicker";
+
+const COLOR_PRESETS = [
+  { primary: "#0f172a", secondary: "#6366f1", label: "Indigo" },
+  { primary: "#1e3a2f", secondary: "#22c55e", label: "Vert" },
+  { primary: "#422006", secondary: "#f97316", label: "Orange" },
+  { primary: "#0c4a6e", secondary: "#0ea5e9", label: "Bleu" },
+];
 
 type CampaignRow = {
   id: string;
@@ -29,6 +37,8 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [activeCampaign, setActiveCampaign] = useState<CampaignRow | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [primaryColor, setPrimaryColor] = useState(COLOR_PRESETS[0].primary);
+  const [secondaryColor, setSecondaryColor] = useState(COLOR_PRESETS[0].secondary);
 
   useEffect(() => {
     const init = async () => {
@@ -160,6 +170,27 @@ export default function SettingsPage() {
                 disabled
               />
             </div>
+          </div>
+        </section>
+
+        <section className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_45px_rgba(15,23,42,0.35)]">
+          <h2 className="text-lg font-semibold text-white">
+            Apparence de la roue
+          </h2>
+          <p className="mt-1 text-sm text-slate-400">
+            Couleurs de la roue (sauvegarde à venir).
+          </p>
+          <div className="mt-4">
+            <BrandColorPicker
+              label=""
+              primaryColor={primaryColor}
+              secondaryColor={secondaryColor}
+              onChange={(p, s) => {
+                setPrimaryColor(p);
+                setSecondaryColor(s);
+              }}
+              presets={COLOR_PRESETS}
+            />
           </div>
         </section>
       </main>

@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { slugify } from "@/lib/slug";
+import { getDominantColorFromImageUrl } from "@/lib/colorUtils";
+import BrandColorPicker from "@/components/BrandColorPicker";
 import OnboardingPreview from "./OnboardingPreview";
 import type { WheelSegment } from "@/app/(public)/[slug]/RewardWheel";
 
@@ -71,6 +73,13 @@ export default function OnboardingPage() {
     return () => {
       if (logoPreviewUrl) URL.revokeObjectURL(logoPreviewUrl);
     };
+  }, [logoPreviewUrl]);
+
+  useEffect(() => {
+    if (!logoPreviewUrl) return;
+    getDominantColorFromImageUrl(logoPreviewUrl).then((hex) => {
+      setPrimaryColor(hex);
+    });
   }, [logoPreviewUrl]);
 
   useEffect(() => {
@@ -501,38 +510,21 @@ export default function OnboardingPage() {
                 ) : null}
               </div>
 
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-                  Couleurs
-                </label>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {COLOR_PRESETS.map((preset) => (
-                    <button
-                      key={preset.label}
-                      type="button"
-                      onClick={() => {
-                        setPrimaryColor(preset.primary);
-                        setSecondaryColor(preset.secondary);
-                      }}
-                      className={`flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm ${
-                        primaryColor === preset.primary
-                          ? "border-zinc-900 bg-zinc-100"
-                          : "border-zinc-200 hover:bg-zinc-50"
-                      }`}
-                    >
-                      <span
-                        className="h-5 w-5 rounded-full border border-zinc-200"
-                        style={{ backgroundColor: preset.primary }}
-                      />
-                      <span
-                        className="h-5 w-5 rounded-full border border-zinc-200"
-                        style={{ backgroundColor: preset.secondary }}
-                      />
-                      {preset.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <BrandColorPicker
+                label="Couleurs"
+                primaryColor={primaryColor}
+                secondaryColor={secondaryColor}
+                onChange={(p, s) => {
+                  setPrimaryColor(p);
+                  setSecondaryColor(s);
+                }}
+                presets={COLOR_PRESETS}
+              />
+              {logoPreviewUrl ? (
+                <p className="text-xs text-zinc-500">
+                  La couleur principale a été suggérée depuis votre logo. Vous pouvez la modifier ci-dessus.
+                </p>
+              ) : null}
 
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
