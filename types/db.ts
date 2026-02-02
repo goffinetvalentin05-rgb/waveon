@@ -15,6 +15,10 @@ export type Campaign = {
   google_review_url?: string | null;
   instagram_url?: string | null;
   win_ratio?: number | null;
+  /** Optional custom CTA description (e.g. "Laissez un avis Google pour tourner la roue") */
+  cta_description?: string | null;
+  /** Optional custom CTA button label (e.g. "Laisser un avis") */
+  cta_button_label?: string | null;
 };
 
 export type Reward = {

@@ -20,6 +20,40 @@ type PublicCampaignClientProps = {
 
 const UNLOCK_DELAY_MS = 20 * 1000;
 
+const DEFAULT_CTA: Record<
+  CampaignObjective,
+  { description: string; buttonLabel: string }
+> = {
+  google: {
+    description: "Laissez un avis Google pour tourner la roue",
+    buttonLabel: "Laisser un avis",
+  },
+  instagram: {
+    description: "Suivez-nous sur Instagram pour tourner la roue",
+    buttonLabel: "S'abonner sur Instagram",
+  },
+  facebook: {
+    description: "Suivez-nous sur Facebook pour tourner la roue",
+    buttonLabel: "S'abonner sur Facebook",
+  },
+  tiktok: {
+    description: "Suivez-nous sur TikTok pour tourner la roue",
+    buttonLabel: "S'abonner sur TikTok",
+  },
+};
+
+function getCtaText(
+  objective: CampaignObjective,
+  customDescription?: string | null,
+  customButtonLabel?: string | null
+) {
+  const defaults = DEFAULT_CTA[objective];
+  return {
+    description: customDescription?.trim() || defaults.description,
+    buttonLabel: customButtonLabel?.trim() || defaults.buttonLabel,
+  };
+}
+
 function isValidReviewLink(url: string | null | undefined): boolean {
   const trimmed = typeof url === "string" ? url.trim() : "";
   return trimmed.length > 0;
@@ -61,6 +95,16 @@ export default function PublicCampaignClient({
   const visitedRef = useRef(false);
 
   const reviewLinkValid = isValidReviewLink(targetUrl);
+
+  const ctaText = useMemo(
+    () =>
+      getCtaText(
+        objective,
+        campaign.cta_description,
+        campaign.cta_button_label
+      ),
+    [objective, campaign.cta_description, campaign.cta_button_label]
+  );
 
   const segments: WheelSegment[] = useMemo(
     () =>
@@ -372,7 +416,7 @@ export default function PublicCampaignClient({
             </div>
             <div className="w-full space-y-3 text-center">
               <p className="text-sm text-zinc-600">
-                {isInDelay ? "Préparation de la roue…" : "Laissez un avis pour tourner la roue"}
+                {isInDelay ? "Préparation de la roue…" : ctaText.description}
               </p>
               {!isInDelay ? (
                 <button
@@ -381,7 +425,7 @@ export default function PublicCampaignClient({
                   disabled={!reviewLinkValid || actionLoading}
                   className="w-full rounded-xl bg-zinc-900 px-5 py-3.5 text-base font-semibold text-white shadow-lg transition hover:bg-zinc-800 active:scale-[0.98] disabled:opacity-60"
                 >
-                  {actionLoading ? "Ouverture…" : "Laisser un avis"}
+                  {actionLoading ? "Ouverture…" : ctaText.buttonLabel}
                 </button>
               ) : null}
             </div>

@@ -18,6 +18,8 @@ type CampaignRow = {
   link?: string | null;
   is_active?: boolean | null;
   created_at: string;
+  cta_description?: string | null;
+  cta_button_label?: string | null;
 };
 
 const objectiveLabels: Record<CampaignObjective, string> = {
@@ -52,6 +54,8 @@ export default function EditCampaignPage() {
   const [slug, setSlug] = useState("");
   const [objective, setObjective] = useState<CampaignObjective | null>(null);
   const [link, setLink] = useState("");
+  const [ctaDescription, setCtaDescription] = useState("");
+  const [ctaButtonLabel, setCtaButtonLabel] = useState("");
 
   useEffect(() => {
     if (!campaignId) return;
@@ -77,6 +81,8 @@ export default function EditCampaignPage() {
       setSlug(row.slug ?? "");
       setObjective(row.objective ?? null);
       setLink(row.link ?? "");
+      setCtaDescription(row.cta_description ?? "");
+      setCtaButtonLabel(row.cta_button_label ?? "");
       setLoading(false);
     };
 
@@ -106,6 +112,8 @@ export default function EditCampaignPage() {
         slug: finalSlug,
         objective: objective ?? campaign.objective,
         link: link.trim() || null,
+        cta_description: ctaDescription.trim() || null,
+        cta_button_label: ctaButtonLabel.trim() || null,
       })
       .eq("id", campaignId)
       .eq("user_id", campaign.user_id);
@@ -268,6 +276,38 @@ export default function EditCampaignPage() {
                   URL vers laquelle vos clients sont redirigés (ex. page Google
                   Avis).
                 </p>
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-medium text-slate-300">
+                  Texte CTA personnalisé (optionnel)
+                </label>
+                <p className="text-xs text-slate-400">
+                  Si vide, le texte par défaut selon l'objectif sera utilisé.
+                </p>
+                <div className="mt-2 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <input
+                      className="w-full rounded-lg border border-white/10 bg-[#121225] px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-indigo-400 focus:outline-none"
+                      placeholder="Ex : Laissez un avis pour tourner la roue"
+                      value={ctaDescription}
+                      onChange={(e) => setCtaDescription(e.target.value)}
+                    />
+                    <p className="mt-1 text-xs text-slate-500">
+                      Phrase affichée au-dessus du bouton
+                    </p>
+                  </div>
+                  <div>
+                    <input
+                      className="w-full rounded-lg border border-white/10 bg-[#121225] px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-indigo-400 focus:outline-none"
+                      placeholder="Ex : Laisser un avis"
+                      value={ctaButtonLabel}
+                      onChange={(e) => setCtaButtonLabel(e.target.value)}
+                    />
+                    <p className="mt-1 text-xs text-slate-500">
+                      Libellé du bouton d'action
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
