@@ -23,12 +23,19 @@ const COLOR_PRESETS = [
   { primary: "#0c4a6e", secondary: "#0ea5e9", label: "Bleu" },
 ];
 
-type WheelItemDraft = { id: string; label: string; kind: "win" | "lose" };
+type WheelItemDraft = {
+  id: string;
+  label: string;
+  kind: "win" | "lose";
+  max_wins: number;
+};
+
+const PARTICIPATION_PRESETS = [50, 100, 200] as const;
 
 const DEFAULT_WHEEL_ITEMS: WheelItemDraft[] = [
-  { id: "1", label: "Réduction 10%", kind: "win" },
-  { id: "2", label: "Café offert", kind: "win" },
-  { id: "3", label: "Pas de gain", kind: "lose" },
+  { id: "1", label: "Réduction 10%", kind: "win", max_wins: 10 },
+  { id: "2", label: "Café offert", kind: "win", max_wins: 10 },
+  { id: "3", label: "Pas de gain", kind: "lose", max_wins: 0 },
 ];
 
 const hasSupabase =
@@ -47,6 +54,8 @@ export default function OnboardingPage() {
   const [businessType, setBusinessType] = useState("");
   const [reviewLink, setReviewLink] = useState("");
 
+  const [baseParticipations, setBaseParticipations] = useState<number>(100);
+  const [customParticipations, setCustomParticipations] = useState("");
   const [wheelItems, setWheelItems] = useState<WheelItemDraft[]>(DEFAULT_WHEEL_ITEMS);
   const [primaryColor, setPrimaryColor] = useState(COLOR_PRESETS[0].primary);
   const [secondaryColor, setSecondaryColor] = useState(COLOR_PRESETS[0].secondary);
@@ -78,24 +87,56 @@ export default function OnboardingPage() {
     [wheelItems]
   );
 
+  const totalParticipations =
+    PARTICIPATION_PRESETS.includes(baseParticipations as 50 | 100 | 200)
+      ? baseParticipations
+      : (() => {
+          const n = parseInt(customParticipations, 10);
+          return Number.isFinite(n) && n >= 1 ? n : 100;
+        })();
+
+  const totalUsed = useMemo(
+    () =>
+      wheelItems
+        .filter((i) => i.kind === "win")
+        .reduce((sum, i) => sum + Math.max(0, i.max_wins ?? 0), 0),
+    [wheelItems]
+  );
+
+  const distributionError =
+    totalUsed > totalParticipations
+      ? `Les gains (${totalUsed}) ne peuvent pas dépasser le nombre de participations (${totalParticipations}). Réduisez le nombre de fois par lot ou augmentez le total.`
+      : null;
+
   const canStep1 =
     businessName.trim().length >= 2 &&
     email.trim().length >= 5 &&
     password.length >= 6 &&
     reviewLink.trim().length >= 10;
-  const canStep2 = wheelItems.length >= 1 && wheelItems.every((i) => i.label.trim().length > 0);
+  const canStep2 =
+    wheelItems.length >= 1 &&
+    wheelItems.every((i) => i.label.trim().length > 0) &&
+    totalParticipations >= 1 &&
+    !distributionError &&
+    totalUsed <= totalParticipations;
   const totalSteps = 4;
 
   const handleAddWheelItem = () => {
     setWheelItems((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), label: "Nouveau lot", kind: "win" as const },
+      { id: crypto.randomUUID(), label: "Nouveau lot", kind: "win", max_wins: 1 },
     ]);
   };
 
   const handleUpdateWheelItem = (id: string, patch: Partial<WheelItemDraft>) => {
     setWheelItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, ...patch } : i))
+      prev.map((i) => {
+        if (i.id !== id) return i;
+        const next = { ...i, ...patch };
+        if (patch.kind === "lose") next.max_wins = 0;
+        if (patch.kind === "win" && i.kind === "lose") next.max_wins = next.max_wins ?? 1;
+        return next;
+      })
     );
   };
 
@@ -152,17 +193,13 @@ export default function OnboardingPage() {
         return;
       }
 
-      const baseParticipations = 100;
-      const winItems = wheelItems.filter((i) => i.kind === "win");
-      const winCount = winItems.length;
-      const maxWinsPerWin = winCount > 0 ? Math.floor(baseParticipations / winCount) : 0;
-      let remainder = baseParticipations - maxWinsPerWin * winCount;
+      const baseParticipationsValue = totalParticipations;
 
       const { data: wheel, error: wheelError } = await supabase
         .from("wheels")
         .insert({
           campaign_id: campaign.id,
-          base_participations: baseParticipations,
+          base_participations: baseParticipationsValue,
           is_active: true,
         })
         .select("id")
@@ -176,10 +213,7 @@ export default function OnboardingPage() {
 
       let pos = 0;
       for (const item of wheelItems) {
-        const extra = item.kind === "win" && remainder > 0 ? 1 : 0;
-        if (item.kind === "win" && remainder > 0) remainder--;
-        const maxWins =
-          item.kind === "win" ? Math.max(1, maxWinsPerWin + extra) : 0;
+        const maxWins = item.kind === "win" ? Math.max(0, item.max_wins ?? 0) : 0;
         const { error: itemError } = await supabase.from("wheel_items").insert({
           wheel_id: wheel.id,
           label: item.label.trim(),
@@ -344,17 +378,57 @@ export default function OnboardingPage() {
 
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                  Sur combien de participations souhaitez-vous répartir vos gains ?
+                </label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {PARTICIPATION_PRESETS.map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => {
+                        setBaseParticipations(n);
+                        setCustomParticipations("");
+                      }}
+                      className={`rounded-xl border-2 px-4 py-2 text-sm font-medium transition ${
+                        baseParticipations === n && !customParticipations
+                          ? "border-zinc-900 bg-zinc-100 text-zinc-900"
+                          : "border-zinc-200 text-zinc-600 hover:bg-zinc-50"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={1}
+                      max={9999}
+                      placeholder="Personnalisé"
+                      className="w-24 rounded-xl border border-zinc-200 px-3 py-2 text-sm focus:border-zinc-400 focus:outline-none"
+                      value={customParticipations}
+                      onChange={(e) => {
+                        setCustomParticipations(e.target.value.replace(/\D/g, ""));
+                        if (e.target.value.trim()) setBaseParticipations(0);
+                      }}
+                    />
+                    <span className="text-xs text-zinc-400">participations</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
                   Lots de la roue
                 </label>
                 <div className="mt-2 space-y-2">
                   {wheelItems.map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50/50 p-3"
+                      className="flex flex-wrap items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50/50 p-3"
                     >
                       <input
                         type="text"
-                        className="flex-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-zinc-400 focus:outline-none"
+                        className="min-w-[120px] flex-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-zinc-400 focus:outline-none"
                         value={item.label}
                         onChange={(e) =>
                           handleUpdateWheelItem(item.id, { label: e.target.value })
@@ -373,6 +447,27 @@ export default function OnboardingPage() {
                         <option value="win">Gagné</option>
                         <option value="lose">Perdu</option>
                       </select>
+                      {item.kind === "win" ? (
+                        <div className="flex items-center gap-1.5">
+                          <label className="sr-only">
+                            Nombre de fois gagnable
+                          </label>
+                          <input
+                            type="number"
+                            min={0}
+                            max={totalParticipations}
+                            className="w-16 rounded-lg border border-zinc-200 px-2 py-2 text-sm focus:border-zinc-400 focus:outline-none"
+                            value={item.max_wins}
+                            onChange={(e) => {
+                              const v = parseInt(e.target.value, 10);
+                              handleUpdateWheelItem(item.id, {
+                                max_wins: Number.isFinite(v) ? Math.max(0, v) : 0,
+                              });
+                            }}
+                          />
+                          <span className="text-xs text-zinc-500">fois</span>
+                        </div>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => handleRemoveWheelItem(item.id)}
@@ -391,6 +486,19 @@ export default function OnboardingPage() {
                 >
                   + Ajouter un lot
                 </button>
+                <p className="mt-3 text-sm font-medium text-zinc-700">
+                  Utilisé : {totalUsed} / {totalParticipations} participations
+                  {totalUsed <= totalParticipations && totalParticipations - totalUsed > 0 ? (
+                    <span className="ml-1 text-zinc-500">
+                      (le reste = « Perdu »)
+                    </span>
+                  ) : null}
+                </p>
+                {distributionError ? (
+                  <p className="mt-2 text-sm text-rose-600" role="alert">
+                    {distributionError}
+                  </p>
+                ) : null}
               </div>
 
               <div>
@@ -519,10 +627,13 @@ export default function OnboardingPage() {
                 <ul className="mt-1 list-inside list-disc">
                   {wheelItems.map((i) => (
                     <li key={i.id}>
-                      {i.label} ({i.kind === "win" ? "gagné" : "perdu"})
+                      {i.label} ({i.kind === "win" ? `${i.max_wins} fois gagnable` : "perdu"})
                     </li>
                   ))}
                 </ul>
+                <p className="mt-2 text-zinc-600">
+                  Utilisé : {totalUsed} / {totalParticipations} participations
+                </p>
                 <p className="mt-3 font-medium text-zinc-900">Compte</p>
                 <p className="mt-1">{email}</p>
               </div>
