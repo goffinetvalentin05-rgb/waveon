@@ -171,24 +171,19 @@ export default function LoginPage() {
             {mode === "login" ? (
               <>
                 Pas encore de compte ?{" "}
-                <button
-                  className="font-semibold text-zinc-900"
-                  type="button"
-                  onClick={() => setMode("register")}
+                <a
+                  href="/onboarding"
+                  className="font-semibold text-zinc-900 hover:underline"
                 >
                   S’inscrire
-                </button>
+                </a>
               </>
             ) : (
               <>
                 Déjà un compte ?{" "}
-                <button
-                  className="font-semibold text-zinc-900"
-                  type="button"
-                  onClick={() => setMode("login")}
-                >
+                <a href="/login" className="font-semibold text-zinc-900 hover:underline">
                   Se connecter
-                </button>
+                </a>
               </>
             )}
           </div>
