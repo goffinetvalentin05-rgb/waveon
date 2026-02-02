@@ -387,7 +387,7 @@ export default function OnboardingPage() {
 
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-                  Sur combien de participations souhaitez-vous répartir vos gains ?
+                  Sur combien de participations souhaitez-vous distribuer vos lots ?
                 </label>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {PARTICIPATION_PRESETS.map((n) => (
@@ -457,14 +457,19 @@ export default function OnboardingPage() {
                         <option value="lose">Perdu</option>
                       </select>
                       {item.kind === "win" ? (
-                        <div className="flex items-center gap-1.5">
-                          <label className="sr-only">
-                            Nombre de fois gagnable
+                        <div className="flex items-center gap-2">
+                          <label
+                            htmlFor={`max-wins-${item.id}`}
+                            className="text-xs font-medium text-zinc-500 whitespace-nowrap"
+                          >
+                            Nb. de fois gagnable
                           </label>
                           <input
+                            id={`max-wins-${item.id}`}
                             type="number"
                             min={0}
                             max={totalParticipations}
+                            aria-label="Nombre de fois que ce lot peut être gagné"
                             className="w-16 rounded-lg border border-zinc-200 px-2 py-2 text-sm focus:border-zinc-400 focus:outline-none"
                             value={item.max_wins}
                             onChange={(e) => {
@@ -474,7 +479,6 @@ export default function OnboardingPage() {
                               });
                             }}
                           />
-                          <span className="text-xs text-zinc-500">fois</span>
                         </div>
                       ) : null}
                       <button
@@ -652,6 +656,11 @@ export default function OnboardingPage() {
                 onClick={() => setStep((s) => s + 1)}
                 disabled={
                   (step === 1 && !canStep1) || (step === 2 && !canStep2)
+                }
+                title={
+                  step === 2 && distributionError
+                    ? distributionError
+                    : undefined
                 }
                 className="rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-50"
               >
