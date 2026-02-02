@@ -231,7 +231,16 @@ export default function PublicCampaignClient({
   };
 
   const handleSpinClick = async () => {
-    if (!participationId || !clientToken) return;
+    if (!clientToken) {
+      setActionError("Session invalide. Rechargez la page et réessayez.");
+      return;
+    }
+    if (!participationId) {
+      setActionError(
+        "Partipation non enregistrée. Veuillez d'abord cliquer sur « Laisser un avis Google » pour participer."
+      );
+      return;
+    }
     setSpinLoading(true);
     setActionError(null);
 
@@ -283,7 +292,13 @@ export default function PublicCampaignClient({
         setSpinLoading(false);
         return;
       }
-      setActionError(data?.error ?? "Tirage impossible.");
+      const errMsg =
+        data?.error?.includes("REVIEW_NOT_VALIDATED")
+          ? "Aucun avis validé. Veuillez laisser un avis avant de jouer."
+          : data?.error?.includes("POOL_EMPTY")
+            ? "Plus de lots disponibles."
+            : data?.error ?? "Tirage impossible.";
+      setActionError(errMsg);
       setSpinLoading(false);
       return;
     }
@@ -358,6 +373,31 @@ export default function PublicCampaignClient({
                   </button>
                 </>
               )}
+            </div>
+          </div>
+        ) : !participationId ? (
+          <div className="w-full space-y-6">
+            <div className="relative flex flex-col items-center" style={{ filter: "brightness(0.92)" }}>
+              <RewardWheel
+                segments={segments}
+                size={260}
+                businessName={campaign.business_name}
+                logoUrl={campaign.logo_url}
+                resultLabel={null}
+              />
+            </div>
+            <div className="w-full space-y-3 text-center">
+              <p className="text-sm text-zinc-600">
+                Enregistrez votre participation pour pouvoir tourner la roue.
+              </p>
+              <button
+                type="button"
+                onClick={handleUnlockWheel}
+                disabled={!reviewLinkValid || actionLoading}
+                className="w-full rounded-xl bg-zinc-900 px-5 py-3.5 text-base font-semibold text-white shadow-lg transition hover:bg-zinc-800 active:scale-[0.98] disabled:opacity-60"
+              >
+                {actionLoading ? "Ouverture…" : objectiveConfig[objective].playCta}
+              </button>
             </div>
           </div>
         ) : (
