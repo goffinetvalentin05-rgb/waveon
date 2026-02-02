@@ -43,7 +43,6 @@ export type Wheel = {
   is_active: boolean;
   base_participations: number;
   created_at: string;
-  updated_at: string;
 };
 
 export type WheelItem = {

@@ -60,7 +60,7 @@ export default function WheelConfigurator({ campaignId }: WheelConfiguratorProps
 
       const { data: wheel, error: wheelError } = await supabase
         .from("wheels")
-        .select("id, campaign_id, base_participations, created_at, updated_at")
+        .select("id, campaign_id, base_participations, created_at")
         .eq("campaign_id", campaignId)
         .maybeSingle();
 
@@ -76,7 +76,7 @@ export default function WheelConfigurator({ campaignId }: WheelConfiguratorProps
         const { data: createdWheel, error: createError } = await supabase
           .from("wheels")
           .insert({ campaign_id: campaignId, base_participations: 100 })
-          .select("id, campaign_id, base_participations, created_at, updated_at")
+          .select("id, campaign_id, base_participations, created_at")
           .single();
 
         if (createError || !createdWheel) {
@@ -142,7 +142,12 @@ export default function WheelConfigurator({ campaignId }: WheelConfiguratorProps
   };
 
   const handleSave = async () => {
-    if (!wheelId) return;
+    console.log("[WheelConfigurator] Save button clicked");
+    if (!wheelId) {
+      console.warn("[WheelConfigurator] Save skipped: no wheelId");
+      setError("Roue non chargée. Rechargez la page.");
+      return;
+    }
     setError(null);
     setSuccess(null);
 
@@ -158,6 +163,7 @@ export default function WheelConfigurator({ campaignId }: WheelConfiguratorProps
       return;
     }
 
+    console.log("[WheelConfigurator] Save executing", { wheelId, itemsCount: items.length });
     setSaving(true);
     try {
       const { error: wheelUpdateError } = await supabase
@@ -416,7 +422,10 @@ export default function WheelConfigurator({ campaignId }: WheelConfiguratorProps
                 </span>
                 <button
                   type="button"
-                  onClick={handleSave}
+                  onClick={() => {
+                    console.log("[WheelConfigurator] Save button onClick fired");
+                    handleSave();
+                  }}
                   disabled={saving || isOver}
                   className="rounded-full bg-gradient-to-r from-violet-500 via-indigo-500 to-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-60"
                 >
