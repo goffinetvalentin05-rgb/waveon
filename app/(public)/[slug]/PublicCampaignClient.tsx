@@ -18,20 +18,12 @@ type PublicCampaignClientProps = {
   baseParticipations: number;
 };
 
-const objectiveConfig: Record<CampaignObjective, { playCta: string }> = {
-  google: { playCta: "Laisser un avis Google pour jouer" },
-  instagram: { playCta: "S'abonner sur Instagram pour jouer" },
-  facebook: { playCta: "S'abonner sur Facebook pour jouer" },
-  tiktok: { playCta: "S'abonner sur TikTok pour jouer" },
-};
+const UNLOCK_DELAY_MS = 20 * 1000;
 
 function isValidReviewLink(url: string | null | undefined): boolean {
   const trimmed = typeof url === "string" ? url.trim() : "";
   return trimmed.length > 0;
 }
-
-/** Delay in ms before wheel unlocks after user clicked the review link (30–60 s). */
-const REVIEW_DELAY_MS = 45 * 1000;
 
 const STORAGE_KEYS = {
   wheelUnlocked: (campaignId: string) => `waevon_wheel_unlocked_${campaignId}`,
@@ -45,8 +37,8 @@ function getRemainingDelayMs(campaignId: string): number | null {
   const clickAt = Number(raw);
   if (!Number.isFinite(clickAt)) return null;
   const elapsed = Date.now() - clickAt;
-  if (elapsed >= REVIEW_DELAY_MS) return 0;
-  return REVIEW_DELAY_MS - elapsed;
+  if (elapsed >= UNLOCK_DELAY_MS) return 0;
+  return UNLOCK_DELAY_MS - elapsed;
 }
 
 export default function PublicCampaignClient({
@@ -58,7 +50,6 @@ export default function PublicCampaignClient({
 }: PublicCampaignClientProps) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const [reviewLoading, setReviewLoading] = useState(false);
   const [spinLoading, setSpinLoading] = useState(false);
   const [clientToken, setClientToken] = useState<string | null>(null);
   const [participationId, setParticipationId] = useState<string | null>(null);
@@ -79,7 +70,8 @@ export default function PublicCampaignClient({
     [wheelItems]
   );
 
-  const isInDelay = countdownSeconds != null && countdownSeconds > 0;
+  const isInDelay =
+    countdownSeconds != null && countdownSeconds > 0;
 
   useEffect(() => {
     const storedToken = window.localStorage.getItem("waevon_client_token");
@@ -205,7 +197,7 @@ export default function PublicCampaignClient({
     if (typeof window !== "undefined") {
       window.localStorage.setItem(STORAGE_KEYS.reviewClickAt(campaign.id), String(clickAt));
     }
-    setCountdownSeconds(Math.ceil(REVIEW_DELAY_MS / 1000));
+    setCountdownSeconds(Math.ceil(UNLOCK_DELAY_MS / 1000));
 
     // 3. Create participation in background (do not await before open)
     setActionLoading(true);
@@ -235,20 +227,45 @@ export default function PublicCampaignClient({
       setActionError("Session invalide. Rechargez la page et réessayez.");
       return;
     }
-    if (!participationId) {
-      setActionError(
-        "Partipation non enregistrée. Veuillez d'abord cliquer sur « Laisser un avis Google » pour participer."
-      );
-      return;
-    }
     setSpinLoading(true);
     setActionError(null);
 
+    let activeParticipationId = participationId;
+    if (!activeParticipationId) {
+      const partRes = await fetch("/api/participations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campaignId: campaign.id, clientToken }),
+      });
+      const partData = await partRes.json();
+      if (partRes.ok && partData?.participationId) {
+        const id = String(partData.participationId);
+        activeParticipationId = id;
+        setParticipationId(id);
+        window.localStorage.setItem(
+          `waevon_participation_${campaign.id}`,
+          id
+        );
+      } else {
+        setActionError("Impossible de participer. Réessayez.");
+        setSpinLoading(false);
+        return;
+      }
+    }
+
+    if (!activeParticipationId) {
+      setSpinLoading(false);
+      return;
+    }
+    const pid = activeParticipationId;
     if (!reviewValidated) {
       const confirmRes = await fetch("/api/review/confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ participationId, clientToken }),
+        body: JSON.stringify({
+          participationId: pid,
+          clientToken,
+        }),
       });
       const confirmData = await confirmRes.json();
       if (confirmRes.ok && confirmData?.validated) {
@@ -265,7 +282,7 @@ export default function PublicCampaignClient({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         campaignId: campaign.id,
-        participationId,
+        participationId: pid,
         clientToken,
       }),
     });
@@ -354,50 +371,19 @@ export default function PublicCampaignClient({
               />
             </div>
             <div className="w-full space-y-3 text-center">
-              {isInDelay ? (
-              <p className="text-center text-sm text-zinc-600">
-                La roue sera prête dans un instant.
-              </p>
-              ) : (
-                <>
-                  <p className="text-sm text-zinc-600">
-                    Tentez votre chance en laissant un avis.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleUnlockWheel}
-                    disabled={!reviewLinkValid || actionLoading}
-                    className="w-full rounded-xl bg-zinc-900 px-5 py-3.5 text-base font-semibold text-white shadow-lg transition hover:bg-zinc-800 active:scale-[0.98] disabled:opacity-60"
-                  >
-                    {actionLoading ? "Ouverture…" : objectiveConfig[objective].playCta}
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        ) : !participationId ? (
-          <div className="w-full space-y-6">
-            <div className="relative flex flex-col items-center" style={{ filter: "brightness(0.92)" }}>
-              <RewardWheel
-                segments={segments}
-                size={260}
-                businessName={campaign.business_name}
-                logoUrl={campaign.logo_url}
-                resultLabel={null}
-              />
-            </div>
-            <div className="w-full space-y-3 text-center">
               <p className="text-sm text-zinc-600">
-                Enregistrez votre participation pour pouvoir tourner la roue.
+                {isInDelay ? "Préparation de la roue…" : "Laissez un avis pour tourner la roue"}
               </p>
-              <button
-                type="button"
-                onClick={handleUnlockWheel}
-                disabled={!reviewLinkValid || actionLoading}
-                className="w-full rounded-xl bg-zinc-900 px-5 py-3.5 text-base font-semibold text-white shadow-lg transition hover:bg-zinc-800 active:scale-[0.98] disabled:opacity-60"
-              >
-                {actionLoading ? "Ouverture…" : objectiveConfig[objective].playCta}
-              </button>
+              {!isInDelay ? (
+                <button
+                  type="button"
+                  onClick={handleUnlockWheel}
+                  disabled={!reviewLinkValid || actionLoading}
+                  className="w-full rounded-xl bg-zinc-900 px-5 py-3.5 text-base font-semibold text-white shadow-lg transition hover:bg-zinc-800 active:scale-[0.98] disabled:opacity-60"
+                >
+                  {actionLoading ? "Ouverture…" : "Laisser un avis"}
+                </button>
+              ) : null}
             </div>
           </div>
         ) : (
