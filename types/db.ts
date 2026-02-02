@@ -10,7 +10,6 @@ export type Campaign = {
   logo_url: string | null;
   objective?: CampaignObjective | null;
   link?: string | null;
-  target_url?: string | null;
   is_active?: boolean | null;
   created_at: string;
   google_review_url?: string | null;

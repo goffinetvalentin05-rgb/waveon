@@ -14,7 +14,6 @@ type CampaignRow = {
   address?: string | null;
   objective?: CampaignObjective | null;
   link?: string | null;
-  target_url?: string | null;
   is_active?: boolean | null;
   created_at: string;
 };
@@ -61,7 +60,7 @@ export default function SettingsPage() {
   }, []);
 
   const targetUrl =
-    activeCampaign?.target_url || activeCampaign?.link || "";
+    activeCampaign?.link ?? "";
 
   if (loading) {
     return (

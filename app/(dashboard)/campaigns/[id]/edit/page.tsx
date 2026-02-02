@@ -16,7 +16,6 @@ type CampaignRow = {
   address?: string | null;
   objective?: CampaignObjective | null;
   link?: string | null;
-  target_url?: string | null;
   is_active?: boolean | null;
   created_at: string;
 };
@@ -77,7 +76,7 @@ export default function EditCampaignPage() {
       setAddress(row.address ?? "");
       setSlug(row.slug ?? "");
       setObjective(row.objective ?? null);
-      setLink(row.link ?? row.target_url ?? "");
+      setLink(row.link ?? "");
       setLoading(false);
     };
 
@@ -107,7 +106,6 @@ export default function EditCampaignPage() {
         slug: finalSlug,
         objective: objective ?? campaign.objective,
         link: link.trim() || null,
-        target_url: link.trim() || null,
       })
       .eq("id", campaignId)
       .eq("user_id", campaign.user_id);

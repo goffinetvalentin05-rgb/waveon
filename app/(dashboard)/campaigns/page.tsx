@@ -16,7 +16,6 @@ type CampaignRow = {
   address?: string | null;
   objective?: CampaignObjective | null;
   link?: string | null;
-  target_url?: string | null;
   is_active?: boolean | null;
   created_at: string;
 };
@@ -38,7 +37,7 @@ export default function CampaignsPage() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const getTargetUrl = (campaign?: CampaignRow | null) =>
-    campaign?.target_url || campaign?.link || "";
+    campaign?.link ?? "";
 
   const fetchCampaigns = async (id: string) => {
     const { data, error: fetchError } = await supabase

@@ -52,10 +52,9 @@ export default async function PublicCampaignPage({ params }: PageProps) {
       (campaign.instagram_url ? "instagram" : null);
 
     const targetUrl =
-      campaign.target_url ??
+      campaign.link ??
       (objective === "google" ? campaign.google_review_url : null) ??
       (objective === "instagram" ? campaign.instagram_url : null) ??
-      campaign.link ??
       null;
 
     const { data: wheel } = await supabase

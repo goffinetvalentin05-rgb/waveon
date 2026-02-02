@@ -18,7 +18,6 @@ type CampaignRow = {
   address?: string | null;
   objective?: CampaignObjective | null;
   link?: string | null;
-  target_url?: string | null;
   is_active?: boolean | null;
   created_at: string;
 };
@@ -96,7 +95,7 @@ export default function CampaignDetailPage() {
   }, [campaignId]);
 
   const conversion = scans > 0 ? Math.round((actions / scans) * 100) : 0;
-  const targetUrl = campaign?.target_url || campaign?.link || "";
+  const targetUrl = campaign?.link ?? "";
 
   if (loading) {
     return (

@@ -19,7 +19,6 @@ type CampaignRow = {
   address?: string | null;
   objective?: CampaignObjective | null;
   link?: string | null;
-  target_url?: string | null;
   is_active?: boolean | null;
   created_at: string;
 };
@@ -46,7 +45,7 @@ export default function DashboardPage() {
   const [showWizard, setShowWizard] = useState(false);
 
   const getTargetUrl = (campaign?: CampaignRow | null) =>
-    campaign?.target_url || campaign?.link || "";
+    campaign?.link ?? "";
 
   const publicUrl = useMemo(() => {
     if (!activeCampaign) return "";
