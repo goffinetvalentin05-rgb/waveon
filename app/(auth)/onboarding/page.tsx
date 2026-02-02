@@ -140,8 +140,6 @@ export default function OnboardingPage() {
           slug: finalSlug,
           objective: "google",
           link: reviewLink.trim(),
-          google_review_url: reviewLink.trim(),
-          target_url: reviewLink.trim(),
           logo_url: null,
           is_active: true,
         })
