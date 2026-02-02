@@ -49,6 +49,25 @@ function isValidReviewLink(url: string | null | undefined): boolean {
   return trimmed.length > 0;
 }
 
+/** Delay in ms before wheel unlocks after user clicked the review link (30–60 s). */
+const REVIEW_DELAY_MS = 45 * 1000;
+
+const STORAGE_KEYS = {
+  wheelUnlocked: (campaignId: string) => `waevon_wheel_unlocked_${campaignId}`,
+  reviewClickAt: (campaignId: string) => `waevon_review_click_at_${campaignId}`,
+} as const;
+
+function getRemainingDelayMs(campaignId: string): number | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.localStorage.getItem(STORAGE_KEYS.reviewClickAt(campaignId));
+  if (!raw) return null;
+  const clickAt = Number(raw);
+  if (!Number.isFinite(clickAt)) return null;
+  const elapsed = Date.now() - clickAt;
+  if (elapsed >= REVIEW_DELAY_MS) return 0;
+  return REVIEW_DELAY_MS - elapsed;
+}
+
 export default function PublicCampaignClient({
   campaign,
   objective,
@@ -65,6 +84,7 @@ export default function PublicCampaignClient({
   const [reviewValidated, setReviewValidated] = useState(false);
   const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
   const [isWheelUnlocked, setIsWheelUnlocked] = useState(false);
+  const [countdownSeconds, setCountdownSeconds] = useState<number | null>(null);
   const visitedRef = useRef(false);
 
   const reviewLinkValid = isValidReviewLink(targetUrl);
@@ -81,13 +101,42 @@ export default function PublicCampaignClient({
   }, []);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(
-      `waevon_wheel_unlocked_${campaign.id}`
-    );
-    if (stored === "true") {
+    const unlocked = window.localStorage.getItem(STORAGE_KEYS.wheelUnlocked(campaign.id));
+    if (unlocked === "true") {
       setIsWheelUnlocked(true);
+      setCountdownSeconds(null);
+      return;
     }
+    const remainingMs = getRemainingDelayMs(campaign.id);
+    if (remainingMs === null) {
+      setCountdownSeconds(null);
+      return;
+    }
+    if (remainingMs <= 0) {
+      setIsWheelUnlocked(true);
+      window.localStorage.setItem(STORAGE_KEYS.wheelUnlocked(campaign.id), "true");
+      setCountdownSeconds(null);
+      return;
+    }
+    setCountdownSeconds(Math.ceil(remainingMs / 1000));
   }, [campaign.id]);
+
+  useEffect(() => {
+    if (countdownSeconds == null || countdownSeconds <= 0) return;
+    const id = setInterval(() => {
+      setCountdownSeconds((prev) => {
+        if (prev == null || prev <= 1) {
+          setIsWheelUnlocked(true);
+          if (typeof window !== "undefined") {
+            window.localStorage.setItem(STORAGE_KEYS.wheelUnlocked(campaign.id), "true");
+          }
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [campaign.id, countdownSeconds]);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(
@@ -146,7 +195,7 @@ export default function PublicCampaignClient({
 
   /**
    * Opens the review/link in a new tab ONLY on user click (sync, no await before open).
-   * Then unlocks the wheel and creates participation in background.
+   * Stores review_click_at and starts countdown; wheel unlocks after REVIEW_DELAY_MS.
    */
   const handleUnlockWheel = () => {
     if (!reviewLinkValid || !clientToken) {
@@ -159,11 +208,12 @@ export default function PublicCampaignClient({
     // 1. Open link immediately in the same user gesture (avoids popup blockers)
     window.open(url, "_blank", "noopener,noreferrer");
 
-    // 2. Unlock wheel and persist
-    setIsWheelUnlocked(true);
+    // 2. Store timestamp and start countdown (wheel unlocks after delay)
+    const clickAt = Date.now();
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(`waevon_wheel_unlocked_${campaign.id}`, "true");
+      window.localStorage.setItem(STORAGE_KEYS.reviewClickAt(campaign.id), String(clickAt));
     }
+    setCountdownSeconds(Math.ceil(REVIEW_DELAY_MS / 1000));
 
     // 3. Create participation in background (do not await before open)
     setActionLoading(true);
@@ -300,10 +350,23 @@ export default function PublicCampaignClient({
 
         {!isWheelUnlocked ? (
           <div className="w-full space-y-4">
-            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+            {countdownSeconds != null && countdownSeconds > 0 ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+                <p className="text-center text-sm font-medium text-amber-800">
+                  La roue sera disponible dans{" "}
+                  <span className="font-semibold tabular-nums">
+                    {countdownSeconds} seconde{countdownSeconds !== 1 ? "s" : ""}
+                  </span>
+                </p>
+                <p className="mt-2 text-center text-xs text-amber-700">
+                  Merci de prendre le temps de laisser votre avis.
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
               <p className="mb-4 text-center text-sm text-zinc-600">
                 Cliquez sur le bouton ci-dessous pour ouvrir la page d’avis,
-                puis la roue sera débloquée.
+                puis la roue sera débloquée après un court délai.
               </p>
               <button
                 type="button"
@@ -316,6 +379,7 @@ export default function PublicCampaignClient({
                   : objectiveConfig[objective].unlockCta}
               </button>
             </div>
+            )}
             <div className="pointer-events-none select-none opacity-50">
               <WheelPreview
                 items={wheelItems}
