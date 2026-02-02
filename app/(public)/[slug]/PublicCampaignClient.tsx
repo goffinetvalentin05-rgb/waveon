@@ -91,6 +91,7 @@ export default function PublicCampaignClient({
   const [isWheelUnlocked, setIsWheelUnlocked] = useState(false);
   const [countdownSeconds, setCountdownSeconds] = useState<number | null>(null);
   const [shouldAnimateSpin, setShouldAnimateSpin] = useState(false);
+  const [hasSpun, setHasSpun] = useState(false);
   const visitedRef = useRef(false);
 
   const reviewLinkValid = isValidReviewLink(targetUrl);
@@ -190,21 +191,26 @@ export default function PublicCampaignClient({
   useEffect(() => {
     if (!clientToken) return;
     const loadSpinStatus = async () => {
-      const response = await fetch("/api/wheel/status", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          campaignId: campaign.id,
-          clientToken,
-        }),
-      });
-      const data = await response.json();
-      if (data?.spin) {
-        setSpinResult({
-          id: data.spin.id,
-          label: data.spin.label,
-          type: data.spin.type,
+      try {
+        const response = await fetch("/api/wheel/status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            campaignId: campaign.id,
+            clientToken,
+          }),
         });
+        const data = await response.json();
+        if (data?.spin) {
+          setSpinResult({
+            id: data.spin.id,
+            label: data.spin.label,
+            type: data.spin.type,
+          });
+          setHasSpun(true);
+        }
+      } catch (err) {
+        console.error("[Wheel] Status load failed (non-blocking):", err);
       }
     };
 
@@ -256,62 +262,60 @@ export default function PublicCampaignClient({
       .finally(() => setActionLoading(false));
   };
 
-  const handleSpinClick = async () => {
-    if (!clientToken) {
-      setActionError("Session invalide. Rechargez la page et réessayez.");
+  /**
+   * Spin handler: one spin per session, result selected BEFORE animation.
+   * No blocking conditions – if the button is visible, the spin always runs.
+   */
+  const handleSpinClick = () => {
+    if (hasSpun) {
+      console.log("[Wheel] Spin already done this session, ignoring click.");
       return;
     }
-    setSpinLoading(true);
+    if (segments.length === 0) {
+      console.error("[Wheel] No segments available.");
+      return;
+    }
+
+    console.log("[Wheel] Spin click – starting spin.");
     setActionError(null);
 
-    const response = await fetch("/api/wheel/spin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        campaignId: campaign.id,
-        participationId: participationId || undefined,
-        clientToken,
-      }),
-    });
+    // 1. Select winning segment BEFORE any animation (mandatory)
+    const randomIndex = Math.floor(Math.random() * segments.length);
+    const winningSegment = segments[randomIndex];
+    const result: SpinResult = {
+      id: winningSegment.label,
+      label: winningSegment.label,
+      type: winningSegment.kind,
+    };
 
-    const data = await response.json();
-    if (!response.ok) {
-      if (data?.error?.includes("ALREADY_SPUN")) {
-        const statusResponse = await fetch("/api/wheel/status", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            campaignId: campaign.id,
-            clientToken,
-          }),
-        });
-        const statusData = await statusResponse.json();
-        if (statusData?.spin) {
-          setSpinResult({
-            id: statusData.spin.id,
-            label: statusData.spin.label,
-            type: statusData.spin.type,
-          });
-        }
-        setSpinLoading(false);
-        return;
-      }
-      const errMsg = data?.error?.includes("POOL_EMPTY")
-        ? "Plus de lots disponibles."
-        : data?.error?.includes("WHEEL_NOT_FOUND")
-          ? "Cette roue n'est plus active."
-          : null;
-      if (errMsg) setActionError(errMsg);
-      setSpinLoading(false);
-      return;
-    }
-
-    setSpinResult({
-      id: data.spinId,
-      label: data.label,
-      type: data.type,
-    });
+    setSpinResult(result);
+    setShouldAnimateSpin(true);
+    setHasSpun(true);
     setSpinLoading(false);
+
+    // 2. Optional: notify backend in background (do not block, do not fail user)
+    if (clientToken) {
+      setSpinLoading(true);
+      fetch("/api/wheel/spin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          campaignId: campaign.id,
+          participationId: participationId || undefined,
+          clientToken,
+        }),
+      })
+        .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+        .then(({ ok, data }) => {
+          if (!ok && data?.error) {
+            console.error("[Wheel] Backend spin error (non-blocking):", data.error);
+          }
+        })
+        .catch((err) => {
+          console.error("[Wheel] Backend spin request failed (non-blocking):", err);
+        })
+        .finally(() => setSpinLoading(false));
+    }
   };
 
   return (
@@ -405,14 +409,11 @@ export default function PublicCampaignClient({
                 <p className="text-sm text-zinc-600">Cliquez pour lancer la roue.</p>
                 <button
                   type="button"
-                  onClick={() => {
-                    setShouldAnimateSpin(true);
-                    void handleSpinClick();
-                  }}
-                  disabled={spinLoading}
+                  onClick={handleSpinClick}
+                  disabled={hasSpun}
                   className="w-full rounded-xl bg-indigo-600 px-5 py-3.5 text-base font-semibold text-white shadow-lg transition hover:bg-indigo-500 active:scale-[0.98] disabled:opacity-60"
                 >
-                  {spinLoading ? "Tirage…" : "Tourner la roue"}
+                  {hasSpun ? "Déjà joué" : "Tourner la roue"}
                 </button>
               </div>
             )}

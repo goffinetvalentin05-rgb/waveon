@@ -49,12 +49,15 @@ export default function RewardWheel({
 }: RewardWheelProps) {
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
+  const [hasSpun, setHasSpun] = useState(false);
   const prevResultRef = useRef<string | null>(null);
   const onSpinEndRef = useRef(onSpinEnd);
   onSpinEndRef.current = onSpinEnd;
 
   const n = Math.max(segments.length, 1);
   const segmentAngle = 360 / n;
+
+  const MIN_FULL_TURNS = 5;
 
   const getRotationForLabel = useCallback(
     (label: string) => {
@@ -66,14 +69,13 @@ export default function RewardWheel({
     [segments, segmentAngle]
   );
 
+  /** Rotation = previous + at least 5 full turns + segment offset so result is deterministic. */
   const spinToResult = useCallback(
     (label: string, animate: boolean) => {
       const index = segments.findIndex((s) => s.label === label);
       const targetIndex = index >= 0 ? index : 0;
-      const fullSpins = 4;
       const segmentCenterOffset = 360 - (targetIndex + 0.5) * segmentAngle;
-      const totalDeg = fullSpins * 360 + segmentCenterOffset;
-      setRotation(totalDeg);
+      setRotation((prev) => prev + 360 * MIN_FULL_TURNS + segmentCenterOffset);
       setIsSpinning(animate);
     },
     [segments, segmentAngle]
@@ -98,6 +100,7 @@ export default function RewardWheel({
     const duration = 4000;
     const id = setTimeout(() => {
       setIsSpinning(false);
+      setHasSpun(true);
       prevResultRef.current = null;
       onSpinEndRef.current?.();
     }, duration);
