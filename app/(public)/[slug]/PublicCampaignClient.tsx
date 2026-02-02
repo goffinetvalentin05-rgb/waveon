@@ -87,7 +87,6 @@ export default function PublicCampaignClient({
   const [spinLoading, setSpinLoading] = useState(false);
   const [clientToken, setClientToken] = useState<string | null>(null);
   const [participationId, setParticipationId] = useState<string | null>(null);
-  const [reviewValidated, setReviewValidated] = useState(false);
   const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
   const [isWheelUnlocked, setIsWheelUnlocked] = useState(false);
   const [countdownSeconds, setCountdownSeconds] = useState<number | null>(null);
@@ -172,15 +171,6 @@ export default function PublicCampaignClient({
     );
     if (stored) {
       setParticipationId(stored);
-    }
-  }, [campaign.id]);
-
-  useEffect(() => {
-    const stored = window.localStorage.getItem(
-      `waevon_review_validated_${campaign.id}`
-    );
-    if (stored === "true") {
-      setReviewValidated(true);
     }
   }, [campaign.id]);
 
@@ -274,59 +264,12 @@ export default function PublicCampaignClient({
     setSpinLoading(true);
     setActionError(null);
 
-    let activeParticipationId = participationId;
-    if (!activeParticipationId) {
-      const partRes = await fetch("/api/participations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ campaignId: campaign.id, clientToken }),
-      });
-      const partData = await partRes.json();
-      if (partRes.ok && partData?.participationId) {
-        const id = String(partData.participationId);
-        activeParticipationId = id;
-        setParticipationId(id);
-        window.localStorage.setItem(
-          `waevon_participation_${campaign.id}`,
-          id
-        );
-      } else {
-        setActionError("Impossible de participer. Réessayez.");
-        setSpinLoading(false);
-        return;
-      }
-    }
-
-    if (!activeParticipationId) {
-      setSpinLoading(false);
-      return;
-    }
-    const pid = activeParticipationId;
-    if (!reviewValidated) {
-      const confirmRes = await fetch("/api/review/confirm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          participationId: pid,
-          clientToken,
-        }),
-      });
-      const confirmData = await confirmRes.json();
-      if (confirmRes.ok && confirmData?.validated) {
-        setReviewValidated(true);
-        window.localStorage.setItem(
-          `waevon_review_validated_${campaign.id}`,
-          "true"
-        );
-      }
-    }
-
     const response = await fetch("/api/wheel/spin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         campaignId: campaign.id,
-        participationId: pid,
+        participationId: participationId || undefined,
         clientToken,
       }),
     });
@@ -353,13 +296,12 @@ export default function PublicCampaignClient({
         setSpinLoading(false);
         return;
       }
-      const errMsg =
-        data?.error?.includes("REVIEW_NOT_VALIDATED")
-          ? "Aucun avis validé. Veuillez laisser un avis avant de jouer."
-          : data?.error?.includes("POOL_EMPTY")
-            ? "Plus de lots disponibles."
-            : data?.error ?? "Tirage impossible.";
-      setActionError(errMsg);
+      const errMsg = data?.error?.includes("POOL_EMPTY")
+        ? "Plus de lots disponibles."
+        : data?.error?.includes("WHEEL_NOT_FOUND")
+          ? "Cette roue n'est plus active."
+          : null;
+      if (errMsg) setActionError(errMsg);
       setSpinLoading(false);
       return;
     }

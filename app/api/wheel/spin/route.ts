@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     const participationId = body.participationId?.trim();
     const clientToken = body.clientToken?.trim();
 
-    if (!campaignId || !participationId || !clientToken) {
+    if (!campaignId || !clientToken) {
       return NextResponse.json(
         { error: "Paramètres manquants." },
         { status: 400 }
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
 
     const { data, error } = await supabase.rpc("spin_wheel", {
       p_campaign_id: campaignId,
-      p_participation_id: participationId,
+      p_participation_id: participationId?.trim() || null,
       p_client_token: clientToken,
     });
 
