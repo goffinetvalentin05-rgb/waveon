@@ -5,18 +5,16 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 
-type SidebarProps = {
-  onCreateCampaign?: () => void;
-};
-
 const navItems = [
   { id: "overview", label: "Vue d'ensemble", href: "/dashboard" },
-  { id: "campaigns", label: "Campagnes", href: "/campaigns" },
-  { id: "new", label: "Nouvelle campagne", href: "/campaigns/new" },
-  { id: "settings", label: "Paramètres", href: "/settings" },
+  { id: "prospects", label: "Mes prospects", href: "/dashboard/prospects" },
+  { id: "conversations", label: "Conversations", href: "/dashboard/conversations" },
+  { id: "bookings", label: "Appels bookés", href: "/dashboard/bookings" },
+  { id: "agent", label: "Mon agent IA", href: "/dashboard/agent" },
+  { id: "settings", label: "Paramètres", href: "/dashboard/settings" },
 ];
 
-export default function Sidebar({ onCreateCampaign }: SidebarProps) {
+export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -26,12 +24,12 @@ export default function Sidebar({ onCreateCampaign }: SidebarProps) {
   };
 
   return (
-    <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-r lg:border-white/10 lg:bg-[#0f1020] lg:px-6 lg:py-8">
+    <aside className="hidden lg:flex lg:w-72 lg:flex-col lg:border-r lg:border-[#39FF14]/15 lg:bg-[#0F0F0F] lg:px-6 lg:py-8">
       <div className="flex items-center gap-3">
         <Image src="/logo_waevon.png" alt="Waevon" width={36} height={36} />
         <div>
           <p className="text-lg font-semibold text-white">Waevon</p>
-          <p className="text-xs text-slate-400">Espace commerçant</p>
+          <p className="text-xs text-white/60">Agent IA WhatsApp</p>
         </div>
       </div>
 
@@ -48,8 +46,8 @@ export default function Sidebar({ onCreateCampaign }: SidebarProps) {
               href={item.href}
               className={`block rounded-lg px-3 py-2 text-sm font-medium transition ${
                 isActive
-                  ? "bg-white/10 text-white"
-                  : "text-slate-300 hover:bg-white/5 hover:text-white"
+                  ? "border border-[#39FF14]/30 bg-[#39FF14]/10 text-[#39FF14]"
+                  : "border border-transparent text-white/80 hover:border-[#39FF14]/20 hover:bg-[#39FF14]/5 hover:text-white"
               }`}
             >
               {item.label}
@@ -59,38 +57,13 @@ export default function Sidebar({ onCreateCampaign }: SidebarProps) {
       </nav>
 
       <div className="mt-auto">
-        {onCreateCampaign ? (
-          <button
-            type="button"
-            onClick={onCreateCampaign}
-            className="w-full rounded-full bg-gradient-to-r from-violet-500 via-indigo-500 to-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(79,70,229,0.35)] transition hover:brightness-110"
-          >
-            Nouvelle campagne
-          </button>
-        ) : (
-          <Link
-            href="/campaigns/new"
-            className="block w-full rounded-full bg-gradient-to-r from-violet-500 via-indigo-500 to-blue-500 px-4 py-2 text-center text-sm font-semibold text-white shadow-[0_16px_40px_rgba(79,70,229,0.35)] transition hover:brightness-110"
-          >
-            Nouvelle campagne
-          </Link>
-        )}
-        <div className="my-6 h-px bg-white/10" />
-        <div className="space-y-2">
-          <Link
-            href="/"
-            className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/5 hover:text-white"
-          >
-            Retour au site
-          </Link>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="w-full rounded-lg border border-white/10 px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/5 hover:text-white"
-          >
-            Se déconnecter
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="w-full rounded-lg border border-[#39FF14]/20 bg-transparent px-3 py-2 text-sm font-medium text-white/80 transition hover:bg-[#39FF14]/5 hover:text-white"
+        >
+          Se déconnecter
+        </button>
       </div>
     </aside>
   );
