@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
@@ -111,10 +112,14 @@ export default function LoginPage() {
         <div className="relative rounded-3xl border border-[#39FF14]/20 bg-[#0f0f0f] p-8 shadow-[0_24px_52px_rgba(57,255,20,0.12)]">
           <div className="mb-6">
             <div className="mb-6 flex flex-col items-start leading-none">
-              <span className="text-xl font-extrabold tracking-[0.22em] text-[#39FF14]">
-                WAEVON
-              </span>
-              <span className="mt-1 h-[3px] w-28 rounded-full bg-[#39FF14]" />
+              <Image
+                src="/logo_waevon.png"
+                alt="Waevon"
+                width={200}
+                height={70}
+                className="h-10 w-auto"
+                priority
+              />
             </div>
             <h1 className="mt-2 text-2xl font-bold text-white">
               {title}

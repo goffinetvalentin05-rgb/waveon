@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
@@ -274,10 +275,14 @@ export default function OnboardingPage() {
       <div className="mx-auto w-full max-w-lg">
         <div className="mb-8 text-center">
           <div className="mb-6 flex flex-col items-center leading-none">
-            <span className="text-2xl font-extrabold tracking-[0.22em] text-[#39FF14]">
-              WAEVON
-            </span>
-            <span className="mt-1 h-[3px] w-28 rounded-full bg-[#39FF14]" />
+            <Image
+              src="/logo_waevon.png"
+              alt="Waevon"
+              width={220}
+              height={78}
+              className="h-12 w-auto"
+              priority
+            />
           </div>
           <h1 className="mt-2 text-2xl font-bold text-white">
             Créer mon compte
