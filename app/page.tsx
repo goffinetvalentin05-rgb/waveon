@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useTranslation } from "@/lib/i18n/context";
 import { LanguageSelector } from "@/components/LanguageSelector";
 
@@ -17,12 +18,14 @@ export default function Home() {
         </div>
         <nav className="relative z-30 flex w-full items-center justify-between border-b border-[#39FF14]/20 bg-black/50 px-6 py-4 backdrop-blur pointer-events-auto lg:px-16">
           <div className="flex items-center gap-3">
-            <div className="flex flex-col leading-none">
-              <span className="text-xl font-extrabold tracking-[0.22em] text-white">
-                WAEVON
-              </span>
-              <span className="mt-1 h-[3px] w-full rounded-full bg-[#39FF14]" />
-            </div>
+            <Image
+              src="/logo_waevon.png"
+              alt="Waevon"
+              width={160}
+              height={44}
+              className="h-8 w-auto"
+              priority
+            />
           </div>
           <div className="flex items-center gap-3 text-sm text-white/80">
             <a
@@ -80,12 +83,14 @@ export default function Home() {
               </div>
             </div>
             <div className="relative z-10 flex flex-col items-center text-center">
-              <div className="flex flex-col items-center">
-                <span className="text-4xl font-extrabold tracking-[0.3em] text-white md:text-5xl">
-                  WAEVON
-                </span>
-                <span className="mt-2 h-[5px] w-48 rounded-full bg-[#39FF14] md:w-56" />
-              </div>
+              <Image
+                src="/logo_waevon.png"
+                alt="Waevon"
+                width={420}
+                height={180}
+                className="h-20 w-auto md:h-24"
+                priority
+              />
               <h1 className="mt-6 text-4xl font-semibold leading-tight text-white md:text-6xl">
                 {t.hero.title}
               </h1>
