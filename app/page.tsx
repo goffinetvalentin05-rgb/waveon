@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useTranslation } from "@/lib/i18n/context";
 import { LanguageSelector } from "@/components/LanguageSelector";
 
@@ -8,26 +7,24 @@ export default function Home() {
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-screen bg-[#0b0b16] text-slate-100">
+    <div className="min-h-screen bg-[#080808] text-white">
       <section className="relative flex min-h-screen flex-col pb-24 pt-0">
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(124,58,237,0.28),transparent_55%)]" />
-          <div className="absolute -left-48 top-[-220px] h-[680px] w-[680px] rounded-full bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.35),transparent_70%)] blur-[220px]" />
-          <div className="absolute right-[-160px] top-10 h-[560px] w-[560px] rounded-full bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.22),transparent_70%)] blur-[190px]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(57,255,20,0.2),transparent_55%)]" />
+          <div className="absolute -left-48 top-[-220px] h-[680px] w-[680px] rounded-full bg-[radial-gradient(circle_at_center,rgba(57,255,20,0.25),transparent_70%)] blur-[220px]" />
+          <div className="absolute right-[-160px] top-10 h-[560px] w-[560px] rounded-full bg-[radial-gradient(circle_at_center,rgba(57,255,20,0.18),transparent_70%)] blur-[190px]" />
           <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] [background-size:48px_48px]" />
         </div>
-        <nav className="relative z-30 flex w-full items-center justify-between border-b border-white/10 bg-white/5 px-6 py-4 backdrop-blur pointer-events-auto lg:px-16">
+        <nav className="relative z-30 flex w-full items-center justify-between border-b border-[#39FF14]/20 bg-black/50 px-6 py-4 backdrop-blur pointer-events-auto lg:px-16">
           <div className="flex items-center gap-3">
-            <Image
-              src="/logo_waevon.png"
-              alt="Waevon"
-              width={160}
-              height={44}
-              className="h-8 w-auto"
-              priority
-            />
+            <div className="flex flex-col leading-none">
+              <span className="text-xl font-extrabold tracking-[0.22em] text-white">
+                WAEVON
+              </span>
+              <span className="mt-1 h-[3px] w-full rounded-full bg-[#39FF14]" />
+            </div>
           </div>
-          <div className="flex items-center gap-3 text-sm text-slate-300">
+          <div className="flex items-center gap-3 text-sm text-white/80">
             <a
               href="#faq"
               className="hidden rounded-full px-4 py-2 transition hover:text-white md:inline-flex"
@@ -43,7 +40,7 @@ export default function Home() {
             <LanguageSelector />
             <a
               href="/login"
-              className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-white/90 shadow-[0_10px_28px_rgba(59,130,246,0.18)] transition hover:border-white/25 hover:text-white"
+              className="inline-flex items-center justify-center rounded-full border border-[#39FF14]/30 bg-[#39FF14]/10 px-4 py-2 text-xs font-semibold text-white shadow-[0_10px_28px_rgba(57,255,20,0.2)] transition hover:border-[#39FF14]/50 hover:bg-[#39FF14]/20"
             >
               {t.nav.login}
             </a>
@@ -52,61 +49,59 @@ export default function Home() {
         <div className="relative mx-auto flex w-full max-w-6xl flex-1 items-center justify-center px-6 pb-16 pt-16 lg:px-16">
           <div className="relative w-full max-w-4xl py-10">
             <div className="pointer-events-none absolute inset-0 hidden lg:block">
-              <div className="absolute -left-44 top-0 w-[210px] -rotate-6 rounded-2xl border border-white/10 bg-[#111224]/90 p-4 shadow-[0_25px_60px_rgba(79,70,229,0.3)] backdrop-blur">
-                <p className="text-xs text-slate-400">{t.stats.reviewsCollected}</p>
+              <div className="absolute -left-44 top-0 w-[210px] -rotate-6 rounded-2xl border border-[#39FF14]/20 bg-[#0f0f0f]/90 p-4 shadow-[0_25px_60px_rgba(57,255,20,0.22)] backdrop-blur">
+                <p className="text-xs text-white/65">{t.stats.reviewsCollected}</p>
                 <p className="mt-2 text-2xl font-semibold text-white">{t.stats.count}</p>
-                <p className="mt-2 text-[11px] text-slate-400">
+                <p className="mt-2 text-[11px] text-white/65">
                   {t.stats.thisWeek}
                 </p>
               </div>
-              <div className="absolute -right-40 top-4 w-[200px] rotate-3 rounded-2xl border border-white/10 bg-[#111224]/90 p-4 shadow-[0_25px_60px_rgba(79,70,229,0.3)] backdrop-blur">
-                <p className="text-xs text-slate-400">{t.stats.conversionRate}</p>
+              <div className="absolute -right-40 top-4 w-[200px] rotate-3 rounded-2xl border border-[#39FF14]/20 bg-[#0f0f0f]/90 p-4 shadow-[0_25px_60px_rgba(57,255,20,0.22)] backdrop-blur">
+                <p className="text-xs text-white/65">{t.stats.conversionRate}</p>
                 <p className="mt-2 text-2xl font-semibold text-white">{t.stats.rateValue}</p>
                 <div className="mt-3 h-2 w-full rounded-full bg-white/10">
-                  <div className="h-2 w-2/3 rounded-full bg-gradient-to-r from-violet-400 to-blue-400" />
+                  <div className="h-2 w-2/3 rounded-full bg-gradient-to-r from-[#39FF14] to-[#2bd80f]" />
                 </div>
               </div>
-              <div className="absolute -left-24 bottom-0 w-[220px] rotate-2 rounded-2xl border border-white/10 bg-[#111224]/90 p-4 shadow-[0_25px_60px_rgba(79,70,229,0.3)] backdrop-blur">
-                <p className="text-xs text-slate-400">{t.stats.activeCampaign}</p>
+              <div className="absolute -left-24 bottom-0 w-[220px] rotate-2 rounded-2xl border border-[#39FF14]/20 bg-[#0f0f0f]/90 p-4 shadow-[0_25px_60px_rgba(57,255,20,0.22)] backdrop-blur">
+                <p className="text-xs text-white/65">{t.stats.activeCampaign}</p>
                 <p className="mt-2 text-sm font-semibold text-white">
                   {t.stats.participationsThisWeek}
                 </p>
                 <div className="mt-4 h-2 w-full rounded-full bg-white/10">
-                  <div className="h-2 w-3/4 rounded-full bg-gradient-to-r from-violet-400 to-blue-400" />
+                  <div className="h-2 w-3/4 rounded-full bg-gradient-to-r from-[#39FF14] to-[#2bd80f]" />
                 </div>
               </div>
-              <div className="absolute -right-24 bottom-4 w-[200px] -rotate-4 rounded-2xl border border-white/10 bg-[#111224]/90 p-4 shadow-[0_25px_60px_rgba(79,70,229,0.3)] backdrop-blur">
-                <p className="text-xs text-slate-400">{t.stats.goal}</p>
+              <div className="absolute -right-24 bottom-4 w-[200px] -rotate-4 rounded-2xl border border-[#39FF14]/20 bg-[#0f0f0f]/90 p-4 shadow-[0_25px_60px_rgba(57,255,20,0.22)] backdrop-blur">
+                <p className="text-xs text-white/65">{t.stats.goal}</p>
                 <p className="mt-2 text-sm text-white">
                   {t.stats.goalText}
                 </p>
               </div>
             </div>
             <div className="relative z-10 flex flex-col items-center text-center">
-              <Image
-                src="/logo_waevon.png"
-                alt="Waevon"
-                width={320}
-                height={88}
-                className="h-16 w-auto md:h-20"
-                priority
-              />
+              <div className="flex flex-col items-center">
+                <span className="text-4xl font-extrabold tracking-[0.3em] text-white md:text-5xl">
+                  WAEVON
+                </span>
+                <span className="mt-2 h-[5px] w-48 rounded-full bg-[#39FF14] md:w-56" />
+              </div>
               <h1 className="mt-6 text-4xl font-semibold leading-tight text-white md:text-6xl">
                 {t.hero.title}
               </h1>
-              <p className="mt-6 max-w-2xl text-base text-slate-300 md:text-lg">
+              <p className="mt-6 max-w-2xl text-base text-white/80 md:text-lg">
                 {t.hero.subtitle}
               </p>
               <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
                 <a
                   href="#cta"
-                  className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-violet-500 via-indigo-500 to-blue-500 px-7 py-3 text-sm font-semibold text-white shadow-[0_20px_50px_rgba(79,70,229,0.45)] transition hover:brightness-110"
+                  className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#39FF14] to-[#2bd80f] px-7 py-3 text-sm font-semibold text-black shadow-[0_20px_50px_rgba(57,255,20,0.4)] transition hover:brightness-110"
                 >
                   {t.hero.ctaDemo}
                 </a>
                 <a
                   href="#solution"
-                  className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-7 py-3 text-sm font-semibold text-white/90 transition hover:border-white/25"
+                  className="inline-flex items-center justify-center rounded-full border border-[#39FF14]/30 bg-[#39FF14]/10 px-7 py-3 text-sm font-semibold text-white transition hover:border-[#39FF14]/50 hover:bg-[#39FF14]/20"
                 >
                   {t.hero.ctaHow}
                 </a>
@@ -119,11 +114,11 @@ export default function Home() {
       <section id="constat" className="px-6 py-20 lg:px-16">
         <div className="mx-auto w-full max-w-none space-y-10">
           <div className="space-y-3" />
-          <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(135deg,rgba(17,18,26,0.9),rgba(29,21,56,0.85))] p-8 shadow-[0_24px_52px_rgba(79,70,229,0.25)]">
+          <div className="rounded-[28px] border border-[#39FF14]/20 bg-[linear-gradient(135deg,rgba(10,10,10,0.96),rgba(15,25,13,0.92))] p-8 shadow-[0_24px_52px_rgba(57,255,20,0.22)]">
             <p className="text-lg leading-relaxed text-slate-200 md:text-xl">
               {t.constat.paragraph1}
             </p>
-            <p className="mt-4 text-sm text-slate-400">
+            <p className="mt-4 text-sm text-white/75">
               {t.constat.paragraph2}
             </p>
           </div>
@@ -132,8 +127,8 @@ export default function Home() {
 
       <div className="relative mx-auto -mt-14 -mb-14 flex max-w-6xl items-center justify-center px-6 lg:px-16">
         <div className="relative flex h-40 w-6 items-center justify-center">
-          <div className="absolute h-full w-px bg-gradient-to-b from-violet-500/0 via-violet-400/60 to-indigo-400/0" />
-          <span className="inline-flex h-2 w-2 rounded-full bg-violet-300/80 shadow-[0_0_12px_rgba(139,92,246,0.7)]" />
+          <div className="absolute h-full w-px bg-gradient-to-b from-[#39FF14]/0 via-[#39FF14]/70 to-[#39FF14]/0" />
+          <span className="inline-flex h-2 w-2 rounded-full bg-[#39FF14] shadow-[0_0_12px_rgba(57,255,20,0.8)]" />
         </div>
       </div>
 
@@ -144,7 +139,7 @@ export default function Home() {
             <h3 className="mt-4 text-2xl font-semibold text-white md:text-3xl">
               {t.solution.title}
             </h3>
-            <p className="mt-4 text-base text-slate-200">
+            <p className="mt-4 text-base text-white/85">
               {t.solution.body}
             </p>
           </div>
@@ -162,19 +157,19 @@ export default function Home() {
             {t.comment.steps.map((step) => (
               <div
                 key={step.number}
-                className="relative rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,rgba(17,18,26,0.95),rgba(29,21,56,0.95))] p-7 shadow-[0_20px_42px_rgba(79,70,229,0.25)]"
+                className="relative rounded-[32px] border border-[#39FF14]/20 bg-[linear-gradient(135deg,rgba(11,11,11,0.96),rgba(13,22,12,0.96))] p-7 shadow-[0_20px_42px_rgba(57,255,20,0.2)]"
               >
-                <p className="text-4xl font-semibold text-slate-400">
+                <p className="text-4xl font-semibold text-[#39FF14]/70">
                   {step.number}
                 </p>
                 <p className="mt-4 text-lg font-semibold">{step.title}</p>
-                <div className="mt-4 space-y-3 text-sm text-slate-300">
+                <div className="mt-4 space-y-3 text-sm text-white/80">
                   {step.body.map((line) => (
                     <p key={line}>{line}</p>
                   ))}
                 </div>
                 {step.number === "04" && (
-                  <span className="absolute bottom-0 right-8 translate-y-1/2 rounded-full border border-white/10 bg-[#121225] px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-300">
+                  <span className="absolute bottom-0 right-8 translate-y-1/2 rounded-full border border-[#39FF14]/20 bg-[#101010] px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-white/70">
                     {t.comment.newComing}
                   </span>
                 )}
@@ -195,13 +190,13 @@ export default function Home() {
             {t.controle.points.map((point, index) => (
               <div
                 key={point}
-                className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[0_14px_30px_rgba(79,70,229,0.25)]"
+                className="rounded-2xl border border-[#39FF14]/20 bg-[#39FF14]/5 p-5 shadow-[0_14px_30px_rgba(57,255,20,0.18)]"
               >
                 <div className="flex items-start gap-4">
-                  <span className="mt-1 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-sm font-semibold text-slate-300">
+                  <span className="mt-1 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#39FF14]/30 bg-[#39FF14]/10 text-sm font-semibold text-[#8BFF75]">
                     {String(index + 1).padStart(2, "0")}
                   </span>
-                  <p className="text-sm text-slate-300">{point}</p>
+                  <p className="text-sm text-white/80">{point}</p>
                 </div>
               </div>
             ))}
@@ -221,14 +216,14 @@ export default function Home() {
               {[...t.avis.testimonials, ...t.avis.testimonials].map((item, index) => (
                 <div
                   key={`${item.name}-${index}`}
-                  className="min-w-[280px] shrink-0 rounded-[28px] border border-white/10 bg-white/5 p-6 shadow-[0_18px_40px_rgba(79,70,229,0.2)] md:min-w-[320px] lg:min-w-[360px]"
+                  className="min-w-[280px] shrink-0 rounded-[28px] border border-[#39FF14]/20 bg-[#39FF14]/5 p-6 shadow-[0_18px_40px_rgba(57,255,20,0.18)] md:min-w-[320px] lg:min-w-[360px]"
                 >
-                  <div className="space-y-3 text-sm text-slate-200">
+                  <div className="space-y-3 text-sm text-white/85">
                     {item.quote.split("\n").map((line) => (
                       <p key={line}>{line}</p>
                     ))}
                   </div>
-                  <div className="mt-6 text-xs text-slate-400">
+                  <div className="mt-6 text-xs text-white/65">
                     {item.name} — {item.role}
                   </div>
                 </div>
@@ -249,12 +244,12 @@ export default function Home() {
             {t.faq.items.map((item) => (
               <details
                 key={item.question}
-                className="group rounded-[22px] border border-white/10 bg-white/5 p-5 shadow-[0_14px_30px_rgba(79,70,229,0.25)]"
+                className="group rounded-[22px] border border-[#39FF14]/20 bg-[#39FF14]/5 p-5 shadow-[0_14px_30px_rgba(57,255,20,0.18)]"
               >
-                <summary className="cursor-pointer list-none text-sm font-semibold text-slate-200">
+                <summary className="cursor-pointer list-none text-sm font-semibold text-white/90">
                   {item.question}
                 </summary>
-                <div className="mt-3 space-y-2 text-sm text-slate-300">
+                <div className="mt-3 space-y-2 text-sm text-white/80">
                   {item.answer.split("\n").map((line) => (
                     <p key={line}>{line}</p>
                   ))}
@@ -268,7 +263,7 @@ export default function Home() {
       <section id="tarif" className="px-6 py-20 lg:px-16">
         <div className="mx-auto max-w-5xl space-y-10">
           <div className="text-center space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-indigo-200">
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#7CFF67]">
               {t.tarif.sectionTitle}
             </p>
             <h2 className="text-3xl font-semibold text-white md:text-4xl">
@@ -279,26 +274,26 @@ export default function Home() {
             {t.tarif.plans.map((plan) => (
               <div
                 key={plan.name}
-                className={`relative rounded-[32px] border p-8 shadow-[0_24px_52px_rgba(79,70,229,0.2)] ${
+                className={`relative rounded-[32px] border p-8 shadow-[0_24px_52px_rgba(57,255,20,0.18)] ${
                   plan.highlighted
-                    ? "border-indigo-400/40 bg-white/10"
-                    : "border-white/10 bg-white/5"
+                    ? "border-[#39FF14]/45 bg-[#39FF14]/10"
+                    : "border-[#39FF14]/20 bg-[#39FF14]/5"
                 }`}
               >
                 {plan.highlighted && (
-                  <span className="absolute -top-3 right-6 rounded-full bg-indigo-500 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white">
+                  <span className="absolute -top-3 right-6 rounded-full bg-[#39FF14] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-black">
                     {t.tarif.recommended}
                   </span>
                 )}
                 <p className="text-lg font-semibold text-white">{plan.name}</p>
-                <p className="mt-2 text-sm text-slate-300">{plan.description}</p>
+                <p className="mt-2 text-sm text-white/80">{plan.description}</p>
                 <p className="mt-4 text-2xl font-semibold text-white">
                   {plan.price}
                 </p>
-                <ul className="mt-6 space-y-3 text-sm text-slate-300">
+                <ul className="mt-6 space-y-3 text-sm text-white/80">
                   {plan.features.map((feature) => (
                     <li key={feature} className="flex items-start gap-3">
-                      <span className="mt-1 h-2 w-2 rounded-full bg-indigo-300" />
+                      <span className="mt-1 h-2 w-2 rounded-full bg-[#39FF14]" />
                       <span>{feature}</span>
                     </li>
                   ))}
@@ -307,8 +302,8 @@ export default function Home() {
                   type="button"
                   className={`mt-6 inline-flex items-center justify-center rounded-full px-5 py-2 text-sm font-semibold transition ${
                     plan.highlighted
-                      ? "bg-indigo-500 text-white hover:bg-indigo-400"
-                      : "border border-white/15 bg-white/5 text-white/90 hover:border-white/30"
+                      ? "bg-[#39FF14] text-black hover:bg-[#67ff49]"
+                      : "border border-[#39FF14]/30 bg-[#39FF14]/10 text-white hover:border-[#39FF14]/50 hover:bg-[#39FF14]/20"
                   }`}
                 >
                   {plan.cta}
@@ -321,19 +316,19 @@ export default function Home() {
 
       <section
         id="cta"
-        className="bg-[linear-gradient(180deg,rgba(11,12,20,0)_0%,rgba(11,12,20,1)_100%)] px-6 py-24 lg:px-16"
+        className="bg-[linear-gradient(180deg,rgba(8,8,8,0)_0%,rgba(8,8,8,1)_100%)] px-6 py-24 lg:px-16"
       >
         <div className="mx-auto max-w-5xl text-center">
           <h2 className="text-3xl font-semibold md:text-4xl">
             {t.cta.title}
           </h2>
-          <p className="mx-auto mt-5 max-w-2xl text-sm text-slate-300 md:text-base">
+          <p className="mx-auto mt-5 max-w-2xl text-sm text-white/80 md:text-base">
             {t.cta.subtitle}
           </p>
           <div className="mt-10">
             <a
               href="#"
-              className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-violet-500 via-indigo-500 to-blue-500 px-7 py-3 text-sm font-semibold text-white shadow-[0_20px_50px_rgba(79,70,229,0.45)] transition hover:brightness-110"
+              className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#39FF14] to-[#2bd80f] px-7 py-3 text-sm font-semibold text-black shadow-[0_20px_50px_rgba(57,255,20,0.4)] transition hover:brightness-110"
             >
               {t.cta.button}
             </a>

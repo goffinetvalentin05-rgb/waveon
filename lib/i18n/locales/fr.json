@@ -5,94 +5,98 @@
     "login": "Se connecter"
   },
   "hero": {
-    "title": "Transformez chaque client satisfait en preuve visible.",
-    "subtitle": "Waevon structure un échange simple et maîtrisé pour améliorer votre réputation en ligne, sans forcer vos clients.",
-    "ctaDemo": "Demander une démo",
+    "title": "Waevon transforme chaque numéro en client.",
+    "subtitle": "Ton agent IA répond à ta place sur WhatsApp, dans ta voix, qualifie tes prospects et remplit ton agenda d'appels qualifiés. En automatique. Pendant que tu dors.",
+    "ctaDemo": "Activer Waevon — 39€/mois",
     "ctaHow": "Voir comment ça marche"
   },
   "stats": {
-    "reviewsCollected": "Avis collectés",
-    "count": "1 052",
-    "thisWeek": "+18% cette semaine",
-    "conversionRate": "Taux de conversion",
-    "rateValue": "62%",
-    "activeCampaign": "Campagne active",
-    "participationsThisWeek": "128 participations cette semaine",
-    "goal": "Objectif",
-    "goalText": "Augmenter les avis Google avec IA de réponse"
+    "reviewsCollected": "Résultats",
+    "count": "+15 appels qualifiés par mois",
+    "thisWeek": "24h/24, 7j/7",
+    "conversionRate": "Performance",
+    "rateValue": "Réponse en moins de 60 secondes",
+    "activeCampaign": "Fiabilité",
+    "participationsThisWeek": "0 lead perdu",
+    "goal": "Toujours actif",
+    "goalText": "24h/24, 7j/7"
   },
   "constat": {
-    "paragraph1": "Nous avons constaté que la majorité des commerces ont des clients satisfaits, mais en ligne cette réalité se voit peu : peu d'avis sont laissés, les retours négatifs prennent plus de place, et l'image finale ne reflète pas le travail quotidien.",
-    "paragraph2": "C'est ce décalage que Waevon corrige."
+    "paragraph1": "Le problème",
+    "paragraph2": "Tu perds des ventes chaque jour sans t'en rendre compte. Un prospect t'envoie un message. Tu réponds 2 heures plus tard. Il a déjà signé ailleurs. Un autre t'écrit à 23h. Tu vois le message le lendemain matin. Trop tard. Le problème c'est pas ton offre. C'est le temps entre le premier message et le call. Waevon élimine ce délai."
   },
   "solution": {
-    "title": "Waevon transforme la satisfaction en preuve visible.",
-    "body": "Le client réalise une action utile pour le commerce, puis accède à une expérience encadrée et définie à l'avance. Rien n'est imposé : tout est clair, transparent et maîtrisé."
+    "title": "La solution",
+    "body": "Dès qu'un prospect t'envoie son numéro, Waevon prend le relai. Il répond en moins de 60 secondes. Sur WhatsApp. Avec ta voix. Pas un chatbot froid. Une vraie conversation naturelle. Ton prospect pense parler directement à toi. Pendant ce temps là ? Tu fais ce que tu veux."
   },
   "comment": {
     "sectionTitle": "COMMENT ÇA MARCHE",
-    "newComing": "Nouveauté à venir",
+    "newComing": "",
     "steps": [
       {
         "number": "01",
-        "title": "Créez une campagne",
+        "title": "Tu récupères des numéros",
         "body": [
-          "Le commerçant crée une campagne depuis son compte Waevon et choisit son objectif, par exemple obtenir plus d'avis Google."
+          "Via ta bio Instagram, tes stories, tes ads ou ton site. Rien ne change de ton côté."
         ]
       },
       {
         "number": "02",
-        "title": "Diffusez le QR code en point de vente",
+        "title": "Waevon engage automatiquement",
         "body": [
-          "Waevon génère un QR code lié à la campagne.",
-          "Il peut être imprimé et placé sur les tables, au comptoir ou sur un support adapté.",
-          "Un support graphique personnalisé peut également être conçu pour s'intégrer à l'image du commerce."
+          "Dès qu'un numéro entre, ton agent IA démarre la conversation sur WhatsApp. Dans ta voix. Comme si c'était toi."
         ]
       },
       {
         "number": "03",
-        "title": "Configurez et suivez depuis le dashboard",
+        "title": "L'IA qualifie et chauffe",
         "body": [
-          "Depuis le tableau de bord, le commerçant définit les règles de l'expérience : contenus, probabilités et paramètres.",
-          "Il suit ensuite l'évolution de sa campagne en temps réel."
+          "Waevon pose les bonnes questions, envoie ton contenu, traite les objections et crée la confiance naturellement."
         ]
       },
       {
         "number": "04",
-        "title": "Automatisez la gestion des avis",
+        "title": "L'appel est booké",
         "body": [
-          "Lorsqu'un client laisse un avis, Waevon peut automatiquement y répondre grâce à l'intelligence artificielle, sans action manuelle du commerçant."
+          "Le prospect arrive dans ton agenda qualifié, chaud, prêt à acheter. Toi tu n'as plus qu'à closer."
         ]
       }
     ]
   },
   "controle": {
-    "sectionTitle": "GARDER LE CONTRÔLE",
+    "sectionTitle": "COMPARATIF",
     "points": [
-      "Avec Waevon, le commerçant garde toujours le contrôle.",
-      "Il définit précisément ce qu'il souhaite obtenir et ce qu'il est prêt à proposer.",
-      "Les règles de participation, les probabilités et les objectifs sont configurés à l'avance.",
-      "Chaque campagne fonctionne dans un cadre clair, sans surprise ni dérive.",
-      "Le commerçant visualise l'ensemble de ses campagnes et leurs résultats depuis un tableau de bord unique."
+      "Sans Waevon :",
+      "Tu réponds manuellement à chaque message",
+      "Tu perds des prospects qui n'ont pas répondu",
+      "Tu passes tes soirées à gérer des DMs",
+      "Tes meilleurs leads partent chez tes concurrents",
+      "Chatbots froids et impersonnels",
+      "Avec Waevon :",
+      "Réponse automatique en 60 secondes sur WhatsApp",
+      "Ton prospect pense parler directement à toi",
+      "Zéro lead perdu, zéro message sans réponse",
+      "Ton agenda se remplit pendant que tu dors",
+      "Tu ne fais plus qu'une chose : closer"
     ]
   },
   "avis": {
-    "sectionTitle": "AVIS / TÉMOIGNAGES",
+    "sectionTitle": "TÉMOIGNAGES",
     "testimonials": [
       {
-        "name": "Claire Martin",
-        "role": "Gérante, Le Bistrot du Marché",
-        "quote": "Waevon nous a permis de récolter des avis beaucoup plus facilement.\nLes clients satisfaits participent naturellement et apprécient aussi d'avoir un retour en échange.\nC'est gagnant pour eux comme pour nous."
+        "name": "Lucas M.",
+        "role": "coach business",
+        "quote": "Avant je répondais à la main et je perdais la moitié de mes prospects. Depuis Waevon j'ai +12 appels qualifiés par mois sans rien faire."
       },
       {
-        "name": "Karim Benali",
-        "role": "Responsable, Urban Burger",
-        "quote": "Avant, on avait du mal à obtenir des avis.\nAvec Waevon, les clients jouent le jeu pour laisser un avis ou s'abonner sur nos réseaux.\nC'est simple à expliquer et bien accepté."
+        "name": "Sarah K.",
+        "role": "coach fitness",
+        "quote": "J'ai activé Waevon un vendredi soir. Le lundi matin j'avais 4 appels bookés dans mon agenda. Bluffant."
       },
       {
-        "name": "Sophie Laurent",
-        "role": "Fondatrice, Studio Coiffure",
-        "quote": "Les clients sont contents de participer à l'expérience après leur passage.\nDe notre côté, ça nous aide à améliorer notre visibilité sans forcer personne.\nTout se gère facilement."
+        "name": "Thomas B.",
+        "role": "infopreneur",
+        "quote": "Mes prospects pensent que c'est moi qui réponds. Les conversations sont naturelles, la confiance est là, et le closing est bien plus facile."
       }
     ]
   },
@@ -100,67 +104,57 @@
     "sectionTitle": "FAQ",
     "items": [
       {
-        "question": "Est-ce que Waevon force les clients à laisser un avis ?",
-        "answer": "Non.\nLe client reste libre de participer ou non.\nWaevon propose une expérience, jamais une obligation."
+        "question": "Est-ce compliqué à configurer ?",
+        "answer": "Non. En moins de 10 minutes ton agent est prêt. On te guide pas à pas."
       },
       {
-        "question": "Est-ce que les clients acceptent facilement le principe ?",
-        "answer": "Oui.\nL'échange est clair et transparent.\nLes clients comprennent ce qu'ils font et ce qu'ils obtiennent en retour."
+        "question": "Mes prospects vont se rendre compte que c'est une IA ?",
+        "answer": "Non. Waevon parle avec ta voix, ton style, tes mots. Tes prospects pensent parler directement à toi."
       },
       {
-        "question": "Est-ce que je garde le contrôle sur mes campagnes ?",
-        "answer": "Oui, totalement.\nLe commerçant définit les règles, les paramètres et les objectifs de chaque campagne depuis son tableau de bord."
+        "question": "Ça fonctionne pour ma niche ?",
+        "answer": "Oui. Waevon s'adapte à ton offre et ta cible. Coach, infopreneur, freelance — peu importe."
       },
       {
-        "question": "Est-ce que ça demande du temps au quotidien ?",
-        "answer": "Non.\nUne fois la campagne mise en place, tout est automatisé.\nLe suivi se fait simplement depuis le dashboard."
+        "question": "Combien d'appels vais-je générer ?",
+        "answer": "En moyenne +15 appels qualifiés par mois dès le premier mois."
       },
       {
-        "question": "Que se passe-t-il avec les avis laissés par les clients ?",
-        "answer": "Waevon peut gérer automatiquement les réponses aux avis grâce à l'intelligence artificielle.\nLe commerçant n'a rien à faire, sauf s'il souhaite intervenir."
+        "question": "Et si je veux annuler ?",
+        "answer": "Sans engagement. Tu annules quand tu veux en un clic depuis ton dashboard."
+      },
+      {
+        "question": "Est-ce légal ?",
+        "answer": "Oui. Waevon utilise l'API WhatsApp Business officielle. Tout est conforme."
       }
     ]
   },
   "tarif": {
-    "sectionTitle": "TARIFS",
-    "title": "Un plan pour démarrer, un plan pour accélérer.",
-    "recommended": "Recommandé",
+    "sectionTitle": "PRICING",
+    "title": "Un seul plan. Tout inclus. Sans surprise.",
+    "recommended": "Inclus",
     "plans": [
       {
-        "name": "Mensuel",
-        "description": "Même offre, paiement mensuel.",
-        "price": "25 CHF / mois",
+        "name": "Waevon",
+        "description": "Agent IA prêt à closer pour toi sur WhatsApp.",
+        "price": "39€/mois",
         "features": [
-          "Création et gestion de campagnes",
-          "QR codes pour le point de vente",
-          "Tableau de bord en temps réel",
-          "Réponses automatiques aux avis",
-          "Expériences personnalisées",
-          "Support prioritaire"
+          "Agent IA configuré selon ton offre",
+          "Conversations WhatsApp illimitées",
+          "Booking automatique dans ton agenda",
+          "Dashboard de suivi en temps réel",
+          "Réponse en moins de 60 secondes",
+          "Support prioritaire 7j/7",
+          "Sans engagement — annulation en 1 clic"
         ],
-        "cta": "Choisir le mensuel",
-        "highlighted": false
-      },
-      {
-        "name": "Annuel",
-        "description": "Même offre, plus avantageux.",
-        "price": "270 CHF / an",
-        "features": [
-          "Création et gestion de campagnes",
-          "QR codes pour le point de vente",
-          "Tableau de bord en temps réel",
-          "Réponses automatiques aux avis",
-          "Expériences personnalisées",
-          "Support prioritaire"
-        ],
-        "cta": "Choisir l'annuel",
+        "cta": "Activer mon agent Waevon",
         "highlighted": true
       }
     ]
   },
   "cta": {
-    "title": "Faites enfin apparaître en ligne la satisfaction réelle de vos clients.",
-    "subtitle": "Découvrez comment Waevon peut s'intégrer simplement à votre activité.",
-    "button": "Demander une démo"
+    "title": "Pourquoi WhatsApp ?",
+    "subtitle": "Parce que WhatsApp c'est humain. Pas un chatbot sur un site que personne ne lit. Pas un email qui finit dans les spams. Un vrai message WhatsApp. Comme si tu écrivais toi-même. 98% de taux d'ouverture. Réponse moyenne en moins de 3 minutes. La plateforme où tes prospects achètent.",
+    "button": "Activer mon agent Waevon"
   }
 }
