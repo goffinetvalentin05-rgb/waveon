@@ -255,8 +255,11 @@ export default function OnboardingPage() {
 
   if (!hasSupabase) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-6">
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-4 text-sm text-amber-800">
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#080808] px-6">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(57,255,20,0.14),transparent_60%)]" />
+        </div>
+        <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 px-6 py-4 text-sm text-amber-300">
           Configuration Supabase manquante.
         </div>
       </div>
@@ -264,16 +267,25 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 px-4 py-10">
+    <div className="relative min-h-screen overflow-hidden bg-[#080808] px-4 py-10">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(57,255,20,0.14),transparent_60%)]" />
+      </div>
       <div className="mx-auto w-full max-w-lg">
         <div className="mb-8 text-center">
-          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-            Waevon
-          </p>
-          <h1 className="mt-2 text-2xl font-semibold text-zinc-900">
-            Création de votre compte
+          <div className="mb-6 flex flex-col items-center leading-none">
+            <span className="text-2xl font-extrabold tracking-[0.22em] text-[#39FF14]">
+              WAEVON
+            </span>
+            <span className="mt-1 h-[3px] w-28 rounded-full bg-[#39FF14]" />
+          </div>
+          <h1 className="mt-2 text-2xl font-bold text-white">
+            Créer mon compte
           </h1>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-2 text-sm text-[#555]">
+            Lance ton agent Waevon en moins de 10 minutes.
+          </p>
+          <p className="mt-1 text-sm text-[#555]">
             Étape {step} sur {totalSteps}
           </p>
           <div className="mt-3 flex justify-center gap-1">
@@ -281,46 +293,46 @@ export default function OnboardingPage() {
               <div
                 key={s}
                 className={`h-1.5 flex-1 max-w-[60px] rounded-full ${
-                  s <= step ? "bg-zinc-900" : "bg-zinc-200"
+                  s <= step ? "bg-[#39FF14]" : "bg-[#333]"
                 }`}
               />
             ))}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-[#39FF14]/20 bg-[#0f0f0f] p-6 shadow-[0_24px_52px_rgba(57,255,20,0.12)]">
           {error ? (
-            <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            <div className="mb-4 rounded-xl border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-300">
               {error}
             </div>
           ) : null}
 
           {step === 1 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-zinc-900">
+              <h2 className="text-lg font-semibold text-white">
                 Informations commerce
               </h2>
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-[#555]">
                 Ces informations apparaîtront sur votre page de jeu.
               </p>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                <label className="text-xs font-semibold uppercase tracking-wide text-[#888]">
                   Nom du commerce *
                 </label>
                 <input
                   type="text"
-                  className="mt-1.5 w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm focus:border-zinc-400 focus:outline-none"
+                  className="mt-1.5 w-full rounded-xl border border-[#333] bg-[#1a1a1a] px-4 py-3 text-sm text-white placeholder:text-[#555] focus:border-[#39FF14] focus:outline-none"
                   placeholder="Ex : Café de la Gare"
                   value={businessName}
                   onChange={(e) => setBusinessName(e.target.value)}
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                <label className="text-xs font-semibold uppercase tracking-wide text-[#888]">
                   Type de commerce
                 </label>
                 <select
-                  className="mt-1.5 w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm focus:border-zinc-400 focus:outline-none"
+                  className="mt-1.5 w-full rounded-xl border border-[#333] bg-[#1a1a1a] px-4 py-3 text-sm text-white focus:border-[#39FF14] focus:outline-none"
                   value={businessType}
                   onChange={(e) => setBusinessType(e.target.value)}
                 >
@@ -333,60 +345,60 @@ export default function OnboardingPage() {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                <label className="text-xs font-semibold uppercase tracking-wide text-[#888]">
                   Lien page Avis Google *
                 </label>
                 <input
                   type="url"
-                  className="mt-1.5 w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm focus:border-zinc-400 focus:outline-none"
+                  className="mt-1.5 w-full rounded-xl border border-[#333] bg-[#1a1a1a] px-4 py-3 text-sm text-white placeholder:text-[#555] focus:border-[#39FF14] focus:outline-none"
                   placeholder="https://g.page/..."
                   value={reviewLink}
                   onChange={(e) => setReviewLink(e.target.value)}
                 />
-                <p className="mt-1 text-xs text-zinc-400">
+                <p className="mt-1 text-xs text-[#888]">
                   Vos clients seront redirigés vers cette page pour laisser un avis.
                 </p>
               </div>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                <label className="text-xs font-semibold uppercase tracking-wide text-[#888]">
                   Email *
                 </label>
                 <input
                   type="email"
-                  className="mt-1.5 w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm focus:border-zinc-400 focus:outline-none"
-                  placeholder="vous@commerce.fr"
+                  className="mt-1.5 w-full rounded-xl border border-[#333] bg-[#1a1a1a] px-4 py-3 text-sm text-white placeholder:text-[#555] focus:border-[#39FF14] focus:outline-none"
+                  placeholder="ton@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                <label className="text-xs font-semibold uppercase tracking-wide text-[#888]">
                   Mot de passe *
                 </label>
                 <input
                   type="password"
-                  className="mt-1.5 w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm focus:border-zinc-400 focus:outline-none"
+                  className="mt-1.5 w-full rounded-xl border border-[#333] bg-[#1a1a1a] px-4 py-3 text-sm text-white placeholder:text-[#555] focus:border-[#39FF14] focus:outline-none"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   minLength={6}
                 />
-                <p className="mt-1 text-xs text-zinc-400">Minimum 6 caractères.</p>
+                <p className="mt-1 text-xs text-[#888]">Minimum 6 caractères.</p>
               </div>
             </div>
           )}
 
           {step === 2 && (
             <div className="space-y-6">
-              <h2 className="text-lg font-semibold text-zinc-900">
+              <h2 className="text-lg font-semibold text-white">
                 Configuration de la roue
               </h2>
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-[#555]">
                 Définissez les lots que vos clients peuvent gagner.
               </p>
 
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                <label className="text-xs font-semibold uppercase tracking-wide text-[#888]">
                   Sur combien de participations souhaitez-vous distribuer vos lots ?
                 </label>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -400,8 +412,8 @@ export default function OnboardingPage() {
                       }}
                       className={`rounded-xl border-2 px-4 py-2 text-sm font-medium transition ${
                         baseParticipations === n && !customParticipations
-                          ? "border-zinc-900 bg-zinc-100 text-zinc-900"
-                          : "border-zinc-200 text-zinc-600 hover:bg-zinc-50"
+                          ? "border-[#39FF14] bg-[#39FF14]/10 text-[#39FF14]"
+                          : "border-[#333] text-[#888] hover:bg-[#1a1a1a]"
                       }`}
                     >
                       {n}
@@ -413,31 +425,31 @@ export default function OnboardingPage() {
                       min={1}
                       max={9999}
                       placeholder="Personnalisé"
-                      className="w-24 rounded-xl border border-zinc-200 px-3 py-2 text-sm focus:border-zinc-400 focus:outline-none"
+                      className="w-24 rounded-xl border border-[#333] bg-[#1a1a1a] px-3 py-2 text-sm text-white placeholder:text-[#555] focus:border-[#39FF14] focus:outline-none"
                       value={customParticipations}
                       onChange={(e) => {
                         setCustomParticipations(e.target.value.replace(/\D/g, ""));
                         if (e.target.value.trim()) setBaseParticipations(0);
                       }}
                     />
-                    <span className="text-xs text-zinc-400">participations</span>
+                    <span className="text-xs text-[#888]">participations</span>
                   </div>
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                <label className="text-xs font-semibold uppercase tracking-wide text-[#888]">
                   Lots de la roue
                 </label>
                 <div className="mt-2 space-y-2">
                   {wheelItems.map((item) => (
                     <div
                       key={item.id}
-                      className="flex flex-wrap items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50/50 p-3"
+                      className="flex flex-wrap items-center gap-2 rounded-xl border border-[#333] bg-[#151515] p-3"
                     >
                       <input
                         type="text"
-                        className="min-w-[120px] flex-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-zinc-400 focus:outline-none"
+                        className="min-w-[120px] flex-1 rounded-lg border border-[#333] bg-[#1a1a1a] px-3 py-2 text-sm text-white placeholder:text-[#555] focus:border-[#39FF14] focus:outline-none"
                         value={item.label}
                         onChange={(e) =>
                           handleUpdateWheelItem(item.id, { label: e.target.value })
@@ -445,7 +457,7 @@ export default function OnboardingPage() {
                         placeholder="Nom du lot"
                       />
                       <select
-                        className="rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-zinc-400 focus:outline-none"
+                        className="rounded-lg border border-[#333] bg-[#1a1a1a] px-3 py-2 text-sm text-white focus:border-[#39FF14] focus:outline-none"
                         value={item.kind}
                         onChange={(e) =>
                           handleUpdateWheelItem(item.id, {
@@ -460,7 +472,7 @@ export default function OnboardingPage() {
                         <div className="flex items-center gap-2">
                           <label
                             htmlFor={`max-wins-${item.id}`}
-                            className="text-xs font-medium text-zinc-500 whitespace-nowrap"
+                            className="text-xs font-medium text-[#888] whitespace-nowrap"
                           >
                             Nb. de fois gagnable
                           </label>
@@ -470,7 +482,7 @@ export default function OnboardingPage() {
                             min={0}
                             max={totalParticipations}
                             aria-label="Nombre de fois que ce lot peut être gagné"
-                            className="w-16 rounded-lg border border-zinc-200 px-2 py-2 text-sm focus:border-zinc-400 focus:outline-none"
+                            className="w-16 rounded-lg border border-[#333] bg-[#1a1a1a] px-2 py-2 text-sm text-white focus:border-[#39FF14] focus:outline-none"
                             value={item.max_wins}
                             onChange={(e) => {
                               const v = parseInt(e.target.value, 10);
@@ -485,7 +497,7 @@ export default function OnboardingPage() {
                         type="button"
                         onClick={() => handleRemoveWheelItem(item.id)}
                         disabled={wheelItems.length <= 1}
-                        className="rounded-lg px-2 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-40"
+                        className="rounded-lg px-2 py-1.5 text-xs font-medium text-rose-300 hover:bg-rose-400/10 disabled:opacity-40"
                       >
                         Retirer
                       </button>
@@ -495,20 +507,20 @@ export default function OnboardingPage() {
                 <button
                   type="button"
                   onClick={handleAddWheelItem}
-                  className="mt-2 rounded-xl border border-dashed border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50"
+                  className="mt-2 rounded-xl border border-dashed border-[#333] bg-[#111] px-4 py-2 text-sm font-medium text-[#39FF14] hover:bg-[#1a1a1a]"
                 >
                   + Ajouter un lot
                 </button>
-                <p className="mt-3 text-sm font-medium text-zinc-700">
+                <p className="mt-3 text-sm font-medium text-white/90">
                   Utilisé : {totalUsed} / {totalParticipations} participations
                   {totalUsed <= totalParticipations && totalParticipations - totalUsed > 0 ? (
-                    <span className="ml-1 text-zinc-500">
+                    <span className="ml-1 text-[#888]">
                       (le reste = « Perdu »)
                     </span>
                   ) : null}
                 </p>
                 {distributionError ? (
-                  <p className="mt-2 text-sm text-rose-600" role="alert">
+                  <p className="mt-2 text-sm text-rose-300" role="alert">
                     {distributionError}
                   </p>
                 ) : null}
@@ -525,13 +537,13 @@ export default function OnboardingPage() {
                 presets={COLOR_PRESETS}
               />
               {logoPreviewUrl ? (
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-[#888]">
                   La couleur principale a été suggérée depuis votre logo. Vous pouvez la modifier ci-dessus.
                 </p>
               ) : null}
 
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                <label className="text-xs font-semibold uppercase tracking-wide text-[#888]">
                   Style de fond
                 </label>
                 <div className="mt-2 flex gap-2">
@@ -540,8 +552,8 @@ export default function OnboardingPage() {
                     onClick={() => setBackgroundStyle("gradient")}
                     className={`flex-1 rounded-xl border-2 px-4 py-2 text-sm font-medium ${
                       backgroundStyle === "gradient"
-                        ? "border-zinc-900 bg-zinc-100"
-                        : "border-zinc-200 hover:bg-zinc-50"
+                        ? "border-[#39FF14] bg-[#39FF14]/10 text-[#39FF14]"
+                        : "border-[#333] text-[#888] hover:bg-[#1a1a1a]"
                     }`}
                   >
                     Dégradé
@@ -551,8 +563,8 @@ export default function OnboardingPage() {
                     onClick={() => setBackgroundStyle("solid")}
                     className={`flex-1 rounded-xl border-2 px-4 py-2 text-sm font-medium ${
                       backgroundStyle === "solid"
-                        ? "border-zinc-900 bg-zinc-100"
-                        : "border-zinc-200 hover:bg-zinc-50"
+                        ? "border-[#39FF14] bg-[#39FF14]/10 text-[#39FF14]"
+                        : "border-[#333] text-[#888] hover:bg-[#1a1a1a]"
                     }`}
                   >
                     Uni
@@ -561,17 +573,17 @@ export default function OnboardingPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                <label className="text-xs font-semibold uppercase tracking-wide text-[#888]">
                   Logo (optionnel)
                 </label>
-                <div className="mt-2 flex flex-col gap-2 rounded-xl border border-dashed border-zinc-200 bg-zinc-50/50 p-4">
+                <div className="mt-2 flex flex-col gap-2 rounded-xl border border-dashed border-[#333] bg-[#151515] p-4">
                   <input
                     type="file"
                     accept="image/*"
                     onChange={(e) =>
                       setLogoFile(e.target.files ? e.target.files[0] : null)
                     }
-                    className="text-sm text-zinc-600 file:mr-2 file:rounded-lg file:border-0 file:bg-zinc-900 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
+                    className="text-sm text-[#888] file:mr-2 file:rounded-lg file:border-0 file:bg-[#39FF14] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-black"
                   />
                   {logoPreviewUrl ? (
                     <img
@@ -580,7 +592,7 @@ export default function OnboardingPage() {
                       className="h-16 w-16 rounded-full object-cover"
                     />
                   ) : (
-                    <p className="text-xs text-zinc-400">
+                    <p className="text-xs text-[#888]">
                       Votre logo apparaîtra sur la page de jeu.
                     </p>
                   )}
@@ -591,10 +603,10 @@ export default function OnboardingPage() {
 
           {step === 3 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-zinc-900">
+              <h2 className="text-lg font-semibold text-white">
                 Aperçu de votre page
               </h2>
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-[#555]">
                 C’est ce que verront vos clients après avoir scanné le QR code.
               </p>
               <div className="flex justify-center">
@@ -612,14 +624,14 @@ export default function OnboardingPage() {
 
           {step === 4 && (
             <div className="space-y-6">
-              <h2 className="text-lg font-semibold text-zinc-900">
+              <h2 className="text-lg font-semibold text-white">
                 Récapitulatif
               </h2>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-4 text-sm text-zinc-700">
-                <p className="font-medium text-zinc-900">Commerce</p>
+              <div className="rounded-xl border border-[#333] bg-[#151515] p-4 text-sm text-white/80">
+                <p className="font-medium text-white">Commerce</p>
                 <p className="mt-1">{businessName || "—"}</p>
                 <p className="mt-1">{businessType || "—"}</p>
-                <p className="mt-3 font-medium text-zinc-900">Lots de la roue</p>
+                <p className="mt-3 font-medium text-white">Lots de la roue</p>
                 <ul className="mt-1 list-inside list-disc">
                   {wheelItems.map((i) => (
                     <li key={i.id}>
@@ -627,13 +639,13 @@ export default function OnboardingPage() {
                     </li>
                   ))}
                 </ul>
-                <p className="mt-2 text-zinc-600">
+                <p className="mt-2 text-[#888]">
                   Utilisé : {totalUsed} / {totalParticipations} participations
                 </p>
-                <p className="mt-3 font-medium text-zinc-900">Compte</p>
+                <p className="mt-3 font-medium text-white">Compte</p>
                 <p className="mt-1">{email}</p>
               </div>
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-[#555]">
                 En cliquant ci-dessous, vous créez votre compte et activez
                 immédiatement votre roue. Vous pourrez modifier les paramètres
                 depuis le tableau de bord.
@@ -646,7 +658,7 @@ export default function OnboardingPage() {
               type="button"
               onClick={() => setStep((s) => Math.max(1, s - 1))}
               disabled={step === 1}
-              className="rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+              className="rounded-xl border border-[#333] bg-[#151515] px-4 py-2.5 text-sm font-medium text-white/85 hover:bg-[#1a1a1a] disabled:opacity-50"
             >
               Retour
             </button>
@@ -662,7 +674,7 @@ export default function OnboardingPage() {
                     ? distributionError
                     : undefined
                 }
-                className="rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-50"
+                className="rounded-xl bg-[#39FF14] px-5 py-2.5 text-sm font-bold text-black transition hover:brightness-110 disabled:opacity-50"
               >
                 Continuer
               </button>
@@ -671,19 +683,19 @@ export default function OnboardingPage() {
                 type="button"
                 onClick={handleSubmit}
                 disabled={loading}
-                className="rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-60"
+                className="rounded-xl bg-[#39FF14] px-5 py-2.5 text-sm font-bold text-black transition hover:brightness-110 disabled:opacity-60"
               >
                 {loading
                   ? "Création en cours…"
-                  : "Créer mon compte et activer ma roue"}
+                  : "Créer mon compte"}
               </button>
             )}
           </div>
         </div>
 
-        <p className="mt-6 text-center text-sm text-zinc-500">
+        <p className="mt-6 text-center text-sm text-[#888]">
           Déjà un compte ?{" "}
-          <a href="/login" className="font-semibold text-zinc-900 hover:underline">
+          <a href="/login" className="font-semibold text-[#39FF14] hover:underline">
             Se connecter
           </a>
         </p>

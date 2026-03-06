@@ -21,7 +21,7 @@ export default function LoginPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const title = mode === "login" ? "Connexion" : "Créer un compte";
+  const title = mode === "login" ? "Connexion" : "Créer mon compte";
   const isReady = mounted && hasSupabaseConfig;
 
   useEffect(() => {
@@ -103,21 +103,27 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50">
+    <div className="relative min-h-screen overflow-hidden bg-[#080808]">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(57,255,20,0.14),transparent_60%)]" />
+      </div>
       <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6 py-16">
-        <div className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm">
+        <div className="relative rounded-3xl border border-[#39FF14]/20 bg-[#0f0f0f] p-8 shadow-[0_24px_52px_rgba(57,255,20,0.12)]">
           <div className="mb-6">
-            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-              Waevon
-            </p>
-            <h1 className="mt-2 text-2xl font-semibold text-zinc-900">
+            <div className="mb-6 flex flex-col items-start leading-none">
+              <span className="text-xl font-extrabold tracking-[0.22em] text-[#39FF14]">
+                WAEVON
+              </span>
+              <span className="mt-1 h-[3px] w-28 rounded-full bg-[#39FF14]" />
+            </div>
+            <h1 className="mt-2 text-2xl font-bold text-white">
               {title}
             </h1>
-            <p className="mt-2 text-sm text-zinc-500">
-              Accède à ton dashboard et lance ta campagne en quelques minutes.
+            <p className="mt-2 text-sm text-[#555]">
+              Accède à ton dashboard et active ton agent WhatsApp.
             </p>
             {!hasSupabaseConfig ? (
-              <p className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-xs text-amber-700">
+              <p className="mt-4 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-xs text-amber-300">
                 Configuration Supabase manquante. Ajoutez
                 NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY.
               </p>
@@ -126,13 +132,13 @@ export default function LoginPage() {
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+              <label className="text-xs font-semibold uppercase tracking-wide text-[#888]">
                 Email
               </label>
               <input
-                className="mt-2 w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm focus:border-zinc-400 focus:outline-none"
+                className="mt-2 w-full rounded-xl border border-[#333] bg-[#1a1a1a] px-4 py-3 text-sm text-white placeholder:text-[#555] focus:border-[#39FF14] focus:outline-none"
                 type="email"
-                placeholder="email@commerce.fr"
+                placeholder="ton@email.com"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 required
@@ -140,11 +146,11 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+              <label className="text-xs font-semibold uppercase tracking-wide text-[#888]">
                 Mot de passe
               </label>
               <input
-                className="mt-2 w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm focus:border-zinc-400 focus:outline-none"
+                className="mt-2 w-full rounded-xl border border-[#333] bg-[#1a1a1a] px-4 py-3 text-sm text-white placeholder:text-[#555] focus:border-[#39FF14] focus:outline-none"
                 type="password"
                 placeholder="••••••••"
                 value={password}
@@ -154,34 +160,34 @@ export default function LoginPage() {
               />
             </div>
             {message ? (
-              <p className="rounded-xl bg-zinc-100 px-4 py-3 text-xs text-zinc-600">
+              <p className="rounded-xl border border-[#39FF14]/20 bg-[#39FF14]/10 px-4 py-3 text-xs text-white/85">
                 {message}
               </p>
             ) : null}
             <button
-              className="w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-60"
+              className="w-full rounded-xl bg-[#39FF14] px-4 py-3 text-sm font-bold text-black transition hover:brightness-110 disabled:opacity-60"
               type="submit"
               disabled={loading || !isReady}
             >
-              {loading ? "Chargement..." : title}
+              {loading ? "Chargement..." : "Se connecter"}
             </button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-zinc-500">
+          <div className="mt-6 text-center text-sm text-[#888]">
             {mode === "login" ? (
               <>
                 Pas encore de compte ?{" "}
                 <a
                   href="/onboarding"
-                  className="font-semibold text-zinc-900 hover:underline"
+                  className="font-semibold text-[#39FF14] hover:underline"
                 >
-                  S’inscrire
+                  S'inscrire
                 </a>
               </>
             ) : (
               <>
                 Déjà un compte ?{" "}
-                <a href="/login" className="font-semibold text-zinc-900 hover:underline">
+                <a href="/login" className="font-semibold text-[#39FF14] hover:underline">
                   Se connecter
                 </a>
               </>
