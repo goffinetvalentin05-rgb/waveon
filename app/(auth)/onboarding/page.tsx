@@ -14,7 +14,6 @@ export default function OnboardingPage() {
   const totalSteps = 4;
   const [step, setStep] = useState<number>(1);
   const [loading, setLoading] = useState(false);
-  const [checkingSession, setCheckingSession] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -29,17 +28,17 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (!hasSupabase) return;
     const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        setCheckingSession(false);
-        router.replace("/login");
-        return;
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          setUserId(data.session.user.id);
+        }
+      } catch {
+        // Si la session ne peut pas être lue, on laisse l'utilisateur voir la page.
       }
-      setUserId(data.session.user.id);
-      setCheckingSession(false);
     };
     void checkSession();
-  }, [router]);
+  }, []);
 
   const canStep1 =
     fullName.trim().length >= 2 &&
@@ -53,13 +52,24 @@ export default function OnboardingPage() {
     (step === 1 && canStep1) || (step === 2 && canStep2) || (step === 3 && canStep3);
 
   const handleSubmit = async () => {
-    if (!hasSupabase || !userId) return;
+    if (!hasSupabase) return;
     setLoading(true);
     setError(null);
 
     try {
+      let currentUserId = userId;
+      if (!currentUserId) {
+        const { data } = await supabase.auth.getSession();
+        currentUserId = data.session?.user.id ?? null;
+      }
+
+      if (!currentUserId) {
+        router.replace("/login");
+        return;
+      }
+
       const { error: upsertError } = await supabase.from("profiles").upsert({
-        id: userId,
+        id: currentUserId,
         full_name: fullName.trim(),
         business_name: businessName.trim(),
         offer_description: offerDescription.trim(),
@@ -92,19 +102,6 @@ export default function OnboardingPage() {
         </div>
         <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 px-6 py-4 text-sm text-amber-300">
           Configuration Supabase manquante.
-        </div>
-      </div>
-    );
-  }
-
-  if (checkingSession) {
-    return (
-      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#080808] px-6">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(57,255,20,0.14),transparent_60%)]" />
-        </div>
-        <div className="rounded-2xl border border-[#39FF14]/20 bg-[#0f0f0f] px-6 py-4 text-sm text-white/80">
-          Chargement...
         </div>
       </div>
     );
