@@ -82,12 +82,15 @@ export default function OnboardingPage() {
       });
 
       if (upsertError) {
+        console.log("[onboarding] profiles upsert error:", upsertError);
         setError(upsertError.message);
         return;
       }
 
+      console.log("[onboarding] profiles upsert success");
       router.replace("/dashboard");
     } catch (err) {
+      console.log("[onboarding] submit exception:", err);
       setError(err instanceof Error ? err.message : "Erreur inconnue.");
     } finally {
       setLoading(false);

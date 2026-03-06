@@ -183,7 +183,7 @@ export default function LoginPage() {
               <>
                 Pas encore de compte ?{" "}
                 <a
-                  href="/onboarding"
+                  href="/signup"
                   className="font-semibold text-[#39FF14] hover:underline"
                 >
                   S'inscrire
