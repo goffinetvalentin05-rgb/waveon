@@ -39,18 +39,43 @@ export default function SignupPage() {
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-    });
+    try {
+      const normalizedEmail = email.trim().toLowerCase();
+      const { data, error } = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password,
+      });
 
-    if (error) {
-      setMessage(error.message);
+      if (error) {
+        console.log("[signup] signUp error:", error);
+        setMessage(error.message);
+        return;
+      }
+
+      // Si Supabase ne crée pas automatiquement la session, on tente une connexion directe.
+      if (!data.session) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password,
+        });
+        if (signInError) {
+          console.log("[signup] signIn fallback error:", signInError);
+          setMessage(
+            "Compte créé, mais la session n'a pas pu être ouverte. Vérifie la confirmation email dans Supabase, puis reconnecte-toi."
+          );
+          return;
+        }
+      }
+
+      router.replace("/onboarding");
+    } catch (err) {
+      console.log("[signup] unexpected error:", err);
+      setMessage(
+        "Impossible de contacter Supabase (Failed to fetch). Vérifie les variables NEXT_PUBLIC_SUPABASE_* sur Vercel et que le projet Supabase est actif."
+      );
+    } finally {
       setLoading(false);
-      return;
     }
-
-    router.replace("/onboarding");
   };
 
   return (
