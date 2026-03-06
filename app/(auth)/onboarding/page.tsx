@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { slugify } from "@/lib/slug";
 import { getDominantColorFromImageUrl } from "@/lib/colorUtils";
 import BrandColorPicker from "@/components/BrandColorPicker";

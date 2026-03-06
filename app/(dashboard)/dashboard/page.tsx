@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/client";
+import { supabase } from "@/lib/supabase";
 import type { CampaignObjective } from "@/types/db";
 import CampaignCard from "./components/CampaignCard";
 import CampaignWizard from "./components/CampaignWizard";
@@ -43,6 +43,11 @@ export default function DashboardPage() {
   const [listUpdating, setListUpdating] = useState<string | null>(null);
 
   const [showWizard, setShowWizard] = useState(false);
+  const [stats, setStats] = useState({
+    prospects: 0,
+    conversations: 0,
+    callsBooked: 0,
+  });
 
   const getTargetUrl = (campaign?: CampaignRow | null) =>
     campaign?.link ?? "";
@@ -73,6 +78,54 @@ export default function DashboardPage() {
     setActiveCampaign(rows.find((campaign) => campaign.is_active) ?? null);
   };
 
+  const fetchDashboardStats = useCallback(async (id: string) => {
+    const { data: ownedCampaigns, error: campaignsError } = await supabase
+      .from("campaigns")
+      .select("id")
+      .eq("user_id", id);
+
+    if (campaignsError) {
+      setError(campaignsError.message);
+      return;
+    }
+
+    const campaignIds = (ownedCampaigns ?? []).map((campaign) => campaign.id);
+    if (campaignIds.length === 0) {
+      setStats({ prospects: 0, conversations: 0, callsBooked: 0 });
+      return;
+    }
+
+    const [{ count: prospectsCount }, { count: conversationsCount }, { data: spins }] =
+      await Promise.all([
+        supabase
+          .from("participations")
+          .select("id", { count: "exact", head: true })
+          .in("campaign_id", campaignIds),
+        supabase
+          .from("spins")
+          .select("id", { count: "exact", head: true })
+          .in("campaign_id", campaignIds),
+        supabase.from("spins").select("id").in("campaign_id", campaignIds),
+      ]);
+
+    const spinIds = (spins ?? []).map((spin) => spin.id);
+    let callsBookedCount = 0;
+    if (spinIds.length > 0) {
+      const { count } = await supabase
+        .from("reward_claims")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "claimed")
+        .in("spin_id", spinIds);
+      callsBookedCount = count ?? 0;
+    }
+
+    setStats({
+      prospects: prospectsCount ?? 0,
+      conversations: conversationsCount ?? 0,
+      callsBooked: callsBookedCount,
+    });
+  }, []);
+
   useEffect(() => {
     const init = async () => {
       const { data: session } = await supabase.auth.getSession();
@@ -83,10 +136,50 @@ export default function DashboardPage() {
       const id = session.session.user.id;
       setUserId(id);
       await fetchCampaigns(id);
+      await fetchDashboardStats(id);
       setLoading(false);
     };
     init();
-  }, [router]);
+  }, [fetchDashboardStats, router]);
+
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel(`dashboard-stats-${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "campaigns" },
+        async () => {
+          await fetchDashboardStats(userId);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "participations" },
+        async () => {
+          await fetchDashboardStats(userId);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "spins" },
+        async () => {
+          await fetchDashboardStats(userId);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "reward_claims" },
+        async () => {
+          await fetchDashboardStats(userId);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [fetchDashboardStats, userId]);
 
   const handleActivate = async (campaignId: string) => {
     if (!userId) return;
@@ -288,13 +381,21 @@ export default function DashboardPage() {
               }
             />
             <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-              <StatsCard label="Scans" value={0} hint="Sur 30 jours" />
               <StatsCard
-                label="Actions"
-                value={0}
-                hint="Avis & abonnements"
+                label="Prospects"
+                value={stats.prospects}
+                hint="Depuis Supabase"
               />
-              <StatsCard label="Taux de conversion" value="0%" hint="Actions / scans" />
+              <StatsCard
+                label="Conversations"
+                value={stats.conversations}
+                hint="Depuis Supabase"
+              />
+              <StatsCard
+                label="Appels bookés"
+                value={stats.callsBooked}
+                hint="Depuis Supabase"
+              />
             </div>
           </div>
         </section>
