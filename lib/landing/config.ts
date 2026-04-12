@@ -179,8 +179,8 @@ Par exemple :
       {
         title: "Légal",
         links: [
-          { label: "Conditions d'utilisation", href: "#" },
-          { label: "Politique de confidentialité", href: "#" },
+          { label: "Conditions d'utilisation", href: "/conditions-d-utilisation" },
+          { label: "Politique de confidentialité", href: "/confidentialite" },
         ],
       },
     ],
