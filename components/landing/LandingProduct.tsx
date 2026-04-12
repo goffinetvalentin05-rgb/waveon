@@ -8,38 +8,70 @@ type LandingProductProps = {
   content: LandingContent["product"];
 };
 
-function DashboardMockup() {
+/** Aperçu aligné sur la copie : réservation claire → créneaux → synchro auto + agenda épuré. */
+function ProductSystemMockup() {
   return (
-    <div className={`${landingCard} overflow-hidden p-6 md:p-7`} aria-hidden>
-      <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
-        <p className="text-sm font-medium text-neutral-950">Rendez-vous</p>
-        <span className="rounded-full bg-[#f5f5f5] px-2.5 py-1 text-[11px] font-medium text-neutral-600">
-          Semaine
-        </span>
+    <div className={`${landingCard} overflow-hidden`} aria-hidden>
+      <div className="border-b border-neutral-100 bg-neutral-50/80 px-5 py-3.5 md:px-6">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Flux typique</p>
+        <p className="mt-0.5 text-sm font-medium text-neutral-950">Réservation en ligne · agenda · sans action manuelle</p>
       </div>
-      <ul className="divide-y divide-neutral-100">
-        {[
-          { day: "Lun 10", time: "09:00", client: "Emma Rousseau", service: "Coupe" },
-          { day: "Lun 10", time: "11:30", client: "Hugo Martin", service: "Barbe" },
-          { day: "Mar 11", time: "14:00", client: "Inès Bernard", service: "Coupe + soin" },
-          { day: "Mar 11", time: "16:30", client: "Paul Garnier", service: "Coupe" },
-          { day: "Mer 12", time: "10:00", client: "Léa Fontaine", service: "Coupe femme" },
-        ].map((row) => (
-          <li key={`${row.day}-${row.time}`} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-3.5">
-            <div className="w-16 shrink-0">
-              <p className="text-[11px] font-medium text-neutral-500">{row.day}</p>
-              <p className="text-xs font-semibold tabular-nums text-neutral-950">{row.time}</p>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-neutral-950">{row.client}</p>
-              <p className="truncate text-xs text-neutral-500">{row.service}</p>
-            </div>
-            <span className="shrink-0 rounded-md bg-[#f5f5f5] px-2 py-0.5 text-[10px] font-medium text-neutral-700">
-              OK
+
+      <div className="grid sm:grid-cols-2 sm:divide-x sm:divide-neutral-100">
+        <div className="border-b border-neutral-100 p-5 md:p-6 sm:border-b-0">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Page de réservation</p>
+          <p className="mt-3 text-sm font-semibold text-neutral-950">Coupe · 45 min</p>
+          <p className="mt-0.5 text-xs text-neutral-500">Choix du créneau par le client</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {["10:00", "11:30", "14:00", "16:30"].map((t, i) => (
+              <span
+                key={t}
+                className={
+                  i === 0
+                    ? "rounded-lg bg-neutral-950 px-3 py-2 text-xs font-semibold tabular-nums text-white"
+                    : "rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium tabular-nums text-neutral-600"
+                }
+              >
+                {t}
+              </span>
+            ))}
+          </div>
+          <div className="mt-5 flex items-start gap-3 rounded-xl border border-neutral-200/90 bg-[#fafafa] px-3.5 py-3">
+            <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-neutral-950 text-xs font-bold text-white">
+              ✓
             </span>
-          </li>
-        ))}
-      </ul>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Automatique</p>
+              <p className="text-xs font-medium leading-snug text-neutral-950">
+                {"Confirmé — placé dans l'agenda"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-5 md:p-6">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Agenda</p>
+            <span className="rounded-full bg-[#f5f5f5] px-2 py-0.5 text-[10px] font-medium text-neutral-600">
+              Aujourd&apos;hui
+            </span>
+          </div>
+          <ul className="mt-4 space-y-0 divide-y divide-neutral-100 rounded-xl border border-neutral-100">
+            {[
+              { time: "10:00", label: "Coupe · client en ligne" },
+              { time: "14:00", label: "Barbe · réservation web" },
+            ].map((row) => (
+              <li key={row.time} className="flex items-center justify-between gap-3 px-3 py-3 first:rounded-t-xl last:rounded-b-xl">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold tabular-nums text-neutral-600">{row.time}</p>
+                  <p className="truncate text-sm font-medium text-neutral-950">{row.label}</p>
+                </div>
+                <span className="shrink-0 text-[10px] font-medium text-neutral-400">OK</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
     </div>
   );
 }
@@ -60,7 +92,7 @@ export function LandingProduct({ content }: LandingProductProps) {
             </div>
           </ScrollReveal>
           <ScrollReveal delayMs={55}>
-            <DashboardMockup />
+            <ProductSystemMockup />
           </ScrollReveal>
         </div>
       </div>
