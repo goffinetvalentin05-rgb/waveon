@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LandingContent } from "@/lib/landing/config";
-import { VisualClientsCard } from "./VisualClientsCard";
-import { VisualDashboardCard } from "./VisualDashboardCard";
+import { VisualAgendaWeekCard } from "./VisualAgendaWeekCard";
+import { VisualCentralHubCard } from "./VisualCentralHubCard";
 import { VisualPhoneBooking } from "./VisualPhoneBooking";
 import { landingDivider, landingSection } from "./landing-tokens";
 
@@ -11,14 +11,16 @@ type LandingScrollStoryProps = {
   content: LandingContent["scrollStory"];
 };
 
+const IO_THRESHOLDS = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1];
+
 function renderVisual(index: number) {
   switch (index) {
     case 0:
       return <VisualPhoneBooking disableFloat />;
     case 1:
-      return <VisualDashboardCard />;
+      return <VisualAgendaWeekCard />;
     case 2:
-      return <VisualClientsCard />;
+      return <VisualCentralHubCard />;
     default:
       return null;
   }
@@ -26,53 +28,121 @@ function renderVisual(index: number) {
 
 function useActiveStoryStep(stepCount: number) {
   const stepRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const ratiosRef = useRef<Float32Array>(new Float32Array(stepCount));
   const [active, setActive] = useState(0);
 
   const setStepRef = useCallback((index: number) => (node: HTMLDivElement | null) => {
     stepRefs.current[index] = node;
   }, []);
 
-  const recompute = useCallback(() => {
-    const vh = window.innerHeight || 1;
-    const targetY = vh * 0.42;
+  const pickFromRatios = useCallback(() => {
+    const ratios = ratiosRef.current;
     let best = 0;
-    let bestDist = Number.POSITIVE_INFINITY;
-
+    let max = -1;
     for (let i = 0; i < stepCount; i++) {
-      const el = stepRefs.current[i];
-      if (!el) continue;
-      const r = el.getBoundingClientRect();
-      if (r.bottom < 80 || r.top > vh - 80) continue;
-      const mid = (r.top + r.bottom) / 2;
-      const d = Math.abs(mid - targetY);
-      if (d < bestDist) {
-        bestDist = d;
+      const r = ratios[i] ?? 0;
+      if (r > max) {
+        max = r;
         best = i;
       }
+    }
+    if (max < 0.02) {
+      const vh = window.innerHeight || 1;
+      const targetY = vh * 0.4;
+      let bestDist = Number.POSITIVE_INFINITY;
+      let bi = 0;
+      for (let i = 0; i < stepCount; i++) {
+        const el = stepRefs.current[i];
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        const mid = (rect.top + rect.bottom) / 2;
+        const d = Math.abs(mid - targetY);
+        if (d < bestDist) {
+          bestDist = d;
+          bi = i;
+        }
+      }
+      setActive((p) => (p === bi ? p : bi));
+      return;
     }
     setActive((p) => (p === best ? p : best));
   }, [stepCount]);
 
   useEffect(() => {
-    let raf = 0;
-    const tick = () => {
-      if (raf) return;
-      raf = window.requestAnimationFrame(() => {
-        raf = 0;
-        recompute();
-      });
+    const ratios = ratiosRef.current;
+    if (ratios.length !== stepCount) {
+      ratiosRef.current = new Float32Array(stepCount);
+    }
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          const raw = (e.target as HTMLElement).dataset.storyStep;
+          const idx = raw != null ? Number.parseInt(raw, 10) : NaN;
+          if (Number.isFinite(idx) && idx >= 0 && idx < stepCount) {
+            ratiosRef.current[idx] = e.intersectionRatio;
+          }
+        }
+        pickFromRatios();
+      },
+      { root: null, rootMargin: "-36% 0px -36% 0px", threshold: IO_THRESHOLDS },
+    );
+
+    const observeAll = () => {
+      for (let i = 0; i < stepCount; i++) {
+        const el = stepRefs.current[i];
+        if (el) io.observe(el);
+      }
     };
-    recompute();
+
+    observeAll();
+    const tick = () => pickFromRatios();
+    window.addEventListener("scroll", tick, { passive: true });
+    window.addEventListener("resize", tick, { passive: true });
+    tick();
+
+    return () => {
+      io.disconnect();
+      window.removeEventListener("scroll", tick);
+      window.removeEventListener("resize", tick);
+    };
+  }, [pickFromRatios, stepCount]);
+
+  return { active, setStepRef };
+}
+
+function useSectionScrollParallax() {
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const [parallaxY, setParallaxY] = useState(0);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const tick = () => {
+      if (reduce) {
+        setParallaxY(0);
+        return;
+      }
+      const r = el.getBoundingClientRect();
+      const vh = window.innerHeight || 1;
+      const span = Math.max(r.height - vh, 1);
+      const t = Math.min(Math.max(-r.top / span, 0), 1);
+      setParallaxY((t - 0.5) * 10);
+    };
+
+    tick();
     window.addEventListener("scroll", tick, { passive: true });
     window.addEventListener("resize", tick, { passive: true });
     return () => {
       window.removeEventListener("scroll", tick);
       window.removeEventListener("resize", tick);
-      if (raf) cancelAnimationFrame(raf);
     };
-  }, [recompute]);
+  }, []);
 
-  return { active, setStepRef };
+  return { sectionRef, parallaxY };
 }
 
 function StoryVisualStage({ active, count }: { active: number; count: number }) {
@@ -81,8 +151,10 @@ function StoryVisualStage({ active, count }: { active: number; count: number }) 
       {Array.from({ length: count }, (_, i) => (
         <div
           key={i}
-          className={`flex w-full items-center justify-center transition-opacity duration-[480ms] ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none ${
-            i === active ? "relative z-10 opacity-100" : "pointer-events-none absolute inset-0 z-0 opacity-0"
+          className={`flex w-full items-center justify-center motion-reduce:transition-none ${
+            i === active
+              ? "relative z-10 opacity-100 transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] translate-y-0 scale-100"
+              : "pointer-events-none absolute inset-0 z-0 opacity-0 transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] translate-y-2 scale-[0.98] motion-reduce:translate-y-0 motion-reduce:scale-100"
           }`}
           aria-hidden={i !== active}
         >
@@ -93,14 +165,16 @@ function StoryVisualStage({ active, count }: { active: number; count: number }) 
   );
 }
 
-/** Parcours sticky desktop + défilement vertical mobile — texte et visuels synchronisés par étape. */
+/** Parcours sticky (md+) : texte à gauche, visuel sticky à droite + lecture scroll. */
 export function LandingScrollStory({ content }: LandingScrollStoryProps) {
   const { steps } = content;
   const n = steps.length;
   const { active, setStepRef } = useActiveStoryStep(n);
+  const { sectionRef, parallaxY } = useSectionScrollParallax();
 
   return (
     <section
+      ref={sectionRef}
       id="parcours"
       className={`scroll-mt-28 ${landingDivider} bg-white`}
       aria-labelledby="parcours-aria-title"
@@ -110,8 +184,7 @@ export function LandingScrollStory({ content }: LandingScrollStoryProps) {
       </h2>
 
       <div className={`${landingSection} py-20 md:py-24 lg:py-28`}>
-        {/* Mobile : une colonne, texte puis visuel par étape */}
-        <div className="mx-auto max-w-lg space-y-20 lg:hidden">
+        <div className="mx-auto max-w-lg space-y-20 md:hidden">
           {steps.map((step, i) => (
             <div key={step.title} className="space-y-8">
               <div>
@@ -127,25 +200,25 @@ export function LandingScrollStory({ content }: LandingScrollStoryProps) {
           ))}
         </div>
 
-        {/* Desktop : gauche = scroll des étapes, droite = visuel sticky + crossfade */}
-        <div className="mx-auto hidden max-w-6xl lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,1.05fr)] lg:items-start lg:gap-x-16 xl:gap-x-20">
+        <div className="mx-auto hidden max-w-6xl md:grid md:grid-cols-[minmax(0,1fr)_minmax(300px,1.05fr)] md:items-start md:gap-x-10 lg:gap-x-16 xl:gap-x-20">
           <div className="min-w-0 pb-8">
             {steps.map((step, i) => (
               <div
                 key={step.title}
                 ref={setStepRef(i)}
                 id={`parcours-etape-${i + 1}`}
-                className="flex min-h-[125svh] max-w-xl flex-col justify-center py-10 first:pt-4 last:pb-24 lg:py-14"
+                data-story-step={i}
+                className="flex min-h-[125svh] max-w-xl flex-col justify-center py-10 first:pt-4 last:pb-24 md:py-14"
                 aria-current={i === active ? "step" : undefined}
               >
                 <div
                   className={`transition-[opacity,transform] duration-[520ms] ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none ${
                     i === active
                       ? "translate-y-0 opacity-100"
-                      : "translate-y-1 opacity-[0.28] motion-reduce:translate-y-0 motion-reduce:opacity-[0.42]"
+                      : "translate-y-2 opacity-[0.26] motion-reduce:translate-y-0 motion-reduce:opacity-[0.42]"
                   }`}
                 >
-                  <h3 className="font-display text-[2.125rem] font-normal leading-[1.12] tracking-tight text-neutral-950 xl:text-[2.25rem]">
+                  <h3 className="font-display text-[clamp(1.65rem,2.5vw,2.25rem)] font-normal leading-[1.12] tracking-tight text-neutral-950">
                     {step.title}
                   </h3>
                   <p className="mt-5 text-lg leading-relaxed text-neutral-600 xl:text-[1.125rem]">{step.text}</p>
@@ -155,8 +228,25 @@ export function LandingScrollStory({ content }: LandingScrollStoryProps) {
           </div>
 
           <div className="min-w-0">
-            <div className="sticky top-24 pb-12 pt-2 md:top-28 md:pt-4">
-              <div className="rounded-[1.75rem] border border-neutral-200/90 bg-white p-6 shadow-[0_24px_64px_-40px_rgba(0,0,0,0.18)] md:rounded-[2rem] md:p-8 xl:rounded-[2.125rem] xl:p-9">
+            <div
+              className="sticky top-20 pb-10 pt-2 will-change-transform md:top-24 md:pb-12 md:pt-4 lg:top-28"
+              style={{ transform: `translate3d(0, ${parallaxY}px, 0)` }}
+            >
+              <div className="rounded-[1.75rem] border border-neutral-200/90 bg-white p-5 shadow-[0_24px_64px_-40px_rgba(0,0,0,0.18)] md:rounded-[2rem] md:p-7 xl:rounded-[2.125rem] xl:p-9">
+                <div className="mb-5 flex items-center gap-2 md:mb-6" aria-hidden>
+                  {steps.map((_, i) => (
+                    <span
+                      key={i}
+                      className={`h-1 rounded-full transition-[width,background-color,opacity] duration-500 ease-out motion-reduce:transition-none ${
+                        i === active
+                          ? "w-8 bg-neutral-950"
+                          : i < active
+                            ? "w-1.5 bg-neutral-400"
+                            : "w-1.5 bg-neutral-200"
+                      }`}
+                    />
+                  ))}
+                </div>
                 <StoryVisualStage active={active} count={n} />
               </div>
             </div>

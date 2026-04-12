@@ -15,7 +15,7 @@ export default function Home() {
     landingContent;
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-white font-sans text-neutral-950 antialiased selection:bg-neutral-200/80">
+    <div className="relative min-h-screen overflow-x-clip bg-white font-sans text-neutral-950 antialiased selection:bg-neutral-200/80">
       <LandingHeader brand={brand} header={header} />
       <main>
         <LandingHero content={hero} />
