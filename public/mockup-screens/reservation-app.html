@@ -43,7 +43,7 @@
         height: var(--h);
         background: #fff;
         color: var(--ink);
-        padding: 92px 24px 32px;
+        padding: 72px 24px 32px;
         display: flex;
         flex-direction: column;
         text-align: center;
@@ -64,7 +64,7 @@
       }
 
       .service {
-        margin-top: 16px;
+        margin-top: 0;
         font-family: "Instrument Serif", Georgia, serif;
         font-size: 1.15rem;
         font-weight: 400;
@@ -87,6 +87,13 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 12px;
+      }
+
+      .slot-span {
+        grid-column: span 2;
+        justify-self: center;
+        width: calc((100% - 12px) / 2);
+        max-width: 100%;
       }
 
       .slot {
@@ -112,7 +119,8 @@
       }
 
       .cta-wrap {
-        margin-top: 28px;
+        margin-top: auto;
+        padding-top: 24px;
       }
 
       .cta {
@@ -156,10 +164,6 @@
   </head>
   <body>
     <main class="screen" aria-label="Aperçu application réservation">
-      <header>
-        <p class="label">Réserver</p>
-      </header>
-
       <div>
         <p class="service">Coupe + barbe</p>
         <p class="duration">45 min</p>
@@ -169,9 +173,8 @@
         <p class="label">Créneaux</p>
         <div class="grid">
           <div class="slot slot--light">10:00</div>
-          <div class="slot slot--dark">10:30</div>
-          <div class="slot slot--light">11:00</div>
-          <div class="slot slot--light">14:00</div>
+          <div class="slot slot--dark">11:00</div>
+          <div class="slot slot--light slot-span">14:00</div>
         </div>
       </section>
 

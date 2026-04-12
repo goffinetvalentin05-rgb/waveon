@@ -2,8 +2,7 @@ import Image from "next/image";
 
 const slots = [
   { time: "10:00", selected: false },
-  { time: "10:30", selected: true },
-  { time: "11:00", selected: false },
+  { time: "11:00", selected: true },
   { time: "14:00", selected: false },
 ] as const;
 
@@ -24,18 +23,13 @@ const SCREEN_BOX = {
 } as const;
 
 /**
- * Contenu « app » : haut (titre + service + grille), CTA ancré en bas (comportement natif).
+ * Contenu « app » : service + grille (sans libellé « Réserver » en haut ni créneau 10:30).
  */
 function BookingScreen() {
+  const [a, b, c] = slots;
   return (
-    <div className="flex h-full min-h-0 flex-col bg-white px-6 pb-8 pt-[5.75rem] text-center text-neutral-950">
-      <header className="shrink-0">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-neutral-400">
-          Réserver
-        </p>
-      </header>
-
-      <div className="mt-4 shrink-0">
+    <div className="flex h-full min-h-0 flex-col bg-white px-6 pb-8 pt-[4.5rem] text-center text-neutral-950">
+      <div className="shrink-0">
         <p className="font-display text-[1.05rem] font-normal leading-[1.2] tracking-[-0.02em]">
           Coupe + barbe
         </p>
@@ -47,18 +41,33 @@ function BookingScreen() {
           Créneaux
         </p>
         <div className="mt-2.5 grid grid-cols-2 gap-3">
-          {slots.map(({ time, selected }) => (
-            <span
-              key={time}
-              className={`rounded-2xl px-1 py-2.5 text-center text-[13px] font-semibold tabular-nums leading-none ${
-                selected
-                  ? "bg-neutral-950 text-white shadow-[0_4px_14px_-4px_rgba(0,0,0,0.35)]"
-                  : "border border-neutral-200 bg-neutral-50/80 text-neutral-700 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
-              }`}
-            >
-              {time}
-            </span>
-          ))}
+          <span
+            className={`rounded-2xl px-1 py-2.5 text-center text-[13px] font-semibold tabular-nums leading-none ${
+              a.selected
+                ? "bg-neutral-950 text-white shadow-[0_4px_14px_-4px_rgba(0,0,0,0.35)]"
+                : "border border-neutral-200 bg-neutral-50/80 text-neutral-700 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+            }`}
+          >
+            {a.time}
+          </span>
+          <span
+            className={`rounded-2xl px-1 py-2.5 text-center text-[13px] font-semibold tabular-nums leading-none ${
+              b.selected
+                ? "bg-neutral-950 text-white shadow-[0_4px_14px_-4px_rgba(0,0,0,0.35)]"
+                : "border border-neutral-200 bg-neutral-50/80 text-neutral-700 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+            }`}
+          >
+            {b.time}
+          </span>
+          <span
+            className={`col-span-2 mx-auto w-[calc((100%-0.75rem)/2)] max-w-full rounded-2xl px-1 py-2.5 text-center text-[13px] font-semibold tabular-nums leading-none ${
+              c.selected
+                ? "bg-neutral-950 text-white shadow-[0_4px_14px_-4px_rgba(0,0,0,0.35)]"
+                : "border border-neutral-200 bg-neutral-50/80 text-neutral-700 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+            }`}
+          >
+            {c.time}
+          </span>
         </div>
       </div>
 

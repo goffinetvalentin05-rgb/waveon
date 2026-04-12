@@ -4,12 +4,12 @@ import { useCallback, useState } from "react";
 
 const slots = [
   { time: "10:00", selected: false },
-  { time: "10:30", selected: true },
-  { time: "11:00", selected: false },
+  { time: "11:00", selected: true },
   { time: "14:00", selected: false },
 ] as const;
 
 export function MockupExportClient() {
+  const [a, b, c] = slots;
   const [showHelp, setShowHelp] = useState(true);
 
   const copySize = useCallback(async () => {
@@ -67,13 +67,9 @@ export function MockupExportClient() {
       {/* Zone à capturer — id pour l’inspecteur */}
       <div
         id="export-screen"
-        className="flex h-[844px] w-[390px] shrink-0 flex-col rounded-[44px] bg-white px-6 pb-8 pt-[5.75rem] text-center text-neutral-950 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.06),inset_0_18px_40px_-12px_rgba(255,255,255,0.65),inset_0_-10px_28px_-14px_rgba(0,0,0,0.07),0_24px_64px_rgba(0,0,0,0.2)] ring-1 ring-black/[0.04]"
+        className="flex h-[844px] w-[390px] shrink-0 flex-col rounded-[44px] bg-white px-6 pb-8 pt-[4.5rem] text-center text-neutral-950 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.06),inset_0_18px_40px_-12px_rgba(255,255,255,0.65),inset_0_-10px_28px_-14px_rgba(0,0,0,0.07),0_24px_64px_rgba(0,0,0,0.2)] ring-1 ring-black/[0.04]"
       >
-        <header className="shrink-0">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-neutral-400">Réserver</p>
-        </header>
-
-        <div className="mt-4 shrink-0">
+        <div className="shrink-0">
           <p className="font-display text-[1.05rem] font-normal leading-[1.2] tracking-[-0.02em]">Coupe + barbe</p>
           <p className="mt-1 text-[12px] leading-none text-neutral-500">45 min</p>
         </div>
@@ -81,22 +77,37 @@ export function MockupExportClient() {
         <div className="mt-5 shrink-0">
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-neutral-400">Créneaux</p>
           <div className="mt-2.5 grid grid-cols-2 gap-3">
-            {slots.map(({ time, selected }) => (
-              <span
-                key={time}
-                className={`rounded-2xl px-1 py-2.5 text-center text-[13px] font-semibold tabular-nums leading-none ${
-                  selected
-                    ? "bg-neutral-950 text-white shadow-[0_4px_14px_-4px_rgba(0,0,0,0.35)]"
-                    : "border border-neutral-200 bg-neutral-50/80 text-neutral-700 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
-                }`}
-              >
-                {time}
-              </span>
-            ))}
+            <span
+              className={`rounded-2xl px-1 py-2.5 text-center text-[13px] font-semibold tabular-nums leading-none ${
+                a.selected
+                  ? "bg-neutral-950 text-white shadow-[0_4px_14px_-4px_rgba(0,0,0,0.35)]"
+                  : "border border-neutral-200 bg-neutral-50/80 text-neutral-700 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+              }`}
+            >
+              {a.time}
+            </span>
+            <span
+              className={`rounded-2xl px-1 py-2.5 text-center text-[13px] font-semibold tabular-nums leading-none ${
+                b.selected
+                  ? "bg-neutral-950 text-white shadow-[0_4px_14px_-4px_rgba(0,0,0,0.35)]"
+                  : "border border-neutral-200 bg-neutral-50/80 text-neutral-700 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+              }`}
+            >
+              {b.time}
+            </span>
+            <span
+              className={`col-span-2 mx-auto w-[calc((100%-0.75rem)/2)] max-w-full rounded-2xl px-1 py-2.5 text-center text-[13px] font-semibold tabular-nums leading-none ${
+                c.selected
+                  ? "bg-neutral-950 text-white shadow-[0_4px_14px_-4px_rgba(0,0,0,0.35)]"
+                  : "border border-neutral-200 bg-neutral-50/80 text-neutral-700 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+              }`}
+            >
+              {c.time}
+            </span>
           </div>
         </div>
 
-        <div className="mt-7 shrink-0">
+        <div className="mt-auto w-full shrink-0 pt-6">
           <div className="w-full rounded-2xl bg-neutral-950 py-3 text-[15px] font-semibold leading-none tracking-tight text-white shadow-[0_8px_20px_-6px_rgba(0,0,0,0.25)]">
             Réserver
           </div>
