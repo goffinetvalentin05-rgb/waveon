@@ -23,7 +23,7 @@ export function LandingPricing({ content }: LandingPricingProps) {
   const { starter, pro } = content;
 
   return (
-    <section className={`${landingDivider} ${landingSectionSoft}`}>
+    <section id="tarifs" className={`scroll-mt-28 ${landingDivider} ${landingSectionSoft}`}>
       <div className={`${landingSection} ${landingSectionY}`}>
         <h2 className="mx-auto max-w-3xl text-center font-display text-3xl font-normal leading-tight tracking-tight text-neutral-950 md:text-4xl lg:text-[2.75rem]">
           {content.title}

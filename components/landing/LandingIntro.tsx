@@ -7,7 +7,7 @@ type LandingIntroProps = {
 
 export function LandingIntro({ content }: LandingIntroProps) {
   return (
-    <section className={landingDivider}>
+    <section id="presentation" className={`scroll-mt-28 ${landingDivider}`}>
       <div className={`${landingSection} ${landingSectionY}`}>
         <div className={`${landingCard} mx-auto max-w-4xl p-8 md:p-12 lg:p-14`}>
           <h2 className="text-center font-display text-3xl font-normal leading-tight tracking-tight text-neutral-950 md:text-4xl lg:text-[2.75rem]">

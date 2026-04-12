@@ -13,6 +13,12 @@ export const landingContent = {
   },
 
   header: {
+    /** Ancres : ids #presentation et #tarifs sur la page */
+    navLinks: [
+      { label: "Présentation", href: "#presentation" },
+      { label: "Tarifs", href: "#tarifs" },
+    ],
+    login: { label: "Connexion", href: "/login" },
     cta: { label: "Commencer gratuitement", href: "/signup" },
   },
 
