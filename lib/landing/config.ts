@@ -98,9 +98,7 @@ export const landingContent = {
 
   finalCta: {
     title: "Passe à un système simple.",
-    subtitle:
-      "Crée ton compte, publie ta page de réservation et laisse l’agenda tourner — sans engagement au départ.",
-    cta: { label: "Commencer gratuitement", href: "/signup" },
+    cta: { label: "Essayer gratuitement", href: "/signup" },
   },
 
   footer: {
