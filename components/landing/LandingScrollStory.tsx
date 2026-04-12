@@ -1,42 +1,107 @@
 "use client";
 
 import type { LandingContent } from "@/lib/landing/config";
-import { PhoneBookingMockup } from "./PhoneBookingMockup";
 import { ScrollReveal } from "./ScrollReveal";
+import { VisualClientsCard } from "./VisualClientsCard";
+import { VisualDashboardCard } from "./VisualDashboardCard";
+import { VisualPhoneBooking } from "./VisualPhoneBooking";
 import { landingDivider, landingSection } from "./landing-tokens";
 
 type LandingScrollStoryProps = {
   content: LandingContent["scrollStory"];
 };
 
+function TimelineDot({ className = "" }: { className?: string }) {
+  return (
+    <div
+      className={`flex h-full min-h-[3rem] items-center justify-center ${className}`}
+      aria-hidden
+    >
+      <span className="h-2.5 w-2.5 shrink-0 rounded-full border-2 border-neutral-950 bg-white shadow-sm" />
+    </div>
+  );
+}
+
+function renderVisual(index: number) {
+  switch (index) {
+    case 0:
+      return <VisualPhoneBooking />;
+    case 1:
+      return <VisualDashboardCard />;
+    case 2:
+      return <VisualClientsCard />;
+    default:
+      return null;
+  }
+}
+
 export function LandingScrollStory({ content }: LandingScrollStoryProps) {
   const { steps } = content;
 
   return (
     <section id="parcours" className={`scroll-mt-28 ${landingDivider} bg-white`}>
-      <div className={`${landingSection} py-24 md:py-32 lg:py-36`}>
-        <div className="mx-auto grid max-w-6xl gap-14 md:grid-cols-2 md:items-start md:gap-x-12 lg:gap-x-20 xl:gap-x-24">
-          {/* Étapes (ordre 2 sur mobile pour passer après le téléphone) */}
-          <div className="order-2 flex flex-col md:order-1">
-            {steps.map((step) => (
-              <ScrollReveal key={step.title}>
-                <div className="flex min-h-[min(46vh,360px)] flex-col justify-center border-b border-neutral-100 py-12 last:border-b-0 last:pb-2 md:min-h-[min(50vh,420px)] md:py-16 lg:min-h-[min(48vh,460px)] lg:py-20">
-                  <h3 className="max-w-md font-display text-2xl font-normal leading-tight tracking-tight text-neutral-950 md:text-3xl lg:text-[2.125rem]">
-                    {step.title}
-                  </h3>
-                  <p className="mt-5 max-w-md text-base leading-relaxed text-neutral-600 md:mt-6 md:text-lg">
-                    {step.text}
-                  </p>
-                </div>
-              </ScrollReveal>
-            ))}
-          </div>
+      <div className={`${landingSection} py-20 md:py-28 lg:py-32`}>
+        <div className="relative mx-auto max-w-6xl">
+          {/* Ligne verticale pleine hauteur */}
+          <div
+            className="pointer-events-none absolute bottom-6 left-[15px] top-6 w-px bg-neutral-200 md:left-1/2 md:top-8 md:bottom-8 md:-translate-x-1/2"
+            aria-hidden
+          />
 
-          {/* Un seul téléphone : hero en haut sur mobile, sticky à droite sur desktop */}
-          <div className="order-1 flex justify-center md:sticky md:top-28 md:order-2 md:self-start md:justify-center lg:top-32">
-            <div className="w-full max-w-[360px] pb-2 pt-2 md:max-w-none md:py-10 lg:py-14">
-              <PhoneBookingMockup hero />
-            </div>
+          <div className="relative flex flex-col">
+            {steps.map((step, index) => {
+              const textLeft = index % 2 === 0;
+
+              return (
+                <article key={step.title} className="relative border-b border-transparent py-2 last:border-b-0">
+                  {/* Point mobile (aligné sur la ligne à gauche) */}
+                  <div
+                    className="absolute left-[15px] top-[2.75rem] z-10 h-2.5 w-2.5 -translate-x-1/2 rounded-full border-2 border-neutral-950 bg-white shadow-sm md:hidden"
+                    aria-hidden
+                  />
+
+                  <ScrollReveal className="pb-16 pt-4 last:pb-6 md:pb-24 md:pt-6 md:last:pb-10">
+                    {/* Mobile : texte puis visuel, avec décalage pour la ligne */}
+                    <div className="flex flex-col gap-10 pl-10 md:hidden">
+                      <div>
+                        <h3 className="font-display text-2xl font-normal leading-tight tracking-tight text-neutral-950">
+                          {step.title}
+                        </h3>
+                        <p className="mt-4 max-w-md text-base leading-relaxed text-neutral-600">{step.text}</p>
+                      </div>
+                      <div className="flex justify-center">{renderVisual(index)}</div>
+                    </div>
+
+                    {/* Desktop : 3 colonnes — texte | point | visuel (ordre selon alternance) */}
+                    <div className="hidden min-h-[min(280px,40vh)] grid-cols-[1fr_28px_1fr] items-center gap-x-8 md:grid lg:min-h-[min(300px,38vh)] lg:gap-x-12">
+                      {textLeft ? (
+                        <>
+                          <div className="pr-2 lg:pr-6">
+                            <h3 className="font-display text-3xl font-normal leading-tight tracking-tight text-neutral-950 lg:text-[2.125rem]">
+                              {step.title}
+                            </h3>
+                            <p className="mt-5 max-w-md text-lg leading-relaxed text-neutral-600">{step.text}</p>
+                          </div>
+                          <TimelineDot />
+                          <div className="flex justify-center pl-2 lg:pl-6">{renderVisual(index)}</div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex justify-center pr-2 lg:pr-6">{renderVisual(index)}</div>
+                          <TimelineDot />
+                          <div className="pl-2 lg:pl-6">
+                            <h3 className="font-display text-3xl font-normal leading-tight tracking-tight text-neutral-950 lg:text-[2.125rem]">
+                              {step.title}
+                            </h3>
+                            <p className="mt-5 max-w-md text-lg leading-relaxed text-neutral-600">{step.text}</p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </ScrollReveal>
+                </article>
+              );
+            })}
           </div>
         </div>
       </div>
