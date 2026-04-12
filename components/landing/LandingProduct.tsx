@@ -38,20 +38,67 @@ function IconZap({ className = "h-5 w-5" }: { className?: string }) {
   );
 }
 
+function IconFileInvoice({ className = "h-5 w-5" }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+      <line x1="10" y1="9" x2="8" y2="9" />
+    </svg>
+  );
+}
+
 /** Cartes bento flottantes, colonnes décalées (style masonry / taap). */
 function ProductBentoMockup() {
   return (
-      <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-start md:gap-4 lg:gap-5" aria-hidden>
-      {/* Colonne 1 — texte seul (sans mockup téléphone) */}
-      <div className="min-w-0 shrink-0 md:w-[min(100%,32%)] lg:w-[30%]">
+    <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-start md:gap-4 lg:gap-5" aria-hidden>
+      {/* Colonne 1 — réservation + facturation auto */}
+      <div className="flex min-w-0 shrink-0 flex-col gap-5 md:w-[min(100%,32%)] lg:w-[30%]">
         <ScrollReveal delayMs={0}>
           <div className={`${bento} flex flex-col p-5 md:p-6`}>
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Aperçu client</p>
-            <p className="mt-1 font-display text-lg font-normal text-neutral-950 md:text-xl">Réserver en ligne</p>
+            <p className="font-display text-lg font-normal text-neutral-950 md:text-xl">Réserver en ligne</p>
             <p className="mt-3 text-sm leading-relaxed text-neutral-600">
               Créneaux clairs, confirmation instantanée.
             </p>
-            <div className="mt-6 h-px max-w-[4.5rem] bg-neutral-200" />
+          </div>
+        </ScrollReveal>
+
+        <ScrollReveal delayMs={45}>
+          <div className={`${bento} flex flex-col p-5 md:p-6`}>
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-neutral-100 text-neutral-800 ring-1 ring-neutral-200/90">
+                <IconFileInvoice className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Facturation</p>
+                <p className="mt-0.5 font-display text-lg font-normal text-neutral-950 md:text-xl">
+                  Selon la prestation
+                </p>
+              </div>
+            </div>
+            <p className="mt-3 text-sm leading-relaxed text-neutral-600">
+              Le libellé et le montant suivent la prestation choisie — pas de ressaisie après le rendez-vous.
+            </p>
+            <div className="mt-4 rounded-xl border border-neutral-100 bg-[#fafafa] px-3.5 py-3">
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <span className="font-medium text-neutral-950">Coupe · 45 min</span>
+                <span className="shrink-0 font-semibold tabular-nums text-neutral-950">45.-</span>
+              </div>
+              <p className="mt-2 text-[10px] font-medium uppercase tracking-wide text-neutral-500">
+                Ligne prête · PDF automatique
+              </p>
+            </div>
           </div>
         </ScrollReveal>
       </div>
