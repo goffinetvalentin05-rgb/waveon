@@ -12,18 +12,16 @@ const FRAME_NATURAL_W = 1587;
 const FRAME_NATURAL_H = 2245;
 
 /**
- * Zone écran dans ce PNG (recalibré pour 1587×2245, iPhone clair / léger angle).
- * À affiner au pixel près si besoin.
+ * Zone écran dans `mockup_iphone.png` (1587×2245).
+ * Pas de transform 3D ici : la perspective est déjà dans le PNG ; un rotateX/Y
+ * ne s’appliquait qu’à l’UI et créait le décalage / débordement visible.
  */
 const SCREEN_BOX = {
-  top: "15.5%",
-  left: "23.5%",
-  right: "23.5%",
-  bottom: "18.5%",
+  top: "22%",
+  left: "19%",
+  right: "21%",
+  bottom: "17%",
 } as const;
-
-const SCREEN_TRANSFORM =
-  "perspective(2400px) rotateY(-5deg) rotateX(3deg) rotateZ(0deg)";
 
 /**
  * Contenu « app » : haut (titre + service + grille), CTA ancré en bas (comportement natif).
@@ -82,7 +80,7 @@ function BookingScreen() {
 export function VisualPhoneBooking() {
   return (
     <div
-      className="relative mx-auto flex min-h-[min(380px,52vw)] w-full max-w-[min(100%,360px)] shrink-0 items-center justify-center py-10 md:max-w-[440px] md:py-14 md:[perspective:2400px]"
+      className="relative mx-auto flex min-h-[min(380px,52vw)] w-full max-w-[min(100%,360px)] shrink-0 items-center justify-center py-10 md:max-w-[440px] md:py-14"
       aria-hidden
     >
       <div className="pointer-events-none absolute inset-[10%] -z-20 rounded-[3rem] bg-neutral-300/25 blur-[48px]" />
@@ -96,7 +94,7 @@ export function VisualPhoneBooking() {
         />
 
         <div className="relative z-10 w-[min(100%,248px)] drop-shadow-[0_36px_80px_-24px_rgba(0,0,0,0.45)] md:w-[min(100%,280px)]">
-          <div className="relative w-full [transform-style:preserve-3d]">
+          <div className="relative w-full">
             <Image
               src="/mockup_iphone.png"
               alt=""
@@ -109,14 +107,12 @@ export function VisualPhoneBooking() {
             />
 
             <div
-              className="absolute z-20 overflow-hidden rounded-[2rem] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.06),inset_0_18px_40px_-12px_rgba(255,255,255,0.65),inset_0_-10px_28px_-14px_rgba(0,0,0,0.07)] ring-1 ring-black/[0.04] [backface-visibility:hidden] [transform-style:preserve-3d]"
+              className="absolute z-20 overflow-hidden rounded-[2rem] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.06),inset_0_18px_40px_-12px_rgba(255,255,255,0.65),inset_0_-10px_28px_-14px_rgba(0,0,0,0.07)] ring-1 ring-black/[0.04]"
               style={{
                 top: SCREEN_BOX.top,
                 left: SCREEN_BOX.left,
                 right: SCREEN_BOX.right,
                 bottom: SCREEN_BOX.bottom,
-                transform: SCREEN_TRANSFORM,
-                transformOrigin: "50% 50%",
               }}
             >
               <BookingScreen />
