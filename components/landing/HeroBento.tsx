@@ -1,5 +1,52 @@
-const bentoCard =
-  "rounded-3xl border border-neutral-200/90 shadow-[0_2px_16px_-4px_rgba(0,0,0,0.06)] transition-shadow duration-[420ms] ease-out hover:shadow-[0_10px_28px_-10px_rgba(0,0,0,0.08)]";
+import type { ReactNode } from "react";
+
+const cardShell =
+  "group relative overflow-hidden rounded-3xl border border-neutral-200/70 " +
+  "shadow-[0_1px_2px_rgba(0,0,0,0.04),0_10px_28px_-6px_rgba(0,0,0,0.08),0_24px_48px_-12px_rgba(0,0,0,0.06)] " +
+  "transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] " +
+  "hover:-translate-y-1.5 hover:border-neutral-300/85 " +
+  "hover:shadow-[0_4px_12px_rgba(0,0,0,0.05),0_18px_40px_-8px_rgba(0,0,0,0.12),0_40px_72px_-20px_rgba(0,0,0,0.1)] " +
+  "active:translate-y-0 active:scale-[0.995] " +
+  "motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100 " +
+  "motion-reduce:hover:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_10px_28px_-6px_rgba(0,0,0,0.08)]";
+
+/** Léger éclat en bordure haute au survol — donne du volume sans bouger le contenu. */
+function CardDepthSheen() {
+  return (
+    <>
+      <span
+        className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-b from-neutral-950/[0.04] via-transparent to-transparent opacity-100"
+        aria-hidden
+      />
+      <span
+        className="pointer-events-none absolute inset-0 rounded-3xl opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100 motion-reduce:group-hover:opacity-0"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(255,255,255,0.85) 0%, transparent 42%, transparent 100%), linear-gradient(to bottom, rgba(0,0,0,0.03), transparent 35%)",
+        }}
+        aria-hidden
+      />
+    </>
+  );
+}
+
+function HeroBentoCard({
+  variant,
+  className,
+  children,
+}: {
+  variant: "white" | "muted";
+  className?: string;
+  children: ReactNode;
+}) {
+  const bg = variant === "muted" ? "bg-[#f5f5f5]" : "bg-white";
+  return (
+    <div className={`${cardShell} ${bg} ${className ?? ""}`}>
+      <CardDepthSheen />
+      <div className="relative z-10">{children}</div>
+    </div>
+  );
+}
 
 /**
  * Aperçus UI réalistes (données fictives) — décoratif, hors copie marketing config.
@@ -11,7 +58,7 @@ export function HeroBento() {
       aria-hidden
     >
       {/* Réservation */}
-      <div className={`${bentoCard} bg-white p-5 md:col-span-7 md:p-6`}>
+      <HeroBentoCard variant="white" className="p-5 md:col-span-7 md:p-6">
         <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
           <span className="text-xs font-medium text-neutral-500">Réserver</span>
           <span className="rounded-full bg-[#f5f5f5] px-2.5 py-0.5 text-[10px] font-medium text-neutral-600">
@@ -24,7 +71,7 @@ export function HeroBento() {
           {["Lun", "Mar", "Mer", "Jeu", "Ven"].map((d, i) => (
             <span
               key={d}
-              className={`flex h-9 flex-1 items-center justify-center rounded-lg text-[11px] font-medium ${
+              className={`flex h-9 flex-1 items-center justify-center rounded-lg text-[11px] font-medium transition-colors duration-200 ${
                 i === 2 ? "bg-neutral-950 text-white" : "bg-[#f5f5f5] text-neutral-600"
               }`}
             >
@@ -54,14 +101,14 @@ export function HeroBento() {
         </div>
         <div
           role="presentation"
-          className="mt-5 w-full rounded-xl bg-neutral-950 py-3 text-center text-sm font-medium text-white"
+          className="mt-5 w-full rounded-xl bg-neutral-950 py-3 text-center text-sm font-medium text-white transition-[transform,box-shadow] duration-200 group-hover:shadow-[0_6px_20px_-4px_rgba(0,0,0,0.35)] motion-reduce:group-hover:shadow-none"
         >
           Confirmer le créneau
         </div>
-      </div>
+      </HeroBentoCard>
 
       {/* Agenda du jour */}
-      <div className={`${bentoCard} bg-white p-5 md:col-span-5 md:p-6`}>
+      <HeroBentoCard variant="white" className="p-5 md:col-span-5 md:p-6">
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium text-neutral-950">Agenda</p>
           <span className="text-xs text-neutral-500">12 juin</span>
@@ -84,10 +131,10 @@ export function HeroBento() {
             </li>
           ))}
         </ul>
-      </div>
+      </HeroBentoCard>
 
       {/* Clients */}
-      <div className={`${bentoCard} bg-white p-5 md:col-span-6 md:p-6`}>
+      <HeroBentoCard variant="white" className="p-5 md:col-span-6 md:p-6">
         <p className="text-sm font-medium text-neutral-950">Clients</p>
         <p className="mt-0.5 text-xs text-neutral-500">Dernières fiches</p>
         <ul className="mt-4 space-y-3">
@@ -110,10 +157,10 @@ export function HeroBento() {
             </li>
           ))}
         </ul>
-      </div>
+      </HeroBentoCard>
 
       {/* Mini calendrier + résumé */}
-      <div className={`${bentoCard} bg-[#f5f5f5] p-5 md:col-span-6 md:p-6`}>
+      <HeroBentoCard variant="muted" className="p-5 md:col-span-6 md:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-medium text-neutral-500">Cette semaine</p>
@@ -124,16 +171,16 @@ export function HeroBento() {
             {Array.from({ length: 9 }).map((_, i) => (
               <div
                 key={i}
-                className={`h-2 w-2 rounded-sm ${i === 4 ? "bg-neutral-950" : "bg-neutral-300/80"}`}
+                className={`h-2 w-2 rounded-sm transition-transform duration-200 group-hover:scale-110 motion-reduce:group-hover:scale-100 ${i === 4 ? "bg-neutral-950" : "bg-neutral-300/80"}`}
               />
             ))}
           </div>
         </div>
-        <div className="mt-5 rounded-2xl border border-neutral-200/80 bg-white p-4">
+        <div className="mt-5 rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.06)] transition-[transform,box-shadow] duration-200 group-hover:border-neutral-200 group-hover:shadow-[0_8px_20px_-8px_rgba(0,0,0,0.1)] motion-reduce:group-hover:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.06)]">
           <p className="text-xs font-medium text-neutral-950">Prochain créneau libre</p>
           <p className="mt-1 text-sm text-neutral-600">Mer · 11:30</p>
         </div>
-      </div>
+      </HeroBentoCard>
     </div>
   );
 }
