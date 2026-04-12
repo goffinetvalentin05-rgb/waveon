@@ -101,6 +101,65 @@ export const landingContent = {
     cta: { label: "Essayer gratuitement", href: "/signup" },
   },
 
+  faq: {
+    title: "Encore des questions ?\nOn a les réponses",
+    subtitle: "Vous n'avez pas trouvé votre réponse ? Contactez-nous",
+    items: [
+      {
+        question: "C’est quoi Waevon ?",
+        answer:
+          "Waevon est un outil simple qui permet à tes clients de réserver en ligne, sans t’appeler. Ton agenda se remplit automatiquement et tout est centralisé au même endroit.\n\nAprès chaque rendez-vous, Waevon peut envoyer automatiquement un email pour récolter des avis, et te permet aussi de réutiliser les données clients pour lancer des campagnes marketing.",
+      },
+      {
+        question: "À qui s’adresse Waevon ?",
+        answer: `Waevon est conçu pour tous les indépendants et professionnels qui prennent des rendez-vous.
+
+Par exemple :
+
+* coiffeurs / barbiers
+* esthéticiennes / ongleries
+* masseurs / thérapeutes
+* coachs sportifs
+* garages automobiles
+* freelances
+* consultants`,
+      },
+      {
+        question: "Est-ce que mes clients doivent créer un compte ?",
+        answer: "Non. Tes clients peuvent réserver en quelques secondes, sans créer de compte.",
+      },
+      {
+        question: "Est-ce que je peux personnaliser ma page de réservation ?",
+        answer: "Oui. Tu peux personnaliser tes services, tes prix, tes horaires et l’expérience client.",
+      },
+      {
+        question: "Est-ce que Waevon remplace les appels ?",
+        answer:
+          "Waevon réduit fortement les appels, car tes clients peuvent réserver directement en ligne. Tu restes joignable, mais tu n’es plus dépendant du téléphone.",
+      },
+      {
+        question: "Est-ce que je peux voir mes rendez-vous facilement ?",
+        answer: "Oui. Tous tes rendez-vous sont regroupés dans un seul agenda simple et clair.",
+      },
+      {
+        question: "Est-ce que je peux gérer mes clients ?",
+        answer: "Oui. Waevon te permet de retrouver facilement tes clients et leur historique.",
+      },
+      {
+        question: "Est-ce que Waevon fonctionne sur mobile ?",
+        answer: "Oui. Waevon est optimisé pour mobile, autant pour toi que pour tes clients.",
+      },
+      {
+        question: "Est-ce que je peux générer des factures ?",
+        answer: "Oui (plan Pro). Les factures peuvent être générées automatiquement selon les prestations choisies.",
+      },
+      {
+        question: "Est-ce que je peux tester gratuitement ?",
+        answer: "Oui. Tu peux essayer Waevon gratuitement et voir si ça correspond à ton activité.",
+      },
+    ],
+  },
+
   footer: {
     links: [] as ReadonlyArray<{ label: string; href: string }>,
   },
