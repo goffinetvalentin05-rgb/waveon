@@ -1,71 +1,85 @@
 /**
- * Landing — tout le texte et les liens au même endroit.
- * Modifie uniquement cet objet ; les composants ne contiennent pas de copie marketing.
+ * Contenu landing — texte figé, ne pas reformuler ici.
+ * Liens d'action uniquement (hrefs).
  */
 
 export const landingContent = {
   brand: {
     name: "waevon",
+    logo: {
+      src: "/logo_waevon.png",
+      alt: "waevon",
+    },
   },
 
-  nav: {
-    links: [
-      { label: "Nav link", href: "#benefits" },
-      { label: "Nav link", href: "#features" },
-    ],
-    login: { label: "Connexion", href: "/login" },
-    cta: { label: "Primary CTA", href: "/signup" },
+  header: {
+    cta: { label: "Commencer gratuitement", href: "/signup" },
   },
 
   hero: {
-    title: "Hero title",
-    subtitle: "Hero subtitle — keep it short. One or two lines.",
-    primaryCta: { label: "Primary CTA", href: "/signup" },
-    secondaryCta: { label: "Secondary CTA", href: "#features" },
+    title: "Ton agenda se remplit tout seul.",
+    subtitle:
+      "Réservations en ligne, moins d'appels, tout est centralisé.\nTu gagnes du temps et ton activité tourne en continu.",
+    cta: { label: "Commencer gratuitement", href: "/signup" },
   },
 
-  benefits: {
-    sectionId: "benefits" as const,
-    /** Laisser vide "" pour ne pas afficher de titre de section */
-    sectionTitle: "",
-    items: [
-      { eyebrow: "01", title: "Benefit title", text: "Benefit text." },
-      { eyebrow: "02", title: "Benefit title", text: "Benefit text." },
-      { eyebrow: "03", title: "Benefit title", text: "Benefit text." },
+  intro: {
+    title: "Un nouveau standard pour gérer tes rendez-vous.",
+    text: "Aujourd'hui, tes clients veulent réserver simplement, sans appeler.\nWaevon te permet de passer à un système moderne, fluide et automatique.",
+  },
+
+  daily: {
+    title: "Plus simple, au quotidien.",
+    blocks: [
+      {
+        title: "Moins d'appels",
+        detail: "→ tes clients réservent directement en ligne",
+      },
+      {
+        title: "Tout est centralisé",
+        detail: "→ tes rendez-vous, tes clients, ton activité",
+      },
+      {
+        title: "Plus de réservations",
+        detail: "→ ton agenda reste ouvert en permanence",
+      },
     ],
   },
 
-  features: {
-    sectionId: "features" as const,
-    sectionTitle: "",
-    items: [
-      {
-        title: "Feature title",
-        description: "Feature description — one line.",
-      },
-      {
-        title: "Feature title",
-        description: "Feature description — one line.",
-      },
-      {
-        title: "Feature title",
-        description: "Feature description — one line.",
-      },
-    ],
+  product: {
+    title: "Un système pensé pour aller vite.",
+    text: "Une page de réservation claire, un agenda simple, et tout fonctionne automatiquement.",
+  },
+
+  pricing: {
+    title: "Choisis comment tu veux fonctionner.",
+    starter: {
+      name: "Starter",
+      price: "19.- / mois",
+      bullets: ["Réservations en ligne", "Agenda simple", "Base clients"],
+    },
+    pro: {
+      name: "Pro",
+      price: "29.- / mois",
+      bullets: [
+        "Tout dans Starter",
+        "Factures générées automatiquement\n  → selon chaque prestation",
+      ],
+    },
+  },
+
+  brandImage: {
+    title: "Une image plus professionnelle.",
+    text: "Tu proposes une expérience moderne à tes clients,\nsimple, rapide et efficace.",
   },
 
   finalCta: {
-    title: "Final CTA title",
-    subtitle: "Optional short line under the title.",
-    cta: { label: "Primary CTA", href: "/signup" },
+    title: "Passe à un système simple.",
+    cta: { label: "Essayer gratuitement", href: "/signup" },
   },
 
   footer: {
-    note: "Footer note or legal line.",
-    links: [
-      { label: "Connexion", href: "/login" },
-      { label: "Primary CTA", href: "/signup" },
-    ],
+    links: [] as ReadonlyArray<{ label: string; href: string }>,
   },
 } as const;
 

@@ -1,21 +1,28 @@
 import { LandingHeader } from "@/components/landing/LandingHeader";
 import { LandingHero } from "@/components/landing/LandingHero";
-import { LandingBenefits } from "@/components/landing/LandingBenefits";
-import { LandingFeatures } from "@/components/landing/LandingFeatures";
+import { LandingIntro } from "@/components/landing/LandingIntro";
+import { LandingDaily } from "@/components/landing/LandingDaily";
+import { LandingProduct } from "@/components/landing/LandingProduct";
+import { LandingPricing } from "@/components/landing/LandingPricing";
+import { LandingBrandImage } from "@/components/landing/LandingBrandImage";
 import { LandingFinalCta } from "@/components/landing/LandingFinalCta";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { landingContent } from "@/lib/landing/config";
 
 export default function Home() {
-  const { brand, nav, hero, benefits, features, finalCta, footer } = landingContent;
+  const { brand, header, hero, intro, daily, product, pricing, brandImage, finalCta, footer } =
+    landingContent;
 
   return (
-    <div className="min-h-screen bg-white font-sans text-neutral-950 selection:bg-neutral-200/60">
-      <LandingHeader brand={brand} nav={nav} />
+    <div className="min-h-screen bg-white font-sans text-neutral-950 antialiased selection:bg-neutral-200/80">
+      <LandingHeader brand={brand} header={header} />
       <main>
         <LandingHero content={hero} />
-        <LandingBenefits content={benefits} />
-        <LandingFeatures content={features} />
+        <LandingIntro content={intro} />
+        <LandingDaily content={daily} />
+        <LandingProduct content={product} />
+        <LandingPricing content={pricing} />
+        <LandingBrandImage content={brandImage} />
         <LandingFinalCta content={finalCta} />
       </main>
       <LandingFooter brand={brand} footer={footer} />
