@@ -161,7 +161,31 @@ Par exemple :
   },
 
   footer: {
+    /** Conservé pour compat ; la grille du footer utilise `columns`. */
     links: [] as ReadonlyArray<{ label: string; href: string }>,
+    intro: "Une réservation en ligne, pensée pour ton activité.",
+    secondaryIntro: "Crée ton compte gratuitement et mets ta page en ligne en quelques minutes.",
+    primaryCta: { label: "Commencer gratuitement", href: "/signup" },
+    secondaryCta: { label: "Connexion", href: "/login" },
+    columns: [
+      {
+        title: "Explorer",
+        links: [
+          { label: "Présentation", href: "#presentation" },
+          { label: "Tarifs", href: "#tarifs" },
+          { label: "FAQ", href: "#faq" },
+        ],
+      },
+      {
+        title: "Légal",
+        links: [
+          { label: "Conditions d'utilisation", href: "#" },
+          { label: "Politique de confidentialité", href: "#" },
+        ],
+      },
+    ],
+    bottomTagline: "Waevon · réservations & clients au même endroit",
+    localeLabel: "Français",
   },
 } as const;
 
