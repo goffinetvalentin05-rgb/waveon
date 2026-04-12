@@ -9,7 +9,7 @@ type LandingProductProps = {
 };
 
 const bento =
-  "rounded-[1.35rem] border border-neutral-200/70 bg-white shadow-[0_8px_32px_-20px_rgba(0,0,0,0.12),0_2px_8px_-4px_rgba(0,0,0,0.04)] md:rounded-[1.6rem]";
+  "rounded-[1.35rem] border border-neutral-200/70 bg-white shadow-[0_8px_32px_-20px_rgba(0,0,0,0.1),0_2px_8px_-4px_rgba(0,0,0,0.04)] md:rounded-[1.65rem]";
 
 function IconCalendar({ className = "h-5 w-5" }: { className?: string }) {
   return (
@@ -38,22 +38,19 @@ function IconZap({ className = "h-5 w-5" }: { className?: string }) {
   );
 }
 
-/** Grille type bento (réf. maquettes SaaS) : mockup vertical, stats, pictos, modules — tout en neutre. */
+/** Cartes bento flottantes, colonnes décalées (style masonry / taap). */
 function ProductBentoMockup() {
   return (
-    <div
-      className="rounded-[1.75rem] border border-neutral-200/60 bg-[#f2f2f2] p-3 shadow-inner md:rounded-[2rem] md:p-4"
-      aria-hidden
-    >
-      <div className="grid gap-3 md:grid-cols-12 md:grid-rows-3 md:gap-4 md:items-stretch">
-        {/* Colonne mockup — haute, type « carte produit » */}
-        <ScrollReveal className="md:col-span-5 md:row-span-3" delayMs={0}>
-          <div className={`${bento} flex h-full min-h-[320px] flex-col p-5 md:min-h-0 md:p-6`}>
+    <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-end md:gap-4 lg:gap-5" aria-hidden>
+      {/* Colonne 1 — mockup haut, ancrée en haut */}
+      <div className="min-w-0 shrink-0 md:w-[min(100%,38%)] lg:w-[36%]">
+        <ScrollReveal delayMs={0}>
+          <div className={`${bento} flex min-h-[340px] flex-col p-5 md:min-h-[420px] md:p-6`}>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Aperçu client</p>
             <p className="mt-1 font-display text-lg font-normal text-neutral-950 md:text-xl">Réserver en ligne</p>
             <p className="mt-1 text-xs leading-relaxed text-neutral-600">Créneaux clairs, confirmation instantanée.</p>
 
-            <div className="mt-5 flex flex-1 items-center justify-center">
+            <div className="mt-5 flex flex-1 items-center justify-center pb-2">
               <div className="relative w-[min(100%,220px)] rounded-[2rem] border-[10px] border-neutral-950 bg-white p-4 shadow-[0_24px_48px_-28px_rgba(0,0,0,0.35)]">
                 <div className="rounded-xl bg-neutral-50 p-3">
                   <p className="text-center text-[9px] font-semibold uppercase tracking-wide text-neutral-400">Réserver</p>
@@ -78,21 +75,22 @@ function ProductBentoMockup() {
             </div>
           </div>
         </ScrollReveal>
+      </div>
 
-        {/* Stat — type carte chiffre */}
-        <ScrollReveal className="md:col-span-7 md:col-start-6 md:row-start-1" delayMs={70}>
-          <div className={`${bento} flex flex-col justify-center px-5 py-6 md:px-6 md:py-7`}>
+      {/* Colonne 2 — léger décalage vers le bas */}
+      <div className="flex min-w-0 flex-1 flex-col gap-5 md:max-w-[31%] md:pt-8 lg:max-w-[30%] lg:pt-10">
+        <ScrollReveal delayMs={70}>
+          <div className={`${bento} px-5 py-6 md:px-6 md:py-7`}>
             <p className="font-display text-4xl font-normal tabular-nums tracking-tight text-neutral-950 md:text-5xl">
               24<span className="text-neutral-400">/</span>7
             </p>
-            <p className="mt-2 max-w-[16rem] text-sm leading-snug text-neutral-600">
+            <p className="mt-2 text-sm leading-snug text-neutral-600">
               Ton agenda reste ouvert : les clients réservent quand ils veulent.
             </p>
           </div>
         </ScrollReveal>
 
-        {/* Trois mini tuiles — engagement / leviers */}
-        <ScrollReveal className="md:col-span-7 md:col-start-6 md:row-start-2" delayMs={130}>
+        <ScrollReveal delayMs={130}>
           <div className={`${bento} p-4 md:p-5`}>
             <div className="grid grid-cols-3 gap-2 md:gap-3">
               {[
@@ -110,13 +108,15 @@ function ProductBentoMockup() {
               ))}
             </div>
             <p className="mt-4 text-xs leading-relaxed text-neutral-600">
-              Une page de réservation, une base clients, des créneaux qui se synchronisent tout seuls.
+              Réservation, clients et créneaux qui se synchronisent tout seuls.
             </p>
           </div>
         </ScrollReveal>
+      </div>
 
-        {/* Bande « modules » — lecture centralisation */}
-        <ScrollReveal className="md:col-span-7 md:col-start-6 md:row-start-3" delayMs={190}>
+      {/* Colonne 3 — plus bas : effet « désorganisé » */}
+      <div className="flex min-w-0 flex-1 flex-col gap-5 md:max-w-[31%] md:pt-16 lg:max-w-[30%] lg:pt-20">
+        <ScrollReveal delayMs={100}>
           <div className={`${bento} px-5 py-5 md:px-6 md:py-6`}>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Un seul flux</p>
             <p className="mt-1 text-sm font-medium text-neutral-950 md:text-base">Réservation · Agenda · Suivi</p>
@@ -130,6 +130,15 @@ function ProductBentoMockup() {
                 </span>
               ))}
             </div>
+          </div>
+        </ScrollReveal>
+
+        <ScrollReveal delayMs={200}>
+          <div className={`${bento} px-5 py-5 md:px-6`}>
+            <p className="text-sm font-medium text-neutral-950">Expérience pro</p>
+            <p className="mt-1.5 text-xs leading-relaxed text-neutral-600">
+              Interface sobre : tes clients voient une vitrine claire, toi un cockpit simple.
+            </p>
           </div>
         </ScrollReveal>
       </div>
@@ -152,7 +161,7 @@ export function LandingProduct({ content }: LandingProductProps) {
               </p>
             </div>
           </ScrollReveal>
-          <div>
+          <div className="min-w-0">
             <ProductBentoMockup />
           </div>
         </div>
