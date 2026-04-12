@@ -16,7 +16,7 @@ export function VisualClientsCard() {
         <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Clients</p>
         <p className="text-sm font-semibold text-neutral-950">Liste récente</p>
       </div>
-      <ul className="landing-story-client-rows divide-y divide-neutral-100 px-2 py-1">
+      <ul className="divide-y divide-neutral-100 px-2 py-1">
         {clients.map((c) => (
           <li key={c.email} className="flex items-center gap-3 px-3 py-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f5f5f5] text-[10px] font-bold text-neutral-600 ring-1 ring-neutral-200">

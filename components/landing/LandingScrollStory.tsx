@@ -14,7 +14,7 @@ type LandingScrollStoryProps = {
 function renderVisual(index: number) {
   switch (index) {
     case 0:
-      return <VisualPhoneBooking />;
+      return <VisualPhoneBooking disableFloat />;
     case 1:
       return <VisualDashboardCard />;
     case 2:
@@ -24,70 +24,85 @@ function renderVisual(index: number) {
   }
 }
 
-/**
- * Parcours type landing SaaS (réf. taap.it) : fond léger, texte + timeline à gauche,
- * bloc produit sticky encadré à droite ; le scroll des étapes pilote le mockup.
- */
-export function LandingScrollStory({ content }: LandingScrollStoryProps) {
-  const { steps } = content;
-  const blockRefs = useRef<Array<HTMLElement | null>>([]);
+function useActiveStoryStep(stepCount: number) {
+  const stepRefs = useRef<Array<HTMLDivElement | null>>([]);
   const [active, setActive] = useState(0);
-  const rafRef = useRef<number | null>(null);
 
-  const setBlockRef = (index: number) => (node: HTMLElement | null) => {
-    blockRefs.current[index] = node;
-  };
+  const setStepRef = useCallback((index: number) => (node: HTMLDivElement | null) => {
+    stepRefs.current[index] = node;
+  }, []);
 
-  const updateActive = useCallback(() => {
+  const recompute = useCallback(() => {
     const vh = window.innerHeight || 1;
-    const line = vh * 0.38;
+    const targetY = vh * 0.42;
+    let best = 0;
+    let bestDist = Number.POSITIVE_INFINITY;
 
-    type Cand = { i: number; d: number; vis: boolean };
-    const cands: Cand[] = [];
-
-    steps.forEach((_, i) => {
-      const el = blockRefs.current[i];
-      if (!el) return;
+    for (let i = 0; i < stepCount; i++) {
+      const el = stepRefs.current[i];
+      if (!el) continue;
       const r = el.getBoundingClientRect();
+      if (r.bottom < 80 || r.top > vh - 80) continue;
       const mid = (r.top + r.bottom) / 2;
-      const d = Math.abs(mid - line);
-      const vis = r.bottom > 56 && r.top < vh - 56;
-      cands.push({ i, d, vis });
-    });
-
-    if (cands.length === 0) return;
-
-    const visPool = cands.filter((c) => c.vis);
-    const pool = visPool.length > 0 ? visPool : cands;
-    pool.sort((a, b) => a.d - b.d);
-    const next = pool[0].i;
-
-    setActive((prev) => (prev === next ? prev : next));
-  }, [steps]);
+      const d = Math.abs(mid - targetY);
+      if (d < bestDist) {
+        bestDist = d;
+        best = i;
+      }
+    }
+    setActive((p) => (p === best ? p : best));
+  }, [stepCount]);
 
   useEffect(() => {
+    let raf = 0;
     const tick = () => {
-      if (rafRef.current != null) return;
-      rafRef.current = window.requestAnimationFrame(() => {
-        rafRef.current = null;
-        updateActive();
+      if (raf) return;
+      raf = window.requestAnimationFrame(() => {
+        raf = 0;
+        recompute();
       });
     };
-
-    updateActive();
+    recompute();
     window.addEventListener("scroll", tick, { passive: true });
     window.addEventListener("resize", tick, { passive: true });
     return () => {
       window.removeEventListener("scroll", tick);
       window.removeEventListener("resize", tick);
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      if (raf) cancelAnimationFrame(raf);
     };
-  }, [updateActive]);
+  }, [recompute]);
+
+  return { active, setStepRef };
+}
+
+function StoryVisualStage({ active, count }: { active: number; count: number }) {
+  return (
+    <div className="relative min-h-[min(72svh,560px)] w-full md:min-h-[min(76svh,600px)] lg:min-h-[min(78svh,640px)]">
+      {Array.from({ length: count }, (_, i) => (
+        <div
+          key={i}
+          className={`flex w-full items-center justify-center transition-opacity duration-[480ms] ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none ${
+            i === active ? "relative z-10 opacity-100" : "pointer-events-none absolute inset-0 z-0 opacity-0"
+          }`}
+          aria-hidden={i !== active}
+        >
+          {renderVisual(i)}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Parcours sticky desktop + défilement vertical mobile — texte et visuels synchronisés par étape. */
+export function LandingScrollStory({ content }: LandingScrollStoryProps) {
+  const { steps } = content;
+  const n = steps.length;
+  const { active, setStepRef } = useActiveStoryStep(n);
 
   return (
     <section
       id="parcours"
-      className={`scroll-mt-28 ${landingDivider} bg-[#fafafa]`}
+      className={`scroll-mt-28 ${landingDivider} bg-white`}
       aria-labelledby="parcours-aria-title"
     >
       <h2 id="parcours-aria-title" className="sr-only">
@@ -95,94 +110,55 @@ export function LandingScrollStory({ content }: LandingScrollStoryProps) {
       </h2>
 
       <div className={`${landingSection} py-20 md:py-24 lg:py-28`}>
-        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-14 lg:grid-cols-2 lg:items-start lg:gap-16 xl:gap-20">
-          {/* Mobile : mockup d’abord ; desktop : même rangée, colonne droite (taap-like) */}
-          <aside className="min-w-0 lg:col-start-2 lg:row-start-1">
-            <div className="sticky top-24 z-10 md:top-28">
-              <div className="rounded-[1.75rem] border border-neutral-200/90 bg-white p-5 shadow-[0_32px_80px_-48px_rgba(0,0,0,0.22),0_12px_40px_-32px_rgba(0,0,0,0.08)] md:rounded-[2rem] md:p-7 lg:rounded-[2.25rem] lg:p-8">
-                <div className="mb-5 flex items-center gap-2 md:mb-6" aria-hidden>
-                  {steps.map((_, i) => (
-                    <span
-                      key={i}
-                      className={`h-1 rounded-full transition-[width,background-color] duration-500 ease-out motion-reduce:transition-none ${
-                        i === active
-                          ? "w-8 bg-neutral-950"
-                          : i < active
-                            ? "w-1.5 bg-neutral-400"
-                            : "w-1.5 bg-neutral-200"
-                      }`}
-                    />
-                  ))}
-                </div>
-
-                <div className="relative isolate flex min-h-[360px] w-full flex-col items-center justify-center rounded-2xl bg-gradient-to-b from-neutral-50/90 to-white sm:min-h-[400px] lg:min-h-[520px] xl:min-h-[560px]">
-                  <div
-                    className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_85%_55%_at_50%_42%,rgba(15,23,42,0.06)_0%,transparent_70%)]"
-                    aria-hidden
-                  />
-                  <div
-                    className="pointer-events-none absolute left-1/2 top-[52%] -z-10 h-[55%] w-[88%] max-w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-[2rem] bg-neutral-950/[0.04] blur-3xl motion-reduce:blur-none"
-                    aria-hidden
-                  />
-                  <div
-                    key={active}
-                    className="landing-story-visual-swap relative z-10 flex w-full justify-center px-1 pt-1"
-                  >
-                    {renderVisual(active)}
-                  </div>
-                </div>
+        {/* Mobile : une colonne, texte puis visuel par étape */}
+        <div className="mx-auto max-w-lg space-y-20 lg:hidden">
+          {steps.map((step, i) => (
+            <div key={step.title} className="space-y-8">
+              <div>
+                <h3 className="font-display text-2xl font-normal leading-[1.15] tracking-tight text-neutral-950 md:text-[1.75rem]">
+                  {step.title}
+                </h3>
+                <p className="mt-4 text-base leading-relaxed text-neutral-600 md:text-lg">{step.text}</p>
+              </div>
+              <div className="rounded-[1.5rem] border border-neutral-200/90 bg-neutral-50/40 px-4 py-8 md:rounded-[1.75rem] md:px-6 md:py-10">
+                {renderVisual(i)}
               </div>
             </div>
-          </aside>
+          ))}
+        </div>
 
-          {/* Colonne narrative + repères verticaux */}
-          <div className="relative min-w-0 lg:col-start-1 lg:row-start-1 lg:pr-4">
-            <div
-              className="pointer-events-none absolute bottom-24 left-[15px] top-24 hidden w-px bg-gradient-to-b from-neutral-300 via-neutral-200/90 to-transparent lg:block"
-              aria-hidden
-            />
-
-            <div className="space-y-0">
-              {steps.map((step, i) => (
-                <article
-                  key={step.title}
-                  ref={setBlockRef(i)}
-                  id={`parcours-etape-${i + 1}`}
-                  aria-current={i === active ? "step" : undefined}
-                  data-active={i === active ? "true" : "false"}
-                  className="relative flex min-h-[min(82dvh,680px)] flex-col justify-center py-8 pl-11 transition-[opacity] duration-500 ease-out motion-reduce:transition-none data-[active=false]:opacity-50 data-[active=true]:opacity-100 motion-reduce:data-[active=false]:opacity-100 md:min-h-[min(88dvh,760px)] md:pl-12 lg:min-h-[min(96dvh,840px)] lg:py-12 lg:pl-14"
+        {/* Desktop : gauche = scroll des étapes, droite = visuel sticky + crossfade */}
+        <div className="mx-auto hidden max-w-6xl lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,1.05fr)] lg:items-start lg:gap-x-16 xl:gap-x-20">
+          <div className="min-w-0 pb-8">
+            {steps.map((step, i) => (
+              <div
+                key={step.title}
+                ref={setStepRef(i)}
+                id={`parcours-etape-${i + 1}`}
+                className="flex min-h-[125svh] max-w-xl flex-col justify-center py-10 first:pt-4 last:pb-24 lg:py-14"
+                aria-current={i === active ? "step" : undefined}
+              >
+                <div
+                  className={`transition-[opacity,transform] duration-[520ms] ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none ${
+                    i === active
+                      ? "translate-y-0 opacity-100"
+                      : "translate-y-1 opacity-[0.28] motion-reduce:translate-y-0 motion-reduce:opacity-[0.42]"
+                  }`}
                 >
-                  <div
-                    className="absolute left-0 top-[0.42em] flex h-8 w-8 items-center justify-center"
-                    aria-hidden
-                  >
-                    <span
-                      className={`block h-2.5 w-2.5 rounded-full ring-4 transition-[background-color,transform,box-shadow] duration-500 ease-out motion-reduce:transition-none ${
-                        i === active
-                          ? "scale-110 bg-neutral-950 ring-neutral-950/12 shadow-[0_0_0_6px_rgba(0,0,0,0.04)]"
-                          : "bg-neutral-300 ring-transparent"
-                      }`}
-                    />
-                  </div>
-
-                  <h3
-                    className={`font-display text-2xl font-normal leading-[1.15] tracking-tight transition-[color,transform] duration-500 ease-out motion-reduce:transition-none md:text-3xl lg:text-[2.125rem] ${
-                      i === active
-                        ? "text-neutral-950"
-                        : "text-neutral-500 motion-reduce:text-neutral-600"
-                    } ${i === active ? "translate-y-0" : "translate-y-0.5"}`}
-                  >
+                  <h3 className="font-display text-[2.125rem] font-normal leading-[1.12] tracking-tight text-neutral-950 xl:text-[2.25rem]">
                     {step.title}
                   </h3>
-                  <p
-                    className={`mt-4 max-w-md text-base leading-relaxed transition-colors duration-500 ease-out motion-reduce:transition-none md:mt-5 md:text-lg ${
-                      i === active ? "text-neutral-600" : "text-neutral-500"
-                    }`}
-                  >
-                    {step.text}
-                  </p>
-                </article>
-              ))}
+                  <p className="mt-5 text-lg leading-relaxed text-neutral-600 xl:text-[1.125rem]">{step.text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="min-w-0">
+            <div className="sticky top-24 pb-12 pt-2 md:top-28 md:pt-4">
+              <div className="rounded-[1.75rem] border border-neutral-200/90 bg-white p-6 shadow-[0_24px_64px_-40px_rgba(0,0,0,0.18)] md:rounded-[2rem] md:p-8 xl:rounded-[2.125rem] xl:p-9">
+                <StoryVisualStage active={active} count={n} />
+              </div>
             </div>
           </div>
         </div>

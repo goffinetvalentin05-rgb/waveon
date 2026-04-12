@@ -4,10 +4,15 @@ import Image from "next/image";
 const FRAME_NATURAL_W = 1587;
 const FRAME_NATURAL_H = 2245;
 
+type VisualPhoneBookingProps = {
+  /** Désactive le léger flottement CSS (ex. section sticky scroll). */
+  disableFloat?: boolean;
+};
+
 /**
  * Mockup iPhone seul (`mockup_iphone.png`) — aucune couche UI par-dessus.
  */
-export function VisualPhoneBooking() {
+export function VisualPhoneBooking({ disableFloat = false }: VisualPhoneBookingProps) {
   return (
     <div
       className="relative mx-auto flex min-h-[min(380px,52vw)] w-full max-w-[min(100%,360px)] shrink-0 items-center justify-center py-10 md:max-w-[440px] md:py-14"
@@ -23,7 +28,9 @@ export function VisualPhoneBooking() {
           aria-hidden
         />
 
-        <div className="landing-mockup-float relative z-10 w-[min(100%,248px)] drop-shadow-[0_36px_80px_-24px_rgba(0,0,0,0.45)] md:w-[min(100%,280px)]">
+        <div
+          className={`relative z-10 w-[min(100%,248px)] drop-shadow-[0_36px_80px_-24px_rgba(0,0,0,0.45)] md:w-[min(100%,280px)] ${disableFloat ? "" : "landing-mockup-float"}`}
+        >
           <Image
             src="/mockup_iphone.png"
             alt=""
