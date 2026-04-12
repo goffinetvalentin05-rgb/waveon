@@ -1,4 +1,4 @@
-import { IPhoneMockup } from "react-device-mockup";
+import Image from "next/image";
 
 const slots = [
   { time: "10:00", selected: false },
@@ -7,54 +7,44 @@ const slots = [
   { time: "14:00", selected: false },
 ] as const;
 
-const SCREEN_W = 286;
+/** Dimensions natives de `public/iphone.webp` (292×350). */
+const FRAME_NATURAL_W = 292;
+const FRAME_NATURAL_H = 350;
+
+/**
+ * Zone écran dans l’image (pourcentages du cadre), à ajuster si ton export diffère.
+ * Calé pour un mockup type « iPhone de face » dans un canvas 292×350.
+ */
+const SCREEN_INSET = {
+  top: "11%",
+  left: "9.5%",
+  right: "9.5%",
+  bottom: "10%",
+} as const;
 
 function BookingScreen() {
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
-      {/* Espace sous l’îlot (mockup en plein écran + îlot en overlay) */}
-      <div className="relative shrink-0 px-4 pb-0.5 pt-[46px] md:pt-[50px]">
-        <div className="flex items-end justify-between pb-0.5">
-          <span className="text-[13px] font-semibold tabular-nums tracking-tight text-neutral-950">
-            9:41
-          </span>
-          <div className="flex items-center gap-1.5 pr-0.5">
-            <span className="flex gap-[3px] pb-0.5" aria-hidden>
-              {[0, 1, 2, 3].map((i) => (
-                <span
-                  key={i}
-                  className={`h-[3px] w-[3px] rounded-full ${i < 3 ? "bg-neutral-950" : "bg-neutral-300"}`}
-                />
-              ))}
-            </span>
-            <span className="text-[11px] font-bold tracking-tight text-neutral-900">5G</span>
-            <span className="flex h-[11px] w-[22px] items-center justify-end rounded-[3px] border border-neutral-300/90 bg-white pr-[2px]">
-              <span className="h-[7px] w-[58%] rounded-[1px] bg-neutral-950" />
-            </span>
-          </div>
-        </div>
-      </div>
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-[1.35rem] bg-white md:rounded-[1.45rem]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-14 bg-[linear-gradient(180deg,rgba(255,255,255,0.95)_0%,transparent_100%)]" />
 
-      <div className="relative min-h-0 flex-1 px-4 pb-4 pt-0.5">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-[linear-gradient(180deg,rgba(255,255,255,0.92)_0%,transparent_100%)]" />
-
+      <div className="relative min-h-0 flex-1 px-3 pb-3 pt-4 md:px-4 md:pb-4 md:pt-5">
         <p className="text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-400">
           Réserver
         </p>
-        <p className="mt-3 text-center font-display text-xl font-normal leading-[1.1] tracking-[-0.03em] text-neutral-950 md:text-2xl">
+        <p className="mt-2 text-center font-display text-lg font-normal leading-[1.1] tracking-[-0.03em] text-neutral-950 md:text-xl">
           Coupe + barbe
         </p>
-        <p className="mt-1 text-center text-[12px] text-neutral-500">45 min</p>
+        <p className="mt-0.5 text-center text-[11px] text-neutral-500 md:text-[12px]">45 min</p>
 
-        <div className="mt-5 border-t border-neutral-100 pt-4">
+        <div className="mt-4 border-t border-neutral-100 pt-3 md:mt-5 md:pt-4">
           <p className="text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-400">
             Créneaux
           </p>
-          <div className="mt-3 grid grid-cols-2 gap-2.5">
+          <div className="mt-2 grid grid-cols-2 gap-2 md:mt-3 md:gap-2.5">
             {slots.map(({ time, selected }) => (
               <span
                 key={time}
-                className={`rounded-2xl py-3 text-center text-[13px] font-semibold tabular-nums ${
+                className={`rounded-xl py-2.5 text-center text-[12px] font-semibold tabular-nums md:rounded-2xl md:py-3 md:text-[13px] ${
                   selected
                     ? "bg-neutral-950 text-white shadow-[0_8px_20px_-6px_rgba(0,0,0,0.22)]"
                     : "border border-neutral-200/90 bg-white text-neutral-600 shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
@@ -68,7 +58,7 @@ function BookingScreen() {
 
         <div
           role="presentation"
-          className="mt-5 w-full rounded-2xl bg-neutral-950 py-3.5 text-center text-[15px] font-semibold tracking-tight text-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.28)]"
+          className="mt-4 w-full rounded-xl bg-neutral-950 py-3 text-center text-[14px] font-semibold tracking-tight text-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.28)] md:mt-5 md:rounded-2xl md:py-3.5 md:text-[15px]"
         >
           Réserver
         </div>
@@ -78,8 +68,7 @@ function BookingScreen() {
 }
 
 /**
- * iPhone 15 Pro (Dynamic Island, boutons, ratio 19,5:9) via react-device-mockup,
- * + plateau blanc et inclinaison type landing produit.
+ * Mockup photoréaliste : cadre `iphone.webp` par-dessus l’UI (trou écran = inset %).
  */
 export function VisualPhoneBooking() {
   return (
@@ -97,16 +86,34 @@ export function VisualPhoneBooking() {
           aria-hidden
         />
 
-        <div className="relative z-10 flex justify-center drop-shadow-[0_40px_70px_-20px_rgba(0,0,0,0.35)]">
-          <IPhoneMockup
-            screenWidth={SCREEN_W}
-            screenType="island"
-            frameColor="#1b1b1b"
-            hideStatusBar
-            transparentNavBar
+        <div className="relative z-10 w-[min(100%,292px)] drop-shadow-[0_40px_70px_-20px_rgba(0,0,0,0.35)]">
+          <div
+            className="relative w-full"
+            style={{ aspectRatio: `${FRAME_NATURAL_W} / ${FRAME_NATURAL_H}` }}
           >
-            <BookingScreen />
-          </IPhoneMockup>
+            {/* Contenu écran (sous le cadre WebP si transparence sur la zone écran) */}
+            <div
+              className="absolute z-0 overflow-hidden bg-neutral-200"
+              style={{
+                top: SCREEN_INSET.top,
+                left: SCREEN_INSET.left,
+                right: SCREEN_INSET.right,
+                bottom: SCREEN_INSET.bottom,
+              }}
+            >
+              <BookingScreen />
+            </div>
+
+            <Image
+              src="/iphone.webp"
+              alt=""
+              width={FRAME_NATURAL_W}
+              height={FRAME_NATURAL_H}
+              className="pointer-events-none relative z-10 h-auto w-full select-none"
+              draggable={false}
+              priority={false}
+            />
+          </div>
         </div>
       </div>
     </div>
