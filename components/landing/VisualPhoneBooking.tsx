@@ -7,24 +7,31 @@ const slots = [
   { time: "14:00", selected: false },
 ] as const;
 
-/** Dimensions natives de `public/iphone.webp` (292×350). */
-const FRAME_NATURAL_W = 292;
-const FRAME_NATURAL_H = 350;
+/** Dimensions natives de `public/iphone-mockup.png`. */
+const FRAME_NATURAL_W = 1857;
+const FRAME_NATURAL_H = 3096;
 
 /**
- * Zone écran dans l’image (pourcentages du cadre), à ajuster si ton export diffère.
- * Calé pour un mockup type « iPhone de face » dans un canvas 292×350.
+ * Boîte englobante de la zone écran (noir) dans le PNG, en % du cadre.
+ * À affiner si le rendu décale encore (mockup 3/4, îlot visible).
  */
-const SCREEN_INSET = {
-  top: "11%",
-  left: "9.5%",
-  right: "9.5%",
-  bottom: "10%",
+const SCREEN_BOX = {
+  top: "17.5%",
+  left: "26.5%",
+  right: "26.5%",
+  bottom: "22%",
 } as const;
+
+/**
+ * Aligne l’UI plate sur la perspective du téléphone (écran noir du mockup).
+ * Ajuster si besoin : rotateY / rotateX / perspective.
+ */
+const SCREEN_TRANSFORM =
+  "perspective(1400px) rotateY(-10deg) rotateX(7deg) rotateZ(-0.8deg) scale(1.02)";
 
 function BookingScreen() {
   return (
-    <div className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-[1.35rem] bg-white md:rounded-[1.45rem]">
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-[1.75rem] bg-white md:rounded-[2rem]">
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-14 bg-[linear-gradient(180deg,rgba(255,255,255,0.95)_0%,transparent_100%)]" />
 
       <div className="relative min-h-0 flex-1 px-3 pb-3 pt-4 md:px-4 md:pb-4 md:pt-5">
@@ -68,51 +75,52 @@ function BookingScreen() {
 }
 
 /**
- * Mockup photoréaliste : cadre `iphone.webp` par-dessus l’UI (trou écran = inset %).
+ * Mockup photoréaliste 3D (`iphone-mockup.png`) : UI superposée sur l’écran
+ * avec transform 3D pour suivre la perspective du PNG.
  */
 export function VisualPhoneBooking() {
   return (
     <div
-      className="relative mx-auto flex min-h-[min(380px,52vw)] w-full max-w-[min(100%,360px)] shrink-0 items-center justify-center py-10 md:max-w-[420px] md:py-14 md:[perspective:1600px]"
+      className="relative mx-auto flex min-h-[min(380px,52vw)] w-full max-w-[min(100%,360px)] shrink-0 items-center justify-center py-10 md:max-w-[440px] md:py-14 md:[perspective:2000px]"
       aria-hidden
     >
       <div className="pointer-events-none absolute inset-[10%] -z-20 rounded-[3rem] bg-neutral-300/25 blur-[48px]" />
 
-      <div className="pointer-events-none absolute left-1/2 top-[48%] z-0 h-[78%] w-[108%] max-w-[380px] -translate-x-[46%] -translate-y-1/2 rotate-[-7deg] rounded-[2rem] border border-neutral-200/70 bg-white shadow-[0_28px_80px_-24px_rgba(15,23,42,0.12),0_8px_24px_-8px_rgba(15,23,42,0.06)] md:rounded-[2.25rem]" />
+      <div className="pointer-events-none absolute left-1/2 top-[48%] z-0 h-[78%] w-[108%] max-w-[400px] -translate-x-[46%] -translate-y-1/2 rotate-[-7deg] rounded-[2rem] border border-neutral-200/70 bg-white shadow-[0_28px_80px_-24px_rgba(15,23,42,0.12),0_8px_24px_-8px_rgba(15,23,42,0.06)] md:rounded-[2.25rem]" />
 
-      <div className="relative z-10 mx-auto max-md:[transform:rotate(11deg)] md:[transform-style:preserve-3d] md:[transform:rotateX(6deg)_rotateY(10deg)_rotateZ(12deg)]">
+      {/* Pas de rotateX/Y sur le mockup : la perspective est déjà dans le PNG */}
+      <div className="relative z-10 mx-auto max-md:[transform:rotate(8deg)]">
         <div
-          className="pointer-events-none absolute -bottom-8 left-[8%] right-[8%] z-0 h-28 rounded-[50%] bg-black/[0.16] blur-2xl"
+          className="pointer-events-none absolute -bottom-10 left-[6%] right-[6%] z-0 h-32 rounded-[50%] bg-black/[0.18] blur-2xl"
           aria-hidden
         />
 
-        <div className="relative z-10 w-[min(100%,292px)] drop-shadow-[0_40px_70px_-20px_rgba(0,0,0,0.35)]">
-          <div
-            className="relative w-full"
-            style={{ aspectRatio: `${FRAME_NATURAL_W} / ${FRAME_NATURAL_H}` }}
-          >
-            {/* Contenu écran (sous le cadre WebP si transparence sur la zone écran) */}
+        <div className="relative z-10 w-[min(100%,248px)] drop-shadow-[0_36px_80px_-24px_rgba(0,0,0,0.45)] md:w-[min(100%,280px)]">
+          <div className="relative w-full [transform-style:preserve-3d]">
+            <Image
+              src="/iphone-mockup.png"
+              alt=""
+              width={FRAME_NATURAL_W}
+              height={FRAME_NATURAL_H}
+              sizes="(max-width: 768px) 248px, 280px"
+              className="pointer-events-none relative z-10 block h-auto w-full select-none"
+              draggable={false}
+              priority={false}
+            />
+
             <div
-              className="absolute z-0 overflow-hidden bg-neutral-200"
+              className="absolute z-20 overflow-hidden bg-white shadow-[inset_0_0_0_1px_rgba(0,0,0,0.04)] [backface-visibility:hidden] [transform-style:preserve-3d]"
               style={{
-                top: SCREEN_INSET.top,
-                left: SCREEN_INSET.left,
-                right: SCREEN_INSET.right,
-                bottom: SCREEN_INSET.bottom,
+                top: SCREEN_BOX.top,
+                left: SCREEN_BOX.left,
+                right: SCREEN_BOX.right,
+                bottom: SCREEN_BOX.bottom,
+                transform: SCREEN_TRANSFORM,
+                transformOrigin: "50% 42%",
               }}
             >
               <BookingScreen />
             </div>
-
-            <Image
-              src="/iphone.webp"
-              alt=""
-              width={FRAME_NATURAL_W}
-              height={FRAME_NATURAL_H}
-              className="pointer-events-none relative z-10 h-auto w-full select-none"
-              draggable={false}
-              priority={false}
-            />
           </div>
         </div>
       </div>
