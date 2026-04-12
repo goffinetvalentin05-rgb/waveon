@@ -41,38 +41,17 @@ function IconZap({ className = "h-5 w-5" }: { className?: string }) {
 /** Cartes bento flottantes, colonnes décalées (style masonry / taap). */
 function ProductBentoMockup() {
   return (
-    <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-end md:gap-4 lg:gap-5" aria-hidden>
-      {/* Colonne 1 — mockup haut, ancrée en haut */}
-      <div className="min-w-0 shrink-0 md:w-[min(100%,38%)] lg:w-[36%]">
+      <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-start md:gap-4 lg:gap-5" aria-hidden>
+      {/* Colonne 1 — texte seul (sans mockup téléphone) */}
+      <div className="min-w-0 shrink-0 md:w-[min(100%,32%)] lg:w-[30%]">
         <ScrollReveal delayMs={0}>
-          <div className={`${bento} flex min-h-[340px] flex-col p-5 md:min-h-[420px] md:p-6`}>
+          <div className={`${bento} flex flex-col p-5 md:p-6`}>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Aperçu client</p>
             <p className="mt-1 font-display text-lg font-normal text-neutral-950 md:text-xl">Réserver en ligne</p>
-            <p className="mt-1 text-xs leading-relaxed text-neutral-600">Créneaux clairs, confirmation instantanée.</p>
-
-            <div className="mt-5 flex flex-1 items-center justify-center pb-2">
-              <div className="relative w-[min(100%,220px)] rounded-[2rem] border-[10px] border-neutral-950 bg-white p-4 shadow-[0_24px_48px_-28px_rgba(0,0,0,0.35)]">
-                <div className="rounded-xl bg-neutral-50 p-3">
-                  <p className="text-center text-[9px] font-semibold uppercase tracking-wide text-neutral-400">Réserver</p>
-                  <p className="mt-2 text-center text-xs font-semibold text-neutral-950">Coupe</p>
-                  <div className="mt-3 grid grid-cols-3 gap-1.5">
-                    {["10:00", "11:30", "14:00"].map((t, i) => (
-                      <span
-                        key={t}
-                        className={`rounded-md py-2 text-center text-[10px] font-semibold tabular-nums ${
-                          i === 0 ? "bg-neutral-950 text-white" : "bg-white text-neutral-600 ring-1 ring-neutral-200"
-                        }`}
-                      >
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="mt-3 rounded-lg bg-neutral-950 py-2 text-center text-[10px] font-medium text-white">
-                    Confirmer
-                  </div>
-                </div>
-              </div>
-            </div>
+            <p className="mt-3 text-sm leading-relaxed text-neutral-600">
+              Créneaux clairs, confirmation instantanée.
+            </p>
+            <div className="mt-6 h-px max-w-[4.5rem] bg-neutral-200" />
           </div>
         </ScrollReveal>
       </div>
@@ -150,9 +129,9 @@ export function LandingProduct({ content }: LandingProductProps) {
   return (
     <section className={landingDivider}>
       <div className={`${landingSection} ${landingSectionY}`}>
-        <div className="grid items-start gap-12 lg:grid-cols-2 lg:gap-20">
+        <div className="flex flex-col gap-12 lg:gap-16">
           <ScrollReveal>
-            <div className="lg:pt-1">
+            <div className="max-w-3xl lg:pt-1">
               <h2 className="font-display text-3xl font-normal leading-tight tracking-tight text-neutral-950 md:text-4xl lg:text-[2.75rem]">
                 {content.title}
               </h2>
