@@ -7,7 +7,7 @@ export const landingContent = {
   brand: {
     name: "waevon",
     logo: {
-      src: "/logo_waevon.png",
+      src: "/waevon-logo.png",
       alt: "waevon",
     },
   },

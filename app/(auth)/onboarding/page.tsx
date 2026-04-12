@@ -119,7 +119,7 @@ export default function OnboardingPage() {
         <div className="mb-8 text-center">
           <div className="mb-6 flex flex-col items-center leading-none">
             <Image
-              src="/logo_waevon.png"
+              src="/waevon-logo.png"
               alt="Waevon"
               width={220}
               height={78}

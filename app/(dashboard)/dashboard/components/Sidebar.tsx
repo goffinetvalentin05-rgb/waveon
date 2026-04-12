@@ -26,7 +26,7 @@ export default function Sidebar() {
   return (
     <aside className="hidden lg:flex lg:w-72 lg:flex-col lg:border-r lg:border-[#39FF14]/15 lg:bg-[#0F0F0F] lg:px-6 lg:py-8">
       <div className="flex items-center gap-3">
-        <Image src="/logo_waevon.png" alt="Waevon" width={36} height={36} />
+        <Image src="/waevon-logo.png" alt="Waevon" width={36} height={36} />
         <div>
           <p className="text-lg font-semibold text-white">Waevon</p>
           <p className="text-xs text-white/60">Agent IA WhatsApp</p>

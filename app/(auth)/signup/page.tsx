@@ -88,7 +88,7 @@ export default function SignupPage() {
           <div className="mb-6">
             <div className="mb-6 flex flex-col items-start leading-none">
               <Image
-                src="/logo_waevon.png"
+                src="/waevon-logo.png"
                 alt="Waevon"
                 width={200}
                 height={70}
