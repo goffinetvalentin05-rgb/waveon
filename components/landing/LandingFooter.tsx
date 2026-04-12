@@ -1,18 +1,27 @@
 import Link from "next/link";
+import type { LandingContent } from "@/lib/landing/config";
+import { landingDivider, landingSection } from "./landing-tokens";
 
-export function LandingFooter() {
+type LandingFooterProps = {
+  brand: LandingContent["brand"];
+  footer: LandingContent["footer"];
+};
+
+export function LandingFooter({ brand, footer }: LandingFooterProps) {
   return (
-    <footer className="border-t border-white/[0.06] px-5 py-10 md:px-8">
-      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 text-sm text-zinc-500 sm:flex-row">
-        <span className="lowercase text-zinc-400">waevon</span>
-        <div className="flex gap-6">
-          <Link href="/login" className="transition hover:text-zinc-300">
-            Connexion
-          </Link>
-          <Link href="/signup" className="transition hover:text-zinc-300">
-            Inscription
-          </Link>
+    <footer className={landingDivider}>
+      <div
+        className={`${landingSection} flex flex-col gap-6 py-10 text-sm text-neutral-500 md:flex-row md:items-center md:justify-between md:py-12`}
+      >
+        <span className="font-display text-base tracking-tight text-neutral-950 lowercase">{brand.name}</span>
+        <div className="flex flex-wrap gap-x-8 gap-y-2">
+          {footer.links.map((l) => (
+            <Link key={l.href} href={l.href} className="transition hover:text-neutral-950">
+              {l.label}
+            </Link>
+          ))}
         </div>
+        <p className="text-xs text-neutral-400 md:text-right">{footer.note}</p>
       </div>
     </footer>
   );

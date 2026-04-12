@@ -1,25 +1,24 @@
-import { LandingNav } from "@/components/landing/LandingNav";
+import { LandingHeader } from "@/components/landing/LandingHeader";
 import { LandingHero } from "@/components/landing/LandingHero";
-import { LandingProblem } from "@/components/landing/LandingProblem";
-import { LandingSteps } from "@/components/landing/LandingSteps";
-import { LandingProductPreview } from "@/components/landing/LandingProductPreview";
+import { LandingBenefits } from "@/components/landing/LandingBenefits";
 import { LandingFeatures } from "@/components/landing/LandingFeatures";
-import { LandingCta } from "@/components/landing/LandingCta";
+import { LandingFinalCta } from "@/components/landing/LandingFinalCta";
 import { LandingFooter } from "@/components/landing/LandingFooter";
+import { landingContent } from "@/lib/landing/config";
 
 export default function Home() {
+  const { brand, nav, hero, benefits, features, finalCta, footer } = landingContent;
+
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 antialiased selection:bg-white/20">
-      <LandingNav />
+    <div className="min-h-screen bg-white font-sans text-neutral-950 selection:bg-neutral-200/60">
+      <LandingHeader brand={brand} nav={nav} />
       <main>
-        <LandingHero />
-        <LandingProblem />
-        <LandingSteps />
-        <LandingProductPreview />
-        <LandingFeatures />
-        <LandingCta />
+        <LandingHero content={hero} />
+        <LandingBenefits content={benefits} />
+        <LandingFeatures content={features} />
+        <LandingFinalCta content={finalCta} />
       </main>
-      <LandingFooter />
+      <LandingFooter brand={brand} footer={footer} />
     </div>
   );
 }

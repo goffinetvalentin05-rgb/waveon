@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { I18nProvider } from "@/lib/i18n/context";
 import "./globals.css";
 
@@ -13,10 +13,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
+  subsets: ["latin"],
+  weight: ["400"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "waevon — Ton agenda se remplit tout seul",
-  description:
-    "Réservations en ligne, confirmations automatiques et avis clients pour les indépendants.",
+  title: "waevon",
+  description: "Landing — contenu éditable dans lib/landing/config.ts",
 };
 
 export default function RootLayout({
@@ -27,7 +33,7 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased`}
       >
         <I18nProvider>{children}</I18nProvider>
       </body>

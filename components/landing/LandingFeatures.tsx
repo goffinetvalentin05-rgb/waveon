@@ -1,19 +1,40 @@
-const features = ["Moins d’appels", "Plus de clients", "Tout est automatique"] as const;
+import type { LandingContent } from "@/lib/landing/config";
+import { landingDivider, landingSection } from "./landing-tokens";
 
-export function LandingFeatures() {
+type LandingFeaturesProps = {
+  content: LandingContent["features"];
+};
+
+export function LandingFeatures({ content }: LandingFeaturesProps) {
+  const { sectionId, sectionTitle, items } = content;
+
   return (
-    <section className="px-5 py-20 md:px-8 md:py-28">
-      <div className="mx-auto max-w-6xl">
-        <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
-          {features.map((label) => (
-            <div
-              key={label}
-              className="rounded-3xl border border-white/[0.06] bg-white/[0.02] px-6 py-8 text-center md:py-10"
+    <section id={sectionId} className={landingDivider}>
+      <div className={`${landingSection} py-20 md:py-28`}>
+        {sectionTitle ? (
+          <h2 className="mb-12 max-w-xl font-display text-3xl font-normal tracking-tight text-neutral-950 md:text-4xl">
+            {sectionTitle}
+          </h2>
+        ) : null}
+        <ul className="divide-y divide-neutral-200 border-y border-neutral-200">
+          {items.map((item, index) => (
+            <li
+              key={`${sectionId}-${index}`}
+              className="grid gap-6 py-10 md:grid-cols-12 md:items-start md:gap-10 md:py-12"
             >
-              <p className="text-lg font-semibold tracking-tight text-white md:text-xl">{label}</p>
-            </div>
+              <div className="md:col-span-4">
+                <h3 className="font-display text-xl font-normal tracking-tight text-neutral-950 md:text-2xl">
+                  {item.title}
+                </h3>
+              </div>
+              <div className="md:col-span-8">
+                <p className="max-w-lg text-sm leading-relaxed text-neutral-600 md:text-base">
+                  {item.description}
+                </p>
+              </div>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </section>
   );

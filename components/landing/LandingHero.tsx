@@ -1,28 +1,38 @@
-import { PrimaryButton } from "./PrimaryButton";
-import { HeroMockup } from "./HeroMockup";
+import Link from "next/link";
+import type { LandingContent } from "@/lib/landing/config";
+import { landingSection } from "./landing-tokens";
 
-export function LandingHero() {
+type LandingHeroProps = {
+  content: LandingContent["hero"];
+};
+
+export function LandingHero({ content }: LandingHeroProps) {
   return (
-    <section className="relative overflow-hidden px-5 pb-20 pt-12 md:px-8 md:pb-28 md:pt-16">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-0 h-[480px] w-[800px] -translate-x-1/2 rounded-full bg-white/[0.03] blur-3xl" />
+    <section className={`${landingSection} pb-24 pt-20 md:pb-32 md:pt-28`}>
+      <div className="max-w-3xl">
+        <h1 className="font-display text-[2.75rem] font-normal leading-[1.05] tracking-[-0.02em] text-neutral-950 md:text-6xl lg:text-7xl">
+          {content.title}
+        </h1>
+        <p className="mt-8 max-w-xl text-base leading-relaxed text-neutral-600 md:text-lg">
+          {content.subtitle}
+        </p>
+        <div className="mt-12 flex flex-wrap items-center gap-4">
+          <Link
+            href={content.primaryCta.href}
+            className="inline-flex min-h-11 items-center justify-center rounded-full bg-neutral-950 px-8 py-2.5 text-sm font-medium tracking-wide text-white transition hover:bg-neutral-800"
+          >
+            {content.primaryCta.label}
+          </Link>
+          <Link
+            href={content.secondaryCta.href}
+            className="inline-flex min-h-11 items-center justify-center rounded-full border border-neutral-300 bg-transparent px-8 py-2.5 text-sm font-medium tracking-wide text-neutral-950 transition hover:border-neutral-950"
+          >
+            {content.secondaryCta.label}
+          </Link>
+        </div>
       </div>
-      <div className="relative mx-auto max-w-6xl">
-        <div className="mx-auto max-w-3xl text-center">
-          <h1 className="text-balance text-4xl font-semibold leading-[1.1] tracking-tight text-white md:text-6xl md:leading-[1.08]">
-            Ton agenda se remplit tout seul.
-          </h1>
-          <p className="mx-auto mt-6 max-w-xl text-pretty text-base leading-relaxed text-zinc-400 md:text-lg">
-            Tes clients réservent en ligne, tu confirmes automatiquement et tu récupères leurs avis
-            sans rien faire.
-          </p>
-          <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-            <PrimaryButton href="/signup">Commencer gratuitement</PrimaryButton>
-          </div>
-        </div>
-        <div className="mt-16 md:mt-20">
-          <HeroMockup />
-        </div>
+      <div className="mt-20 md:mt-28" aria-hidden>
+        <div className="h-px w-full max-w-md bg-neutral-200" />
       </div>
     </section>
   );
