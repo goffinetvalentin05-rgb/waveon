@@ -28,6 +28,13 @@ export const authAlertConfig =
 export const authMessage =
   "rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-xs leading-relaxed text-neutral-700";
 
+export const authMessageSuccess =
+  "rounded-xl border border-emerald-200/90 bg-emerald-50/90 px-4 py-3 text-xs leading-relaxed text-emerald-950";
+
+/** Lien secondaire (ex. mot de passe oublié) */
+export const authInlineLink =
+  "text-xs font-medium text-neutral-600 underline-offset-2 transition-colors hover:text-neutral-950 hover:underline";
+
 export const authFooter = "mt-7 text-center text-sm text-neutral-600";
 
 export const authFooterLink =
