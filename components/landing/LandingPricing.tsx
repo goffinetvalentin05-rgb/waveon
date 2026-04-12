@@ -1,12 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import type { LandingContent } from "@/lib/landing/config";
 import { ScrollReveal } from "./ScrollReveal";
-import { landingCard, landingDivider, landingSection, landingSectionSoft, landingSectionY } from "./landing-tokens";
+import { landingDivider, landingSection, landingSectionSoft, landingSectionY } from "./landing-tokens";
 
 type LandingPricingProps = {
   content: LandingContent["pricing"];
 };
+
+const SIGNUP_HREF = "/signup";
 
 function CheckIcon({ className }: { className?: string }) {
   return (
@@ -22,9 +25,6 @@ function CheckIcon({ className }: { className?: string }) {
   );
 }
 
-const planTransition =
-  "transition-shadow duration-[420ms] ease-out hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.08)]";
-
 export function LandingPricing({ content }: LandingPricingProps) {
   const { starter, pro } = content;
 
@@ -37,11 +37,23 @@ export function LandingPricing({ content }: LandingPricingProps) {
           </h2>
         </ScrollReveal>
         <div className="mt-12 grid gap-7 sm:mt-14 md:mt-20 md:grid-cols-2 md:gap-8 lg:mx-auto lg:max-w-4xl">
-          <ScrollReveal>
-            <PlanCard name={starter.name} price={starter.price} bullets={starter.bullets} highlighted={false} />
+          <ScrollReveal delayMs={0}>
+            <PlanCard
+              name={starter.name}
+              price={starter.price}
+              bullets={starter.bullets}
+              variant="light"
+              ctaLabel="Choisir Starter"
+            />
           </ScrollReveal>
-          <ScrollReveal delayMs={50}>
-            <PlanCard name={pro.name} price={pro.price} bullets={pro.bullets} highlighted />
+          <ScrollReveal delayMs={120}>
+            <PlanCard
+              name={pro.name}
+              price={pro.price}
+              bullets={pro.bullets}
+              variant="dark"
+              ctaLabel="Choisir Pro"
+            />
           </ScrollReveal>
         </div>
       </div>
@@ -53,44 +65,46 @@ function PlanCard({
   name,
   price,
   bullets,
-  highlighted,
+  variant,
+  ctaLabel,
 }: {
   name: string;
   price: string;
   bullets: readonly string[];
-  highlighted: boolean;
+  variant: "light" | "dark";
+  ctaLabel: string;
 }) {
-  if (highlighted) {
-    return (
-      <div
-        className={`flex flex-col rounded-3xl border border-neutral-800 bg-neutral-950 p-8 text-white shadow-[0_8px_32px_-8px_rgba(0,0,0,0.2)] sm:p-9 md:p-11 ${planTransition}`}
-      >
-        <p className="font-display text-2xl font-normal">{name}</p>
-        <p className="mt-4 text-lg text-neutral-300">{price}</p>
-        <ul className="mt-10 space-y-4 text-base leading-relaxed text-neutral-200">
+  const isDark = variant === "dark";
+
+  const shell = isDark
+    ? "group relative flex h-full flex-col overflow-hidden rounded-[1.65rem] border border-white/10 bg-neutral-950 p-8 text-white shadow-[0_4px_24px_-8px_rgba(0,0,0,0.35),0_24px_56px_-24px_rgba(0,0,0,0.45)] ring-1 ring-white/[0.06] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] before:pointer-events-none before:absolute before:inset-0 before:rounded-[1.65rem] before:bg-gradient-to-b before:from-white/[0.07] before:via-transparent before:to-transparent before:opacity-60 hover:-translate-y-1.5 hover:shadow-[0_20px_48px_-16px_rgba(0,0,0,0.55)] motion-reduce:hover:translate-y-0 motion-reduce:hover:shadow-[0_4px_24px_-8px_rgba(0,0,0,0.35)] sm:p-9 md:p-11"
+    : "group relative flex h-full flex-col overflow-hidden rounded-[1.65rem] border border-neutral-200/80 bg-white p-8 shadow-[0_2px_8px_rgba(0,0,0,0.04),0_16px_40px_-20px_rgba(0,0,0,0.1)] ring-1 ring-neutral-950/[0.04] transition-[transform,box-shadow,border-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] before:pointer-events-none before:absolute before:inset-0 before:rounded-[1.65rem] before:bg-gradient-to-b before:from-neutral-950/[0.03] before:via-transparent before:to-transparent hover:-translate-y-1.5 hover:border-neutral-300/90 hover:shadow-[0_12px_40px_-20px_rgba(0,0,0,0.14)] motion-reduce:hover:translate-y-0 motion-reduce:hover:shadow-[0_2px_8px_rgba(0,0,0,0.04),0_16px_40px_-20px_rgba(0,0,0,0.1)] sm:p-9 md:p-11";
+
+  const ctaLight =
+    "inline-flex min-h-[48px] w-full items-center justify-center rounded-full border-2 border-neutral-950 bg-white px-6 py-2.5 text-sm font-semibold text-neutral-950 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)] transition-[background-color,box-shadow,transform,color] duration-500 ease-out hover:bg-neutral-950 hover:text-white hover:shadow-[0_8px_24px_-8px_rgba(0,0,0,0.2)] active:scale-[0.99] motion-reduce:active:scale-100";
+
+  const ctaDark =
+    "inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-neutral-950 shadow-[0_4px_16px_-4px_rgba(0,0,0,0.25)] transition-[background-color,box-shadow,transform] duration-500 ease-out hover:bg-neutral-100 hover:shadow-[0_12px_32px_-8px_rgba(0,0,0,0.35)] active:scale-[0.99] motion-reduce:active:scale-100";
+
+  return (
+    <div className={shell}>
+      <div className="relative z-10 flex h-full flex-col">
+        <p className={`font-display text-2xl font-normal ${isDark ? "text-white" : "text-neutral-950"}`}>{name}</p>
+        <p className={`mt-4 text-lg ${isDark ? "text-neutral-300" : "text-neutral-600"}`}>{price}</p>
+        <ul className={`mt-10 flex-1 space-y-4 text-base leading-relaxed ${isDark ? "text-neutral-200" : "text-neutral-600"}`}>
           {bullets.map((line, i) => (
             <li key={i} className="flex gap-3">
-              <CheckIcon className="mt-0.5 shrink-0 text-neutral-400" />
+              <CheckIcon className={`mt-0.5 shrink-0 ${isDark ? "text-neutral-400" : "text-neutral-950"}`} />
               <span className="whitespace-pre-line">{line}</span>
             </li>
           ))}
         </ul>
+        <div className="relative z-10 mt-auto pt-10">
+          <Link href={SIGNUP_HREF} className={isDark ? ctaDark : ctaLight}>
+            {ctaLabel}
+          </Link>
+        </div>
       </div>
-    );
-  }
-
-  return (
-    <div className={`${landingCard} flex flex-col p-8 sm:p-9 md:p-11 ${planTransition}`}>
-      <p className="font-display text-2xl font-normal text-neutral-950">{name}</p>
-      <p className="mt-4 text-lg text-neutral-600">{price}</p>
-      <ul className="mt-10 space-y-4 text-base leading-relaxed text-neutral-600">
-        {bullets.map((line, i) => (
-          <li key={i} className="flex gap-3">
-            <CheckIcon className="mt-0.5 shrink-0 text-neutral-950" />
-            <span className="whitespace-pre-line">{line}</span>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }
