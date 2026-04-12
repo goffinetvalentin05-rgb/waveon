@@ -1,8 +1,24 @@
 "use client";
 
-import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { BrandLogoLink } from "@/components/landing/BrandLogoLink";
+import {
+  authAlertConfig,
+  authBtnPrimaryWide,
+  authCard,
+  authFooter,
+  authFooterLink,
+  authInput,
+  authLabel,
+  authMain,
+  authMessage,
+  authScreen,
+  authSubtitle,
+  authTitle,
+} from "@/components/auth/auth-ui";
+import { landingContent } from "@/lib/landing/config";
 import { supabase } from "@/lib/supabase";
 
 const hasSupabaseConfig = Boolean(
@@ -16,13 +32,11 @@ export default function LoginPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
-  const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const title = mode === "login" ? "Connexion" : "Créer mon compte";
   const isReady = mounted && hasSupabaseConfig;
 
   useEffect(() => {
@@ -47,101 +61,59 @@ export default function LoginPage() {
     setLoading(true);
     setMessage(null);
 
-    if (mode === "register") {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-      if (error) {
-        setMessage(error.message);
-        setLoading(false);
-        return;
-      }
-      if (data.user) {
-        const { error: profileError } = await supabase
-          .from("users")
-          .insert({
-            id: data.user.id,
-            email: data.user.email,
-          });
-        if (profileError && process.env.NODE_ENV !== "production") {
-          console.warn(
-            "[Supabase] Impossible de créer le profil user:",
-            profileError.message
-          );
-        }
-      }
-      setMessage(
-        "Compte créé. Vérifie tes emails si la confirmation est activée."
-      );
-    } else {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) {
-        setMessage(error.message);
-        setLoading(false);
-        return;
-      }
-      if (data.user) {
-        const { error: profileError } = await supabase
-          .from("users")
-          .upsert(
-            { id: data.user.id, email: data.user.email },
-            { onConflict: "id" }
-          );
-        if (profileError && process.env.NODE_ENV !== "production") {
-          console.warn(
-            "[Supabase] Impossible de synchroniser le profil user:",
-            profileError.message
-          );
-        }
-      }
-      router.replace("/dashboard");
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) {
+      setMessage(error.message);
+      setLoading(false);
+      return;
     }
+    if (data.user) {
+      const { error: profileError } = await supabase
+        .from("users")
+        .upsert(
+          { id: data.user.id, email: data.user.email },
+          { onConflict: "id" }
+        );
+      if (profileError && process.env.NODE_ENV !== "production") {
+        console.warn(
+          "[Supabase] Impossible de synchroniser le profil user:",
+          profileError.message
+        );
+      }
+    }
+    router.replace("/dashboard");
     setLoading(false);
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#080808]">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(57,255,20,0.14),transparent_60%)]" />
-      </div>
-      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6 py-16">
-        <div className="relative rounded-3xl border border-[#39FF14]/20 bg-[#0f0f0f] p-8 shadow-[0_24px_52px_rgba(57,255,20,0.12)]">
+    <div className={authScreen}>
+      <div className={authMain}>
+        <div className={authCard}>
           <div className="mb-6">
-            <div className="mb-6 flex flex-col items-start leading-none">
-              <Image
-                src="/waevon-logo.png"
-                alt="Waevon"
-                width={200}
-                height={70}
-                className="h-10 w-auto"
-                priority
-              />
-            </div>
-            <h1 className="mt-2 text-2xl font-bold text-white">
-              {title}
-            </h1>
-            <p className="mt-2 text-sm text-[#555]">
-              Accède à ton dashboard et active ton agent WhatsApp.
+            <BrandLogoLink brand={landingContent.brand} variant="header" />
+            <h1 className={authTitle}>Connexion</h1>
+            <p className={authSubtitle}>
+              Connecte-toi pour gérer tes réservations et ton agenda.
             </p>
             {!hasSupabaseConfig ? (
-              <p className="mt-4 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-xs text-amber-300">
-                Configuration Supabase manquante. Ajoutez
-                NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY.
+              <p className={`mt-4 ${authAlertConfig}`}>
+                Configuration Supabase manquante. Ajoutez NEXT_PUBLIC_SUPABASE_URL
+                et NEXT_PUBLIC_SUPABASE_ANON_KEY.
               </p>
             ) : null}
           </div>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-[#888]">
+              <label className={authLabel} htmlFor="login-email">
                 Email
               </label>
               <input
-                className="mt-2 w-full rounded-xl border border-[#333] bg-[#1a1a1a] px-4 py-3 text-sm text-white placeholder:text-[#555] focus:border-[#39FF14] focus:outline-none"
+                id="login-email"
+                className={authInput}
                 type="email"
                 placeholder="ton@email.com"
                 value={email}
@@ -151,11 +123,12 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-[#888]">
+              <label className={authLabel} htmlFor="login-password">
                 Mot de passe
               </label>
               <input
-                className="mt-2 w-full rounded-xl border border-[#333] bg-[#1a1a1a] px-4 py-3 text-sm text-white placeholder:text-[#555] focus:border-[#39FF14] focus:outline-none"
+                id="login-password"
+                className={authInput}
                 type="password"
                 placeholder="••••••••"
                 value={password}
@@ -164,13 +137,9 @@ export default function LoginPage() {
                 disabled={!isReady}
               />
             </div>
-            {message ? (
-              <p className="rounded-xl border border-[#39FF14]/20 bg-[#39FF14]/10 px-4 py-3 text-xs text-white/85">
-                {message}
-              </p>
-            ) : null}
+            {message ? <p className={authMessage}>{message}</p> : null}
             <button
-              className="w-full rounded-xl bg-[#39FF14] px-4 py-3 text-sm font-bold text-black transition hover:brightness-110 disabled:opacity-60"
+              className={authBtnPrimaryWide}
               type="submit"
               disabled={loading || !isReady}
             >
@@ -178,29 +147,14 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-[#888]">
-            {mode === "login" ? (
-              <>
-                Pas encore de compte ?{" "}
-                <a
-                  href="/signup"
-                  className="font-semibold text-[#39FF14] hover:underline"
-                >
-                  S'inscrire
-                </a>
-              </>
-            ) : (
-              <>
-                Déjà un compte ?{" "}
-                <a href="/login" className="font-semibold text-[#39FF14] hover:underline">
-                  Se connecter
-                </a>
-              </>
-            )}
+          <div className={authFooter}>
+            Pas encore de compte ?{" "}
+            <Link href="/signup" className={authFooterLink}>
+              S&apos;inscrire
+            </Link>
           </div>
         </div>
       </div>
     </div>
   );
 }
-

@@ -1,8 +1,24 @@
 "use client";
 
-import Image from "next/image";
-import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { BrandLogoLink } from "@/components/landing/BrandLogoLink";
+import {
+  authAlertConfig,
+  authBtnPrimaryWide,
+  authCard,
+  authFooter,
+  authFooterLink,
+  authInput,
+  authLabel,
+  authMain,
+  authMessage,
+  authScreen,
+  authSubtitle,
+  authTitle,
+} from "@/components/auth/auth-ui";
+import { landingContent } from "@/lib/landing/config";
 import { supabase } from "@/lib/supabase";
 
 const hasSupabaseConfig = Boolean(
@@ -52,7 +68,6 @@ export default function SignupPage() {
         return;
       }
 
-      // Si Supabase ne crée pas automatiquement la session, on tente une connexion directe.
       if (!data.session) {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email: normalizedEmail,
@@ -79,97 +94,90 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#080808]">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(57,255,20,0.14),transparent_60%)]" />
-      </div>
-      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6 py-16">
-        <div className="relative rounded-3xl border border-[#39FF14]/20 bg-[#0f0f0f] p-8 shadow-[0_24px_52px_rgba(57,255,20,0.12)]">
+    <div className={authScreen}>
+      <div className={authMain}>
+        <div className={authCard}>
           <div className="mb-6">
-            <div className="mb-6 flex flex-col items-start leading-none">
-              <Image
-                src="/waevon-logo.png"
-                alt="Waevon"
-                width={200}
-                height={70}
-                className="h-10 w-auto"
-                priority
-              />
-            </div>
-            <h1 className="mt-2 text-2xl font-bold text-white">Créer mon compte</h1>
-            <p className="mt-2 text-sm text-[#555]">
-              Lance ton agent Waevon en moins de 10 minutes.
+            <BrandLogoLink brand={landingContent.brand} variant="header" />
+            <h1 className={authTitle}>Créer mon compte</h1>
+            <p className={authSubtitle}>
+              Passe en ligne ta page de réservation en quelques minutes.
             </p>
+            {!hasSupabaseConfig ? (
+              <p className={`mt-4 ${authAlertConfig}`}>
+                Configuration Supabase manquante. Ajoutez NEXT_PUBLIC_SUPABASE_URL
+                et NEXT_PUBLIC_SUPABASE_ANON_KEY.
+              </p>
+            ) : null}
           </div>
 
           <form className="space-y-4" onSubmit={handleSignup}>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-[#888]">
+              <label className={authLabel} htmlFor="signup-email">
                 Email
               </label>
               <input
-                className="mt-2 w-full rounded-xl border border-[#333] bg-[#1a1a1a] px-4 py-3 text-sm text-white placeholder:text-[#555] focus:border-[#39FF14] focus:outline-none"
+                id="signup-email"
+                className={authInput}
                 type="email"
                 placeholder="ton@email.com"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 required
-                disabled={loading}
+                disabled={loading || !hasSupabaseConfig}
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-[#888]">
+              <label className={authLabel} htmlFor="signup-password">
                 Mot de passe
               </label>
               <input
-                className="mt-2 w-full rounded-xl border border-[#333] bg-[#1a1a1a] px-4 py-3 text-sm text-white placeholder:text-[#555] focus:border-[#39FF14] focus:outline-none"
+                id="signup-password"
+                className={authInput}
                 type="password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 minLength={6}
                 required
-                disabled={loading}
+                disabled={loading || !hasSupabaseConfig}
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-[#888]">
+              <label className={authLabel} htmlFor="signup-confirm">
                 Confirmer le mot de passe
               </label>
               <input
-                className="mt-2 w-full rounded-xl border border-[#333] bg-[#1a1a1a] px-4 py-3 text-sm text-white placeholder:text-[#555] focus:border-[#39FF14] focus:outline-none"
+                id="signup-confirm"
+                className={authInput}
                 type="password"
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
                 minLength={6}
                 required
-                disabled={loading}
+                disabled={loading || !hasSupabaseConfig}
               />
             </div>
 
-            {message ? (
-              <p className="rounded-xl border border-[#39FF14]/20 bg-[#39FF14]/10 px-4 py-3 text-xs text-white/85">
-                {message}
-              </p>
-            ) : null}
+            {message ? <p className={authMessage}>{message}</p> : null}
 
             <button
-              className="w-full rounded-xl bg-[#39FF14] px-4 py-3 text-sm font-bold text-black transition hover:brightness-110 disabled:opacity-60"
+              className={authBtnPrimaryWide}
               type="submit"
-              disabled={loading}
+              disabled={loading || !hasSupabaseConfig}
             >
               {loading ? "Création en cours..." : "Créer mon compte"}
             </button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-[#888]">
+          <div className={authFooter}>
             Déjà un compte ?{" "}
-            <a href="/login" className="font-semibold text-[#39FF14] hover:underline">
+            <Link href="/login" className={authFooterLink}>
               Se connecter
-            </a>
+            </Link>
           </div>
         </div>
       </div>
