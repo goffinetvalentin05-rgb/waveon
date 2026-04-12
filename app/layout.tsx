@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Waevon",
+  title: "waevon — Ton agenda se remplit tout seul",
   description:
-    "Transforme les clients en avis Google et abonnés Instagram grâce à une page interactive.",
+    "Réservations en ligne, confirmations automatiques et avis clients pour les indépendants.",
 };
 
 export default function RootLayout({
