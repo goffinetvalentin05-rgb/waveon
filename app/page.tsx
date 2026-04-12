@@ -14,11 +14,7 @@ export default function Home() {
     landingContent;
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-white font-sans text-neutral-950 antialiased selection:bg-violet-200/50">
-      <div
-        className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_90%_55%_at_50%_-8%,rgba(139,92,246,0.08),transparent_52%),linear-gradient(180deg,#fafaff_0%,#ffffff_22%,#ffffff_100%)]"
-        aria-hidden
-      />
+    <div className="relative min-h-screen overflow-x-hidden bg-white font-sans text-neutral-950 antialiased selection:bg-neutral-200/80">
       <LandingHeader brand={brand} header={header} />
       <main>
         <LandingHero content={hero} />

@@ -9,26 +9,22 @@ type LandingHeroProps = {
 
 export function LandingHero({ content }: LandingHeroProps) {
   return (
-    <section className="relative overflow-hidden pb-24 pt-10 md:pb-32 md:pt-14">
-      <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_100%_70%_at_50%_-10%,rgba(139,92,246,0.11),transparent_50%)]"
-        aria-hidden
-      />
-      <div className={`${landingSection} relative`}>
+    <section className="relative pb-32 pt-24 sm:pt-28 md:flex md:min-h-[calc(100dvh-5rem)] md:flex-col md:justify-center md:pb-40 md:pt-28 lg:pt-36">
+      <div className={`${landingSection} w-full`}>
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="font-display text-[2.35rem] font-normal leading-[1.08] tracking-[-0.02em] text-neutral-950 md:text-5xl lg:text-6xl">
             {content.title}
           </h1>
-          <p className="mx-auto mt-8 max-w-xl whitespace-pre-line text-base leading-relaxed text-neutral-600 md:mt-10 md:text-lg">
+          <p className="mx-auto mt-10 max-w-xl whitespace-pre-line text-base leading-relaxed text-neutral-600 md:mt-12 md:text-lg">
             {content.subtitle}
           </p>
-          <div className="mt-10 flex justify-center md:mt-12">
+          <div className="mt-12 flex justify-center md:mt-14">
             <Link href={content.cta.href} className={landingBtnPrimary}>
               {content.cta.label}
             </Link>
           </div>
         </div>
-        <div className="relative mx-auto mt-4 max-w-5xl">
+        <div className="relative mx-auto mt-16 w-full max-w-5xl md:mt-20 lg:mt-24">
           <HeroBento />
         </div>
       </div>

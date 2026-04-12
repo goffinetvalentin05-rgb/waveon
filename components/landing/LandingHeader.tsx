@@ -32,7 +32,7 @@ export function LandingHeader({ brand, header }: LandingHeaderProps) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="rounded-lg px-2.5 py-1.5 text-sm text-neutral-600 transition hover:bg-violet-50/80 hover:text-neutral-950"
+                  className="rounded-lg px-2.5 py-1.5 text-sm text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950"
                 >
                   {item.label}
                 </Link>
@@ -72,7 +72,7 @@ export function LandingHeader({ brand, header }: LandingHeaderProps) {
                       key={item.href}
                       href={item.href}
                       onClick={closeMenu}
-                      className="block rounded-lg px-3 py-2.5 text-sm text-neutral-700 transition hover:bg-violet-50/90 hover:text-neutral-950"
+                      className="block rounded-lg px-3 py-2.5 text-sm text-neutral-700 transition hover:bg-neutral-100 hover:text-neutral-950"
                     >
                       {item.label}
                     </Link>
@@ -92,7 +92,7 @@ export function LandingHeader({ brand, header }: LandingHeaderProps) {
           <Link
             href={header.cta.href}
             onClick={closeMenu}
-            className="inline-flex min-h-8 shrink-0 items-center justify-center rounded-full bg-indigo-950 px-3 py-1.5 text-[11px] font-medium text-white shadow-sm transition hover:bg-indigo-900 sm:px-4 sm:text-xs md:min-h-9 md:px-5 md:text-sm"
+            className="inline-flex min-h-8 shrink-0 items-center justify-center rounded-full bg-neutral-950 px-3 py-1.5 text-[11px] font-medium text-white shadow-sm transition hover:bg-neutral-800 sm:px-4 sm:text-xs md:min-h-9 md:px-5 md:text-sm"
           >
             {header.cta.label}
           </Link>

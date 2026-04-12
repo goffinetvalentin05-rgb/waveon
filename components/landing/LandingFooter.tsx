@@ -23,7 +23,7 @@ export function LandingFooter({ brand, footer }: LandingFooterProps) {
               <Link
                 key={l.href}
                 href={l.href}
-                className="text-neutral-950 transition hover:text-indigo-950"
+                className="text-neutral-950 transition hover:text-neutral-600"
               >
                 {l.label}
               </Link>
