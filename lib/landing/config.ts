@@ -52,6 +52,23 @@ export const landingContent = {
     ],
   },
 
+  scrollStory: {
+    steps: [
+      {
+        title: "Tes clients réservent en ligne",
+        text: "À tout moment, sans appeler",
+      },
+      {
+        title: "Ton agenda se remplit automatiquement",
+        text: "Même quand tu travailles ou que tu dors",
+      },
+      {
+        title: "Tout est centralisé",
+        text: "Tes rendez-vous et tes clients au même endroit",
+      },
+    ],
+  },
+
   product: {
     title: "Un système pensé pour aller vite.",
     text: "Une page de réservation claire, un agenda simple, et tout fonctionne automatiquement.",

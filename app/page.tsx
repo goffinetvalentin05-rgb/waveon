@@ -2,6 +2,7 @@ import { LandingHeader } from "@/components/landing/LandingHeader";
 import { LandingHero } from "@/components/landing/LandingHero";
 import { LandingIntro } from "@/components/landing/LandingIntro";
 import { LandingDaily } from "@/components/landing/LandingDaily";
+import { LandingScrollStory } from "@/components/landing/LandingScrollStory";
 import { LandingProduct } from "@/components/landing/LandingProduct";
 import { LandingPricing } from "@/components/landing/LandingPricing";
 import { LandingBrandImage } from "@/components/landing/LandingBrandImage";
@@ -10,7 +11,7 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import { landingContent } from "@/lib/landing/config";
 
 export default function Home() {
-  const { brand, header, hero, intro, daily, product, pricing, brandImage, finalCta, footer } =
+  const { brand, header, hero, intro, daily, scrollStory, product, pricing, brandImage, finalCta, footer } =
     landingContent;
 
   return (
@@ -20,6 +21,7 @@ export default function Home() {
         <LandingHero content={hero} />
         <LandingIntro content={intro} />
         <LandingDaily content={daily} />
+        <LandingScrollStory content={scrollStory} />
         <LandingProduct content={product} />
         <LandingPricing content={pricing} />
         <LandingBrandImage content={brandImage} />
