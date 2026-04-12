@@ -12,15 +12,19 @@ export function LandingFooter({ brand, footer }: LandingFooterProps) {
   const hasLinks = footer.links.length > 0;
 
   return (
-    <footer className={landingDivider}>
+    <footer className={`${landingDivider} bg-neutral-50/40`}>
       <div
-        className={`${landingSection} flex flex-col gap-6 py-10 text-sm text-neutral-950 md:flex-row md:items-center md:justify-between md:py-12`}
+        className={`${landingSection} flex flex-col gap-8 py-14 text-sm text-neutral-600 md:flex-row md:items-center md:justify-between md:py-16`}
       >
         <BrandLogoLink brand={brand} variant="footer" />
         {hasLinks ? (
           <div className="flex flex-wrap gap-x-8 gap-y-2">
             {footer.links.map((l) => (
-              <Link key={l.href} href={l.href} className="underline-offset-4 hover:underline">
+              <Link
+                key={l.href}
+                href={l.href}
+                className="text-neutral-950 transition hover:text-indigo-950"
+              >
                 {l.label}
               </Link>
             ))}
