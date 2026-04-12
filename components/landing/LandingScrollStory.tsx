@@ -25,8 +25,8 @@ function renderVisual(index: number) {
 }
 
 /**
- * Parcours sticky : la colonne visuelle reste fixée pendant que les blocs texte
- * défilent ; l’étape la plus proche de la ligne de lecture pilote le mockup actif.
+ * Parcours type landing SaaS (réf. taap.it) : fond léger, texte + timeline à gauche,
+ * bloc produit sticky encadré à droite ; le scroll des étapes pilote le mockup.
  */
 export function LandingScrollStory({ content }: LandingScrollStoryProps) {
   const { steps } = content;
@@ -40,7 +40,7 @@ export function LandingScrollStory({ content }: LandingScrollStoryProps) {
 
   const updateActive = useCallback(() => {
     const vh = window.innerHeight || 1;
-    const line = vh * 0.36;
+    const line = vh * 0.38;
 
     type Cand = { i: number; d: number; vis: boolean };
     const cands: Cand[] = [];
@@ -51,7 +51,7 @@ export function LandingScrollStory({ content }: LandingScrollStoryProps) {
       const r = el.getBoundingClientRect();
       const mid = (r.top + r.bottom) / 2;
       const d = Math.abs(mid - line);
-      const vis = r.bottom > 48 && r.top < vh - 48;
+      const vis = r.bottom > 56 && r.top < vh - 56;
       cands.push({ i, d, vis });
     });
 
@@ -87,78 +87,103 @@ export function LandingScrollStory({ content }: LandingScrollStoryProps) {
   return (
     <section
       id="parcours"
-      className={`scroll-mt-28 ${landingDivider} bg-white`}
+      className={`scroll-mt-28 ${landingDivider} bg-[#fafafa]`}
       aria-labelledby="parcours-aria-title"
     >
       <h2 id="parcours-aria-title" className="sr-only">
         Parcours
       </h2>
 
-      <div className={`${landingSection} py-16 md:py-20 lg:py-24`}>
-        <div className="mx-auto max-w-6xl lg:grid lg:grid-cols-2 lg:items-start lg:gap-16 xl:gap-20">
-          {/* Colonne visuelle : sticky, pilote l’attention pendant le scroll du texte */}
-          <aside className="sticky top-24 z-10 -mx-1 mb-10 min-w-0 border-b border-neutral-200/70 bg-white px-1 pb-8 md:top-28 lg:mx-0 lg:border-b-0 lg:bg-transparent lg:pb-0">
-            <div className="mx-auto flex w-full max-w-[min(100%,440px)] flex-col lg:mx-0 lg:max-w-none">
-              <div
-                className="mb-6 flex items-center justify-center gap-2 lg:justify-start"
-                aria-hidden
-              >
-                {steps.map((_, i) => (
-                  <span
-                    key={i}
-                    className={`h-1 rounded-full transition-[width,background-color] duration-500 ease-out motion-reduce:transition-none ${
-                      i === active
-                        ? "w-10 bg-neutral-950"
-                        : i < active
-                          ? "w-1.5 bg-neutral-400"
-                          : "w-1.5 bg-neutral-200"
-                    }`}
-                  />
-                ))}
-              </div>
+      <div className={`${landingSection} py-20 md:py-24 lg:py-28`}>
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-14 lg:grid-cols-2 lg:items-start lg:gap-16 xl:gap-20">
+          {/* Mobile : mockup d’abord ; desktop : même rangée, colonne droite (taap-like) */}
+          <aside className="min-w-0 lg:col-start-2 lg:row-start-1">
+            <div className="sticky top-24 z-10 md:top-28">
+              <div className="rounded-[1.75rem] border border-neutral-200/90 bg-white p-5 shadow-[0_32px_80px_-48px_rgba(0,0,0,0.22),0_12px_40px_-32px_rgba(0,0,0,0.08)] md:rounded-[2rem] md:p-7 lg:rounded-[2.25rem] lg:p-8">
+                <div className="mb-5 flex items-center gap-2 md:mb-6" aria-hidden>
+                  {steps.map((_, i) => (
+                    <span
+                      key={i}
+                      className={`h-1 rounded-full transition-[width,background-color] duration-500 ease-out motion-reduce:transition-none ${
+                        i === active
+                          ? "w-8 bg-neutral-950"
+                          : i < active
+                            ? "w-1.5 bg-neutral-400"
+                            : "w-1.5 bg-neutral-200"
+                      }`}
+                    />
+                  ))}
+                </div>
 
-              {/*
-                Un seul visuel monté à la fois : hauteur intrinsèque (plus de colonne vide
-                si le conteneur « relative » s’effondrait avec uniquement des enfants absolute).
-              */}
-              <div className="relative isolate flex min-h-[380px] w-full flex-col items-center justify-center overflow-visible sm:min-h-[420px] lg:min-h-[560px] lg:py-2 xl:min-h-[600px]">
-                <div
-                  className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[10%] -z-10 rounded-[2.75rem] bg-[radial-gradient(ellipse_80%_60%_at_50%_45%,rgba(15,23,42,0.07)_0%,transparent_72%)] ring-1 ring-neutral-200/60 motion-reduce:ring-0"
-                  aria-hidden
-                />
-                <div
-                  className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[min(72%,420px)] w-[min(92%,380px)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-neutral-950/[0.03] blur-3xl motion-reduce:blur-none"
-                  aria-hidden
-                />
-                <div
-                  key={active}
-                  className="landing-story-visual-swap flex w-full max-w-[min(100%,440px)] justify-center px-1"
-                >
-                  {renderVisual(active)}
+                <div className="relative isolate flex min-h-[360px] w-full flex-col items-center justify-center rounded-2xl bg-gradient-to-b from-neutral-50/90 to-white sm:min-h-[400px] lg:min-h-[520px] xl:min-h-[560px]">
+                  <div
+                    className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_85%_55%_at_50%_42%,rgba(15,23,42,0.06)_0%,transparent_70%)]"
+                    aria-hidden
+                  />
+                  <div
+                    className="pointer-events-none absolute left-1/2 top-[52%] -z-10 h-[55%] w-[88%] max-w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-[2rem] bg-neutral-950/[0.04] blur-3xl motion-reduce:blur-none"
+                    aria-hidden
+                  />
+                  <div
+                    key={active}
+                    className="landing-story-visual-swap relative z-10 flex w-full justify-center px-1 pt-1"
+                  >
+                    {renderVisual(active)}
+                  </div>
                 </div>
               </div>
             </div>
           </aside>
 
-          {/* Colonne narrative : blocs réels dans le flux, fort rythme vertical */}
-          <div className="min-w-0 space-y-0 lg:pt-4">
-            {steps.map((step, i) => (
-              <article
-                key={step.title}
-                ref={setBlockRef(i)}
-                id={`parcours-etape-${i + 1}`}
-                aria-current={i === active ? "step" : undefined}
-                data-active={i === active ? "true" : "false"}
-                className="flex min-h-[min(86dvh,720px)] flex-col justify-center border-l border-neutral-200/90 py-10 pl-6 transition-[border-color,box-shadow] duration-500 ease-out motion-reduce:transition-none data-[active=true]:border-neutral-950 data-[active=true]:shadow-[inset_3px_0_0_0_rgb(10_10_10)] md:min-h-[min(90dvh,780px)] md:pl-8 lg:min-h-[min(100dvh,880px)] lg:py-14 lg:pl-10"
-              >
-                <h3 className="font-display text-2xl font-normal leading-tight tracking-tight text-neutral-950 md:text-3xl lg:text-[2.125rem]">
-                  {step.title}
-                </h3>
-                <p className="mt-4 max-w-md text-base leading-relaxed text-neutral-600 md:mt-5 md:text-lg">
-                  {step.text}
-                </p>
-              </article>
-            ))}
+          {/* Colonne narrative + repères verticaux */}
+          <div className="relative min-w-0 lg:col-start-1 lg:row-start-1 lg:pr-4">
+            <div
+              className="pointer-events-none absolute bottom-24 left-[15px] top-24 hidden w-px bg-gradient-to-b from-neutral-300 via-neutral-200/90 to-transparent lg:block"
+              aria-hidden
+            />
+
+            <div className="space-y-0">
+              {steps.map((step, i) => (
+                <article
+                  key={step.title}
+                  ref={setBlockRef(i)}
+                  id={`parcours-etape-${i + 1}`}
+                  aria-current={i === active ? "step" : undefined}
+                  data-active={i === active ? "true" : "false"}
+                  className="relative flex min-h-[min(82dvh,680px)] flex-col justify-center py-8 pl-11 transition-[opacity] duration-500 ease-out motion-reduce:transition-none data-[active=false]:opacity-50 data-[active=true]:opacity-100 motion-reduce:data-[active=false]:opacity-100 md:min-h-[min(88dvh,760px)] md:pl-12 lg:min-h-[min(96dvh,840px)] lg:py-12 lg:pl-14"
+                >
+                  <div
+                    className="absolute left-0 top-[0.42em] flex h-8 w-8 items-center justify-center"
+                    aria-hidden
+                  >
+                    <span
+                      className={`block h-2.5 w-2.5 rounded-full ring-4 transition-[background-color,transform,box-shadow] duration-500 ease-out motion-reduce:transition-none ${
+                        i === active
+                          ? "scale-110 bg-neutral-950 ring-neutral-950/12 shadow-[0_0_0_6px_rgba(0,0,0,0.04)]"
+                          : "bg-neutral-300 ring-transparent"
+                      }`}
+                    />
+                  </div>
+
+                  <h3
+                    className={`font-display text-2xl font-normal leading-[1.15] tracking-tight transition-[color,transform] duration-500 ease-out motion-reduce:transition-none md:text-3xl lg:text-[2.125rem] ${
+                      i === active
+                        ? "text-neutral-950"
+                        : "text-neutral-500 motion-reduce:text-neutral-600"
+                    } ${i === active ? "translate-y-0" : "translate-y-0.5"}`}
+                  >
+                    {step.title}
+                  </h3>
+                  <p
+                    className={`mt-4 max-w-md text-base leading-relaxed transition-colors duration-500 ease-out motion-reduce:transition-none md:mt-5 md:text-lg ${
+                      i === active ? "text-neutral-600" : "text-neutral-500"
+                    }`}
+                  >
+                    {step.text}
+                  </p>
+                </article>
+              ))}
+            </div>
           </div>
         </div>
       </div>
