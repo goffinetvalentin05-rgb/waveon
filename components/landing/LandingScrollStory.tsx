@@ -97,7 +97,7 @@ export function LandingScrollStory({ content }: LandingScrollStoryProps) {
       <div className={`${landingSection} py-16 md:py-20 lg:py-24`}>
         <div className="mx-auto max-w-6xl lg:grid lg:grid-cols-2 lg:items-start lg:gap-16 xl:gap-20">
           {/* Colonne visuelle : sticky, pilote l’attention pendant le scroll du texte */}
-          <aside className="sticky top-24 z-10 -mx-1 mb-10 border-b border-neutral-200/70 bg-white px-1 pb-8 md:top-28 lg:mx-0 lg:border-b-0 lg:bg-transparent lg:pb-0">
+          <aside className="sticky top-24 z-10 -mx-1 mb-10 min-w-0 border-b border-neutral-200/70 bg-white px-1 pb-8 md:top-28 lg:mx-0 lg:border-b-0 lg:bg-transparent lg:pb-0">
             <div className="mx-auto flex w-full max-w-[min(100%,440px)] flex-col lg:mx-0 lg:max-w-none">
               <div
                 className="mb-6 flex items-center justify-center gap-2 lg:justify-start"
@@ -117,20 +117,25 @@ export function LandingScrollStory({ content }: LandingScrollStoryProps) {
                 ))}
               </div>
 
-              <div className="relative min-h-[min(44vh,340px)] w-full lg:min-h-[min(calc(100dvh-11rem),640px)]">
-                {steps.map((_, i) => (
-                  <div
-                    key={i}
-                    aria-hidden={i !== active}
-                    className={`absolute inset-0 flex items-center justify-center transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:duration-150 ${
-                      i === active
-                        ? "z-10 translate-y-0 opacity-100"
-                        : "pointer-events-none z-0 translate-y-5 opacity-0 motion-reduce:translate-y-0"
-                    }`}
-                  >
-                    {renderVisual(i)}
-                  </div>
-                ))}
+              {/*
+                Un seul visuel monté à la fois : hauteur intrinsèque (plus de colonne vide
+                si le conteneur « relative » s’effondrait avec uniquement des enfants absolute).
+              */}
+              <div className="relative isolate flex min-h-[380px] w-full flex-col items-center justify-center overflow-visible sm:min-h-[420px] lg:min-h-[560px] lg:py-2 xl:min-h-[600px]">
+                <div
+                  className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[10%] -z-10 rounded-[2.75rem] bg-[radial-gradient(ellipse_80%_60%_at_50%_45%,rgba(15,23,42,0.07)_0%,transparent_72%)] ring-1 ring-neutral-200/60 motion-reduce:ring-0"
+                  aria-hidden
+                />
+                <div
+                  className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[min(72%,420px)] w-[min(92%,380px)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-neutral-950/[0.03] blur-3xl motion-reduce:blur-none"
+                  aria-hidden
+                />
+                <div
+                  key={active}
+                  className="landing-story-visual-swap flex w-full max-w-[min(100%,440px)] justify-center px-1"
+                >
+                  {renderVisual(active)}
+                </div>
               </div>
             </div>
           </aside>
@@ -144,7 +149,7 @@ export function LandingScrollStory({ content }: LandingScrollStoryProps) {
                 id={`parcours-etape-${i + 1}`}
                 aria-current={i === active ? "step" : undefined}
                 data-active={i === active ? "true" : "false"}
-                className="flex min-h-[min(86dvh,720px)] flex-col justify-center border-l border-neutral-200/90 py-10 pl-6 transition-[border-color] duration-500 ease-out motion-reduce:transition-none data-[active=true]:border-neutral-950 md:min-h-[min(90dvh,780px)] md:pl-8 lg:min-h-[min(100dvh,880px)] lg:py-14 lg:pl-10"
+                className="flex min-h-[min(86dvh,720px)] flex-col justify-center border-l border-neutral-200/90 py-10 pl-6 transition-[border-color,box-shadow] duration-500 ease-out motion-reduce:transition-none data-[active=true]:border-neutral-950 data-[active=true]:shadow-[inset_3px_0_0_0_rgb(10_10_10)] md:min-h-[min(90dvh,780px)] md:pl-8 lg:min-h-[min(100dvh,880px)] lg:py-14 lg:pl-10"
               >
                 <h3 className="font-display text-2xl font-normal leading-tight tracking-tight text-neutral-950 md:text-3xl lg:text-[2.125rem]">
                   {step.title}

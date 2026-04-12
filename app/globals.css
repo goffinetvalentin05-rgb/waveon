@@ -85,3 +85,68 @@ textarea::placeholder {
     animation: none;
   }
 }
+
+/* Landing storytelling — entrée visuelle au changement d’étape */
+@keyframes landing-story-visual-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.landing-story-visual-swap {
+  animation: landing-story-visual-in 0.62s cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+
+/* Cartes mockup : lignes en fondu décalé (évite le double mouvement avec le bloc visuel) */
+@keyframes landing-story-row-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.landing-story-dash-rows > li,
+.landing-story-client-rows > li {
+  opacity: 0;
+  animation: landing-story-row-in 0.55s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+
+.landing-story-dash-rows > li:nth-child(1),
+.landing-story-client-rows > li:nth-child(1) {
+  animation-delay: 0.04s;
+}
+.landing-story-dash-rows > li:nth-child(2),
+.landing-story-client-rows > li:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.landing-story-dash-rows > li:nth-child(3),
+.landing-story-client-rows > li:nth-child(3) {
+  animation-delay: 0.16s;
+}
+.landing-story-dash-rows > li:nth-child(4),
+.landing-story-client-rows > li:nth-child(4) {
+  animation-delay: 0.22s;
+}
+.landing-story-dash-rows > li:nth-child(5),
+.landing-story-client-rows > li:nth-child(5) {
+  animation-delay: 0.28s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-story-visual-swap {
+    animation: none;
+  }
+
+  .landing-story-dash-rows > li,
+  .landing-story-client-rows > li {
+    animation: none;
+    opacity: 1;
+  }
+}

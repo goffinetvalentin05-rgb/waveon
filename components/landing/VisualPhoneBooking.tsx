@@ -32,7 +32,7 @@ export function VisualPhoneBooking() {
             sizes="(max-width: 768px) 248px, 280px"
             className="pointer-events-none block h-auto w-full select-none"
             draggable={false}
-            priority={false}
+            priority
           />
         </div>
       </div>

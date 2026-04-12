@@ -18,7 +18,7 @@ export function VisualDashboardCard() {
           Semaine
         </span>
       </div>
-      <ul className="divide-y divide-neutral-100">
+      <ul className="landing-story-dash-rows divide-y divide-neutral-100">
         {rows.map((row) => (
           <li key={`${row.day}-${row.time}`} className="flex items-center justify-between gap-3 py-3.5">
             <div className="min-w-0">
