@@ -23,7 +23,7 @@ export function VisualPhoneBooking() {
           aria-hidden
         />
 
-        <div className="relative z-10 w-[min(100%,248px)] drop-shadow-[0_36px_80px_-24px_rgba(0,0,0,0.45)] md:w-[min(100%,280px)]">
+        <div className="landing-mockup-float relative z-10 w-[min(100%,248px)] drop-shadow-[0_36px_80px_-24px_rgba(0,0,0,0.45)] md:w-[min(100%,280px)]">
           <Image
             src="/mockup_iphone.png"
             alt=""

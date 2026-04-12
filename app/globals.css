@@ -64,3 +64,24 @@ textarea::placeholder {
     animation: none;
   }
 }
+
+/* Landing — léger flottement des mockups (désactivé si reduced-motion) */
+@keyframes landing-mockup-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+.landing-mockup-float {
+  animation: landing-mockup-float 7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-mockup-float {
+    animation: none;
+  }
+}

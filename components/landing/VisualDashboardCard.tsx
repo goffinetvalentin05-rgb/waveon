@@ -9,7 +9,7 @@ const rows = [
 export function VisualDashboardCard() {
   return (
     <div
-      className="mx-auto w-full max-w-md rounded-3xl border border-neutral-200/90 bg-white p-5 shadow-[0_4px_24px_-6px_rgba(0,0,0,0.08)] md:p-6"
+      className="mx-auto w-full max-w-md rounded-3xl border border-neutral-200/90 bg-white p-5 shadow-[0_4px_24px_-6px_rgba(0,0,0,0.08)] transition-shadow duration-[420ms] ease-out hover:shadow-[0_10px_28px_-10px_rgba(0,0,0,0.09)] md:p-6"
       aria-hidden
     >
       <div className="flex items-center justify-between border-b border-neutral-100 pb-4">

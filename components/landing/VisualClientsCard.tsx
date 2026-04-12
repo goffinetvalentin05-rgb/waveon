@@ -9,7 +9,7 @@ const clients = [
 export function VisualClientsCard() {
   return (
     <div
-      className="mx-auto w-full max-w-md rounded-3xl border border-neutral-200/90 bg-white shadow-[0_4px_24px_-6px_rgba(0,0,0,0.08)]"
+      className="mx-auto w-full max-w-md rounded-3xl border border-neutral-200/90 bg-white shadow-[0_4px_24px_-6px_rgba(0,0,0,0.08)] transition-shadow duration-[420ms] ease-out hover:shadow-[0_10px_28px_-10px_rgba(0,0,0,0.09)]"
       aria-hidden
     >
       <div className="border-b border-neutral-100 bg-[#f5f5f5] px-5 py-3.5">

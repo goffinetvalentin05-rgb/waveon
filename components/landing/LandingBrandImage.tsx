@@ -1,4 +1,7 @@
+"use client";
+
 import type { LandingContent } from "@/lib/landing/config";
+import { ScrollReveal } from "./ScrollReveal";
 import { landingCard, landingDivider, landingSection, landingSectionY } from "./landing-tokens";
 
 type LandingBrandImageProps = {
@@ -47,16 +50,20 @@ export function LandingBrandImage({ content }: LandingBrandImageProps) {
   return (
     <section className={landingDivider}>
       <div className={`${landingSection} ${landingSectionY}`}>
-        <div className="grid items-start gap-14 lg:grid-cols-2 lg:gap-20">
-          <ClientsTableMockup />
-          <div className="order-1 lg:order-2 lg:pt-1">
-            <h2 className="font-display text-3xl font-normal leading-tight tracking-tight text-neutral-950 md:text-4xl lg:text-[2.75rem]">
-              {content.title}
-            </h2>
-            <p className="mt-10 max-w-xl whitespace-pre-line text-base leading-relaxed text-neutral-600 md:mt-12 md:text-lg">
-              {content.text}
-            </p>
-          </div>
+        <div className="grid items-start gap-12 lg:grid-cols-2 lg:gap-20">
+          <ScrollReveal>
+            <ClientsTableMockup />
+          </ScrollReveal>
+          <ScrollReveal delayMs={55}>
+            <div className="order-1 lg:order-2 lg:pt-1">
+              <h2 className="font-display text-3xl font-normal leading-tight tracking-tight text-neutral-950 md:text-4xl lg:text-[2.75rem]">
+                {content.title}
+              </h2>
+              <p className="mt-8 max-w-xl whitespace-pre-line text-base leading-relaxed text-neutral-600 sm:mt-10 md:mt-12 md:text-lg">
+                {content.text}
+              </p>
+            </div>
+          </ScrollReveal>
         </div>
       </div>
     </section>

@@ -5,9 +5,11 @@ import { useEffect, useRef, useState } from "react";
 type ScrollRevealProps = {
   children: React.ReactNode;
   className?: string;
+  /** Décalage d’entrée (ms) pour légers effets en cascade */
+  delayMs?: number;
 };
 
-export function ScrollReveal({ children, className = "" }: ScrollRevealProps) {
+export function ScrollReveal({ children, className = "", delayMs = 0 }: ScrollRevealProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
 
@@ -27,7 +29,7 @@ export function ScrollReveal({ children, className = "" }: ScrollRevealProps) {
           observer.disconnect();
         }
       },
-      { rootMargin: "0px 0px -10% 0px", threshold: 0.14 },
+      { rootMargin: "0px 0px -6% 0px", threshold: 0.08 },
     );
 
     observer.observe(el);
@@ -37,8 +39,9 @@ export function ScrollReveal({ children, className = "" }: ScrollRevealProps) {
   return (
     <div
       ref={ref}
-      className={`transform-gpu transition-[opacity,transform] duration-[650ms] ease-out motion-reduce:translate-y-0 motion-reduce:opacity-100 ${
-        visible ? "translate-y-0 opacity-100" : "translate-y-7 opacity-0"
+      style={{ transitionDelay: visible ? `${delayMs}ms` : "0ms" }}
+      className={`transform-gpu transition-[opacity,transform] duration-[620ms] ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:translate-y-0 motion-reduce:opacity-100 motion-reduce:transition-none ${
+        visible ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"
       } ${className}`}
     >
       {children}

@@ -19,7 +19,7 @@ export function LandingHeader({ brand, header }: LandingHeaderProps) {
 
   return (
     <header className="sticky top-0 z-50 px-4 pt-2.5 md:px-6 md:pt-3">
-      <div className="mx-auto flex max-w-5xl items-center gap-3 rounded-2xl border border-neutral-200/90 bg-white/85 px-3 py-1.5 shadow-[0_1px_0_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.08)] backdrop-blur-md md:gap-4 md:px-4 md:py-2">
+      <div className="mx-auto flex max-w-5xl items-center gap-3 rounded-2xl border border-neutral-200/90 bg-white/85 px-3 py-1.5 shadow-[0_1px_0_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.08)] backdrop-blur-md transition-shadow duration-[380ms] ease-out md:gap-4 md:px-4 md:py-2 md:hover:shadow-[0_10px_28px_-14px_rgba(15,23,42,0.09)]">
         <BrandLogoLink brand={brand} variant="header" />
 
         <nav
@@ -32,14 +32,14 @@ export function LandingHeader({ brand, header }: LandingHeaderProps) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="rounded-lg px-2.5 py-1.5 text-sm text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950"
+                  className="rounded-lg px-2.5 py-1.5 text-sm text-neutral-600 transition-colors duration-200 hover:bg-neutral-100 hover:text-neutral-950"
                 >
                   {item.label}
                 </Link>
               ))}
               <Link
                 href={header.login.href}
-                className="ml-1 rounded-lg px-2.5 py-1.5 text-sm text-neutral-600 transition hover:bg-neutral-100/80 hover:text-neutral-950"
+                className="ml-1 rounded-lg px-2.5 py-1.5 text-sm text-neutral-600 transition-colors duration-200 hover:bg-neutral-100/80 hover:text-neutral-950"
               >
                 {header.login.label}
               </Link>
@@ -50,12 +50,12 @@ export function LandingHeader({ brand, header }: LandingHeaderProps) {
             <>
               <Link
                 href={header.login.href}
-                className="shrink-0 rounded-lg px-2 py-1 text-[11px] text-neutral-600 transition hover:bg-neutral-100/80 hover:text-neutral-950 sm:text-xs md:hidden"
+                className="shrink-0 rounded-lg px-2 py-1 text-[11px] text-neutral-600 transition-colors duration-200 hover:bg-neutral-100/80 hover:text-neutral-950 sm:text-xs md:hidden"
               >
                 {header.login.label}
               </Link>
               <details ref={menuRef} className="relative md:hidden">
-                <summary className="flex cursor-pointer list-none items-center justify-center rounded-lg border border-neutral-200/90 bg-white p-2 text-neutral-600 transition hover:border-neutral-300 hover:bg-neutral-50 [&::-webkit-details-marker]:hidden">
+                <summary className="flex cursor-pointer list-none items-center justify-center rounded-lg border border-neutral-200/90 bg-white p-2 text-neutral-600 transition-colors duration-200 hover:border-neutral-300 hover:bg-neutral-50 [&::-webkit-details-marker]:hidden">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
                     <path
                       strokeLinecap="round"
@@ -72,7 +72,7 @@ export function LandingHeader({ brand, header }: LandingHeaderProps) {
                       key={item.href}
                       href={item.href}
                       onClick={closeMenu}
-                      className="block rounded-lg px-3 py-2.5 text-sm text-neutral-700 transition hover:bg-neutral-100 hover:text-neutral-950"
+                      className="block rounded-lg px-3 py-2.5 text-sm text-neutral-700 transition-colors duration-200 hover:bg-neutral-100 hover:text-neutral-950"
                     >
                       {item.label}
                     </Link>
@@ -83,7 +83,7 @@ export function LandingHeader({ brand, header }: LandingHeaderProps) {
           ) : (
             <Link
               href={header.login.href}
-              className="rounded-lg px-2 py-1.5 text-xs text-neutral-600 transition hover:bg-neutral-100/80 hover:text-neutral-950 sm:px-2.5 sm:text-sm"
+              className="rounded-lg px-2 py-1.5 text-xs text-neutral-600 transition-colors duration-200 hover:bg-neutral-100/80 hover:text-neutral-950 sm:px-2.5 sm:text-sm"
             >
               {header.login.label}
             </Link>
@@ -92,7 +92,7 @@ export function LandingHeader({ brand, header }: LandingHeaderProps) {
           <Link
             href={header.cta.href}
             onClick={closeMenu}
-            className="inline-flex min-h-8 shrink-0 items-center justify-center rounded-full bg-neutral-950 px-3 py-1.5 text-[11px] font-medium text-white shadow-sm transition hover:bg-neutral-800 sm:px-4 sm:text-xs md:min-h-9 md:px-5 md:text-sm"
+            className="inline-flex min-h-8 shrink-0 items-center justify-center rounded-full bg-neutral-950 px-3 py-1.5 text-[11px] font-medium text-white shadow-[0_1px_2px_rgba(0,0,0,0.06)] transition-[background-color,box-shadow,transform] duration-[380ms] ease-out hover:bg-neutral-800 hover:shadow-[0_4px_16px_-6px_rgba(0,0,0,0.12)] active:scale-[0.995] motion-reduce:active:scale-100 sm:px-4 sm:text-xs md:min-h-9 md:px-5 md:text-sm"
           >
             {header.cta.label}
           </Link>

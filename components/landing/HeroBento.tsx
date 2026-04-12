@@ -1,3 +1,6 @@
+const bentoCard =
+  "rounded-3xl border border-neutral-200/90 shadow-[0_2px_16px_-4px_rgba(0,0,0,0.06)] transition-shadow duration-[420ms] ease-out hover:shadow-[0_10px_28px_-10px_rgba(0,0,0,0.08)]";
+
 /**
  * Aperçus UI réalistes (données fictives) — décoratif, hors copie marketing config.
  */
@@ -8,7 +11,7 @@ export function HeroBento() {
       aria-hidden
     >
       {/* Réservation */}
-      <div className="rounded-3xl border border-neutral-200/90 bg-white p-5 shadow-[0_2px_16px_-4px_rgba(0,0,0,0.06)] md:col-span-7 md:p-6">
+      <div className={`${bentoCard} bg-white p-5 md:col-span-7 md:p-6`}>
         <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
           <span className="text-xs font-medium text-neutral-500">Réserver</span>
           <span className="rounded-full bg-[#f5f5f5] px-2.5 py-0.5 text-[10px] font-medium text-neutral-600">
@@ -58,7 +61,7 @@ export function HeroBento() {
       </div>
 
       {/* Agenda du jour */}
-      <div className="rounded-3xl border border-neutral-200/90 bg-white p-5 shadow-[0_2px_16px_-4px_rgba(0,0,0,0.06)] md:col-span-5 md:p-6">
+      <div className={`${bentoCard} bg-white p-5 md:col-span-5 md:p-6`}>
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium text-neutral-950">Agenda</p>
           <span className="text-xs text-neutral-500">12 juin</span>
@@ -84,7 +87,7 @@ export function HeroBento() {
       </div>
 
       {/* Clients */}
-      <div className="rounded-3xl border border-neutral-200/90 bg-white p-5 shadow-[0_2px_16px_-4px_rgba(0,0,0,0.06)] md:col-span-6 md:p-6">
+      <div className={`${bentoCard} bg-white p-5 md:col-span-6 md:p-6`}>
         <p className="text-sm font-medium text-neutral-950">Clients</p>
         <p className="mt-0.5 text-xs text-neutral-500">Dernières fiches</p>
         <ul className="mt-4 space-y-3">
@@ -110,7 +113,7 @@ export function HeroBento() {
       </div>
 
       {/* Mini calendrier + résumé */}
-      <div className="rounded-3xl border border-neutral-200/90 bg-[#f5f5f5] p-5 shadow-[0_2px_16px_-4px_rgba(0,0,0,0.06)] md:col-span-6 md:p-6">
+      <div className={`${bentoCard} bg-[#f5f5f5] p-5 md:col-span-6 md:p-6`}>
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-medium text-neutral-500">Cette semaine</p>

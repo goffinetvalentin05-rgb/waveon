@@ -1,4 +1,7 @@
+"use client";
+
 import type { LandingContent } from "@/lib/landing/config";
+import { ScrollReveal } from "./ScrollReveal";
 import { landingCard, landingDivider, landingSection, landingSectionY } from "./landing-tokens";
 
 type LandingProductProps = {
@@ -7,10 +10,7 @@ type LandingProductProps = {
 
 function DashboardMockup() {
   return (
-    <div
-      className={`${landingCard} overflow-hidden p-6 md:p-7`}
-      aria-hidden
-    >
+    <div className={`${landingCard} overflow-hidden p-6 md:p-7`} aria-hidden>
       <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
         <p className="text-sm font-medium text-neutral-950">Rendez-vous</p>
         <span className="rounded-full bg-[#f5f5f5] px-2.5 py-1 text-[11px] font-medium text-neutral-600">
@@ -48,16 +48,20 @@ export function LandingProduct({ content }: LandingProductProps) {
   return (
     <section className={landingDivider}>
       <div className={`${landingSection} ${landingSectionY}`}>
-        <div className="grid items-start gap-14 lg:grid-cols-2 lg:gap-20">
-          <div className="lg:pt-1">
-            <h2 className="font-display text-3xl font-normal leading-tight tracking-tight text-neutral-950 md:text-4xl lg:text-[2.75rem]">
-              {content.title}
-            </h2>
-            <p className="mt-10 max-w-xl text-base leading-relaxed text-neutral-600 md:mt-12 md:text-lg">
-              {content.text}
-            </p>
-          </div>
-          <DashboardMockup />
+        <div className="grid items-start gap-12 lg:grid-cols-2 lg:gap-20">
+          <ScrollReveal>
+            <div className="lg:pt-1">
+              <h2 className="font-display text-3xl font-normal leading-tight tracking-tight text-neutral-950 md:text-4xl lg:text-[2.75rem]">
+                {content.title}
+              </h2>
+              <p className="mt-8 max-w-xl text-base leading-relaxed text-neutral-600 sm:mt-10 md:mt-12 md:text-lg">
+                {content.text}
+              </p>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal delayMs={55}>
+            <DashboardMockup />
+          </ScrollReveal>
         </div>
       </div>
     </section>
