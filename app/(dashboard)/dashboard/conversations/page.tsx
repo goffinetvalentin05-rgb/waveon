@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useWavon } from "@/components/wavon/WavonProvider";
+import { PageHeader } from "@/components/wavon/ui/PageHeader";
 import { useToast } from "@/components/wavon/Toast";
 import { formatDateTime } from "@/lib/wavon/format";
 import type { WhatsAppMessage } from "@/lib/wavon/types";
-import { btnPrimaryClass, cardClass, inputClass } from "@/lib/wavon/tokens";
+import { btnPrimaryClass, cardClass, inputClass, spinnerClass } from "@/lib/wavon/tokens";
 
 export default function ConversationsPage() {
   const { ready, state, replaceWhatsAppMessages } = useWavon();
@@ -30,19 +31,24 @@ export default function ConversationsPage() {
 
   if (!ready) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <div className="h-8 w-8 rounded-full border-2 border-emerald-500/30 border-t-emerald-500 motion-safe:animate-spin" />
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className={spinnerClass} aria-hidden />
       </div>
     );
   }
 
   if (state.whatsappThreads.length === 0) {
     return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-semibold text-white">Conversations</h1>
-        <div className={cardClass + " text-sm text-white/60"}>
-          Aucune conversation simulée. Les données d&apos;exemple apparaîtront avec un état initial
-          réinitialisé.
+      <div className="space-y-6 pb-8">
+        <PageHeader
+          title="Conversations"
+          description="Échanges avec tes clients — aperçu simulé pour la démo."
+        />
+        <div className={cardClass}>
+          <p className="text-sm text-neutral-600">
+            Aucune conversation pour l’instant. Les exemples réapparaissent avec les données
+            d’initialisation.
+          </p>
         </div>
       </div>
     );
@@ -52,19 +58,15 @@ export default function ConversationsPage() {
   const selectedId = activeId ?? thread?.id;
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-          Conversations WhatsApp
-        </h1>
-        <p className="mt-1 text-sm text-white/60">
-          Interface simulée — liste et fil de messages type WhatsApp Business.
-        </p>
-      </header>
+    <div className="space-y-8 pb-8">
+      <PageHeader
+        title="Conversations"
+        description="Vue messagerie sobre — simulation d’une file type WhatsApp Business."
+      />
 
-      <div className="grid min-h-[420px] gap-4 lg:grid-cols-[minmax(0,280px)_1fr]">
-        <aside className={cardClass + " p-0"}>
-          <ul className="divide-y divide-white/5">
+      <div className="grid min-h-[460px] gap-4 overflow-hidden rounded-3xl border border-neutral-200/90 bg-white shadow-[0_2px_16px_-4px_rgba(0,0,0,0.06)] lg:grid-cols-[minmax(0,17rem)_1fr]">
+        <aside className="border-b border-neutral-100 lg:border-b-0 lg:border-r lg:border-neutral-100">
+          <ul className="max-h-[280px] divide-y divide-neutral-100 overflow-y-auto lg:max-h-none">
             {state.whatsappThreads.map((t) => {
               const sel = (selectedId ?? thread.id) === t.id;
               return (
@@ -75,15 +77,13 @@ export default function ConversationsPage() {
                       setActiveId(t.id);
                       setDraft("");
                     }}
-                    className={`flex w-full flex-col items-start gap-0.5 px-4 py-3 text-left text-sm transition ${
-                      sel ? "bg-emerald-500/10 text-white" : "text-white/80 hover:bg-white/5"
+                    className={`flex w-full flex-col items-start gap-0.5 px-4 py-3.5 text-left text-sm transition ${
+                      sel ? "bg-neutral-50" : "hover:bg-neutral-50/60"
                     }`}
                   >
-                    <span className="font-medium">{t.contactName}</span>
-                    <span className="text-xs text-white/45">{t.phone}</span>
-                    <span className="text-[11px] text-white/35">
-                      {formatDateTime(t.updatedAt)}
-                    </span>
+                    <span className="font-medium text-neutral-950">{t.contactName}</span>
+                    <span className="text-xs text-neutral-500">{t.phone}</span>
+                    <span className="text-[11px] text-neutral-400">{formatDateTime(t.updatedAt)}</span>
                   </button>
                 </li>
               );
@@ -91,31 +91,35 @@ export default function ConversationsPage() {
           </ul>
         </aside>
 
-        <section className={`${cardClass} flex flex-col p-0`}>
-          <div className="border-b border-white/10 px-5 py-4">
-            <p className="font-semibold text-white">{thread.contactName}</p>
-            <p className="text-xs text-white/50">{thread.phone}</p>
+        <section className="flex min-h-[320px] flex-col lg:min-h-[460px]">
+          <div className="border-b border-neutral-100 px-5 py-4">
+            <p className="font-semibold text-neutral-950">{thread.contactName}</p>
+            <p className="text-xs text-neutral-500">{thread.phone}</p>
           </div>
-          <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-4 py-4">
+          <div className="flex flex-1 flex-col gap-2 overflow-y-auto bg-[#fafafa] px-4 py-4">
             {thread.messages.length === 0 ? (
-              <p className="py-8 text-center text-sm text-white/50">Aucun message.</p>
+              <p className="py-10 text-center text-sm text-neutral-500">Aucun message.</p>
             ) : (
               thread.messages.map((m) => (
                 <div
                   key={m.id}
-                  className={`max-w-[88%] rounded-2xl px-3 py-2 text-sm ${
+                  className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm ${
                     m.direction === "in"
-                      ? "self-start border border-white/10 bg-black/50 text-white"
-                      : "self-end border border-emerald-500/25 bg-emerald-500/10 text-emerald-50"
+                      ? "self-start border border-neutral-200/90 bg-white text-neutral-800"
+                      : "self-end border border-neutral-200/80 bg-neutral-900 text-white"
                   }`}
                 >
                   <p>{m.content}</p>
-                  <p className="mt-1 text-[10px] text-white/40">{formatDateTime(m.at)}</p>
+                  <p
+                    className={`mt-1.5 text-[10px] ${m.direction === "in" ? "text-neutral-400" : "text-white/60"}`}
+                  >
+                    {formatDateTime(m.at)}
+                  </p>
                 </div>
               ))
             )}
           </div>
-          <div className="flex gap-2 border-t border-white/10 p-4">
+          <div className="flex gap-2 border-t border-neutral-100 bg-white p-4">
             <input
               className={inputClass}
               placeholder="Écrire un message…"
@@ -128,7 +132,7 @@ export default function ConversationsPage() {
                 }
               }}
             />
-            <button type="button" className={btnPrimaryClass + " shrink-0"} onClick={send}>
+            <button type="button" className={btnPrimaryClass + " shrink-0 px-5"} onClick={send}>
               Envoyer
             </button>
           </div>

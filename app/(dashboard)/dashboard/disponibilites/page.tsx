@@ -2,11 +2,21 @@
 
 import { useMemo, useState } from "react";
 import { useWavon } from "@/components/wavon/WavonProvider";
+import { PageHeader } from "@/components/wavon/ui/PageHeader";
 import { useToast } from "@/components/wavon/Toast";
 import { validateSegments } from "@/lib/wavon/booking-logic";
 import type { CustomDaySlot, DayKey, TimeSegment, WeeklyDaySchedule } from "@/lib/wavon/types";
 import { DAY_LABELS, DAY_ORDER } from "@/lib/wavon/types";
-import { btnGhostClass, btnPrimaryClass, cardClass, inputClass } from "@/lib/wavon/tokens";
+import {
+  btnGhostClass,
+  btnPrimaryClass,
+  cardClass,
+  inputClass,
+  labelClass,
+  sectionDescClass,
+  sectionTitleClass,
+  spinnerClass,
+} from "@/lib/wavon/tokens";
 
 export default function DisponibilitesPage() {
   const {
@@ -57,27 +67,25 @@ export default function DisponibilitesPage() {
 
   if (!ready) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <div className="h-8 w-8 rounded-full border-2 border-emerald-500/30 border-t-emerald-500 motion-safe:animate-spin" />
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className={spinnerClass} aria-hidden />
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-          Disponibilités
-        </h1>
-        <p className="mt-1 max-w-2xl text-sm text-white/60">
-          Mode horaires fixes (avec pauses via plusieurs plages) ou créneaux personnalisés par date.
-          Les plages ne peuvent pas se chevaucher.
-        </p>
-      </header>
+    <div className="space-y-10 pb-12">
+      <PageHeader
+        title="Disponibilités"
+        description="Horaires d’ouverture, pauses et exceptions. Les plages ne peuvent pas se chevaucher."
+      />
 
       <section className={cardClass}>
-        <h2 className="text-base font-semibold text-white">Mode</h2>
-        <div className="mt-4 flex flex-wrap gap-3">
+        <h2 className={sectionTitleClass}>Mode de planning</h2>
+        <p className={sectionDescClass}>
+          Grille hebdomadaire récurrente, ou journées définies une par une.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
           <ModeButton
             active={state.availabilityMode === "fixed"}
             onClick={() => {
@@ -85,16 +93,16 @@ export default function DisponibilitesPage() {
               toast.push({ message: "Mode : horaires fixes." });
             }}
             title="Horaires fixes"
-            desc="Même grille chaque semaine, pauses = plusieurs plages."
+            desc="Même grille chaque semaine. Les pauses = plusieurs plages dans la journée."
           />
           <ModeButton
             active={state.availabilityMode === "custom"}
             onClick={() => {
               setAvailabilityMode("custom");
-              toast.push({ message: "Mode : créneaux personnalisés." });
+              toast.push({ message: "Mode : exceptions jour par jour." });
             }}
             title="Créneaux personnalisés"
-            desc="Définis les plages jour par jour."
+            desc="Pour certaines dates seulement, en complément ou à la place de la semaine."
           />
         </div>
       </section>
@@ -129,34 +137,35 @@ export default function DisponibilitesPage() {
       )}
 
       <section className={cardClass}>
-        <h2 className="text-base font-semibold text-white">Dates bloquées</h2>
-        <p className="mt-1 text-sm text-white/55">
-          Journées entièrement indisponibles (fériés, congés).
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <input
-            type="date"
-            className={inputClass + " max-w-[11rem]"}
-            value={blockInput}
-            onChange={(e) => setBlockInput(e.target.value)}
-          />
+        <h2 className={sectionTitleClass}>Dates bloquées</h2>
+        <p className={sectionDescClass}>Journées entièrement fermées (fériés, congés, etc.).</p>
+        <div className="mt-6 flex flex-wrap items-end gap-3">
+          <div>
+            <label className={labelClass}>Choisir une date</label>
+            <input
+              type="date"
+              className={`${inputClass} mt-2 max-w-[12rem]`}
+              value={blockInput}
+              onChange={(e) => setBlockInput(e.target.value)}
+            />
+          </div>
           <button type="button" className={btnPrimaryClass} onClick={addBlocked}>
             Bloquer
           </button>
         </div>
         {blockedSorted.length === 0 ? (
-          <p className="mt-4 text-sm text-white/50">Aucune date bloquée.</p>
+          <p className="mt-6 text-sm text-neutral-500">Aucune date bloquée.</p>
         ) : (
-          <ul className="mt-4 flex flex-wrap gap-2">
+          <ul className="mt-6 flex flex-wrap gap-2">
             {blockedSorted.map((d) => (
               <li
                 key={d}
-                className="inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/5 px-3 py-1 text-xs text-white/90"
+                className="inline-flex items-center gap-2 rounded-full border border-neutral-200/90 bg-neutral-50 px-3 py-1.5 text-xs font-medium text-neutral-800"
               >
                 {d}
                 <button
                   type="button"
-                  className="text-white/50 hover:text-red-300"
+                  className="text-neutral-400 transition hover:text-red-600"
                   onClick={() => removeBlocked(d)}
                   aria-label={`Retirer ${d}`}
                 >
@@ -186,14 +195,16 @@ function ModeButton({
     <button
       type="button"
       onClick={onClick}
-      className={`max-w-xs rounded-2xl border px-4 py-3 text-left text-sm transition ${
+      className={`max-w-sm rounded-2xl border px-5 py-4 text-left text-sm transition ${
         active
-          ? "border-emerald-500/45 bg-emerald-500/10 text-white shadow-[0_0_24px_-8px_rgba(34,197,94,0.35)]"
-          : "border-white/10 bg-black/30 text-white/75 hover:border-emerald-500/25"
+          ? "border-neutral-900 bg-neutral-950 text-white shadow-[0_8px_24px_-12px_rgba(0,0,0,0.2)]"
+          : "border-neutral-200/90 bg-white text-neutral-700 hover:border-neutral-300 hover:bg-neutral-50/80"
       }`}
     >
-      <p className="font-semibold text-white">{title}</p>
-      <p className="mt-1 text-xs text-white/55">{desc}</p>
+      <p className={`font-semibold ${active ? "text-white" : "text-neutral-950"}`}>{title}</p>
+      <p className={`mt-1.5 text-xs leading-relaxed ${active ? "text-white/75" : "text-neutral-500"}`}>
+        {desc}
+      </p>
     </button>
   );
 }
@@ -213,30 +224,30 @@ function DayEditor({
   return (
     <div className={cardClass}>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <label className="flex items-center gap-2 text-sm font-medium text-white">
+        <label className="flex cursor-pointer items-center gap-3 text-sm font-medium text-neutral-950">
           <input
             type="checkbox"
             checked={enabled}
             onChange={(e) => setEnabled(e.target.checked)}
-            className="size-4 rounded border-emerald-500/40 text-emerald-500"
+            className="size-4 rounded border-neutral-300 text-neutral-950"
           />
           {label}
         </label>
         <button
           type="button"
-          className={btnGhostClass}
+          className={btnGhostClass + " min-h-10 py-2 text-xs"}
           onClick={() => setSegments([...segments, { start: "09:00", end: "12:00" }])}
         >
-          + Plage
+          + Plage horaire
         </button>
       </div>
       {enabled ? (
-        <div className="mt-4 space-y-2">
+        <div className="mt-5 space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50/50 p-4">
           {segments.map((seg, i) => (
             <div key={i} className="flex flex-wrap items-center gap-2">
               <input
                 type="time"
-                className={inputClass + " max-w-[9rem]"}
+                className={inputClass + " max-w-[9.5rem]"}
                 value={seg.start}
                 onChange={(e) => {
                   const next = [...segments];
@@ -244,10 +255,10 @@ function DayEditor({
                   setSegments(next);
                 }}
               />
-              <span className="text-white/40">→</span>
+              <span className="text-neutral-300">→</span>
               <input
                 type="time"
-                className={inputClass + " max-w-[9rem]"}
+                className={inputClass + " max-w-[9.5rem]"}
                 value={seg.end}
                 onChange={(e) => {
                   const next = [...segments];
@@ -257,7 +268,7 @@ function DayEditor({
               />
               <button
                 type="button"
-                className="text-xs text-red-300/90 hover:underline"
+                className="text-xs font-medium text-red-600/90 underline-offset-4 hover:underline"
                 onClick={() => setSegments(segments.filter((_, j) => j !== i))}
               >
                 Retirer
@@ -268,7 +279,7 @@ function DayEditor({
       ) : null}
       <button
         type="button"
-        className={`${btnPrimaryClass} mt-4`}
+        className={`${btnPrimaryClass} mt-5`}
         onClick={() => onSave({ enabled, segments: enabled ? segments : [] })}
       >
         Enregistrer {label}
@@ -294,26 +305,28 @@ function CustomDaysEditor({
   return (
     <section className={cardClass}>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-base font-semibold text-white">Jours personnalisés</h2>
-        <button type="button" className={btnGhostClass} onClick={addRow}>
-          + Jour
+        <div>
+          <h2 className={sectionTitleClass}>Jours personnalisés</h2>
+          <p className={sectionDescClass}>
+            Chaque date remplace la grille hebdomadaire pour ce jour uniquement.
+          </p>
+        </div>
+        <button type="button" className={btnGhostClass + " min-h-10 shrink-0 py-2 text-xs"} onClick={addRow}>
+          + Ajouter une date
         </button>
       </div>
-      <p className="mt-2 text-sm text-white/55">
-        Chaque date listée ici remplace la grille hebdomadaire pour ce jour uniquement.
-      </p>
-      <div className="mt-4 space-y-6">
+      <div className="mt-6 space-y-6">
         {rows.length === 0 ? (
-          <p className="text-sm text-white/50">Ajoute au moins une date avec des plages.</p>
+          <p className="text-sm text-neutral-500">Ajoute une date et des plages horaires.</p>
         ) : (
           rows.map((row, idx) => (
-            <div key={idx} className="rounded-xl border border-white/10 bg-black/40 p-4">
-              <div className="flex flex-wrap items-end gap-3">
+            <div key={idx} className="rounded-2xl border border-neutral-100 bg-neutral-50/40 p-5">
+              <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
-                  <label className="text-xs text-white/55">Date</label>
+                  <label className={labelClass}>Date</label>
                   <input
                     type="date"
-                    className={`${inputClass} mt-1 max-w-[11rem]`}
+                    className={`${inputClass} mt-2 max-w-[12rem]`}
                     value={row.date}
                     onChange={(e) => {
                       const next = [...rows];
@@ -324,18 +337,18 @@ function CustomDaysEditor({
                 </div>
                 <button
                   type="button"
-                  className="text-xs text-red-300 hover:underline"
+                  className="text-xs font-medium text-red-600/90 underline-offset-4 hover:underline"
                   onClick={() => setRows(rows.filter((_, j) => j !== idx))}
                 >
                   Supprimer ce jour
                 </button>
               </div>
-              <div className="mt-3 space-y-2">
+              <div className="mt-4 space-y-2">
                 {row.segments.map((seg, si) => (
                   <div key={si} className="flex flex-wrap items-center gap-2">
                     <input
                       type="time"
-                      className={inputClass + " max-w-[9rem]"}
+                      className={inputClass + " max-w-[9.5rem]"}
                       value={seg.start}
                       onChange={(e) => {
                         const next = [...rows];
@@ -345,10 +358,10 @@ function CustomDaysEditor({
                         setRows(next);
                       }}
                     />
-                    <span className="text-white/40">→</span>
+                    <span className="text-neutral-300">→</span>
                     <input
                       type="time"
-                      className={inputClass + " max-w-[9rem]"}
+                      className={inputClass + " max-w-[9.5rem]"}
                       value={seg.end}
                       onChange={(e) => {
                         const next = [...rows];
@@ -360,7 +373,7 @@ function CustomDaysEditor({
                     />
                     <button
                       type="button"
-                      className="text-xs text-red-300/80 hover:underline"
+                      className="text-xs text-red-600/90 underline-offset-4 hover:underline"
                       onClick={() => {
                         const next = [...rows];
                         next[idx] = {
@@ -370,13 +383,13 @@ function CustomDaysEditor({
                         setRows(next);
                       }}
                     >
-                      Retirer plage
+                      Retirer la plage
                     </button>
                   </div>
                 ))}
                 <button
                   type="button"
-                  className={btnGhostClass}
+                  className={btnGhostClass + " min-h-9 py-2 text-xs"}
                   onClick={() => {
                     const next = [...rows];
                     next[idx] = {
@@ -386,14 +399,14 @@ function CustomDaysEditor({
                     setRows(next);
                   }}
                 >
-                  + Plage
+                  + Plage horaire
                 </button>
               </div>
             </div>
           ))
         )}
       </div>
-      <button type="button" className={`${btnPrimaryClass} mt-6`} onClick={() => onSave(rows)}>
+      <button type="button" className={`${btnPrimaryClass} mt-8`} onClick={() => onSave(rows)}>
         Enregistrer les créneaux personnalisés
       </button>
     </section>

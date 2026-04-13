@@ -45,16 +45,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={value}>
       {children}
       <div
-        className="pointer-events-none fixed bottom-6 right-4 z-[100] flex max-w-[min(100vw-2rem,24rem)] flex-col gap-2 sm:right-8"
+        className="pointer-events-none fixed bottom-6 right-4 z-[100] flex max-w-[min(100vw-2rem,22rem)] flex-col gap-2 sm:right-8"
         aria-live="polite"
       >
         {items.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto rounded-xl border px-4 py-3 text-sm shadow-lg backdrop-blur-md transition-all duration-300 motion-safe:translate-y-0 motion-safe:opacity-100 ${
+            className={`pointer-events-auto rounded-2xl border px-4 py-3 text-sm shadow-[0_10px_40px_-12px_rgba(15,23,42,0.15)] transition-all duration-300 ${
               t.kind === "error"
-                ? "border-red-500/35 bg-red-950/90 text-red-100"
-                : "border-emerald-500/35 bg-emerald-950/90 text-emerald-50"
+                ? "border-red-200/90 bg-white text-red-800"
+                : "border-neutral-200/90 bg-white text-neutral-900"
             }`}
           >
             {t.message}

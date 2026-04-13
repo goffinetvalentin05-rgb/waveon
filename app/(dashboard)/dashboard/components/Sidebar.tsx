@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { sidebarNavActive, sidebarNavInactive } from "@/lib/wavon/tokens";
 
 const navItems = [
   { id: "overview", label: "Vue d'ensemble", href: "/dashboard" },
@@ -24,7 +25,7 @@ function NavLinks({
   pathname: string | null;
 }) {
   return (
-    <nav className="space-y-1">
+    <nav className="space-y-0.5" aria-label="Navigation principale">
       {navItems.map((item) => {
         const isActive =
           item.href === "/dashboard"
@@ -35,11 +36,7 @@ function NavLinks({
             key={item.id}
             href={item.href}
             onClick={onNavigate}
-            className={`block rounded-xl px-3 py-2.5 text-sm font-medium transition duration-200 ${
-              isActive
-                ? "border border-emerald-500/35 bg-emerald-500/10 text-emerald-400 shadow-[0_0_20px_-8px_rgba(34,197,94,0.35)]"
-                : "border border-transparent text-white/80 hover:border-emerald-500/15 hover:bg-emerald-500/5 hover:text-white"
-            }`}
+            className={isActive ? sidebarNavActive : sidebarNavInactive}
           >
             {item.label}
           </Link>
@@ -63,17 +60,20 @@ export default function Sidebar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-emerald-500/10 bg-black/90 px-4 py-3 backdrop-blur-md lg:hidden">
-        <div className="flex items-center gap-2">
-          <Image src="/waevon-logo.png" alt="Wavon" width={32} height={32} />
-          <span className="font-semibold tracking-tight text-white">Wavon</span>
+      <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-neutral-200/80 bg-white/90 px-4 py-3 backdrop-blur-md lg:hidden">
+        <div className="flex items-center gap-2.5">
+          <Image src="/waevon-logo.png" alt="Wavon" width={32} height={32} className="rounded-lg" />
+          <div>
+            <span className="text-sm font-semibold tracking-tight text-neutral-950">Wavon</span>
+            <p className="text-[11px] text-neutral-500">Réservations</p>
+          </div>
         </div>
         <button
           type="button"
           aria-expanded={open}
           aria-controls="wavon-mobile-nav"
           onClick={() => setOpen((o) => !o)}
-          className="rounded-xl border border-emerald-500/25 px-3 py-2 text-sm text-white/90"
+          className="rounded-full border border-neutral-200/90 bg-white px-4 py-2 text-sm font-medium text-neutral-700 shadow-sm transition hover:bg-neutral-50"
         >
           Menu
         </button>
@@ -84,29 +84,29 @@ export default function Sidebar() {
           <button
             type="button"
             aria-label="Fermer le menu"
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            className="absolute inset-0 bg-neutral-950/20 backdrop-blur-[1px]"
             onClick={closeMobile}
           />
           <aside
             id="wavon-mobile-nav"
-            className="absolute left-0 top-0 flex h-full w-[min(88vw,18rem)] flex-col border-r border-emerald-500/15 bg-[#050505] px-4 py-6 shadow-[0_0_40px_rgba(34,197,94,0.12)]"
+            className="absolute left-0 top-0 flex h-full w-[min(88vw,19rem)] flex-col border-r border-neutral-200/90 bg-white px-4 py-6 shadow-xl"
           >
             <div className="mb-8 flex items-center gap-3">
-              <Image src="/waevon-logo.png" alt="Wavon" width={36} height={36} />
+              <Image src="/waevon-logo.png" alt="" width={36} height={36} className="rounded-lg" />
               <div>
-                <p className="text-lg font-semibold text-white">Wavon</p>
-                <p className="text-xs text-white/55">Réservations</p>
+                <p className="text-sm font-semibold text-neutral-950">Wavon</p>
+                <p className="text-xs text-neutral-500">Gestion de réservations</p>
               </div>
             </div>
             <NavLinks pathname={pathname} onNavigate={closeMobile} />
-            <div className="mt-auto pt-6">
+            <div className="mt-auto border-t border-neutral-100 pt-6">
               <button
                 type="button"
                 onClick={() => {
                   closeMobile();
                   void handleLogout();
                 }}
-                className="w-full rounded-xl border border-emerald-500/25 bg-transparent px-3 py-2.5 text-sm font-medium text-white/85 transition hover:bg-emerald-500/5"
+                className="w-full rounded-xl py-2.5 text-sm font-medium text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-900"
               >
                 Se déconnecter
               </button>
@@ -115,24 +115,24 @@ export default function Sidebar() {
         </div>
       ) : null}
 
-      <aside className="hidden w-72 shrink-0 flex-col border-r border-emerald-500/10 bg-[#030303] px-5 py-8 lg:flex">
-        <div className="flex items-center gap-3">
-          <Image src="/waevon-logo.png" alt="Wavon" width={40} height={40} />
+      <aside className="hidden w-[17.5rem] shrink-0 flex-col border-r border-neutral-200/80 bg-white px-4 py-8 lg:flex lg:px-5">
+        <div className="flex items-center gap-3 px-1">
+          <Image src="/waevon-logo.png" alt="" width={40} height={40} className="rounded-xl" />
           <div>
-            <p className="text-lg font-semibold tracking-tight text-white">Wavon</p>
-            <p className="text-xs text-white/55">Gestion de réservations</p>
+            <p className="text-sm font-semibold tracking-tight text-neutral-950">Wavon</p>
+            <p className="text-xs text-neutral-500">Gestion de réservations</p>
           </div>
         </div>
 
-        <div className="mt-10">
+        <div className="mt-10 px-1">
           <NavLinks pathname={pathname} />
         </div>
 
-        <div className="mt-auto border-t border-emerald-500/10 pt-6">
+        <div className="mt-auto border-t border-neutral-100 px-1 pt-6">
           <button
             type="button"
             onClick={() => void handleLogout()}
-            className="w-full rounded-xl border border-emerald-500/25 bg-transparent px-3 py-2.5 text-sm font-medium text-white/85 transition hover:border-emerald-500/40 hover:bg-emerald-500/5 hover:text-white"
+            className="w-full rounded-xl py-2.5 text-left text-sm font-medium text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-900"
           >
             Se déconnecter
           </button>

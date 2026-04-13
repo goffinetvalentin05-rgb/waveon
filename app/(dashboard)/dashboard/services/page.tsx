@@ -3,10 +3,20 @@
 import { useState } from "react";
 import { useWavon } from "@/components/wavon/WavonProvider";
 import { Modal } from "@/components/wavon/Modal";
+import { PageHeader } from "@/components/wavon/ui/PageHeader";
 import { useToast } from "@/components/wavon/Toast";
 import { formatPriceEUR } from "@/lib/wavon/format";
 import type { Service } from "@/lib/wavon/types";
-import { btnGhostClass, btnPrimaryClass, cardClass, inputClass } from "@/lib/wavon/tokens";
+import {
+  btnGhostClass,
+  btnPrimaryClass,
+  cardClass,
+  inputClass,
+  labelClass,
+  linkClass,
+  spinnerClass,
+  textareaClass,
+} from "@/lib/wavon/tokens";
 
 export default function ServicesPage() {
   const { ready, state, addService, updateService, deleteService } = useWavon();
@@ -76,63 +86,59 @@ export default function ServicesPage() {
 
   if (!ready) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <div className="h-8 w-8 rounded-full border-2 border-emerald-500/30 border-t-emerald-500 motion-safe:animate-spin" />
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className={spinnerClass} aria-hidden />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">Services</h1>
-          <p className="mt-1 text-sm text-white/60">
-            Durée utilisée pour éviter les chevauchements sur le planning.
-          </p>
-        </div>
-        <button type="button" className={btnPrimaryClass} onClick={openCreate}>
-          Ajouter un service
-        </button>
-      </header>
+    <div className="space-y-8 pb-8">
+      <PageHeader
+        title="Services"
+        description="Chaque prestation définit la durée des créneaux sur ton agenda."
+        actions={
+          <button type="button" className={btnPrimaryClass} onClick={openCreate}>
+            Ajouter un service
+          </button>
+        }
+      />
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-5 md:grid-cols-2">
         {state.services.length === 0 ? (
-          <div className={`${cardClass} md:col-span-2 text-center text-sm text-white/60`}>
-            Aucun service. Ajoute ton premier forfait ou prestation.
-            <div className="mt-4">
-              <button type="button" className={btnPrimaryClass} onClick={openCreate}>
-                Créer un service
-              </button>
-            </div>
+          <div className={`${cardClass} md:col-span-2 text-center`}>
+            <p className="text-sm text-neutral-600">Aucun service pour l’instant.</p>
+            <button type="button" className={`${btnPrimaryClass} mt-5`} onClick={openCreate}>
+              Créer un service
+            </button>
           </div>
         ) : (
           state.services.map((s) => (
             <article key={s.id} className={cardClass}>
-              <h2 className="text-lg font-semibold text-white">{s.name}</h2>
-              <p className="mt-2 text-sm text-white/55">{s.description || "—"}</p>
-              <dl className="mt-4 flex flex-wrap gap-4 text-sm">
+              <h2 className="text-lg font-semibold tracking-tight text-neutral-950">{s.name}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-500">
+                {s.description || "Pas de description."}
+              </p>
+              <dl className="mt-5 flex flex-wrap gap-8 border-t border-neutral-100 pt-5 text-sm">
                 <div>
-                  <dt className="text-white/45">Durée</dt>
-                  <dd className="font-medium text-emerald-300">{s.durationMin} min</dd>
+                  <dt className="text-xs font-medium uppercase tracking-wide text-neutral-400">
+                    Durée
+                  </dt>
+                  <dd className="mt-1 font-medium tabular-nums text-neutral-950">{s.durationMin} min</dd>
                 </div>
                 <div>
-                  <dt className="text-white/45">Prix</dt>
-                  <dd className="font-medium text-white">{formatPriceEUR(s.price)}</dd>
+                  <dt className="text-xs font-medium uppercase tracking-wide text-neutral-400">Prix</dt>
+                  <dd className="mt-1 font-medium text-neutral-950">{formatPriceEUR(s.price)}</dd>
                 </div>
               </dl>
-              <div className="mt-5 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => openEdit(s)}
-                  className="text-sm font-medium text-emerald-400 hover:underline"
-                >
+              <div className="mt-6 flex flex-wrap gap-4">
+                <button type="button" onClick={() => openEdit(s)} className={linkClass}>
                   Modifier
                 </button>
                 <button
                   type="button"
                   onClick={() => remove(s)}
-                  className="text-sm font-medium text-red-300/90 hover:underline"
+                  className="text-sm font-medium text-red-600/90 underline-offset-4 hover:underline"
                 >
                   Supprimer
                 </button>
@@ -157,43 +163,39 @@ export default function ServicesPage() {
           </>
         }
       >
-        <div className="grid gap-4">
+        <div className="grid gap-5">
           <div>
-            <label className="text-xs text-white/55">Nom</label>
-            <input
-              className={`${inputClass} mt-1`}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+            <label className={labelClass}>Nom</label>
+            <input className={`${inputClass} mt-2`} value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="text-xs text-white/55">Durée (minutes)</label>
+              <label className={labelClass}>Durée (minutes)</label>
               <input
                 type="number"
                 min={5}
                 step={5}
-                className={`${inputClass} mt-1`}
+                className={`${inputClass} mt-2`}
                 value={durationMin}
                 onChange={(e) => setDurationMin(Number(e.target.value))}
               />
             </div>
             <div>
-              <label className="text-xs text-white/55">Prix (€)</label>
+              <label className={labelClass}>Prix (€)</label>
               <input
                 type="number"
                 min={0}
                 step={1}
-                className={`${inputClass} mt-1`}
+                className={`${inputClass} mt-2`}
                 value={price}
                 onChange={(e) => setPrice(Number(e.target.value))}
               />
             </div>
           </div>
           <div>
-            <label className="text-xs text-white/55">Description</label>
+            <label className={labelClass}>Description</label>
             <textarea
-              className={`${inputClass} mt-1 min-h-[88px] resize-y`}
+              className={`${textareaClass} mt-2`}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />

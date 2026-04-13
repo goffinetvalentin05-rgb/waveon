@@ -3,17 +3,30 @@
 import { useMemo, useState } from "react";
 import { useWavon } from "@/components/wavon/WavonProvider";
 import { Modal } from "@/components/wavon/Modal";
+import { PageHeader } from "@/components/wavon/ui/PageHeader";
 import { useToast } from "@/components/wavon/Toast";
 import { combineYmdTime, getAvailableSlots, toYmd } from "@/lib/wavon/booking-logic";
-import { formatDateTime } from "@/lib/wavon/format";
+import { formatDateShort, formatTime } from "@/lib/wavon/format";
 import type { Reservation, ReservationStatus } from "@/lib/wavon/types";
-import { btnGhostClass, btnPrimaryClass, cardClass, inputClass } from "@/lib/wavon/tokens";
+import {
+  btnGhostClass,
+  btnPrimaryClass,
+  cardClass,
+  inputClass,
+  labelClass,
+  linkClass,
+  selectCompactClass,
+  spinnerClass,
+  tableHeadClass,
+  tableRowClass,
+} from "@/lib/wavon/tokens";
 
 type FormMode = "create" | "edit";
 
 export default function ReservationsPage() {
   const { ready, state, addReservation, updateReservation, deleteReservation } = useWavon();
   const toast = useToast();
+  const [filter, setFilter] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [mode, setMode] = useState<FormMode>("create");
   const [editing, setEditing] = useState<Reservation | null>(null);
@@ -30,6 +43,12 @@ export default function ReservationsPage() {
       ),
     [state.reservations]
   );
+
+  const filtered = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    if (!q) return sorted;
+    return sorted.filter((r) => r.clientName.toLowerCase().includes(q));
+  }, [sorted, filter]);
 
   const slots = useMemo(() => {
     const svc = state.services.find((s) => s.id === serviceId);
@@ -113,78 +132,93 @@ export default function ReservationsPage() {
   };
 
   if (!ready) {
-    return <PageLoading />;
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className={spinnerClass} aria-hidden />
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-            Réservations
-          </h1>
-          <p className="mt-1 text-sm text-white/60">
-            Gestion complète — aucun chevauchement ni créneau hors disponibilités.
-          </p>
+    <div className="space-y-8 pb-8">
+      <PageHeader
+        title="Réservations"
+        description="Planning clair : créneaux conformes à tes disponibilités, sans chevauchement."
+        actions={
+          <button type="button" onClick={openCreate} className={btnPrimaryClass}>
+            Ajouter une réservation
+          </button>
+        }
+      />
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="max-w-md">
+          <label className={labelClass}>Filtrer par client</label>
+          <input
+            className={`${inputClass} mt-2`}
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Rechercher un nom…"
+          />
         </div>
-        <button type="button" onClick={openCreate} className={btnPrimaryClass}>
-          Ajouter une réservation
-        </button>
-      </header>
+      </div>
 
       <section className={cardClass}>
         {sorted.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-emerald-500/20 bg-black/40 px-4 py-12 text-center">
-            <p className="text-sm text-white/65">Aucune réservation pour le moment.</p>
-            <button type="button" onClick={openCreate} className={`${btnPrimaryClass} mt-4`}>
+          <div className="rounded-2xl border border-dashed border-neutral-200 bg-neutral-50/40 px-6 py-14 text-center">
+            <p className="text-sm text-neutral-600">Aucune réservation pour le moment.</p>
+            <button type="button" onClick={openCreate} className={`${btnPrimaryClass} mt-5`}>
               Créer la première
             </button>
           </div>
+        ) : filtered.length === 0 ? (
+          <p className="py-10 text-center text-sm text-neutral-500">Aucun résultat pour ce filtre.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
+          <div className="overflow-x-auto -mx-2 px-2">
+            <table className="w-full min-w-[760px] text-left text-sm">
               <thead>
-                <tr className="border-b border-emerald-500/15 text-white/55">
-                  <th className="px-2 py-3 font-medium">Client</th>
-                  <th className="px-2 py-3 font-medium">Service</th>
-                  <th className="px-2 py-3 font-medium">Date / heure</th>
-                  <th className="px-2 py-3 font-medium">Statut</th>
-                  <th className="px-2 py-3 font-medium text-right">Actions</th>
+                <tr className={tableHeadClass}>
+                  <th className="px-3 py-3">Client</th>
+                  <th className="px-3 py-3">Service</th>
+                  <th className="px-3 py-3">Date</th>
+                  <th className="px-3 py-3">Heure</th>
+                  <th className="px-3 py-3">Statut</th>
+                  <th className="px-3 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {sorted.map((r) => {
+                {filtered.map((r) => {
                   const svc = state.services.find((s) => s.id === r.serviceId);
                   return (
-                    <tr key={r.id} className="border-b border-white/5 last:border-0">
-                      <td className="px-2 py-3 font-medium text-white">{r.clientName}</td>
-                      <td className="px-2 py-3 text-white/75">{svc?.name ?? "—"}</td>
-                      <td className="px-2 py-3 text-white/70">{formatDateTime(r.start)}</td>
-                      <td className="px-2 py-3">
+                    <tr key={r.id} className={tableRowClass}>
+                      <td className="px-3 py-3.5 font-medium text-neutral-950">{r.clientName}</td>
+                      <td className="px-3 py-3.5 text-neutral-600">{svc?.name ?? "—"}</td>
+                      <td className="px-3 py-3.5 text-neutral-600">{formatDateShort(r.start)}</td>
+                      <td className="px-3 py-3.5 text-neutral-600 tabular-nums">{formatTime(r.start)}</td>
+                      <td className="px-3 py-3.5">
                         <select
                           value={r.status}
-                          onChange={(e) =>
-                            setStatus(r, e.target.value as ReservationStatus)
-                          }
-                          className="rounded-lg border border-emerald-500/25 bg-black px-2 py-1 text-xs text-white"
+                          onChange={(e) => setStatus(r, e.target.value as ReservationStatus)}
+                          className={selectCompactClass}
                         >
                           <option value="confirmed">Confirmé</option>
                           <option value="pending">En attente</option>
                           <option value="cancelled">Annulé</option>
                         </select>
                       </td>
-                      <td className="px-2 py-3 text-right">
+                      <td className="px-3 py-3.5 text-right">
                         <button
                           type="button"
                           onClick={() => openEdit(r)}
-                          className="mr-2 text-xs font-medium text-emerald-400 hover:underline"
+                          className={`${linkClass} text-xs`}
                         >
                           Modifier
                         </button>
+                        <span className="mx-2 text-neutral-200">|</span>
                         <button
                           type="button"
                           onClick={() => remove(r)}
-                          className="text-xs font-medium text-red-300/90 hover:underline"
+                          className="text-xs font-medium text-red-600/90 underline-offset-4 hover:underline"
                         >
                           Supprimer
                         </button>
@@ -202,7 +236,7 @@ export default function ReservationsPage() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         title={mode === "create" ? "Nouvelle réservation" : "Modifier la réservation"}
-        description="Seuls les créneaux valides sont proposés selon tes disponibilités."
+        description="Seuls les créneaux compatibles avec tes disponibilités sont proposés."
         footer={
           <>
             <button type="button" className={btnGhostClass} onClick={() => setModalOpen(false)}>
@@ -214,11 +248,11 @@ export default function ReservationsPage() {
           </>
         }
       >
-        <div className="grid gap-4">
+        <div className="grid gap-5">
           <div>
-            <label className="text-xs font-medium text-white/60">Client existant (optionnel)</label>
+            <label className={labelClass}>Client enregistré (optionnel)</label>
             <select
-              className={`${inputClass} mt-1`}
+              className={`${inputClass} mt-2`}
               value={clientId}
               onChange={(e) => {
                 const id = e.target.value;
@@ -227,7 +261,7 @@ export default function ReservationsPage() {
                 if (c) setClientName(c.name);
               }}
             >
-              <option value="">— Manuel —</option>
+              <option value="">Saisie manuelle</option>
               {state.clients.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -236,18 +270,18 @@ export default function ReservationsPage() {
             </select>
           </div>
           <div>
-            <label className="text-xs font-medium text-white/60">Nom client</label>
+            <label className={labelClass}>Nom du client</label>
             <input
-              className={`${inputClass} mt-1`}
+              className={`${inputClass} mt-2`}
               value={clientName}
               onChange={(e) => setClientName(e.target.value)}
               placeholder="Nom complet"
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-white/60">Service</label>
+            <label className={labelClass}>Service</label>
             <select
-              className={`${inputClass} mt-1`}
+              className={`${inputClass} mt-2`}
               value={serviceId}
               onChange={(e) => setServiceId(e.target.value)}
             >
@@ -260,23 +294,23 @@ export default function ReservationsPage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="text-xs font-medium text-white/60">Date</label>
+              <label className={labelClass}>Date</label>
               <input
                 type="date"
-                className={`${inputClass} mt-1`}
+                className={`${inputClass} mt-2`}
                 value={dateYmd}
                 onChange={(e) => setDateYmd(e.target.value)}
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-white/60">Heure</label>
+              <label className={labelClass}>Heure</label>
               <select
-                className={`${inputClass} mt-1`}
+                className={`${inputClass} mt-2`}
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
               >
                 {slots.length === 0 ? (
-                  <option value={time}>Aucun créneau — ajuste date ou service</option>
+                  <option value={time}>Aucun créneau — ajuste la date ou le service</option>
                 ) : (
                   slots.map((t) => (
                     <option key={t} value={t}>
@@ -289,14 +323,6 @@ export default function ReservationsPage() {
           </div>
         </div>
       </Modal>
-    </div>
-  );
-}
-
-function PageLoading() {
-  return (
-    <div className="flex min-h-[40vh] items-center justify-center text-white/60">
-      <div className="h-8 w-8 rounded-full border-2 border-emerald-500/30 border-t-emerald-500 motion-safe:animate-spin" />
     </div>
   );
 }

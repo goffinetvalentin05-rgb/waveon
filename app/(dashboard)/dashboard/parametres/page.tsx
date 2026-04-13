@@ -3,8 +3,16 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useWavon } from "@/components/wavon/WavonProvider";
+import { PageHeader } from "@/components/wavon/ui/PageHeader";
+import { SectionCard } from "@/components/wavon/ui/SectionCard";
 import { useToast } from "@/components/wavon/Toast";
-import { btnPrimaryClass, cardClass, inputClass } from "@/lib/wavon/tokens";
+import {
+  btnPrimaryClass,
+  inputClass,
+  labelClass,
+  linkClass,
+  spinnerClass,
+} from "@/lib/wavon/tokens";
 
 export default function ParametresPage() {
   const { ready, state, patchSettings } = useWavon();
@@ -13,8 +21,8 @@ export default function ParametresPage() {
 
   if (!ready) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <div className="h-8 w-8 rounded-full border-2 border-emerald-500/30 border-t-emerald-500 motion-safe:animate-spin" />
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className={spinnerClass} aria-hidden />
       </div>
     );
   }
@@ -49,97 +57,105 @@ export default function ParametresPage() {
   const publicUrl = `/reserver/${s.publicSlug || "demo"}`;
 
   return (
-    <div className="space-y-8">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">Paramètres</h1>
-        <p className="mt-1 text-sm text-white/60">
-          Identité du lieu et règles appliquées au planning et à la page publique.
-        </p>
-      </header>
+    <div className="space-y-10 pb-12">
+      <PageHeader
+        title="Paramètres"
+        description="Identité de ton établissement et règles de réservation. Tout est regroupé par sections pour rester clair."
+      />
 
-      <section className={cardClass}>
-        <h2 className="text-base font-semibold text-white">Infos business</h2>
-        <form className="mt-5 grid max-w-xl gap-4" onSubmit={onSubmitBusiness}>
+      <SectionCard
+        title="Informations business"
+        description="Nom affiché sur la page publique et dans l’espace pro."
+      >
+        <form className="grid max-w-2xl gap-6" onSubmit={onSubmitBusiness}>
           <Field label="Nom de l'entreprise" name="businessName" defaultValue={s.businessName} />
           <Field label="Adresse" name="address" defaultValue={s.address} />
           <Field label="Téléphone" name="phone" defaultValue={s.phone} />
           <div>
-            <label className="text-xs font-medium text-white/55">Identifiant page publique</label>
+            <label className={labelClass}>Page publique — identifiant (slug)</label>
             <input
               name="publicSlug"
-              className={`${inputClass} mt-1`}
+              className={`${inputClass} mt-2`}
               defaultValue={s.publicSlug}
-              placeholder="ex: mon-salon"
+              placeholder="ex. mon-salon"
             />
-            <p className="mt-1 text-xs text-white/45">
-              URL : <span className="text-emerald-400/90">{publicUrl}</span>
+            <p className="mt-2 text-sm text-neutral-500">
+              Lien :{" "}
+              <code className="rounded-lg bg-neutral-100 px-2 py-0.5 text-xs text-neutral-800">
+                {publicUrl}
+              </code>
             </p>
           </div>
-          <button type="submit" className={`${btnPrimaryClass} w-fit`}>
-            Enregistrer
-          </button>
+          <div className="flex flex-wrap items-center gap-4 pt-2">
+            <button type="submit" className={btnPrimaryClass}>
+              Enregistrer
+            </button>
+            <Link href={publicUrl} className={linkClass}>
+              Prévisualiser la page publique
+            </Link>
+          </div>
+          <p className="text-xs leading-relaxed text-neutral-400">
+            En démo locale, ouvre la page publique dans le même navigateur après être passé par le
+            tableau de bord pour synchroniser les réservations.
+          </p>
         </form>
-        <p className="mt-4 text-xs text-white/45">
-          Ouvre la page publique sur le même navigateur après une visite ici pour que les réservations
-          se synchronisent (démo locale).
-        </p>
-        <Link
-          href={`/reserver/${s.publicSlug || "demo"}`}
-          className="mt-3 inline-block text-sm font-medium text-emerald-400 hover:underline"
-        >
-          Prévisualiser la page publique →
-        </Link>
-      </section>
+      </SectionCard>
 
-      <section className={cardClass}>
-        <h2 className="text-base font-semibold text-white">Réservation</h2>
-        <form className="mt-5 grid max-w-xl gap-4" onSubmit={onSubmitBooking}>
+      <SectionCard
+        title="Réservation"
+        description="Durées, délais et confirmation : ce que voient tes clients et comment les créneaux sont validés."
+      >
+        <form className="grid max-w-2xl gap-6" onSubmit={onSubmitBooking}>
           <div>
-            <label className="text-xs font-medium text-white/55">Durée minimum des services (min)</label>
+            <label className={labelClass}>Durée minimum d’un service (minutes)</label>
             <input
               type="number"
               name="minServiceDurationMin"
               min={5}
               step={5}
-              className={`${inputClass} mt-1`}
+              className={`${inputClass} mt-2`}
               defaultValue={s.minServiceDurationMin}
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-white/55">
-              Délai minimum avant la 1ère réservation (heures)
-            </label>
+            <label className={labelClass}>Délai minimum avant la première réservation (heures)</label>
             <input
               type="number"
               name="bookingLeadHours"
               min={0}
               step={1}
-              className={`${inputClass} mt-1`}
+              className={`${inputClass} mt-2`}
               defaultValue={s.bookingLeadHours}
             />
           </div>
           <div>
-            <span className="text-xs font-medium text-white/55">Confirmation</span>
-            <div className="mt-2 flex flex-wrap gap-4 text-sm">
-              <label className="flex items-center gap-2 text-white/80">
+            <span className={labelClass}>Confirmation des réservations</span>
+            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:gap-8">
+              <label className="flex cursor-pointer items-center gap-3 text-sm text-neutral-700">
                 <input
                   type="radio"
                   name="confirmationMode"
                   value="manual"
                   defaultChecked={s.confirmationMode === "manual"}
-                  className="size-4 border-emerald-500/40 text-emerald-500"
+                  className="size-4 border-neutral-300 text-neutral-950"
                 />
-                Manuelle (en attente)
+                <span>
+                  <span className="font-medium text-neutral-950">Manuelle</span>
+                  <span className="mt-0.5 block text-xs text-neutral-500">Statut « en attente » par défaut</span>
+                </span>
               </label>
-              <label className="flex items-center gap-2 text-white/80">
+              <label className="flex cursor-pointer items-center gap-3 text-sm text-neutral-700">
                 <input
                   type="radio"
                   name="confirmationMode"
                   value="auto"
                   defaultChecked={s.confirmationMode === "auto"}
-                  className="size-4 border-emerald-500/40 text-emerald-500"
+                  className="size-4 border-neutral-300 text-neutral-950"
                 />
-                Automatique (confirmé)
+                <span>
+                  <span className="font-medium text-neutral-950">Automatique</span>
+                  <span className="mt-0.5 block text-xs text-neutral-500">Confirmée dès la prise de rendez-vous</span>
+                </span>
               </label>
             </div>
           </div>
@@ -147,7 +163,7 @@ export default function ParametresPage() {
             {saving ? "…" : "Enregistrer les règles"}
           </button>
         </form>
-      </section>
+      </SectionCard>
     </div>
   );
 }
@@ -163,8 +179,8 @@ function Field({
 }) {
   return (
     <div>
-      <label className="text-xs font-medium text-white/55">{label}</label>
-      <input name={name} className={`${inputClass} mt-1`} defaultValue={defaultValue} />
+      <label className={labelClass}>{label}</label>
+      <input name={name} className={`${inputClass} mt-2`} defaultValue={defaultValue} />
     </div>
   );
 }

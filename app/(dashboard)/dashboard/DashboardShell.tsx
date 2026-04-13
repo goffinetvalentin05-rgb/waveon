@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { ToastProvider } from "@/components/wavon/Toast";
 import { WavonProvider } from "@/components/wavon/WavonProvider";
+import { spinnerClass, wavonMainBg, wavonPage } from "@/lib/wavon/tokens";
 import Sidebar from "./components/Sidebar";
 
 export default function DashboardShell({ children }: { children: ReactNode }) {
@@ -27,12 +28,11 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
 
   if (!authChecked || !userId) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-black text-white/70">
-        <div
-          className="h-9 w-9 rounded-full border-2 border-emerald-500/30 border-t-emerald-500 motion-safe:animate-spin"
-          aria-hidden
-        />
-        <p className="text-sm">Chargement de Wavon…</p>
+      <div
+        className={`flex min-h-screen flex-col items-center justify-center gap-4 ${wavonMainBg} text-neutral-500`}
+      >
+        <div className={spinnerClass} aria-hidden />
+        <p className="text-sm font-medium text-neutral-600">Chargement…</p>
       </div>
     );
   }
@@ -40,9 +40,11 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   return (
     <ToastProvider>
       <WavonProvider key={userId} userId={userId}>
-        <div className="flex min-h-screen flex-col bg-black text-white lg:flex-row">
+        <div className={`flex min-h-screen flex-col lg:flex-row ${wavonMainBg}`}>
           <Sidebar />
-          <main className="min-w-0 flex-1 px-4 py-5 sm:px-6 lg:px-10 lg:py-8">{children}</main>
+          <main className="min-w-0 flex-1 pb-12 pt-2 sm:pb-16 sm:pt-4 lg:pt-8">
+            <div className={wavonPage}>{children}</div>
+          </main>
         </div>
       </WavonProvider>
     </ToastProvider>
