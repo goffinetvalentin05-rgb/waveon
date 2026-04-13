@@ -86,3 +86,25 @@ textarea::placeholder {
   }
 }
 
+/* Wavon — modale dashboard */
+@keyframes wavon-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.wavon-modal-panel {
+  animation: wavon-modal-in 0.28s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wavon-modal-panel {
+    animation: none;
+  }
+}
+
