@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { BrandLogoLink } from "@/components/landing/BrandLogoLink";
 import {
   authAlertConfig,
@@ -21,14 +21,20 @@ import {
   authTitle,
 } from "@/components/auth/auth-ui";
 import { landingContent } from "@/lib/landing/config";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase/client";
 
 const hasSupabaseConfig = Boolean(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-export default function LoginPage() {
+function safeInternalPath(raw: string | null): string {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
+  return raw;
+}
+
+function LoginPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -45,16 +51,18 @@ export default function LoginPage() {
 
   const isReady = mounted && hasSupabaseConfig;
 
+  const afterAuthPath = safeInternalPath(searchParams.get("redirect"));
+
   useEffect(() => {
     if (!mounted || !hasSupabaseConfig) return;
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
-        router.replace("/dashboard");
+        router.replace(afterAuthPath);
       }
     };
     checkSession();
-  }, [router, mounted]);
+  }, [router, mounted, afterAuthPath]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -91,7 +99,7 @@ export default function LoginPage() {
         );
       }
     }
-    router.replace("/dashboard");
+    router.replace(afterAuthPath);
     setLoading(false);
   };
 
@@ -267,5 +275,23 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className={authScreen}>
+          <div className={authMain}>
+            <div className={authCard}>
+              <p className="text-sm text-neutral-500">Chargement…</p>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }

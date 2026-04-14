@@ -2,15 +2,13 @@
 
 import {
   createContext,
-  startTransition,
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
 } from "react";
-import { addMinutes, validateBooking } from "@/lib/wavon/booking-logic";
-import { createDefaultWavonState } from "@/lib/wavon/default-state";
+import { addMinutes, validateBooking, weeklyDefault } from "@/lib/wavon/booking-logic";
 import type {
   Client,
   CustomDaySlot,
@@ -21,35 +19,134 @@ import type {
   WeeklyDaySchedule,
   WavonState,
 } from "@/lib/wavon/types";
-import { writePublicSnapshot } from "@/lib/wavon/public-snapshot";
-import { rememberSlugOwner } from "@/lib/wavon/slug-owner";
+import { supabase } from "@/lib/supabase/client";
 
-function storageKey(userId: string): string {
-  return `wavon:v1:${userId}`;
+type DbBusiness = {
+  id: string;
+  user_id: string;
+  business_name: string | null;
+  public_slug: string | null;
+  phone: string | null;
+  address: string | null;
+};
+
+type DbSettings = {
+  business_id: string;
+  minimum_notice_hours: number;
+  minimum_service_duration: number;
+  auto_confirm_reservations: boolean;
+  availability_mode: "fixed" | "custom";
+};
+
+type DbService = {
+  id: string;
+  business_id: string;
+  name: string;
+  duration_minutes: number;
+  price: number;
+  description: string | null;
+};
+
+type DbClient = {
+  id: string;
+  business_id: string;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+};
+
+type DbReservation = {
+  id: string;
+  business_id: string;
+  client_id: string | null;
+  client_name: string;
+  service_id: string;
+  start_at: string;
+  end_at: string;
+  status: "confirmed" | "cancelled" | "pending";
+  created_at: string;
+};
+
+type DbWeeklyAvailability = {
+  business_id: string;
+  day_of_week: number;
+  is_open: boolean;
+  segments: unknown;
+};
+
+type DbCustomDay = {
+  business_id: string;
+  day: string; // date
+  segments: unknown;
+};
+
+type DbBlockedDate = {
+  business_id: string;
+  blocked_date: string; // date
+};
+
+function emptyWeekly(): Record<DayKey, WeeklyDaySchedule> {
+  const base = weeklyDefault();
+  // Nouveau compte: tout fermé par défaut
+  return {
+    mon: { ...base.mon, enabled: false, segments: [] },
+    tue: { ...base.tue, enabled: false, segments: [] },
+    wed: { ...base.wed, enabled: false, segments: [] },
+    thu: { ...base.thu, enabled: false, segments: [] },
+    fri: { ...base.fri, enabled: false, segments: [] },
+    sat: { ...base.sat, enabled: false, segments: [] },
+    sun: { ...base.sun, enabled: false, segments: [] },
+  };
 }
 
-function loadState(userId: string): WavonState {
-  if (typeof window === "undefined") return createDefaultWavonState();
-  try {
-    const raw = localStorage.getItem(storageKey(userId));
-    if (!raw) return createDefaultWavonState();
-    const parsed = JSON.parse(raw) as WavonState;
-    if (parsed?.version !== 1) return createDefaultWavonState();
-    return parsed;
-  } catch {
-    return createDefaultWavonState();
-  }
+function createEmptyState(): WavonState {
+  return {
+    version: 1,
+    weekly: emptyWeekly(),
+    availabilityMode: "fixed",
+    customDays: [],
+    blockedDates: [],
+    services: [],
+    clients: [],
+    reservations: [],
+    settings: {
+      businessName: "",
+      address: "",
+      phone: "",
+      publicSlug: "",
+      minServiceDurationMin: 15,
+      bookingLeadHours: 0,
+      confirmationMode: "manual",
+    },
+    whatsappThreads: [],
+  };
 }
 
-function saveState(userId: string, state: WavonState): void {
-  try {
-    localStorage.setItem(storageKey(userId), JSON.stringify(state));
-  } catch {
-    /* ignore */
+function dayKeyFromDow(dow: number): DayKey {
+  const map: Record<number, DayKey> = {
+    0: "sun",
+    1: "mon",
+    2: "tue",
+    3: "wed",
+    4: "thu",
+    5: "fri",
+    6: "sat",
+  };
+  return map[dow] ?? "mon";
+}
+
+function segmentsFromJson(value: unknown): { start: string; end: string }[] {
+  if (!Array.isArray(value)) return [];
+  const out: { start: string; end: string }[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue;
+    const rec = item as Record<string, unknown>;
+    const start = typeof rec.start === "string" ? rec.start : null;
+    const end = typeof rec.end === "string" ? rec.end : null;
+    if (!start || !end) continue;
+    out.push({ start, end });
   }
-  const slug = state.settings.publicSlug || "demo";
-  writePublicSnapshot(slug, state);
-  rememberSlugOwner(slug, userId);
+  return out;
 }
 
 type Ctx = {
@@ -99,53 +196,298 @@ export function WavonProvider({
   children: React.ReactNode;
 }) {
   const [ready, setReady] = useState(false);
-  const [state, setState] = useState<WavonState>(() => createDefaultWavonState());
+  const [state, setState] = useState<WavonState>(() => createEmptyState());
+  const [businessId, setBusinessId] = useState<string | null>(null);
 
   useEffect(() => {
-    startTransition(() => {
-      setState(loadState(userId));
+    let cancelled = false;
+
+    async function bootstrap() {
+      setReady(false);
+      setBusinessId(null);
+      setState(createEmptyState());
+
+      // Business row should exist thanks to DB trigger; keep a safe fallback.
+      const { data: business, error: businessErr } = await supabase
+        .from("wavon_businesses")
+        .select("id,user_id,business_name,public_slug,phone,address")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (businessErr) throw businessErr;
+
+      const ensuredBusiness: DbBusiness =
+        (business as DbBusiness | null) ??
+        (await (async () => {
+          const { data: created, error } = await supabase
+            .from("wavon_businesses")
+            .insert({ user_id: userId })
+            .select("id,user_id,business_name,public_slug,phone,address")
+            .single();
+          if (error) throw error;
+          return created as DbBusiness;
+        })());
+
+      if (cancelled) return;
+      setBusinessId(ensuredBusiness.id);
+
+      const [
+        settingsRes,
+        servicesRes,
+        clientsRes,
+        reservationsRes,
+        weeklyRes,
+        customDaysRes,
+        blockedRes,
+      ] = await Promise.all([
+        supabase
+          .from("wavon_settings")
+          .select(
+            "business_id,minimum_notice_hours,minimum_service_duration,auto_confirm_reservations,availability_mode"
+          )
+          .eq("business_id", ensuredBusiness.id)
+          .maybeSingle(),
+        supabase
+          .from("wavon_services")
+          .select("id,business_id,name,duration_minutes,price,description")
+          .eq("business_id", ensuredBusiness.id)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("wavon_clients")
+          .select("id,business_id,full_name,email,phone")
+          .eq("business_id", ensuredBusiness.id)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("wavon_reservations")
+          .select("id,business_id,client_id,client_name,service_id,start_at,end_at,status,created_at")
+          .eq("business_id", ensuredBusiness.id)
+          .order("start_at", { ascending: true }),
+        supabase
+          .from("wavon_availability_rules")
+          .select("business_id,day_of_week,is_open,segments")
+          .eq("business_id", ensuredBusiness.id),
+        supabase
+          .from("wavon_custom_days")
+          .select("business_id,day,segments")
+          .eq("business_id", ensuredBusiness.id),
+        supabase
+          .from("wavon_blocked_dates")
+          .select("business_id,blocked_date")
+          .eq("business_id", ensuredBusiness.id),
+      ]);
+
+      if (
+        settingsRes.error ||
+        servicesRes.error ||
+        clientsRes.error ||
+        reservationsRes.error ||
+        weeklyRes.error ||
+        customDaysRes.error ||
+        blockedRes.error
+      ) {
+        throw (
+          settingsRes.error ||
+          servicesRes.error ||
+          clientsRes.error ||
+          reservationsRes.error ||
+          weeklyRes.error ||
+          customDaysRes.error ||
+          blockedRes.error
+        );
+      }
+
+      const dbSettings = (settingsRes.data as DbSettings | null) ?? null;
+      const dbServices = (servicesRes.data as DbService[]) ?? [];
+      const dbClients = (clientsRes.data as DbClient[]) ?? [];
+      const dbReservations = (reservationsRes.data as DbReservation[]) ?? [];
+      const dbWeekly = (weeklyRes.data as DbWeeklyAvailability[]) ?? [];
+      const dbCustomDays = (customDaysRes.data as DbCustomDay[]) ?? [];
+      const dbBlocked = (blockedRes.data as DbBlockedDate[]) ?? [];
+
+      const weekly = emptyWeekly();
+      for (const row of dbWeekly) {
+        const k = dayKeyFromDow(row.day_of_week);
+        const segs = segmentsFromJson(row.segments);
+        weekly[k] = { enabled: Boolean(row.is_open), segments: Boolean(row.is_open) ? segs : [] };
+      }
+
+      const customDays: CustomDaySlot[] = dbCustomDays.map((r) => ({
+        date: String(r.day),
+        segments: segmentsFromJson(r.segments),
+      }));
+
+      const next: WavonState = {
+        version: 1,
+        weekly,
+        availabilityMode: dbSettings?.availability_mode ?? "fixed",
+        customDays,
+        blockedDates: dbBlocked.map((r) => String(r.blocked_date)).sort(),
+        services: dbServices.map((s) => ({
+          id: s.id,
+          name: s.name,
+          durationMin: s.duration_minutes,
+          price: s.price,
+          description: s.description ?? "",
+        })),
+        clients: dbClients.map((c) => ({
+          id: c.id,
+          name: c.full_name,
+          phone: c.phone ?? "",
+          email: c.email ?? "",
+        })),
+        reservations: dbReservations.map((r) => ({
+          id: r.id,
+          clientId: r.client_id,
+          clientName: r.client_name || "Client",
+          serviceId: r.service_id,
+          start: r.start_at,
+          end: r.end_at,
+          status: r.status,
+          createdAt: r.created_at,
+        })),
+        settings: {
+          businessName: ensuredBusiness.business_name ?? "",
+          address: ensuredBusiness.address ?? "",
+          phone: ensuredBusiness.phone ?? "",
+          publicSlug: ensuredBusiness.public_slug ?? "",
+          minServiceDurationMin: dbSettings?.minimum_service_duration ?? 15,
+          bookingLeadHours: dbSettings?.minimum_notice_hours ?? 0,
+          confirmationMode: dbSettings?.auto_confirm_reservations ? "auto" : "manual",
+        },
+        whatsappThreads: [],
+      };
+
+      if (cancelled) return;
+      setState(next);
       setReady(true);
+    }
+
+    void bootstrap().catch((err) => {
+      if (process.env.NODE_ENV !== "production") {
+        console.error("[WavonProvider] bootstrap error:", err);
+      }
+      if (!cancelled) {
+        setReady(true);
+      }
     });
+
+    return () => {
+      cancelled = true;
+    };
   }, [userId]);
 
-  useEffect(() => {
-    if (!ready) return;
-    saveState(userId, state);
-  }, [ready, userId, state]);
-
   const setWeeklyDay = useCallback((day: DayKey, patch: WeeklyDaySchedule) => {
-    setState((prev) => ({
-      ...prev,
-      weekly: { ...prev.weekly, [day]: patch },
-    }));
-  }, []);
+    setState((prev) => ({ ...prev, weekly: { ...prev.weekly, [day]: patch } }));
+    if (!businessId) return;
+    const dayOfWeek: Record<DayKey, number> = {
+      sun: 0,
+      mon: 1,
+      tue: 2,
+      wed: 3,
+      thu: 4,
+      fri: 5,
+      sat: 6,
+    };
+    void supabase.from("wavon_availability_rules").upsert(
+      {
+        business_id: businessId,
+        day_of_week: dayOfWeek[day],
+        is_open: patch.enabled,
+        segments: patch.enabled ? patch.segments : [],
+      },
+      { onConflict: "business_id,day_of_week" }
+    );
+  }, [businessId]);
 
   const setAvailabilityMode = useCallback((mode: WavonState["availabilityMode"]) => {
     setState((prev) => ({ ...prev, availabilityMode: mode }));
-  }, []);
+    if (!businessId) return;
+    void supabase
+      .from("wavon_settings")
+      .update({ availability_mode: mode })
+      .eq("business_id", businessId);
+  }, [businessId]);
 
   const setCustomDays = useCallback((days: CustomDaySlot[]) => {
     setState((prev) => ({ ...prev, customDays: days }));
-  }, []);
+    if (!businessId) return;
+    // Simple sync: replace all (acceptable for now; can be optimized later)
+    void (async () => {
+      await supabase.from("wavon_custom_days").delete().eq("business_id", businessId);
+      if (days.length === 0) return;
+      await supabase.from("wavon_custom_days").insert(
+        days.map((d) => ({
+          business_id: businessId,
+          day: d.date,
+          segments: d.segments,
+        }))
+      );
+    })();
+  }, [businessId]);
 
   const setBlockedDates = useCallback((dates: string[]) => {
     setState((prev) => ({ ...prev, blockedDates: dates }));
-  }, []);
+    if (!businessId) return;
+    void (async () => {
+      await supabase.from("wavon_blocked_dates").delete().eq("business_id", businessId);
+      if (dates.length === 0) return;
+      await supabase.from("wavon_blocked_dates").insert(
+        dates.map((d) => ({
+          business_id: businessId,
+          blocked_date: d,
+        }))
+      );
+    })();
+  }, [businessId]);
 
   const addService = useCallback((s: Omit<Service, "id">) => {
-    const id = crypto.randomUUID();
-    setState((prev) => ({
-      ...prev,
-      services: [...prev.services, { ...s, id }],
-    }));
-  }, []);
+    if (!businessId) return;
+    void (async () => {
+      const { data, error } = await supabase
+        .from("wavon_services")
+        .insert({
+          business_id: businessId,
+          name: s.name,
+          duration_minutes: s.durationMin,
+          price: s.price,
+          description: s.description ?? "",
+        })
+        .select("id,business_id,name,duration_minutes,price,description")
+        .single();
+      if (error) throw error;
+      const row = data as DbService;
+      setState((prev) => ({
+        ...prev,
+        services: [
+          ...prev.services,
+          {
+            id: row.id,
+            name: row.name,
+            durationMin: row.duration_minutes,
+            price: row.price,
+            description: row.description ?? "",
+          },
+        ],
+      }));
+    })();
+  }, [businessId]);
 
   const updateService = useCallback((id: string, patch: Partial<Service>) => {
     setState((prev) => ({
       ...prev,
       services: prev.services.map((x) => (x.id === id ? { ...x, ...patch } : x)),
     }));
-  }, []);
+    if (!businessId) return;
+    void supabase
+      .from("wavon_services")
+      .update({
+        ...(patch.name !== undefined ? { name: patch.name } : {}),
+        ...(patch.durationMin !== undefined ? { duration_minutes: patch.durationMin } : {}),
+        ...(patch.price !== undefined ? { price: patch.price } : {}),
+        ...(patch.description !== undefined ? { description: patch.description } : {}),
+      })
+      .eq("id", id)
+      .eq("business_id", businessId);
+  }, [businessId]);
 
   const deleteService = useCallback((id: string) => {
     setState((prev) => ({
@@ -153,22 +495,56 @@ export function WavonProvider({
       services: prev.services.filter((x) => x.id !== id),
       reservations: prev.reservations.filter((r) => r.serviceId !== id),
     }));
-  }, []);
+    if (!businessId) return;
+    void supabase.from("wavon_services").delete().eq("id", id).eq("business_id", businessId);
+  }, [businessId]);
 
   const addClient = useCallback((c: Omit<Client, "id">) => {
-    const id = crypto.randomUUID();
-    setState((prev) => ({
-      ...prev,
-      clients: [...prev.clients, { ...c, id }],
-    }));
-  }, []);
+    if (!businessId) return;
+    void (async () => {
+      const { data, error } = await supabase
+        .from("wavon_clients")
+        .insert({
+          business_id: businessId,
+          full_name: c.name,
+          phone: c.phone || null,
+          email: c.email || null,
+        })
+        .select("id,business_id,full_name,email,phone")
+        .single();
+      if (error) throw error;
+      const row = data as DbClient;
+      setState((prev) => ({
+        ...prev,
+        clients: [
+          ...prev.clients,
+          {
+            id: row.id,
+            name: row.full_name,
+            phone: row.phone ?? "",
+            email: row.email ?? "",
+          },
+        ],
+      }));
+    })();
+  }, [businessId]);
 
   const updateClient = useCallback((id: string, patch: Partial<Client>) => {
     setState((prev) => ({
       ...prev,
       clients: prev.clients.map((x) => (x.id === id ? { ...x, ...patch } : x)),
     }));
-  }, []);
+    if (!businessId) return;
+    void supabase
+      .from("wavon_clients")
+      .update({
+        ...(patch.name !== undefined ? { full_name: patch.name } : {}),
+        ...(patch.phone !== undefined ? { phone: patch.phone || null } : {}),
+        ...(patch.email !== undefined ? { email: patch.email || null } : {}),
+      })
+      .eq("id", id)
+      .eq("business_id", businessId);
+  }, [businessId]);
 
   const deleteClient = useCallback((id: string) => {
     setState((prev) => ({
@@ -178,7 +554,9 @@ export function WavonProvider({
         r.clientId === id ? { ...r, clientId: null } : r
       ),
     }));
-  }, []);
+    if (!businessId) return;
+    void supabase.from("wavon_clients").delete().eq("id", id).eq("business_id", businessId);
+  }, [businessId]);
 
   const addReservation = useCallback(
     (input: {
@@ -187,14 +565,20 @@ export function WavonProvider({
       serviceId: string;
       start: Date;
     }): { ok: true; id: string } | { ok: false; error: string } => {
-      let result: { ok: true; id: string } | { ok: false; error: string } = {
-        ok: false,
-        error: "Erreur",
-      };
+      if (!businessId) {
+        return { ok: false, error: "Compte non initialisé." };
+      }
+
+      const outcome: {
+        current:
+          | { kind: "ok"; reservation: Reservation }
+          | { kind: "err"; message: string };
+      } = { current: { kind: "err", message: "Erreur" } };
+
       setState((prev) => {
         const service = prev.services.find((s) => s.id === input.serviceId);
         if (!service) {
-          result = { ok: false, error: "Service introuvable." };
+          outcome.current = { kind: "err", message: "Service introuvable." };
           return prev;
         }
         const end = addMinutes(input.start, service.durationMin);
@@ -207,7 +591,7 @@ export function WavonProvider({
           end,
         });
         if (err) {
-          result = { ok: false, error: err };
+          outcome.current = { kind: "err", message: err };
           return prev;
         }
         const id = crypto.randomUUID();
@@ -221,12 +605,34 @@ export function WavonProvider({
           status,
           createdAt: new Date().toISOString(),
         };
-        result = { ok: true, id };
+        outcome.current = { kind: "ok", reservation: res };
         return { ...prev, reservations: [...prev.reservations, res] };
       });
-      return result;
+
+      if (outcome.current.kind === "err") {
+        return { ok: false, error: outcome.current.message };
+      }
+
+      const res = outcome.current.reservation;
+      void (async () => {
+        const { error } = await supabase.from("wavon_reservations").insert({
+          id: res.id,
+          business_id: businessId,
+          client_id: res.clientId,
+          client_name: res.clientName.trim(),
+          service_id: res.serviceId,
+          start_at: res.start,
+          end_at: res.end,
+          status: res.status,
+        });
+        if (error && process.env.NODE_ENV !== "production") {
+          console.error("[WavonProvider] insert reservation:", error.message);
+        }
+      })();
+
+      return { ok: true, id: res.id };
     },
-    []
+    [businessId]
   );
 
   const updateReservation = useCallback(
@@ -280,9 +686,33 @@ export function WavonProvider({
           reservations: prev.reservations.map((r) => (r.id === id ? next : r)),
         };
       });
+      if (businessId && !errorMsg) {
+        const payload: Record<string, unknown> = {};
+        if (patch.clientId !== undefined) payload.client_id = patch.clientId || null;
+        if (patch.clientName !== undefined) payload.client_name = patch.clientName.trim();
+        if (patch.serviceId !== undefined) payload.service_id = patch.serviceId;
+        if (patch.status !== undefined) payload.status = patch.status;
+        if (patch.start !== undefined || patch.serviceId !== undefined) {
+          const svcId =
+            patch.serviceId ??
+            state.reservations.find((r) => r.id === id)?.serviceId ??
+            "";
+          const svc = state.services.find((s) => s.id === svcId) ?? null;
+          const start = patch.start ?? new Date(state.reservations.find((r) => r.id === id)?.start ?? Date.now());
+          if (svc) {
+            payload.start_at = start.toISOString();
+            payload.end_at = addMinutes(start, svc.durationMin).toISOString();
+          }
+        }
+        void supabase
+          .from("wavon_reservations")
+          .update(payload)
+          .eq("id", id)
+          .eq("business_id", businessId);
+      }
       return errorMsg ? { ok: false, error: errorMsg } : { ok: true };
     },
-    []
+       [businessId, state.services, state.reservations]
   );
 
   const deleteReservation = useCallback((id: string) => {
@@ -290,7 +720,9 @@ export function WavonProvider({
       ...prev,
       reservations: prev.reservations.filter((r) => r.id !== id),
     }));
-  }, []);
+    if (!businessId) return;
+    void supabase.from("wavon_reservations").delete().eq("id", id).eq("business_id", businessId);
+  }, [businessId]);
 
   const patchSettings = useCallback((patch: Partial<WavonState["settings"]>) => {
     setState((prev) => {
@@ -301,7 +733,7 @@ export function WavonProvider({
               .toLowerCase()
               .replace(/[^a-z0-9-]/g, "-")
               .replace(/-+/g, "-")
-              .replace(/^-|-$/g, "") || "demo"
+              .replace(/^-|-$/g, "")
           : undefined;
       const next = {
         ...prev.settings,
@@ -310,7 +742,41 @@ export function WavonProvider({
       };
       return { ...prev, settings: next };
     });
-  }, []);
+
+    if (!businessId) return;
+    void (async () => {
+      const businessPatch: Record<string, unknown> = {};
+      if (patch.businessName !== undefined) businessPatch.business_name = patch.businessName.trim();
+      if (patch.address !== undefined) businessPatch.address = patch.address.trim();
+      if (patch.phone !== undefined) businessPatch.phone = patch.phone.trim();
+      if (patch.publicSlug !== undefined) {
+        businessPatch.public_slug =
+          patch.publicSlug
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9-]/g, "-")
+            .replace(/-+/g, "-")
+            .replace(/^-|-$/g, "") || null;
+      }
+      if (Object.keys(businessPatch).length > 0) {
+        await supabase.from("wavon_businesses").update(businessPatch).eq("id", businessId);
+      }
+
+      const settingsPatch: Record<string, unknown> = {};
+      if (patch.minServiceDurationMin !== undefined) {
+        settingsPatch.minimum_service_duration = patch.minServiceDurationMin;
+      }
+      if (patch.bookingLeadHours !== undefined) {
+        settingsPatch.minimum_notice_hours = patch.bookingLeadHours;
+      }
+      if (patch.confirmationMode !== undefined) {
+        settingsPatch.auto_confirm_reservations = patch.confirmationMode === "auto";
+      }
+      if (Object.keys(settingsPatch).length > 0) {
+        await supabase.from("wavon_settings").update(settingsPatch).eq("business_id", businessId);
+      }
+    })();
+  }, [businessId]);
 
   const replaceWhatsAppMessages = useCallback(
     (threadId: string, messages: WavonState["whatsappThreads"][0]["messages"]) => {

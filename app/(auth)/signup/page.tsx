@@ -19,7 +19,7 @@ import {
   authTitle,
 } from "@/components/auth/auth-ui";
 import { landingContent } from "@/lib/landing/config";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase/client";
 
 const hasSupabaseConfig = Boolean(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY

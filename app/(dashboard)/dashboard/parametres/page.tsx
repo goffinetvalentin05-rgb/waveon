@@ -54,7 +54,8 @@ export default function ParametresPage() {
     setSaving(false);
   };
 
-  const publicUrl = `/reserver/${s.publicSlug || "demo"}`;
+  const slug = s.publicSlug?.trim() ?? "";
+  const publicUrl = slug ? `/reserver/${slug}` : null;
 
   return (
     <div className="space-y-10 pb-12">
@@ -80,23 +81,34 @@ export default function ParametresPage() {
               placeholder="ex. mon-salon"
             />
             <p className="mt-2 text-sm text-neutral-500">
-              Lien :{" "}
-              <code className="rounded-lg bg-neutral-100 px-2 py-0.5 text-xs text-neutral-800">
-                {publicUrl}
-              </code>
+              {publicUrl ? (
+                <>
+                  Lien :{" "}
+                  <code className="rounded-lg bg-neutral-100 px-2 py-0.5 text-xs text-neutral-800">
+                    {publicUrl}
+                  </code>
+                </>
+              ) : (
+                <span className="text-neutral-400">
+                  Définis un identifiant public pour activer ta page de réservation.
+                </span>
+              )}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-4 pt-2">
             <button type="submit" className={btnPrimaryClass}>
               Enregistrer
             </button>
-            <Link href={publicUrl} className={linkClass}>
-              Prévisualiser la page publique
-            </Link>
+            {publicUrl ? (
+              <Link href={publicUrl} className={linkClass}>
+                Prévisualiser la page publique
+              </Link>
+            ) : (
+              <span className={`${linkClass} pointer-events-none opacity-40`}>Prévisualiser</span>
+            )}
           </div>
           <p className="text-xs leading-relaxed text-neutral-400">
-            En démo locale, ouvre la page publique dans le même navigateur après être passé par le
-            tableau de bord pour synchroniser les réservations.
+            La page publique utilise les données Supabase de ton compte.
           </p>
         </form>
       </SectionCard>
