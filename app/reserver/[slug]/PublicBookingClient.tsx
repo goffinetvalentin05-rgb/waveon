@@ -475,110 +475,99 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
   return (
     <div className="min-h-screen bg-[#f7f7f5] text-neutral-950">
       <div className={`${landingSection} flex min-h-screen flex-col py-10 sm:py-16`}>
-        <header className="mb-10 sm:mb-12">
-          {/** Generate URLs dynamically from stored paths (preferred). */}
-          {/** Fallback to legacy stored URLs if present. */}
-          {(() => {
-            const coverUrl =
-              getBrandingPublicUrl(state.settings.publicCoverPath) ||
-              state.settings.publicCoverUrl ||
-              "";
-            const logoUrl =
-              getBrandingPublicUrl(state.settings.publicLogoPath) ||
-              state.settings.publicLogoUrl ||
-              "";
-            const displayName =
-              state.settings.publicDisplayName?.trim() ||
-              state.settings.businessName ||
-              publishedName ||
-              "Réservation";
+        {/** Unified, mobile-first booking card (branding + form) */}
+        {(() => {
+          const coverUrl =
+            getBrandingPublicUrl(state.settings.publicCoverPath) ||
+            state.settings.publicCoverUrl ||
+            "";
+          const logoUrl =
+            getBrandingPublicUrl(state.settings.publicLogoPath) ||
+            state.settings.publicLogoUrl ||
+            "";
+          const displayName =
+            state.settings.publicDisplayName?.trim() ||
+            state.settings.businessName ||
+            publishedName ||
+            "Réservation";
 
-            return (
-          <div className="overflow-hidden rounded-3xl border border-neutral-200/90 bg-white shadow-[0_2px_20px_-6px_rgba(0,0,0,0.08)]">
-            {coverUrl ? (
-              <div className="relative h-28 w-full sm:h-36">
-                <Image
-                  src={coverUrl}
-                  alt=""
-                  fill
-                  className="object-cover"
-                  priority
-                />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-transparent" />
-              </div>
-            ) : (
-              <div className="h-10 bg-neutral-50 sm:h-12" />
-            )}
+          const initials = (
+            (displayName || "?").trim().slice(0, 2) || "?"
+          ).toUpperCase();
 
-            <div className="px-6 pb-6 pt-5 sm:px-8 sm:pb-8">
-              <div className="-mt-10 flex flex-col items-center text-center sm:-mt-12">
-                <div className="relative mb-4 flex size-20 items-center justify-center overflow-hidden rounded-3xl border border-neutral-200/90 bg-white shadow-[0_12px_36px_-18px_rgba(0,0,0,0.35)] sm:size-24">
-                  {logoUrl ? (
-                    <Image
-                      src={logoUrl}
-                      alt=""
-                      fill
-                      className="object-cover"
-                      onError={() => {
-                        if (process.env.NODE_ENV !== "production") {
-                          console.warn("[public booking] logo failed:", {
-                            path: state.settings.publicLogoPath,
-                            url: logoUrl,
-                          });
-                        }
-                      }}
-                    />
-                  ) : (
-                    <span className="text-lg font-semibold text-neutral-600">
-                      {(
-                        (displayName || "?")
-                          .trim()
-                          .slice(0, 2) || "?"
-                      ).toUpperCase()}
-                    </span>
-                  )}
-                </div>
+          return (
+            <div className="mx-auto w-full max-w-lg flex-1">
+              <div className="overflow-hidden rounded-3xl border border-neutral-200/90 bg-white shadow-[0_2px_20px_-6px_rgba(0,0,0,0.08)]">
+                {/* Cover */}
+                {coverUrl ? (
+                  <div className="relative h-28 w-full sm:h-36">
+                    <Image src={coverUrl} alt="" fill className="object-cover" priority />
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-transparent" />
+                  </div>
+                ) : (
+                  <div className="h-10 bg-neutral-50 sm:h-12" />
+                )}
 
-                <h1 className="text-2xl font-semibold tracking-tight text-neutral-950 sm:text-[1.65rem]">
-                  {displayName}
-                </h1>
+                {/* Identity */}
+                <div className="px-6 pb-6 pt-5 sm:px-8 sm:pb-8">
+                  <div className="-mt-10 flex flex-col items-center text-center sm:-mt-12">
+                    <div className="relative mb-4 flex size-20 items-center justify-center overflow-hidden rounded-3xl border border-neutral-200/90 bg-white shadow-[0_12px_36px_-18px_rgba(0,0,0,0.35)] sm:size-24">
+                      {logoUrl ? (
+                        <Image
+                          src={logoUrl}
+                          alt=""
+                          fill
+                          className="object-cover"
+                          onError={() => {
+                            if (process.env.NODE_ENV !== "production") {
+                              console.warn("[public booking] logo failed:", {
+                                path: state.settings.publicLogoPath,
+                                url: logoUrl,
+                              });
+                            }
+                          }}
+                        />
+                      ) : (
+                        <span className="text-lg font-semibold text-neutral-600">{initials}</span>
+                      )}
+                    </div>
 
-                <p className="mx-auto mt-2 max-w-md text-sm text-neutral-500">
-                  {state.settings.publicWelcomeMessage?.trim()
-                    ? state.settings.publicWelcomeMessage
-                    : "Choisis ta prestation, puis ton créneau. C’est rapide et sécurisé."}
-                </p>
+                    <h1 className="text-2xl font-semibold tracking-tight text-neutral-950 sm:text-[1.65rem]">
+                      {displayName}
+                    </h1>
 
-                {state.settings.publicShowDescription && state.settings.publicDescription?.trim() ? (
-                  <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-neutral-400">
-                    {state.settings.publicDescription}
-                  </p>
-                ) : null}
-
-                {(state.settings.publicShowPhone || state.settings.publicShowAddress) ? (
-                  <div className="mx-auto mt-4 flex max-w-md flex-wrap items-center justify-center gap-2 text-xs text-neutral-400">
-                    {state.settings.publicShowPhone && state.settings.phone?.trim() ? (
-                      <span className="rounded-full border border-neutral-200/90 bg-white px-3 py-1.5">
-                        {state.settings.phone}
-                      </span>
+                    {state.settings.publicWelcomeMessage?.trim() ? (
+                      <p className="mx-auto mt-2 max-w-md text-sm text-neutral-500">
+                        {state.settings.publicWelcomeMessage}
+                      </p>
                     ) : null}
-                    {state.settings.publicShowAddress && state.settings.address?.trim() ? (
-                      <span className="rounded-full border border-neutral-200/90 bg-white px-3 py-1.5">
-                        {state.settings.address}
-                      </span>
+
+                    {state.settings.publicShowDescription && state.settings.publicDescription?.trim() ? (
+                      <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-neutral-400">
+                        {state.settings.publicDescription}
+                      </p>
+                    ) : null}
+
+                    {(state.settings.publicShowPhone || state.settings.publicShowAddress) ? (
+                      <div className="mx-auto mt-4 flex max-w-md flex-wrap items-center justify-center gap-2 text-xs text-neutral-400">
+                        {state.settings.publicShowPhone && state.settings.phone?.trim() ? (
+                          <span className="rounded-full border border-neutral-200/90 bg-white px-3 py-1.5">
+                            {state.settings.phone}
+                          </span>
+                        ) : null}
+                        {state.settings.publicShowAddress && state.settings.address?.trim() ? (
+                          <span className="rounded-full border border-neutral-200/90 bg-white px-3 py-1.5">
+                            {state.settings.address}
+                          </span>
+                        ) : null}
+                      </div>
                     ) : null}
                   </div>
-                ) : null}
-              </div>
-            </div>
-          </div>
-            );
-          })()}
-        </header>
+                </div>
 
-        <div className="mx-auto w-full max-w-lg flex-1">
-          <div className="rounded-3xl border border-neutral-200/90 bg-white p-6 shadow-[0_2px_20px_-6px_rgba(0,0,0,0.08)] sm:p-8">
-            <div className="space-y-6">
+                {/* Form section (integrated) */}
+                <div className="border-t border-neutral-100 px-6 py-6 sm:px-8 sm:py-8">
+                  <div className="space-y-6">
               <div>
                 <label className={labelClass}>Prestation</label>
                 <select
@@ -682,13 +671,16 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
                   "Confirmer la réservation"
                 )}
               </button>
-            </div>
-          </div>
+                  </div>
+                </div>
+              </div>
 
-          <p className="mt-8 text-center text-xs text-neutral-400">
-            Réservation proposée par Wavon.
-          </p>
-        </div>
+              <p className="mt-6 text-center text-xs text-neutral-400">
+                Réservation proposée par Wavon.
+              </p>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
