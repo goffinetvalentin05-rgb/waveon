@@ -35,11 +35,6 @@ function safeInternalPath(raw: string | null): string {
 function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -49,12 +44,12 @@ function LoginPageContent() {
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
 
-  const isReady = mounted && hasSupabaseConfig;
+  const isReady = hasSupabaseConfig;
 
   const afterAuthPath = safeInternalPath(searchParams.get("redirect"));
 
   useEffect(() => {
-    if (!mounted || !hasSupabaseConfig) return;
+    if (!hasSupabaseConfig) return;
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
@@ -62,7 +57,7 @@ function LoginPageContent() {
       }
     };
     checkSession();
-  }, [router, mounted, afterAuthPath]);
+  }, [router, afterAuthPath]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();

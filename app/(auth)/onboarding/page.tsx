@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 
@@ -269,7 +270,7 @@ export default function OnboardingPage() {
               <p className="text-sm text-[#555]">
                 Waevon va maintenant répondre à tes prospects en moins de 60
                 secondes. Partage ton numéro WhatsApp dans ta bio Instagram et
-                laisse l'IA faire le reste.
+                laisse l&apos;IA faire le reste.
               </p>
             </div>
           )}
@@ -307,9 +308,9 @@ export default function OnboardingPage() {
 
         <p className="mt-6 text-center text-sm text-[#888]">
           Déjà un compte ?{" "}
-          <a href="/login" className="font-semibold text-[#39FF14] hover:underline">
+          <Link href="/login" className="font-semibold text-[#39FF14] hover:underline">
             Se connecter
-          </a>
+          </Link>
         </p>
       </div>
     </div>

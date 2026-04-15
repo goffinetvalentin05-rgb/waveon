@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 export type WheelSegment = {
   label: string;
@@ -39,7 +40,6 @@ const SEGMENT_COLORS = [
 export default function RewardWheel({
   segments,
   primaryColor = DEFAULT_PRIMARY,
-  secondaryColor = DEFAULT_SECONDARY,
   size = 280,
   businessName,
   logoUrl,
@@ -47,12 +47,11 @@ export default function RewardWheel({
   animateSpin = true,
   onSpinEnd,
 }: RewardWheelProps) {
-  const [rotation, setRotation] = useState(0);
-  const [isSpinning, setIsSpinning] = useState(false);
-  const [hasSpun, setHasSpun] = useState(false);
   const prevResultRef = useRef<string | null>(null);
   const onSpinEndRef = useRef(onSpinEnd);
-  onSpinEndRef.current = onSpinEnd;
+  useEffect(() => {
+    onSpinEndRef.current = onSpinEnd;
+  }, [onSpinEnd]);
 
   const n = Math.max(segments.length, 1);
   const segmentAngle = 360 / n;
@@ -69,43 +68,25 @@ export default function RewardWheel({
     [segments, segmentAngle]
   );
 
-  /** Rotation = previous + at least 5 full turns + segment offset so result is deterministic. */
-  const spinToResult = useCallback(
-    (label: string, animate: boolean) => {
-      const index = segments.findIndex((s) => s.label === label);
-      const targetIndex = index >= 0 ? index : 0;
-      const segmentCenterOffset = 360 - (targetIndex + 0.5) * segmentAngle;
-      setRotation((prev) => prev + 360 * MIN_FULL_TURNS + segmentCenterOffset);
-      setIsSpinning(animate);
-    },
-    [segments, segmentAngle]
-  );
+  const spinDurationMs = 4000;
 
-  useEffect(() => {
-    if (!resultLabel) return;
-    if (resultLabel !== prevResultRef.current) {
-      prevResultRef.current = resultLabel;
-      spinToResult(resultLabel, animateSpin);
-    }
-  }, [resultLabel, animateSpin, spinToResult]);
-
-  useEffect(() => {
-    if (resultLabel && !animateSpin) {
-      setRotation(getRotationForLabel(resultLabel));
-    }
+  const computed = useMemo(() => {
+    if (!resultLabel) return { rotation: 0, spinning: false };
+    const base = getRotationForLabel(resultLabel);
+    if (!animateSpin) return { rotation: base, spinning: false };
+    return { rotation: 360 * MIN_FULL_TURNS + base, spinning: true };
   }, [resultLabel, animateSpin, getRotationForLabel]);
 
   useEffect(() => {
-    if (!isSpinning) return;
-    const duration = 4000;
-    const id = setTimeout(() => {
-      setIsSpinning(false);
-      setHasSpun(true);
-      prevResultRef.current = null;
+    if (!resultLabel) return;
+    if (!animateSpin) return;
+    if (resultLabel === prevResultRef.current) return;
+    prevResultRef.current = resultLabel;
+    const id = window.setTimeout(() => {
       onSpinEndRef.current?.();
-    }, duration);
-    return () => clearTimeout(id);
-  }, [isSpinning]);
+    }, spinDurationMs);
+    return () => window.clearTimeout(id);
+  }, [resultLabel, animateSpin]);
 
   if (segments.length === 0) {
     return (
@@ -145,9 +126,9 @@ export default function RewardWheel({
         style={{
           width: size,
           height: size,
-          transform: `rotate(${rotation}deg)`,
-          transitionDuration: isSpinning ? "4000ms" : "0ms",
-          transitionTimingFunction: isSpinning
+          transform: `rotate(${computed.rotation}deg)`,
+          transitionDuration: computed.spinning ? `${spinDurationMs}ms` : "0ms",
+          transitionTimingFunction: computed.spinning
             ? "cubic-bezier(0.17, 0.67, 0.12, 0.99)"
             : "ease-out",
           boxShadow:
@@ -239,9 +220,11 @@ export default function RewardWheel({
           }}
         >
           {logoUrl ? (
-            <img
+            <Image
               src={logoUrl}
               alt=""
+              width={Math.round(size * 0.18)}
+              height={Math.round(size * 0.18)}
               className="h-full w-full rounded-full object-cover"
             />
           ) : (

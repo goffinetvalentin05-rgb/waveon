@@ -33,16 +33,16 @@ function TimelineReveal({
   children: (revealed: boolean) => ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [on, setOn] = useState(false);
+  const [on, setOn] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  });
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
 
-    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setOn(true);
-      return;
-    }
+    if (on) return;
 
     const io = new IntersectionObserver(
       ([entry]) => {
@@ -55,7 +55,7 @@ function TimelineReveal({
 
     io.observe(el);
     return () => io.disconnect();
-  }, []);
+  }, [on]);
 
   const enterX = from === "left" ? "-translate-x-[clamp(1.5rem,8vw,4rem)]" : "translate-x-[clamp(1.5rem,8vw,4rem)]";
 
@@ -178,7 +178,7 @@ function useParallaxAndActiveStep(stepCount: number) {
       });
     };
 
-    tick();
+    loop();
     window.addEventListener("scroll", loop, { passive: true });
     window.addEventListener("resize", loop, { passive: true });
     return () => {

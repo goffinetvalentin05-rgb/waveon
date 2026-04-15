@@ -20,6 +20,13 @@ type DbBusiness = {
   id: string;
   business_name: string | null;
   public_slug: string | null;
+  public_welcome_message?: string | null;
+  public_description?: string | null;
+  public_show_phone?: boolean | null;
+  public_show_address?: boolean | null;
+  public_show_description?: boolean | null;
+  phone?: string | null;
+  address?: string | null;
 };
 
 type DbSettings = {
@@ -28,6 +35,10 @@ type DbSettings = {
   minimum_service_duration: number;
   auto_confirm_reservations: boolean;
   availability_mode: "fixed" | "custom";
+  maximum_days_in_advance?: number;
+  slot_interval_minutes?: number;
+  same_day_booking_allowed?: boolean;
+  public_after_booking_message?: string | null;
 };
 
 type DbService = {
@@ -36,6 +47,13 @@ type DbService = {
   duration_minutes: number;
   price: number;
   description: string | null;
+  is_active?: boolean;
+  is_public?: boolean;
+  color?: string | null;
+  buffer_before_minutes?: number;
+  buffer_after_minutes?: number;
+  booking_notice_hours?: number | null;
+  sort_order?: number;
 };
 
 type DbReservation = {
@@ -45,6 +63,9 @@ type DbReservation = {
   service_id: string;
   start_at: string;
   end_at: string;
+  duration_minutes?: number;
+  buffer_before_minutes?: number;
+  buffer_after_minutes?: number;
   status: "confirmed" | "cancelled" | "pending";
   created_at: string;
 };
@@ -101,7 +122,9 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
       try {
         const { data: business, error: businessErr } = await supabase
           .from("wavon_businesses")
-          .select("id,business_name,public_slug")
+          .select(
+            "id,business_name,public_slug,public_welcome_message,public_description,public_show_phone,public_show_address,public_show_description,phone,address"
+          )
           .eq("public_slug", slug)
           .maybeSingle();
         if (businessErr) throw businessErr;
@@ -117,14 +140,19 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
             supabase
               .from("wavon_settings")
               .select(
-                "business_id,minimum_notice_hours,minimum_service_duration,auto_confirm_reservations,availability_mode"
+                "business_id,minimum_notice_hours,minimum_service_duration,auto_confirm_reservations,availability_mode,maximum_days_in_advance,slot_interval_minutes,same_day_booking_allowed,public_after_booking_message"
               )
               .eq("business_id", id)
               .maybeSingle(),
             supabase
               .from("wavon_services")
-              .select("id,name,duration_minutes,price,description")
+              .select(
+                "id,name,duration_minutes,price,description,is_active,is_public,color,buffer_before_minutes,buffer_after_minutes,booking_notice_hours,sort_order"
+              )
               .eq("business_id", id)
+              .eq("is_active", true)
+              .eq("is_public", true)
+              .order("sort_order", { ascending: true })
               .order("created_at", { ascending: true }),
             supabase
               .from("wavon_availability_rules")
@@ -136,7 +164,9 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
               .eq("business_id", id),
             supabase
               .from("wavon_reservations")
-              .select("id,client_name,client_id,service_id,start_at,end_at,status,created_at")
+              .select(
+                "id,client_name,client_id,service_id,start_at,end_at,duration_minutes,buffer_before_minutes,buffer_after_minutes,status,created_at"
+              )
               .eq("business_id", id)
               .order("start_at", { ascending: true }),
           ]);
@@ -193,6 +223,13 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
               durationMin: s.duration_minutes,
               price: s.price,
               description: s.description ?? "",
+              isActive: Boolean(s.is_active ?? true),
+              isPublic: Boolean(s.is_public ?? true),
+              color: s.color ?? null,
+              bufferBeforeMin: Math.max(0, s.buffer_before_minutes ?? 0),
+              bufferAfterMin: Math.max(0, s.buffer_after_minutes ?? 0),
+              bookingNoticeHours: s.booking_notice_hours ?? null,
+              sortOrder: s.sort_order ?? 0,
             })
           ),
           clients: [],
@@ -203,17 +240,36 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
             serviceId: r.service_id,
             start: r.start_at,
             end: r.end_at,
+            durationMin: r.duration_minutes ?? 0,
+            bufferBeforeMin: r.buffer_before_minutes ?? 0,
+            bufferAfterMin: r.buffer_after_minutes ?? 0,
             status: r.status,
             createdAt: r.created_at,
           })),
           settings: {
             businessName: b.business_name ?? "",
-            address: "",
-            phone: "",
+            address: b.address ?? "",
+            phone: b.phone ?? "",
             publicSlug: b.public_slug ?? slug,
             minServiceDurationMin: dbSettings?.minimum_service_duration ?? 15,
-            bookingLeadHours: dbSettings?.minimum_notice_hours ?? 0,
+            minNoticeHours: dbSettings?.minimum_notice_hours ?? 0,
+            maxDaysInAdvance: dbSettings?.maximum_days_in_advance ?? 365,
+            slotIntervalMinutes: dbSettings?.slot_interval_minutes ?? 15,
+            minGapBetweenBookingsMinutes: 0,
+            sameDayBookingAllowed: dbSettings?.same_day_booking_allowed ?? true,
+            allowCancellation: true,
+            cancellationDeadlineHours: 0,
+            allowReschedule: true,
+            rescheduleDeadlineHours: 0,
             confirmationMode: dbSettings?.auto_confirm_reservations ? "auto" : "manual",
+            publicShowPhone: b.public_show_phone ?? true,
+            publicShowAddress: b.public_show_address ?? true,
+            publicShowDescription: b.public_show_description ?? true,
+            publicDescription: b.public_description ?? "",
+            publicWelcomeMessage: b.public_welcome_message ?? "",
+            publicAfterBookingMessage:
+              dbSettings?.public_after_booking_message ??
+              "Ta demande est enregistrée. À très bientôt.",
           },
           whatsappThreads: [],
         };
@@ -365,6 +421,9 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
           service_id: svc.id,
           start_at: start.toISOString(),
           end_at: end.toISOString(),
+          duration_minutes: svc.durationMin,
+          buffer_before_minutes: svc.bufferBeforeMin ?? 0,
+          buffer_after_minutes: svc.bufferAfterMin ?? 0,
           status,
         })
         .select("id,created_at")
@@ -384,6 +443,9 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
               serviceId: svc.id,
               start: start.toISOString(),
               end: end.toISOString(),
+              durationMin: svc.durationMin,
+              bufferBeforeMin: svc.bufferBeforeMin ?? 0,
+              bufferAfterMin: svc.bufferAfterMin ?? 0,
               status,
               createdAt: (createdRes as { created_at: string }).created_at,
             },
@@ -391,7 +453,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
         };
       });
 
-      setMsg("Ta demande est enregistrée. À très bientôt.");
+      setMsg(state.settings.publicAfterBookingMessage || "Ta demande est enregistrée. À très bientôt.");
     } catch (e) {
       if (process.env.NODE_ENV !== "production") {
         console.error("[public booking] submit error:", e);
@@ -413,8 +475,29 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
             {state.settings.businessName || publishedName || "Réservation"}
           </h1>
           <p className="mx-auto mt-2 max-w-md text-sm text-neutral-500">
-            Réserve un créneau en quelques étapes — simple et sécurisé.
+            {state.settings.publicWelcomeMessage?.trim()
+              ? state.settings.publicWelcomeMessage
+              : "Réserve un créneau en quelques étapes — simple et sécurisé."}
           </p>
+          {state.settings.publicShowDescription && state.settings.publicDescription?.trim() ? (
+            <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-neutral-400">
+              {state.settings.publicDescription}
+            </p>
+          ) : null}
+          {(state.settings.publicShowPhone || state.settings.publicShowAddress) ? (
+            <div className="mx-auto mt-4 flex max-w-md flex-wrap items-center justify-center gap-2 text-xs text-neutral-400">
+              {state.settings.publicShowPhone && state.settings.phone?.trim() ? (
+                <span className="rounded-full border border-neutral-200/90 bg-white px-3 py-1.5">
+                  {state.settings.phone}
+                </span>
+              ) : null}
+              {state.settings.publicShowAddress && state.settings.address?.trim() ? (
+                <span className="rounded-full border border-neutral-200/90 bg-white px-3 py-1.5">
+                  {state.settings.address}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
         </header>
 
         <div className="mx-auto w-full max-w-lg flex-1">

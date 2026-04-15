@@ -4,7 +4,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -62,12 +61,7 @@ type I18nProviderProps = {
 };
 
 export function I18nProvider({ children }: I18nProviderProps) {
-  const [locale, setLocaleState] = useState<SupportedLocale>(DEFAULT_LOCALE);
-
-  useEffect(() => {
-    const stored = getStoredLocale();
-    if (stored) setLocaleState(stored);
-  }, []);
+  const [locale, setLocaleState] = useState<SupportedLocale>(() => getStoredLocale() ?? DEFAULT_LOCALE);
 
   const setLocale = useCallback((newLocale: SupportedLocale) => {
     setLocaleState(newLocale);

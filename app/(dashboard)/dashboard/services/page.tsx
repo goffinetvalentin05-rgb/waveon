@@ -27,6 +27,11 @@ export default function ServicesPage() {
   const [durationMin, setDurationMin] = useState(30);
   const [price, setPrice] = useState(30);
   const [description, setDescription] = useState("");
+  const [isActive, setIsActive] = useState(true);
+  const [isPublic, setIsPublic] = useState(true);
+  const [bufferBeforeMin, setBufferBeforeMin] = useState(0);
+  const [bufferAfterMin, setBufferAfterMin] = useState(0);
+  const [bookingNoticeHours, setBookingNoticeHours] = useState<string>("");
 
   const openCreate = () => {
     setEditing(null);
@@ -34,6 +39,11 @@ export default function ServicesPage() {
     setDurationMin(30);
     setPrice(30);
     setDescription("");
+    setIsActive(true);
+    setIsPublic(true);
+    setBufferBeforeMin(0);
+    setBufferAfterMin(0);
+    setBookingNoticeHours("");
     setOpen(true);
   };
 
@@ -43,6 +53,13 @@ export default function ServicesPage() {
     setDurationMin(s.durationMin);
     setPrice(s.price);
     setDescription(s.description);
+    setIsActive(Boolean(s.isActive));
+    setIsPublic(Boolean(s.isPublic));
+    setBufferBeforeMin(Math.max(0, s.bufferBeforeMin ?? 0));
+    setBufferAfterMin(Math.max(0, s.bufferAfterMin ?? 0));
+    setBookingNoticeHours(
+      s.bookingNoticeHours === null || s.bookingNoticeHours === undefined ? "" : String(s.bookingNoticeHours)
+    );
     setOpen(true);
   };
 
@@ -64,14 +81,28 @@ export default function ServicesPage() {
         durationMin,
         price,
         description: description.trim(),
+        isActive,
+        isPublic,
+        bufferBeforeMin,
+        bufferAfterMin,
+        bookingNoticeHours: bookingNoticeHours.trim() === "" ? null : Math.max(0, Number(bookingNoticeHours) || 0),
       });
       toast.push({ message: "Service mis à jour." });
     } else {
+      const nextOrder =
+        state.services.length === 0 ? 0 : Math.max(...state.services.map((x) => x.sortOrder ?? 0)) + 1;
       addService({
         name: name.trim(),
         durationMin,
         price,
         description: description.trim(),
+        isActive,
+        isPublic,
+        bufferBeforeMin,
+        bufferAfterMin,
+        bookingNoticeHours: bookingNoticeHours.trim() === "" ? null : Math.max(0, Number(bookingNoticeHours) || 0),
+        color: null,
+        sortOrder: nextOrder,
       });
       toast.push({ message: "Service créé." });
     }
@@ -113,9 +144,90 @@ export default function ServicesPage() {
             </button>
           </div>
         ) : (
-          state.services.map((s) => (
+          state.services.map((s, idx) => (
             <article key={s.id} className={cardClass}>
-              <h2 className="text-lg font-semibold tracking-tight text-neutral-950">{s.name}</h2>
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="truncate text-lg font-semibold tracking-tight text-neutral-950">{s.name}</h2>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                    <span
+                      className={`rounded-full border px-2.5 py-1 font-medium ${
+                        s.isActive
+                          ? "border-emerald-200/80 bg-emerald-50 text-emerald-900"
+                          : "border-neutral-200/90 bg-neutral-50 text-neutral-600"
+                      }`}
+                    >
+                      {s.isActive ? "Actif" : "Inactif"}
+                    </span>
+                    <span
+                      className={`rounded-full border px-2.5 py-1 font-medium ${
+                        s.isPublic
+                          ? "border-neutral-200/90 bg-white text-neutral-800"
+                          : "border-neutral-200/90 bg-neutral-50 text-neutral-500"
+                      }`}
+                    >
+                      {s.isPublic ? "Public" : "Masqué"}
+                    </span>
+                    {(s.bufferBeforeMin ?? 0) > 0 || (s.bufferAfterMin ?? 0) > 0 ? (
+                      <span className="rounded-full border border-neutral-200/90 bg-neutral-50 px-2.5 py-1 font-medium text-neutral-700">
+                        Buffer {s.bufferBeforeMin ?? 0} / {s.bufferAfterMin ?? 0} min
+                      </span>
+                    ) : null}
+                    {s.bookingNoticeHours !== null && s.bookingNoticeHours !== undefined ? (
+                      <span className="rounded-full border border-neutral-200/90 bg-neutral-50 px-2.5 py-1 font-medium text-neutral-700">
+                        Préavis {s.bookingNoticeHours}h
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className={btnGhostClass + " min-h-9 px-3 text-xs"}
+                      onClick={() => updateService(s.id, { isActive: !s.isActive })}
+                    >
+                      {s.isActive ? "Désactiver" : "Activer"}
+                    </button>
+                    <button
+                      type="button"
+                      className={btnGhostClass + " min-h-9 px-3 text-xs"}
+                      onClick={() => updateService(s.id, { isPublic: !s.isPublic })}
+                    >
+                      {s.isPublic ? "Masquer" : "Publier"}
+                    </button>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className={btnGhostClass + " min-h-9 px-3 text-xs"}
+                      disabled={idx === 0}
+                      onClick={() => {
+                        const prev = state.services[idx - 1];
+                        if (!prev) return;
+                        updateService(s.id, { sortOrder: (prev.sortOrder ?? 0) });
+                        updateService(prev.id, { sortOrder: (s.sortOrder ?? 0) });
+                      }}
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      className={btnGhostClass + " min-h-9 px-3 text-xs"}
+                      disabled={idx === state.services.length - 1}
+                      onClick={() => {
+                        const next = state.services[idx + 1];
+                        if (!next) return;
+                        updateService(s.id, { sortOrder: (next.sortOrder ?? 0) });
+                        updateService(next.id, { sortOrder: (s.sortOrder ?? 0) });
+                      }}
+                    >
+                      ↓
+                    </button>
+                  </div>
+                </div>
+              </div>
               <p className="mt-2 text-sm leading-relaxed text-neutral-500">
                 {s.description || "Pas de description."}
               </p>
@@ -192,6 +304,62 @@ export default function ServicesPage() {
               />
             </div>
           </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="flex cursor-pointer items-center gap-3 text-sm text-neutral-700">
+              <input
+                type="checkbox"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
+                className="size-4 rounded border-neutral-300 text-neutral-950"
+              />
+              <span className="font-medium text-neutral-950">Actif</span>
+            </label>
+            <label className="flex cursor-pointer items-center gap-3 text-sm text-neutral-700">
+              <input
+                type="checkbox"
+                checked={isPublic}
+                onChange={(e) => setIsPublic(e.target.checked)}
+                className="size-4 rounded border-neutral-300 text-neutral-950"
+              />
+              <span className="font-medium text-neutral-950">Visible sur la page publique</span>
+            </label>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div>
+              <label className={labelClass}>Buffer avant (min)</label>
+              <input
+                type="number"
+                min={0}
+                step={5}
+                className={`${inputClass} mt-2`}
+                value={bufferBeforeMin}
+                onChange={(e) => setBufferBeforeMin(Math.max(0, Number(e.target.value) || 0))}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Buffer après (min)</label>
+              <input
+                type="number"
+                min={0}
+                step={5}
+                className={`${inputClass} mt-2`}
+                value={bufferAfterMin}
+                onChange={(e) => setBufferAfterMin(Math.max(0, Number(e.target.value) || 0))}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Préavis (heures)</label>
+              <input
+                type="number"
+                min={0}
+                step={1}
+                className={`${inputClass} mt-2`}
+                value={bookingNoticeHours}
+                onChange={(e) => setBookingNoticeHours(e.target.value)}
+                placeholder="(optionnel)"
+              />
+            </div>
+          </div>
           <div>
             <label className={labelClass}>Description</label>
             <textarea
@@ -200,6 +368,9 @@ export default function ServicesPage() {
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
+          <p className="text-xs leading-relaxed text-neutral-400">
+            La durée, les buffers et le préavis influencent directement les créneaux proposés sur la page publique.
+          </p>
         </div>
       </Modal>
     </div>

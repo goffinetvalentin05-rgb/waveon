@@ -34,6 +34,13 @@ export type Service = {
   durationMin: number;
   price: number;
   description: string;
+  isActive: boolean;
+  isPublic: boolean;
+  color?: string | null;
+  bufferBeforeMin: number;
+  bufferAfterMin: number;
+  bookingNoticeHours?: number | null;
+  sortOrder: number;
 };
 
 export type Client = {
@@ -50,6 +57,9 @@ export type Reservation = {
   serviceId: string;
   start: string; // ISO
   end: string; // ISO
+  durationMin: number;
+  bufferBeforeMin: number;
+  bufferAfterMin: number;
   status: ReservationStatus;
   createdAt: string;
 };
@@ -57,14 +67,38 @@ export type Reservation = {
 export type ConfirmationMode = "auto" | "manual";
 
 export type BusinessSettings = {
+  /** Identité */
   businessName: string;
   address: string;
   phone: string;
+  email?: string;
+  businessType?: string;
+  website?: string;
+  city?: string;
+  postalCode?: string;
   /** URL publique : /reserver/[publicSlug] */
   publicSlug: string;
+
+  /** Réservation */
   minServiceDurationMin: number;
-  bookingLeadHours: number;
+  minNoticeHours: number;
+  maxDaysInAdvance: number;
+  slotIntervalMinutes: number;
+  minGapBetweenBookingsMinutes: number;
+  sameDayBookingAllowed: boolean;
+  allowCancellation: boolean;
+  cancellationDeadlineHours: number;
+  allowReschedule: boolean;
+  rescheduleDeadlineHours: number;
   confirmationMode: ConfirmationMode;
+
+  /** Page publique */
+  publicDescription?: string;
+  publicWelcomeMessage?: string;
+  publicShowPhone: boolean;
+  publicShowAddress: boolean;
+  publicShowDescription: boolean;
+  publicAfterBookingMessage: string;
 };
 
 export type WhatsAppMessage = {
@@ -82,6 +116,16 @@ export type WhatsAppThread = {
   updatedAt: string;
 };
 
+export type EmailTemplateType = "confirmation" | "reminder" | "cancellation";
+
+export type EmailTemplate = {
+  id: string;
+  type: EmailTemplateType;
+  isEnabled: boolean;
+  subject: string;
+  body: string;
+};
+
 export type WavonState = {
   version: 1;
   weekly: Record<DayKey, WeeklyDaySchedule>;
@@ -93,5 +137,6 @@ export type WavonState = {
   clients: Client[];
   reservations: Reservation[];
   settings: BusinessSettings;
+  emailTemplates: EmailTemplate[];
   whatsappThreads: WhatsAppThread[];
 };

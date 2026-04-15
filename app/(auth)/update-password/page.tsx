@@ -27,7 +27,6 @@ const hasSupabaseConfig = Boolean(
 
 export default function UpdatePasswordPage() {
   const router = useRouter();
-  const [checking, setChecking] = useState(true);
   const [hasSession, setHasSession] = useState(false);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -35,11 +34,6 @@ export default function UpdatePasswordPage() {
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!hasSupabaseConfig) {
-      setChecking(false);
-      return;
-    }
-
     let cancelled = false;
 
     const readSession = () => {
@@ -57,13 +51,8 @@ export default function UpdatePasswordPage() {
       readSession();
     });
 
-    const t = window.setTimeout(() => {
-      if (!cancelled) setChecking(false);
-    }, 900);
-
     return () => {
       cancelled = true;
-      window.clearTimeout(t);
       subscription.unsubscribe();
     };
   }, []);
@@ -116,19 +105,6 @@ export default function UpdatePasswordPage() {
                 Retour à la connexion
               </Link>
             </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (checking) {
-    return (
-      <div className={authScreen}>
-        <div className={authMain}>
-          <div className={authCard}>
-            <BrandLogoLink brand={landingContent.brand} variant="header" />
-            <p className="mt-4 text-sm text-neutral-600">Vérification du lien…</p>
           </div>
         </div>
       </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Campaign, CampaignObjective, WheelItem } from "@/types/db";
 import RewardWheel, { type WheelSegment } from "./RewardWheel";
@@ -80,16 +81,32 @@ export default function PublicCampaignClient({
   objective,
   targetUrl,
   wheelItems,
-  baseParticipations = 100,
 }: PublicCampaignClientProps) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const [spinLoading, setSpinLoading] = useState(false);
-  const [clientToken, setClientToken] = useState<string | null>(null);
-  const [participationId, setParticipationId] = useState<string | null>(null);
+  const [clientToken] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    const stored = window.localStorage.getItem("waevon_client_token");
+    if (stored) return stored;
+    const newToken = crypto.randomUUID();
+    window.localStorage.setItem("waevon_client_token", newToken);
+    return newToken;
+  });
+  const [participationId, setParticipationId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return window.localStorage.getItem(`waevon_participation_${campaign.id}`);
+  });
   const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
-  const [isWheelUnlocked, setIsWheelUnlocked] = useState(false);
-  const [countdownSeconds, setCountdownSeconds] = useState<number | null>(null);
+  const [isWheelUnlocked, setIsWheelUnlocked] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(STORAGE_KEYS.wheelUnlocked(campaign.id)) === "true";
+  });
+  const [countdownSeconds, setCountdownSeconds] = useState<number | null>(() => {
+    const remainingMs = getRemainingDelayMs(campaign.id);
+    if (remainingMs == null) return null;
+    if (remainingMs <= 0) return null;
+    return Math.ceil(remainingMs / 1000);
+  });
   const [shouldAnimateSpin, setShouldAnimateSpin] = useState(false);
   const [hasSpun, setHasSpun] = useState(false);
   const visitedRef = useRef(false);
@@ -118,38 +135,6 @@ export default function PublicCampaignClient({
     countdownSeconds != null && countdownSeconds > 0;
 
   useEffect(() => {
-    const storedToken = window.localStorage.getItem("waevon_client_token");
-    if (storedToken) {
-      setClientToken(storedToken);
-      return;
-    }
-    const newToken = crypto.randomUUID();
-    window.localStorage.setItem("waevon_client_token", newToken);
-    setClientToken(newToken);
-  }, []);
-
-  useEffect(() => {
-    const unlocked = window.localStorage.getItem(STORAGE_KEYS.wheelUnlocked(campaign.id));
-    if (unlocked === "true") {
-      setIsWheelUnlocked(true);
-      setCountdownSeconds(null);
-      return;
-    }
-    const remainingMs = getRemainingDelayMs(campaign.id);
-    if (remainingMs === null) {
-      setCountdownSeconds(null);
-      return;
-    }
-    if (remainingMs <= 0) {
-      setIsWheelUnlocked(true);
-      window.localStorage.setItem(STORAGE_KEYS.wheelUnlocked(campaign.id), "true");
-      setCountdownSeconds(null);
-      return;
-    }
-    setCountdownSeconds(Math.ceil(remainingMs / 1000));
-  }, [campaign.id]);
-
-  useEffect(() => {
     if (countdownSeconds == null || countdownSeconds <= 0) return;
     const id = setInterval(() => {
       setCountdownSeconds((prev) => {
@@ -165,15 +150,6 @@ export default function PublicCampaignClient({
     }, 1000);
     return () => clearInterval(id);
   }, [campaign.id, countdownSeconds]);
-
-  useEffect(() => {
-    const stored = window.localStorage.getItem(
-      `waevon_participation_${campaign.id}`
-    );
-    if (stored) {
-      setParticipationId(stored);
-    }
-  }, [campaign.id]);
 
   useEffect(() => {
     if (!clientToken || visitedRef.current) return;
@@ -329,9 +305,11 @@ export default function PublicCampaignClient({
       <div className="mx-auto flex w-full max-w-sm flex-col items-center gap-8">
         <header className="flex flex-col items-center gap-2 text-center">
           {campaign.logo_url ? (
-            <img
+            <Image
               src={campaign.logo_url}
               alt=""
+              width={56}
+              height={56}
               className="h-14 w-14 rounded-full border-2 border-white object-cover shadow-md"
             />
           ) : null}

@@ -77,8 +77,8 @@ export function overlapsAnyReservation(
 ): boolean {
   return activeReservations(reservations).some((r) => {
     if (ignoreId && r.id === ignoreId) return false;
-    const rs = new Date(r.start);
-    const re = new Date(r.end);
+    const rs = addMinutes(new Date(r.start), -Math.max(0, r.bufferBeforeMin || 0));
+    const re = addMinutes(new Date(r.end), Math.max(0, r.bufferAfterMin || 0));
     return rangesOverlap(start, end, rs, re);
   });
 }
@@ -136,9 +136,27 @@ export function validateReservationWindow(
   if (service.durationMin < settings.minServiceDurationMin) {
     return `Durée du service inférieure au minimum configuré (${settings.minServiceDurationMin} min).`;
   }
-  const leadMs = settings.bookingLeadHours * 60 * 60 * 1000;
+  const notice = Math.max(
+    0,
+    service.bookingNoticeHours ?? settings.minNoticeHours ?? 0
+  );
+  const leadMs = notice * 60 * 60 * 1000;
   if (start.getTime() < Date.now() + leadMs) {
-    return `La première réservation possible est dans ${settings.bookingLeadHours} h (délai de réservation).`;
+    return `La première réservation possible est dans ${notice} h (délai de réservation).`;
+  }
+  if (!settings.sameDayBookingAllowed) {
+    const now = new Date();
+    const sameDay =
+      now.getFullYear() === start.getFullYear() &&
+      now.getMonth() === start.getMonth() &&
+      now.getDate() === start.getDate();
+    if (sameDay) return "La réservation le jour même n’est pas autorisée.";
+  }
+  if (settings.maxDaysInAdvance !== undefined && settings.maxDaysInAdvance >= 0) {
+    const maxMs = settings.maxDaysInAdvance * 24 * 60 * 60 * 1000;
+    if (start.getTime() > Date.now() + maxMs) {
+      return `La réservation est limitée à ${settings.maxDaysInAdvance} jours à l’avance.`;
+    }
   }
   return null;
 }
@@ -170,13 +188,13 @@ export function validateBooking(ctx: BookingValidationContext): string | null {
   }
   const win = validateReservationWindow(start, service, state.settings);
   if (win) return win;
-  if (overlapsAnyReservation(start, end, state.reservations, ignoreReservationId)) {
+  const busyStart = addMinutes(start, -Math.max(0, service.bufferBeforeMin || 0));
+  const busyEnd = addMinutes(end, Math.max(0, service.bufferAfterMin || 0));
+  if (overlapsAnyReservation(busyStart, busyEnd, state.reservations, ignoreReservationId)) {
     return "Chevauchement avec une autre réservation.";
   }
   return null;
 }
-
-const STEP = 15;
 
 export function getAvailableSlots(
   ymd: string,
@@ -197,6 +215,7 @@ export function getAvailableSlots(
 
   const slots: string[] = [];
   const duration = service.durationMin;
+  const step = Math.max(5, state.settings.slotIntervalMinutes || 15);
 
   for (const seg of segments) {
     let cur = timeToMinutes(seg.start);
@@ -213,7 +232,7 @@ export function getAvailableSlots(
       if (!err) {
         slots.push(minutesToTime(cur));
       }
-      cur += STEP;
+      cur += step;
     }
   }
   return slots;

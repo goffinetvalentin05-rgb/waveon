@@ -1,4 +1,5 @@
 create extension if not exists pgcrypto;
+create extension if not exists btree_gist;
 
 -- ==========================================================
 -- Wavon SaaS (multi-tenant simple via business_id)
@@ -8,9 +9,21 @@ create table if not exists public.wavon_businesses (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null unique references auth.users(id) on delete cascade,
   business_name text,
+  business_type text,
+  email text,
   public_slug text unique,
+  website text,
   phone text,
   address text,
+  city text,
+  postal_code text,
+  public_description text,
+  public_welcome_message text,
+  public_show_phone boolean not null default true,
+  public_show_address boolean not null default true,
+  public_show_description boolean not null default true,
+  public_logo_url text,
+  public_accent_color text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint wavon_public_slug_format check (
@@ -19,18 +32,37 @@ create table if not exists public.wavon_businesses (
   )
 );
 
+-- Legacy-ish name kept, but now acts as "booking settings"
 create table if not exists public.wavon_settings (
   id uuid primary key default gen_random_uuid(),
   business_id uuid not null unique references public.wavon_businesses(id) on delete cascade,
-  minimum_notice_hours int not null default 0,
-  minimum_service_duration int not null default 15,
+  -- Booking rules
   auto_confirm_reservations boolean not null default false,
+  minimum_notice_hours int not null default 0,
+  maximum_days_in_advance int not null default 365,
+  slot_interval_minutes int not null default 15,
+  minimum_gap_between_bookings int not null default 0,
+  allow_cancellation boolean not null default true,
+  cancellation_deadline_hours int not null default 0,
+  allow_reschedule boolean not null default true,
+  reschedule_deadline_hours int not null default 0,
+  same_day_booking_allowed boolean not null default true,
+  -- Availability
   availability_mode text not null default 'fixed',
+  -- Minimums (keep for compatibility)
+  minimum_service_duration int not null default 15,
+  -- Public booking UI message
+  public_after_booking_message text not null default 'Ta demande est enregistrée. À très bientôt.',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint wavon_availability_mode_check check (availability_mode in ('fixed', 'custom')),
   constraint wavon_minimum_notice_hours_check check (minimum_notice_hours >= 0),
-  constraint wavon_minimum_service_duration_check check (minimum_service_duration >= 5)
+  constraint wavon_minimum_service_duration_check check (minimum_service_duration >= 5),
+  constraint wavon_maximum_days_in_advance_check check (maximum_days_in_advance >= 0),
+  constraint wavon_slot_interval_minutes_check check (slot_interval_minutes in (5, 10, 15, 20, 30, 60)),
+  constraint wavon_minimum_gap_between_bookings_check check (minimum_gap_between_bookings >= 0),
+  constraint wavon_cancellation_deadline_hours_check check (cancellation_deadline_hours >= 0),
+  constraint wavon_reschedule_deadline_hours_check check (reschedule_deadline_hours >= 0)
 );
 
 create table if not exists public.wavon_services (
@@ -40,10 +72,20 @@ create table if not exists public.wavon_services (
   duration_minutes int not null,
   price int not null default 0,
   description text not null default '',
+  is_active boolean not null default true,
+  is_public boolean not null default true,
+  color text,
+  buffer_before_minutes int not null default 0,
+  buffer_after_minutes int not null default 0,
+  booking_notice_hours int,
+  sort_order int not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint wavon_service_duration_check check (duration_minutes >= 5),
-  constraint wavon_service_price_check check (price >= 0)
+  constraint wavon_service_price_check check (price >= 0),
+  constraint wavon_service_buffer_before_check check (buffer_before_minutes >= 0),
+  constraint wavon_service_buffer_after_check check (buffer_after_minutes >= 0),
+  constraint wavon_service_booking_notice_hours_check check (booking_notice_hours is null or booking_notice_hours >= 0)
 );
 
 create table if not exists public.wavon_clients (
@@ -71,12 +113,100 @@ create table if not exists public.wavon_reservations (
   service_id uuid not null references public.wavon_services(id) on delete restrict,
   start_at timestamptz not null,
   end_at timestamptz not null,
+  -- Snapshot of booking parameters at time of booking (for robust overlap checks)
+  duration_minutes int not null default 0,
+  buffer_before_minutes int not null default 0,
+  buffer_after_minutes int not null default 0,
+  busy_range tstzrange,
   status public.wavon_reservation_status not null default 'pending',
   notes text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint wavon_reservation_time_check check (end_at > start_at)
+  constraint wavon_reservation_time_check check (end_at > start_at),
+  constraint wavon_reservation_duration_check check (duration_minutes >= 0),
+  constraint wavon_reservation_buffers_check check (buffer_before_minutes >= 0 and buffer_after_minutes >= 0)
 );
+
+-- Prevent overlapping reservations per business (confirmed + pending block)
+-- Uses the generated busy_range which includes buffers.
+do $$ begin
+  alter table public.wavon_reservations
+    add constraint wavon_reservations_no_overlap
+    exclude using gist (
+      business_id with =,
+      busy_range with &&
+    )
+    where (status in ('confirmed','pending'));
+exception
+  when duplicate_object then null;
+end $$;
+
+create index if not exists wavon_reservations_busy_range_gist
+  on public.wavon_reservations using gist (business_id, busy_range);
+
+create or replace function public.wavon_set_reservation_busy_range()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.busy_range :=
+    tstzrange(
+      new.start_at - (greatest(0, new.buffer_before_minutes) * interval '1 minute'),
+      new.end_at + (greatest(0, new.buffer_after_minutes) * interval '1 minute'),
+      '[)'
+    );
+  return new;
+end;
+$$;
+
+drop trigger if exists wavon_reservations_set_busy_range on public.wavon_reservations;
+create trigger wavon_reservations_set_busy_range
+before insert or update of start_at, end_at, buffer_before_minutes, buffer_after_minutes
+on public.wavon_reservations
+for each row execute function public.wavon_set_reservation_busy_range();
+
+-- Enforce service belongs to business + compute end_at if duration provided
+create or replace function public.wavon_reservation_guard()
+returns trigger
+language plpgsql
+as $$
+declare
+  svc public.wavon_services%rowtype;
+begin
+  select * into svc from public.wavon_services where id = new.service_id;
+  if not found then
+    raise exception 'Service introuvable';
+  end if;
+  if svc.business_id <> new.business_id then
+    raise exception 'Service hors business';
+  end if;
+
+  -- Snapshot duration/buffers from service if not explicitly set
+  if new.duration_minutes is null or new.duration_minutes <= 0 then
+    new.duration_minutes := svc.duration_minutes;
+  end if;
+  if new.buffer_before_minutes is null then
+    new.buffer_before_minutes := svc.buffer_before_minutes;
+  end if;
+  if new.buffer_after_minutes is null then
+    new.buffer_after_minutes := svc.buffer_after_minutes;
+  end if;
+  new.buffer_before_minutes := greatest(0, new.buffer_before_minutes);
+  new.buffer_after_minutes := greatest(0, new.buffer_after_minutes);
+
+  -- If end_at not coherent, recompute from duration
+  if new.end_at is null or new.end_at <= new.start_at then
+    new.end_at := new.start_at + make_interval(mins => new.duration_minutes);
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists wavon_reservations_guard on public.wavon_reservations;
+create trigger wavon_reservations_guard
+before insert or update on public.wavon_reservations
+for each row execute function public.wavon_reservation_guard();
 
 -- Weekly availability with multiple segments per day.
 -- segments is jsonb array of objects: [{ "start": "09:00", "end": "12:00" }, ...]
@@ -111,6 +241,25 @@ create table if not exists public.wavon_blocked_dates (
   reason text,
   created_at timestamptz not null default now(),
   unique (business_id, blocked_date)
+);
+
+-- Email templates stored per business (used by future email sender / UI now)
+do $$ begin
+  create type public.wavon_email_template_type as enum ('confirmation','reminder','cancellation');
+exception
+  when duplicate_object then null;
+end $$;
+
+create table if not exists public.wavon_email_templates (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references public.wavon_businesses(id) on delete cascade,
+  type public.wavon_email_template_type not null,
+  is_enabled boolean not null default true,
+  subject text not null default '',
+  body text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (business_id, type)
 );
 
 -- Helpful indexes
@@ -176,6 +325,11 @@ create trigger wavon_custom_days_set_updated_at
 before update on public.wavon_custom_days
 for each row execute function public.wavon_set_updated_at();
 
+drop trigger if exists wavon_email_templates_set_updated_at on public.wavon_email_templates;
+create trigger wavon_email_templates_set_updated_at
+before update on public.wavon_email_templates
+for each row execute function public.wavon_set_updated_at();
+
 -- ==========================================================
 -- Minimal initialization for new accounts (NO demo data)
 -- Creates a business + settings only.
@@ -198,6 +352,14 @@ begin
   insert into public.wavon_settings (business_id)
   values (v_business_id)
   on conflict (business_id) do nothing;
+
+  -- Ensure email templates exist (empty by default)
+  insert into public.wavon_email_templates (business_id, type, is_enabled, subject, body)
+  values
+    (v_business_id, 'confirmation', true, 'Confirmation de votre réservation', 'Bonjour {{client_name}},\n\nVotre réservation chez {{business_name}} pour {{service_name}} est confirmée le {{reservation_date}} à {{reservation_time}}.\n\n{{business_phone}}'),
+    (v_business_id, 'reminder', false, 'Rappel de votre rendez-vous', 'Bonjour {{client_name}},\n\nRappel: {{service_name}} le {{reservation_date}} à {{reservation_time}} chez {{business_name}}.\n\n{{business_phone}}'),
+    (v_business_id, 'cancellation', true, 'Annulation de votre réservation', 'Bonjour {{client_name}},\n\nVotre réservation chez {{business_name}} pour {{service_name}} le {{reservation_date}} à {{reservation_time}} a été annulée.\n\n{{business_phone}}')
+  on conflict (business_id, type) do nothing;
 
   -- Ensure 7 availability rows exist (all closed by default)
   insert into public.wavon_availability_rules (business_id, day_of_week, is_open, segments)
@@ -226,6 +388,7 @@ alter table public.wavon_reservations enable row level security;
 alter table public.wavon_availability_rules enable row level security;
 alter table public.wavon_custom_days enable row level security;
 alter table public.wavon_blocked_dates enable row level security;
+alter table public.wavon_email_templates enable row level security;
 
 -- Businesses: owner only
 drop policy if exists "Wavon businesses selectable by owner" on public.wavon_businesses;
@@ -323,6 +486,14 @@ create policy "Wavon blocked dates owner CRUD"
   using (public.wavon_is_business_owner(business_id))
   with check (public.wavon_is_business_owner(business_id));
 
+-- Email templates
+drop policy if exists "Wavon email templates owner CRUD" on public.wavon_email_templates;
+create policy "Wavon email templates owner CRUD"
+  on public.wavon_email_templates
+  for all
+  using (public.wavon_is_business_owner(business_id))
+  with check (public.wavon_is_business_owner(business_id));
+
 -- ==========================================================
 -- Public booking access (read-only via public_slug)
 -- ==========================================================
@@ -340,9 +511,25 @@ create policy "Wavon services public read for published business"
   on public.wavon_services
   for select
   using (
+    is_public = true
+    and is_active = true
+    and
     exists (
       select 1 from public.wavon_businesses b
       where b.id = wavon_services.business_id
+        and b.public_slug is not null
+    )
+  );
+
+-- Public can read email templates & some public business fields (for future)
+drop policy if exists "Wavon email templates public read for published business" on public.wavon_email_templates;
+create policy "Wavon email templates public read for published business"
+  on public.wavon_email_templates
+  for select
+  using (
+    exists (
+      select 1 from public.wavon_businesses b
+      where b.id = wavon_email_templates.business_id
         and b.public_slug is not null
     )
   );
