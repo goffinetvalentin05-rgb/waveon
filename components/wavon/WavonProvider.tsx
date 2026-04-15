@@ -506,7 +506,11 @@ export function WavonProvider({
     };
   }, [userId]);
 
-  const setWeeklyDay = useCallback(async (day: DayKey, patch: WeeklyDaySchedule) => {
+  const setWeeklyDay = useCallback(
+    async (
+      day: DayKey,
+      patch: WeeklyDaySchedule
+    ): Promise<{ ok: true } | { ok: false; error: string }> => {
     // Optimistic UI update, then hard-confirm in DB.
     setState((prev) => ({ ...prev, weekly: { ...prev.weekly, [day]: patch } }));
     if (!businessId) {
@@ -614,7 +618,9 @@ export function WavonProvider({
     }
 
     return { ok: true };
-  }, [businessId]);
+    },
+    [businessId]
+  );
 
   const setAvailabilityMode = useCallback((mode: WavonState["availabilityMode"]) => {
     setState((prev) => ({ ...prev, availabilityMode: mode }));
