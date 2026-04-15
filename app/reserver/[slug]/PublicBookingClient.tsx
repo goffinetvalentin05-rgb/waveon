@@ -22,6 +22,9 @@ type DbBusiness = {
   public_slug: string | null;
   public_welcome_message?: string | null;
   public_description?: string | null;
+  public_display_name?: string | null;
+  public_logo_url?: string | null;
+  public_cover_url?: string | null;
   public_show_phone?: boolean | null;
   public_show_address?: boolean | null;
   public_show_description?: boolean | null;
@@ -123,7 +126,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
         const { data: business, error: businessErr } = await supabase
           .from("wavon_businesses")
           .select(
-            "id,business_name,public_slug,public_welcome_message,public_description,public_show_phone,public_show_address,public_show_description,phone,address"
+            "id,business_name,public_slug,public_welcome_message,public_description,public_display_name,public_logo_url,public_cover_url,public_show_phone,public_show_address,public_show_description,phone,address"
           )
           .eq("public_slug", slug)
           .maybeSingle();
@@ -267,6 +270,9 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
             publicShowDescription: b.public_show_description ?? true,
             publicDescription: b.public_description ?? "",
             publicWelcomeMessage: b.public_welcome_message ?? "",
+            publicDisplayName: b.public_display_name ?? "",
+            publicLogoUrl: b.public_logo_url ?? "",
+            publicCoverUrl: b.public_cover_url ?? "",
             publicAfterBookingMessage:
               dbSettings?.public_after_booking_message ??
               "Ta demande est enregistrée. À très bientôt.",
@@ -468,37 +474,78 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
   return (
     <div className="min-h-screen bg-[#f7f7f5] text-neutral-950">
       <div className={`${landingSection} flex min-h-screen flex-col py-10 sm:py-16`}>
-        <header className="mb-10 text-center sm:mb-12">
-          <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl border border-neutral-200/90 bg-white shadow-[0_2px_12px_-4px_rgba(0,0,0,0.06)] sm:size-16">
-            <Image src="/waevon-logo.png" alt="" width={36} height={36} className="rounded-lg" />
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-neutral-950 sm:text-[1.65rem]">
-            {state.settings.businessName || publishedName || "Réservation"}
-          </h1>
-          <p className="mx-auto mt-2 max-w-md text-sm text-neutral-500">
-            {state.settings.publicWelcomeMessage?.trim()
-              ? state.settings.publicWelcomeMessage
-              : "Réserve un créneau en quelques étapes — simple et sécurisé."}
-          </p>
-          {state.settings.publicShowDescription && state.settings.publicDescription?.trim() ? (
-            <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-neutral-400">
-              {state.settings.publicDescription}
-            </p>
-          ) : null}
-          {(state.settings.publicShowPhone || state.settings.publicShowAddress) ? (
-            <div className="mx-auto mt-4 flex max-w-md flex-wrap items-center justify-center gap-2 text-xs text-neutral-400">
-              {state.settings.publicShowPhone && state.settings.phone?.trim() ? (
-                <span className="rounded-full border border-neutral-200/90 bg-white px-3 py-1.5">
-                  {state.settings.phone}
-                </span>
-              ) : null}
-              {state.settings.publicShowAddress && state.settings.address?.trim() ? (
-                <span className="rounded-full border border-neutral-200/90 bg-white px-3 py-1.5">
-                  {state.settings.address}
-                </span>
-              ) : null}
+        <header className="mb-10 sm:mb-12">
+          <div className="overflow-hidden rounded-3xl border border-neutral-200/90 bg-white shadow-[0_2px_20px_-6px_rgba(0,0,0,0.08)]">
+            {state.settings.publicCoverUrl?.trim() ? (
+              <div className="relative h-28 w-full sm:h-36">
+                <Image
+                  src={state.settings.publicCoverUrl}
+                  alt=""
+                  fill
+                  className="object-cover"
+                  priority
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-transparent" />
+              </div>
+            ) : (
+              <div className="h-10 bg-neutral-50 sm:h-12" />
+            )}
+
+            <div className="px-6 pb-6 pt-5 sm:px-8 sm:pb-8">
+              <div className="-mt-10 flex flex-col items-center text-center sm:-mt-12">
+                <div className="relative mb-4 flex size-20 items-center justify-center overflow-hidden rounded-3xl border border-neutral-200/90 bg-white shadow-[0_12px_36px_-18px_rgba(0,0,0,0.35)] sm:size-24">
+                  {state.settings.publicLogoUrl?.trim() ? (
+                    <Image src={state.settings.publicLogoUrl} alt="" fill className="object-cover" />
+                  ) : (
+                    <span className="text-lg font-semibold text-neutral-600">
+                      {(
+                        (state.settings.publicDisplayName ||
+                          state.settings.businessName ||
+                          publishedName ||
+                          "?")
+                          .trim()
+                          .slice(0, 2) || "?"
+                      ).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+
+                <h1 className="text-2xl font-semibold tracking-tight text-neutral-950 sm:text-[1.65rem]">
+                  {state.settings.publicDisplayName?.trim() ||
+                    state.settings.businessName ||
+                    publishedName ||
+                    "Réservation"}
+                </h1>
+
+                <p className="mx-auto mt-2 max-w-md text-sm text-neutral-500">
+                  {state.settings.publicWelcomeMessage?.trim()
+                    ? state.settings.publicWelcomeMessage
+                    : "Choisis ta prestation, puis ton créneau. C’est rapide et sécurisé."}
+                </p>
+
+                {state.settings.publicShowDescription && state.settings.publicDescription?.trim() ? (
+                  <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-neutral-400">
+                    {state.settings.publicDescription}
+                  </p>
+                ) : null}
+
+                {(state.settings.publicShowPhone || state.settings.publicShowAddress) ? (
+                  <div className="mx-auto mt-4 flex max-w-md flex-wrap items-center justify-center gap-2 text-xs text-neutral-400">
+                    {state.settings.publicShowPhone && state.settings.phone?.trim() ? (
+                      <span className="rounded-full border border-neutral-200/90 bg-white px-3 py-1.5">
+                        {state.settings.phone}
+                      </span>
+                    ) : null}
+                    {state.settings.publicShowAddress && state.settings.address?.trim() ? (
+                      <span className="rounded-full border border-neutral-200/90 bg-white px-3 py-1.5">
+                        {state.settings.address}
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
             </div>
-          ) : null}
+          </div>
         </header>
 
         <div className="mx-auto w-full max-w-lg flex-1">

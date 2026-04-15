@@ -37,6 +37,11 @@ type DbBusiness = {
   postal_code: string | null;
   public_description: string | null;
   public_welcome_message: string | null;
+  public_display_name: string | null;
+  public_logo_url: string | null;
+  public_logo_path: string | null;
+  public_cover_url: string | null;
+  public_cover_path: string | null;
   public_show_phone: boolean | null;
   public_show_address: boolean | null;
   public_show_description: boolean | null;
@@ -205,6 +210,7 @@ function segmentsFromJson(value: unknown): { start: string; end: string }[] {
 type Ctx = {
   ready: boolean;
   state: WavonState;
+  businessId: string | null;
   setWeeklyDay: (day: DayKey, patch: WeeklyDaySchedule) => void;
   setAvailabilityMode: (mode: WavonState["availabilityMode"]) => void;
   setCustomDays: (days: CustomDaySlot[]) => void;
@@ -270,7 +276,7 @@ export function WavonProvider({
       const { data: business, error: businessErr } = await supabase
         .from("wavon_businesses")
         .select(
-          "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_show_phone,public_show_address,public_show_description"
+          "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description"
         )
         .eq("user_id", userId)
         .maybeSingle();
@@ -283,7 +289,7 @@ export function WavonProvider({
             .from("wavon_businesses")
             .insert({ user_id: userId })
             .select(
-              "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_show_phone,public_show_address,public_show_description"
+              "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description"
             )
             .single();
           if (error) throw error;
@@ -453,6 +459,11 @@ export function WavonProvider({
           postalCode: ensuredBusiness.postal_code ?? "",
           publicDescription: ensuredBusiness.public_description ?? "",
           publicWelcomeMessage: ensuredBusiness.public_welcome_message ?? "",
+          publicDisplayName: ensuredBusiness.public_display_name ?? "",
+          publicLogoUrl: ensuredBusiness.public_logo_url ?? "",
+          publicLogoPath: ensuredBusiness.public_logo_path ?? "",
+          publicCoverUrl: ensuredBusiness.public_cover_url ?? "",
+          publicCoverPath: ensuredBusiness.public_cover_path ?? "",
           publicShowPhone: ensuredBusiness.public_show_phone ?? true,
           publicShowAddress: ensuredBusiness.public_show_address ?? true,
           publicShowDescription: ensuredBusiness.public_show_description ?? true,
@@ -907,6 +918,11 @@ export function WavonProvider({
       if (patch.postalCode !== undefined) businessPatch.postal_code = patch.postalCode.trim() || null;
       if (patch.publicDescription !== undefined) businessPatch.public_description = patch.publicDescription.trim() || null;
       if (patch.publicWelcomeMessage !== undefined) businessPatch.public_welcome_message = patch.publicWelcomeMessage.trim() || null;
+      if (patch.publicDisplayName !== undefined) businessPatch.public_display_name = patch.publicDisplayName.trim() || null;
+      if (patch.publicLogoUrl !== undefined) businessPatch.public_logo_url = patch.publicLogoUrl.trim() || null;
+      if (patch.publicLogoPath !== undefined) businessPatch.public_logo_path = patch.publicLogoPath.trim() || null;
+      if (patch.publicCoverUrl !== undefined) businessPatch.public_cover_url = patch.publicCoverUrl.trim() || null;
+      if (patch.publicCoverPath !== undefined) businessPatch.public_cover_path = patch.publicCoverPath.trim() || null;
       if (patch.publicShowPhone !== undefined) businessPatch.public_show_phone = Boolean(patch.publicShowPhone);
       if (patch.publicShowAddress !== undefined) businessPatch.public_show_address = Boolean(patch.publicShowAddress);
       if (patch.publicShowDescription !== undefined) businessPatch.public_show_description = Boolean(patch.publicShowDescription);
@@ -1017,6 +1033,7 @@ export function WavonProvider({
     () => ({
       ready,
       state,
+      businessId,
       setWeeklyDay,
       setAvailabilityMode,
       setCustomDays,
@@ -1037,6 +1054,7 @@ export function WavonProvider({
     [
       ready,
       state,
+      businessId,
       setWeeklyDay,
       setAvailabilityMode,
       setCustomDays,

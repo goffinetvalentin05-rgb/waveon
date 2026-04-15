@@ -2,23 +2,27 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useWavon } from "@/components/wavon/WavonProvider";
 import { PageHeader } from "@/components/wavon/ui/PageHeader";
 import { SectionCard } from "@/components/wavon/ui/SectionCard";
 import { useToast } from "@/components/wavon/Toast";
 import {
   btnPrimaryClass,
+  btnGhostClass,
   inputClass,
   labelClass,
   linkClass,
   spinnerClass,
 } from "@/lib/wavon/tokens";
+import { deleteBrandingAsset, uploadBrandingAsset } from "@/lib/wavon/storage";
 
 export default function ParametresPage() {
-  const { ready, state, patchSettings, upsertEmailTemplate } = useWavon();
+  const { ready, state, patchSettings, upsertEmailTemplate, businessId } = useWavon();
   const toast = useToast();
   const [saving, setSaving] = useState(false);
   const [templateType, setTemplateType] = useState<"confirmation" | "reminder" | "cancellation">("confirmation");
+  const [brandingLoading, setBrandingLoading] = useState<null | "logo" | "cover">(null);
 
   if (!ready) {
     return (
@@ -77,6 +81,7 @@ export default function ParametresPage() {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     patchSettings({
+      publicDisplayName: String(fd.get("publicDisplayName") ?? "").trim(),
       publicWelcomeMessage: String(fd.get("publicWelcomeMessage") ?? "").trim(),
       publicDescription: String(fd.get("publicDescription") ?? "").trim(),
       publicShowPhone: fd.get("publicShowPhone") === "on",
@@ -85,6 +90,63 @@ export default function ParametresPage() {
       publicAfterBookingMessage: String(fd.get("publicAfterBookingMessage") ?? "").trim(),
     });
     toast.push({ message: "Page publique mise à jour." });
+  };
+
+  const uploadAsset = async (kind: "logo" | "cover", file: File | null) => {
+    if (!businessId) {
+      toast.push({ kind: "error", message: "Business non initialisé." });
+      return;
+    }
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.push({ kind: "error", message: "Fichier invalide (image requise)." });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.push({ kind: "error", message: "Image trop lourde (max 5 Mo)." });
+      return;
+    }
+    setBrandingLoading(kind);
+    try {
+      const prevPath = kind === "logo" ? state.settings.publicLogoPath : state.settings.publicCoverPath;
+      const { path, publicUrl } = await uploadBrandingAsset({ businessId, kind, file });
+
+      patchSettings(
+        kind === "logo"
+          ? { publicLogoPath: path, publicLogoUrl: publicUrl }
+          : { publicCoverPath: path, publicCoverUrl: publicUrl }
+      );
+
+      // Best-effort delete old file after DB points to new one.
+      if (prevPath && prevPath !== path) {
+        await deleteBrandingAsset({ path: prevPath });
+      }
+      toast.push({ message: kind === "logo" ? "Logo mis à jour." : "Bannière mise à jour." });
+    } catch (e) {
+      if (process.env.NODE_ENV !== "production") console.error("[branding] upload error:", e);
+      toast.push({ kind: "error", message: "Upload impossible. Réessaie." });
+    } finally {
+      setBrandingLoading(null);
+    }
+  };
+
+  const removeAsset = async (kind: "logo" | "cover") => {
+    setBrandingLoading(kind);
+    try {
+      const path = kind === "logo" ? state.settings.publicLogoPath : state.settings.publicCoverPath;
+      if (path) await deleteBrandingAsset({ path });
+      patchSettings(
+        kind === "logo"
+          ? { publicLogoPath: "", publicLogoUrl: "" }
+          : { publicCoverPath: "", publicCoverUrl: "" }
+      );
+      toast.push({ message: kind === "logo" ? "Logo supprimé." : "Bannière supprimée." });
+    } catch (e) {
+      if (process.env.NODE_ENV !== "production") console.error("[branding] delete error:", e);
+      toast.push({ kind: "error", message: "Suppression impossible. Réessaie." });
+    } finally {
+      setBrandingLoading(null);
+    }
   };
 
   const slug = s.publicSlug?.trim() ?? "";
@@ -276,6 +338,102 @@ export default function ParametresPage() {
         description="Message d’accueil, description et texte après réservation. Simple, premium, et fidèle à ton activité."
       >
         <form className="grid max-w-2xl gap-6" onSubmit={onSubmitPublic}>
+          <div>
+            <label className={labelClass}>Nom affiché publiquement</label>
+            <input
+              name="publicDisplayName"
+              className={`${inputClass} mt-2`}
+              defaultValue={s.publicDisplayName ?? ""}
+              placeholder="Ex. Salon Jeanne"
+            />
+            <p className="mt-2 text-xs leading-relaxed text-neutral-400">
+              Si vide, on utilise le nom business.
+            </p>
+          </div>
+
+          <div className="grid gap-4">
+            <div className="rounded-3xl border border-neutral-200/90 bg-white p-5 shadow-[0_2px_16px_-6px_rgba(0,0,0,0.06)]">
+              <p className="text-sm font-semibold text-neutral-950">Branding</p>
+              <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+                Ces images s’affichent sur ta page publique. Remplace le branding Wavon par le tien.
+              </p>
+
+              <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                <div>
+                  <p className={labelClass}>Logo</p>
+                  <div className="mt-2 flex items-center gap-4">
+                    <div className="relative size-16 overflow-hidden rounded-2xl border border-neutral-200/90 bg-neutral-50">
+                      {s.publicLogoUrl ? (
+                        <Image src={s.publicLogoUrl} alt="" fill className="object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-neutral-500">
+                          {((s.publicDisplayName || s.businessName || "?").trim().slice(0, 2) || "?").toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className={`${btnPrimaryClass} w-fit cursor-pointer`}>
+                        {brandingLoading === "logo" ? "Upload…" : "Uploader"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => void uploadAsset("logo", e.target.files?.[0] ?? null)}
+                          disabled={brandingLoading !== null}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        className={`${btnGhostClass} w-fit`}
+                        onClick={() => void removeAsset("logo")}
+                        disabled={!s.publicLogoUrl || brandingLoading !== null}
+                      >
+                        Supprimer
+                      </button>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-xs text-neutral-400">PNG/JPG/WebP/SVG, max 5 Mo.</p>
+                </div>
+
+                <div>
+                  <p className={labelClass}>Bannière</p>
+                  <div className="mt-2 overflow-hidden rounded-2xl border border-neutral-200/90 bg-neutral-50">
+                    {s.publicCoverUrl ? (
+                      <div className="relative h-16 w-full">
+                        <Image src={s.publicCoverUrl} alt="" fill className="object-cover" />
+                      </div>
+                    ) : (
+                      <div className="flex h-16 w-full items-center justify-center text-xs text-neutral-400">
+                        Aucune bannière
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <label className={`${btnPrimaryClass} w-fit cursor-pointer`}>
+                      {brandingLoading === "cover" ? "Upload…" : "Uploader"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => void uploadAsset("cover", e.target.files?.[0] ?? null)}
+                        disabled={brandingLoading !== null}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className={`${btnGhostClass} w-fit`}
+                      onClick={() => void removeAsset("cover")}
+                      disabled={!s.publicCoverUrl || brandingLoading !== null}
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                  <p className="mt-2 text-xs text-neutral-400">Recommandé: image horizontale (ex. 1600×500).</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div>
             <label className={labelClass}>Message d’accueil</label>
             <input

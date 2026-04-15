@@ -93,8 +93,13 @@ export type BusinessSettings = {
   confirmationMode: ConfirmationMode;
 
   /** Page publique */
+  publicDisplayName?: string;
   publicDescription?: string;
   publicWelcomeMessage?: string;
+  publicLogoUrl?: string;
+  publicLogoPath?: string;
+  publicCoverUrl?: string;
+  publicCoverPath?: string;
   publicShowPhone: boolean;
   publicShowAddress: boolean;
   publicShowDescription: boolean;
