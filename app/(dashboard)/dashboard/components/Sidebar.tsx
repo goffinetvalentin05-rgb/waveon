@@ -14,6 +14,7 @@ const navItems = [
   { id: "services", label: "Services", href: "/dashboard/services" },
   { id: "clients", label: "Clients", href: "/dashboard/clients" },
   { id: "conversations", label: "Conversations", href: "/dashboard/conversations" },
+  { id: "diagnostics", label: "Diagnostics", href: "/dashboard/diagnostics" },
   { id: "settings", label: "Paramètres", href: "/dashboard/parametres" },
 ];
 

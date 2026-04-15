@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useWavon } from "@/components/wavon/WavonProvider";
 import { PageHeader } from "@/components/wavon/ui/PageHeader";
 import { useToast } from "@/components/wavon/Toast";
@@ -221,6 +221,12 @@ function DayEditor({
   const [enabled, setEnabled] = useState(value.enabled);
   const [segments, setSegments] = useState<TimeSegment[]>(value.segments);
 
+  // Keep editor in sync with DB-backed state when navigating/reloading.
+  useEffect(() => {
+    setEnabled(value.enabled);
+    setSegments(value.segments);
+  }, [value.enabled, value.segments]);
+
   return (
     <div className={cardClass}>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -280,7 +286,7 @@ function DayEditor({
       <button
         type="button"
         className={`${btnPrimaryClass} mt-5`}
-        onClick={() => onSave({ enabled, segments: enabled ? segments : [] })}
+        onClick={() => onSave({ enabled, segments })}
       >
         Enregistrer {label}
       </button>

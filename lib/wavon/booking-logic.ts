@@ -73,12 +73,20 @@ export function overlapsAnyReservation(
   start: Date,
   end: Date,
   reservations: Reservation[],
-  ignoreId?: string
+  ignoreId?: string,
+  minGapBetweenBookingsMinutes = 0
 ): boolean {
+  const gap = Math.max(0, minGapBetweenBookingsMinutes || 0);
   return activeReservations(reservations).some((r) => {
     if (ignoreId && r.id === ignoreId) return false;
-    const rs = addMinutes(new Date(r.start), -Math.max(0, r.bufferBeforeMin || 0));
-    const re = addMinutes(new Date(r.end), Math.max(0, r.bufferAfterMin || 0));
+    const rs = addMinutes(
+      new Date(r.start),
+      -Math.max(0, (r.bufferBeforeMin || 0) + gap)
+    );
+    const re = addMinutes(
+      new Date(r.end),
+      Math.max(0, (r.bufferAfterMin || 0) + gap)
+    );
     return rangesOverlap(start, end, rs, re);
   });
 }
@@ -92,7 +100,8 @@ function segmentsForDate(
 ): TimeSegment[] {
   if (mode === "custom") {
     const row = customDays.find((c) => c.date === ymd);
-    return row?.segments ?? [];
+    // If no custom day exists, fallback to weekly schedule.
+    if (row) return row.segments ?? [];
   }
   const day = weekly[dayKey];
   if (!day?.enabled) return [];
@@ -188,9 +197,24 @@ export function validateBooking(ctx: BookingValidationContext): string | null {
   }
   const win = validateReservationWindow(start, service, state.settings);
   if (win) return win;
-  const busyStart = addMinutes(start, -Math.max(0, service.bufferBeforeMin || 0));
-  const busyEnd = addMinutes(end, Math.max(0, service.bufferAfterMin || 0));
-  if (overlapsAnyReservation(busyStart, busyEnd, state.reservations, ignoreReservationId)) {
+  const gap = Math.max(0, state.settings.minGapBetweenBookingsMinutes || 0);
+  const busyStart = addMinutes(
+    start,
+    -Math.max(0, (service.bufferBeforeMin || 0) + gap)
+  );
+  const busyEnd = addMinutes(
+    end,
+    Math.max(0, (service.bufferAfterMin || 0) + gap)
+  );
+  if (
+    overlapsAnyReservation(
+      busyStart,
+      busyEnd,
+      state.reservations,
+      ignoreReservationId,
+      gap
+    )
+  ) {
     return "Chevauchement avec une autre réservation.";
   }
   return null;

@@ -5,9 +5,13 @@ import { useEffect, useMemo, useState } from "react";
 import {
   addMinutes,
   combineYmdTime,
+  dayKeyFromDate,
   getAvailableSlots,
+  parseYmd,
+  timeToMinutes,
   toYmd,
   validateBooking,
+  validateReservationWindow,
   weeklyDefault,
 } from "@/lib/wavon/booking-logic";
 import { formatPriceEUR } from "@/lib/wavon/format";
@@ -41,6 +45,7 @@ type DbSettings = {
   availability_mode: "fixed" | "custom";
   maximum_days_in_advance?: number;
   slot_interval_minutes?: number;
+  minimum_gap_between_bookings?: number;
   same_day_booking_allowed?: boolean;
   public_after_booking_message?: string | null;
 };
@@ -77,6 +82,11 @@ type DbReservation = {
 type DbWeeklyAvailability = {
   day_of_week: number;
   is_open: boolean;
+  segments: unknown;
+};
+
+type DbCustomDay = {
+  day: string; // date
   segments: unknown;
 };
 
@@ -139,12 +149,12 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
         const b = business as DbBusiness;
         const id = b.id;
 
-        const [settingsRes, servicesRes, weeklyRes, blockedRes, reservationsRes] =
+        const [settingsRes, servicesRes, weeklyRes, customDaysRes, blockedRes, reservationsRes] =
           await Promise.all([
             supabase
               .from("wavon_settings")
               .select(
-                "business_id,minimum_notice_hours,minimum_service_duration,auto_confirm_reservations,availability_mode,maximum_days_in_advance,slot_interval_minutes,same_day_booking_allowed,public_after_booking_message"
+                "business_id,minimum_notice_hours,minimum_service_duration,auto_confirm_reservations,availability_mode,maximum_days_in_advance,slot_interval_minutes,minimum_gap_between_bookings,same_day_booking_allowed,public_after_booking_message"
               )
               .eq("business_id", id)
               .maybeSingle(),
@@ -163,6 +173,10 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
               .select("day_of_week,is_open,segments")
               .eq("business_id", id),
             supabase
+              .from("wavon_custom_days")
+              .select("day,segments")
+              .eq("business_id", id),
+            supabase
               .from("wavon_blocked_dates")
               .select("blocked_date")
               .eq("business_id", id),
@@ -179,6 +193,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
           settingsRes.error ||
           servicesRes.error ||
           weeklyRes.error ||
+          customDaysRes.error ||
           blockedRes.error ||
           reservationsRes.error
         ) {
@@ -186,6 +201,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
             settingsRes.error ||
             servicesRes.error ||
             weeklyRes.error ||
+            customDaysRes.error ||
             blockedRes.error ||
             reservationsRes.error
           );
@@ -194,6 +210,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
         const dbSettings = (settingsRes.data as DbSettings | null) ?? null;
         const dbServices = (servicesRes.data as DbService[]) ?? [];
         const dbWeekly = (weeklyRes.data as DbWeeklyAvailability[]) ?? [];
+        const dbCustomDays = (customDaysRes.data as DbCustomDay[]) ?? [];
         const dbBlocked = (blockedRes.data as DbBlockedDate[]) ?? [];
         const dbReservations = (reservationsRes.data as DbReservation[]) ?? [];
 
@@ -211,14 +228,20 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
         for (const row of dbWeekly) {
           const k = dayKeyFromDow(row.day_of_week);
           const segs = segmentsFromJson(row.segments);
-          weekly[k] = { enabled: Boolean(row.is_open), segments: Boolean(row.is_open) ? segs : [] };
+          // Preserve segments even when closed (useful when toggling days)
+          weekly[k] = { enabled: Boolean(row.is_open), segments: segs };
         }
+
+        const customDays = (dbCustomDays ?? []).map((r) => ({
+          date: String(r.day),
+          segments: segmentsFromJson(r.segments),
+        }));
 
         const next: WavonState = {
           version: 1,
           weekly,
           availabilityMode: dbSettings?.availability_mode ?? "fixed",
-          customDays: [],
+          customDays,
           blockedDates: dbBlocked.map((x) => String(x.blocked_date)).sort(),
           services: dbServices.map(
             (s): Service => ({
@@ -259,7 +282,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
             minNoticeHours: dbSettings?.minimum_notice_hours ?? 0,
             maxDaysInAdvance: dbSettings?.maximum_days_in_advance ?? 365,
             slotIntervalMinutes: dbSettings?.slot_interval_minutes ?? 15,
-            minGapBetweenBookingsMinutes: 0,
+            minGapBetweenBookingsMinutes: dbSettings?.minimum_gap_between_bookings ?? 0,
             sameDayBookingAllowed: dbSettings?.same_day_booking_allowed ?? true,
             allowCancellation: true,
             cancellationDeadlineHours: 0,
@@ -320,8 +343,63 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
 
   const slots = useMemo(() => {
     if (!state || !svc || !dateYmd) return [];
-    return getAvailableSlots(dateYmd, svc, state);
+    const out = getAvailableSlots(dateYmd, svc, state);
+    if (process.env.NODE_ENV !== "production") {
+      // Debug chain: availability → settings → computed slots
+      console.debug("[public booking] slots", {
+        dateYmd,
+        service: {
+          id: svc.id,
+          durationMin: svc.durationMin,
+          bufferBeforeMin: svc.bufferBeforeMin,
+          bufferAfterMin: svc.bufferAfterMin,
+          bookingNoticeHours: svc.bookingNoticeHours,
+        },
+        availabilityMode: state.availabilityMode,
+        slotIntervalMinutes: state.settings.slotIntervalMinutes,
+        weeklyForDay: state.weekly[dayKeyFromDate(parseYmd(dateYmd)) as DayKey],
+        customDay: state.customDays.find((d) => d.date === dateYmd) ?? null,
+        blocked: state.blockedDates.includes(dateYmd),
+        reservations: state.reservations.length,
+        slots: out.length,
+      });
+    }
+    return out;
   }, [state, svc, dateYmd]);
+
+  const noSlotsHint = useMemo(() => {
+    if (!state || !svc || !dateYmd) return null;
+    if (slots.length > 0) return null;
+    if (state.blockedDates.includes(dateYmd)) return "Cette date est bloquée.";
+
+    const dk = dayKeyFromDate(parseYmd(dateYmd)) as DayKey;
+    const custom = state.customDays.find((d) => d.date === dateYmd) ?? null;
+    const segs =
+      state.availabilityMode === "custom"
+        ? (custom?.segments?.length ? custom.segments : state.weekly[dk]?.enabled ? state.weekly[dk].segments : [])
+        : (state.weekly[dk]?.enabled ? state.weekly[dk].segments : []);
+
+    const normalized = (segs ?? []).filter((s) => timeToMinutes(s.end) > timeToMinutes(s.start));
+    if (normalized.length === 0) {
+      return "Aucune disponibilité pour ce jour. Essaie une autre date.";
+    }
+
+    // Check if service duration can fit any segment
+    const maxSeg = Math.max(
+      0,
+      ...normalized.map((s) => Math.max(0, timeToMinutes(s.end) - timeToMinutes(s.start)))
+    );
+    if (svc.durationMin > maxSeg) {
+      return `Durée trop longue (${svc.durationMin} min) pour les horaires de ce jour.`;
+    }
+
+    // Check booking window constraints (notice / max advance / same-day)
+    const firstStart = combineYmdTime(dateYmd, normalized[0]!.start);
+    const win = validateReservationWindow(firstStart, svc, state.settings);
+    if (win) return win;
+
+    return "Tous les créneaux sont déjà pris pour ce jour.";
+  }, [state, svc, dateYmd, slots.length]);
 
   if (!state) {
     return (
@@ -368,10 +446,65 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
     setLoading(true);
     try {
       const start = combineYmdTime(dateYmd, time);
-      const end = addMinutes(start, svc.durationMin);
+      // Re-validate against fresh DB data right before creating reservation.
+      const { data: dbSvc, error: svcErr } = await supabase
+        .from("wavon_services")
+        .select(
+          "id,business_id,is_active,is_public,duration_minutes,buffer_before_minutes,buffer_after_minutes,booking_notice_hours"
+        )
+        .eq("id", svc.id)
+        .eq("business_id", businessId)
+        .maybeSingle();
+      if (svcErr) throw svcErr;
+      if (!dbSvc || !(dbSvc as any).is_active || !(dbSvc as any).is_public) {
+        setErr("Ce service n’est plus disponible.");
+        return;
+      }
+
+      const effectiveSvc: Service = {
+        ...svc,
+        durationMin: Number((dbSvc as any).duration_minutes) || svc.durationMin,
+        bufferBeforeMin: Math.max(0, Number((dbSvc as any).buffer_before_minutes) || 0),
+        bufferAfterMin: Math.max(0, Number((dbSvc as any).buffer_after_minutes) || 0),
+        bookingNoticeHours: (dbSvc as any).booking_notice_hours ?? svc.bookingNoticeHours ?? null,
+      };
+
+      const end = addMinutes(start, effectiveSvc.durationMin);
+
+      // Fetch reservations for this business (light refresh). DB constraint still guarantees no overlap.
+      const dayStart = combineYmdTime(dateYmd, "00:00");
+      const dayEnd = addMinutes(dayStart, 24 * 60);
+      const { data: freshRes, error: fresErr } = await supabase
+        .from("wavon_reservations")
+        .select(
+          "id,client_name,client_id,service_id,start_at,end_at,duration_minutes,buffer_before_minutes,buffer_after_minutes,status,created_at"
+        )
+        .eq("business_id", businessId)
+        .gte("start_at", dayStart.toISOString())
+        .lt("start_at", dayEnd.toISOString())
+        .order("start_at", { ascending: true });
+      if (fresErr) throw fresErr;
+
+      const nextState: WavonState = {
+        ...state,
+        reservations: (freshRes as any[]).map((r) => ({
+          id: r.id,
+          clientId: r.client_id,
+          clientName: r.client_name || "Client",
+          serviceId: r.service_id,
+          start: r.start_at,
+          end: r.end_at,
+          durationMin: r.duration_minutes ?? 0,
+          bufferBeforeMin: r.buffer_before_minutes ?? 0,
+          bufferAfterMin: r.buffer_after_minutes ?? 0,
+          status: r.status,
+          createdAt: r.created_at,
+        })),
+      };
+
       const validationErr = validateBooking({
-        state,
-        service: svc,
+        state: nextState,
+        service: effectiveSvc,
         start,
         end,
       });
@@ -426,17 +559,24 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
           business_id: businessId,
           client_id: clientId,
           client_name: displayName,
-          service_id: svc.id,
+          service_id: effectiveSvc.id,
           start_at: start.toISOString(),
           end_at: end.toISOString(),
-          duration_minutes: svc.durationMin,
-          buffer_before_minutes: svc.bufferBeforeMin ?? 0,
-          buffer_after_minutes: svc.bufferAfterMin ?? 0,
+          duration_minutes: effectiveSvc.durationMin,
+          buffer_before_minutes: effectiveSvc.bufferBeforeMin ?? 0,
+          buffer_after_minutes: effectiveSvc.bufferAfterMin ?? 0,
           status,
         })
         .select("id,created_at")
         .single();
-      if (rErr) throw rErr;
+      if (rErr) {
+        const code = (rErr as any)?.code;
+        if (code === "23P01") {
+          setErr("Ce créneau vient d’être pris. Choisis un autre horaire.");
+          return;
+        }
+        throw rErr;
+      }
 
       setState((prev) => {
         if (!prev) return prev;
@@ -448,12 +588,12 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
               id: (createdRes as { id: string }).id,
               clientId,
               clientName: displayName,
-              serviceId: svc.id,
+              serviceId: effectiveSvc.id,
               start: start.toISOString(),
               end: end.toISOString(),
-              durationMin: svc.durationMin,
-              bufferBeforeMin: svc.bufferBeforeMin ?? 0,
-              bufferAfterMin: svc.bufferAfterMin ?? 0,
+              durationMin: effectiveSvc.durationMin,
+              bufferBeforeMin: effectiveSvc.bufferBeforeMin ?? 0,
+              bufferAfterMin: effectiveSvc.bufferAfterMin ?? 0,
               status,
               createdAt: (createdRes as { created_at: string }).created_at,
             },
@@ -613,6 +753,11 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
                       ))
                     )}
                   </select>
+                  {noSlotsHint ? (
+                    <p className="mt-2 text-xs leading-relaxed text-neutral-500">
+                      {noSlotsHint}
+                    </p>
+                  ) : null}
                 </div>
               </div>
 

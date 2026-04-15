@@ -389,7 +389,8 @@ export function WavonProvider({
       for (const row of dbWeekly) {
         const k = dayKeyFromDow(row.day_of_week);
         const segs = segmentsFromJson(row.segments);
-        weekly[k] = { enabled: Boolean(row.is_open), segments: Boolean(row.is_open) ? segs : [] };
+        // Keep segments even when day is closed (preserve user config)
+        weekly[k] = { enabled: Boolean(row.is_open), segments: segs };
       }
 
       const customDays: CustomDaySlot[] = dbCustomDays.map((r) => ({
@@ -519,7 +520,8 @@ export function WavonProvider({
         business_id: businessId,
         day_of_week: dayOfWeek[day],
         is_open: patch.enabled,
-        segments: patch.enabled ? patch.segments : [],
+        // Keep segments even when closed to avoid losing configuration.
+        segments: patch.segments,
       },
       { onConflict: "business_id,day_of_week" }
     );
