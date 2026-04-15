@@ -211,7 +211,10 @@ type Ctx = {
   ready: boolean;
   state: WavonState;
   businessId: string | null;
-  setWeeklyDay: (day: DayKey, patch: WeeklyDaySchedule) => void;
+  setWeeklyDay: (
+    day: DayKey,
+    patch: WeeklyDaySchedule
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
   setAvailabilityMode: (mode: WavonState["availabilityMode"]) => void;
   setCustomDays: (days: CustomDaySlot[]) => void;
   setBlockedDates: (dates: string[]) => void;
@@ -503,9 +506,15 @@ export function WavonProvider({
     };
   }, [userId]);
 
-  const setWeeklyDay = useCallback((day: DayKey, patch: WeeklyDaySchedule) => {
+  const setWeeklyDay = useCallback(async (day: DayKey, patch: WeeklyDaySchedule) => {
+    // Optimistic UI update, then hard-confirm in DB.
     setState((prev) => ({ ...prev, weekly: { ...prev.weekly, [day]: patch } }));
-    if (!businessId) return;
+    if (!businessId) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[WavonProvider] setWeeklyDay skipped (no businessId yet)", { day, patch });
+      }
+      return { ok: false, error: "Business non initialisé (businessId manquant)." };
+    }
     const dayOfWeek: Record<DayKey, number> = {
       sun: 0,
       mon: 1,
@@ -515,16 +524,96 @@ export function WavonProvider({
       fri: 5,
       sat: 6,
     };
-    void supabase.from("wavon_availability_rules").upsert(
-      {
-        business_id: businessId,
-        day_of_week: dayOfWeek[day],
-        is_open: patch.enabled,
-        // Keep segments even when closed to avoid losing configuration.
-        segments: patch.segments,
-      },
-      { onConflict: "business_id,day_of_week" }
-    );
+
+    const normalizeSegments = (segs: WeeklyDaySchedule["segments"]) => {
+      const norm = (segs ?? [])
+        .map((s) => ({ start: String(s.start || ""), end: String(s.end || "") }))
+        .filter((s) => s.start && s.end)
+        .filter((s) => {
+          const [sh, sm] = s.start.split(":").map(Number);
+          const [eh, em] = s.end.split(":").map(Number);
+          if ([sh, sm, eh, em].some((n) => Number.isNaN(n))) return false;
+          return eh * 60 + em > sh * 60 + sm;
+        })
+        .sort((a, b) => a.start.localeCompare(b.start));
+      return norm;
+    };
+
+    const payload = {
+      business_id: businessId,
+      day_of_week: dayOfWeek[day],
+      is_open: Boolean(patch.enabled),
+      // Keep segments even when closed to avoid losing configuration.
+      segments: normalizeSegments(patch.segments),
+    };
+
+    const { data, error } = await supabase
+      .from("wavon_availability_rules")
+      .upsert(payload, { onConflict: "business_id,day_of_week" })
+      .select("day_of_week,is_open,segments")
+      .single();
+
+    if (process.env.NODE_ENV !== "production") {
+      console.debug("[WavonProvider] setWeeklyDay DB write", {
+        businessId,
+        day,
+        payload,
+        ok: !error,
+        error: error?.message ?? null,
+        returned: data ?? null,
+      });
+    }
+
+    if (error) {
+      // Hard-reload this business weekly rules to avoid UI drifting from DB.
+      const { data: rows, error: readErr } = await supabase
+        .from("wavon_availability_rules")
+        .select("day_of_week,is_open,segments")
+        .eq("business_id", businessId);
+
+      if (process.env.NODE_ENV !== "production") {
+        console.error("[WavonProvider] setWeeklyDay failed", {
+          businessId,
+          day,
+          error: error.message,
+          readErr: readErr?.message ?? null,
+        });
+      }
+
+      if (!readErr && Array.isArray(rows)) {
+        setState((prev) => {
+          const weekly = { ...prev.weekly };
+          for (const r of rows as unknown as Array<{
+            day_of_week: number;
+            is_open: boolean;
+            segments: unknown;
+          }>) {
+            const k = dayKeyFromDow(r.day_of_week);
+            weekly[k] = { enabled: Boolean(r.is_open), segments: segmentsFromJson(r.segments) };
+          }
+          return { ...prev, weekly };
+        });
+      }
+
+      return { ok: false, error: error.message };
+    }
+
+    // Confirm state with DB-returned row (source of truth).
+    if (data) {
+      const k = dayKeyFromDow(Number((data as any).day_of_week));
+      setState((prev) => ({
+        ...prev,
+        weekly: {
+          ...prev.weekly,
+          [k]: {
+            enabled: Boolean((data as any).is_open),
+            segments: segmentsFromJson((data as any).segments),
+          },
+        },
+      }));
+    }
+
+    return { ok: true };
   }, [businessId]);
 
   const setAvailabilityMode = useCallback((mode: WavonState["availabilityMode"]) => {

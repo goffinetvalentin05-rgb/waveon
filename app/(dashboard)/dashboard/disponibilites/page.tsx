@@ -35,14 +35,18 @@ export default function DisponibilitesPage() {
     [state.blockedDates]
   );
 
-  const updateDay = (day: DayKey, patch: WeeklyDaySchedule) => {
+  const updateDay = async (day: DayKey, patch: WeeklyDaySchedule) => {
     const err = validateSegments(patch.segments);
     if (err) {
       toast.push({ kind: "error", message: err });
       return;
     }
-    setWeeklyDay(day, patch);
-    toast.push({ message: `${DAY_LABELS[day]} enregistré.` });
+    const res = await setWeeklyDay(day, patch);
+    if (res.ok) {
+      toast.push({ message: `${DAY_LABELS[day]} enregistré.` });
+    } else {
+      toast.push({ kind: "error", message: `Échec d’enregistrement (${DAY_LABELS[day]}): ${res.error}` });
+    }
   };
 
   const addBlocked = () => {
