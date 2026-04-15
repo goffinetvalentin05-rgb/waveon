@@ -271,6 +271,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
               dbSettings?.public_after_booking_message ??
               "Ta demande est enregistrée. À très bientôt.",
           },
+          emailTemplates: [],
           whatsappThreads: [],
         };
 

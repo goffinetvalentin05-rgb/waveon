@@ -267,11 +267,9 @@ export default function PublicCampaignClient({
     setSpinResult(result);
     setShouldAnimateSpin(true);
     setHasSpun(true);
-    setSpinLoading(false);
 
     // 2. Optional: notify backend in background (do not block, do not fail user)
     if (clientToken) {
-      setSpinLoading(true);
       fetch("/api/wheel/spin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -289,8 +287,7 @@ export default function PublicCampaignClient({
         })
         .catch((err) => {
           console.error("[Wheel] Backend spin request failed (non-blocking):", err);
-        })
-        .finally(() => setSpinLoading(false));
+        });
     }
   };
 
