@@ -32,6 +32,13 @@ export async function uploadBrandingAsset(input: {
   return { path, publicUrl };
 }
 
+export function getBrandingPublicUrl(path?: string | null): string | null {
+  const p = path?.trim();
+  if (!p) return null;
+  const { data } = supabase.storage.from(BRANDING_BUCKET).getPublicUrl(p);
+  return data.publicUrl || null;
+}
+
 export async function deleteBrandingAsset(input: {
   path?: string | null;
 }): Promise<void> {

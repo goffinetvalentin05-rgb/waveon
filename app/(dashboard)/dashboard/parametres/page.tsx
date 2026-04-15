@@ -15,7 +15,7 @@ import {
   linkClass,
   spinnerClass,
 } from "@/lib/wavon/tokens";
-import { deleteBrandingAsset, uploadBrandingAsset } from "@/lib/wavon/storage";
+import { deleteBrandingAsset, getBrandingPublicUrl, uploadBrandingAsset } from "@/lib/wavon/storage";
 
 export default function ParametresPage() {
   const { ready, state, patchSettings, upsertEmailTemplate, businessId } = useWavon();
@@ -113,8 +113,8 @@ export default function ParametresPage() {
 
       patchSettings(
         kind === "logo"
-          ? { publicLogoPath: path, publicLogoUrl: publicUrl }
-          : { publicCoverPath: path, publicCoverUrl: publicUrl }
+          ? { publicLogoPath: path }
+          : { publicCoverPath: path }
       );
 
       // Best-effort delete old file after DB points to new one.
@@ -151,6 +151,8 @@ export default function ParametresPage() {
 
   const slug = s.publicSlug?.trim() ?? "";
   const publicUrl = slug ? `/reserver/${slug}` : null;
+  const logoUrl = getBrandingPublicUrl(s.publicLogoPath) || s.publicLogoUrl || "";
+  const coverUrl = getBrandingPublicUrl(s.publicCoverPath) || s.publicCoverUrl || "";
 
   return (
     <div className="space-y-10 pb-12">
@@ -363,8 +365,18 @@ export default function ParametresPage() {
                   <p className={labelClass}>Logo</p>
                   <div className="mt-2 flex items-center gap-4">
                     <div className="relative size-16 overflow-hidden rounded-2xl border border-neutral-200/90 bg-neutral-50">
-                      {s.publicLogoUrl ? (
-                        <Image src={s.publicLogoUrl} alt="" fill className="object-cover" />
+                      {logoUrl ? (
+                        <Image
+                          src={logoUrl}
+                          alt=""
+                          fill
+                          className="object-cover"
+                          onError={() => {
+                            if (process.env.NODE_ENV !== "production") {
+                              console.warn("[branding] logo failed:", { path: s.publicLogoPath, url: logoUrl });
+                            }
+                          }}
+                        />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-neutral-500">
                           {((s.publicDisplayName || s.businessName || "?").trim().slice(0, 2) || "?").toUpperCase()}
@@ -386,7 +398,7 @@ export default function ParametresPage() {
                         type="button"
                         className={`${btnGhostClass} w-fit`}
                         onClick={() => void removeAsset("logo")}
-                        disabled={!s.publicLogoUrl || brandingLoading !== null}
+                        disabled={!s.publicLogoPath && !s.publicLogoUrl || brandingLoading !== null}
                       >
                         Supprimer
                       </button>
@@ -398,9 +410,19 @@ export default function ParametresPage() {
                 <div>
                   <p className={labelClass}>Bannière</p>
                   <div className="mt-2 overflow-hidden rounded-2xl border border-neutral-200/90 bg-neutral-50">
-                    {s.publicCoverUrl ? (
+                    {coverUrl ? (
                       <div className="relative h-16 w-full">
-                        <Image src={s.publicCoverUrl} alt="" fill className="object-cover" />
+                        <Image
+                          src={coverUrl}
+                          alt=""
+                          fill
+                          className="object-cover"
+                          onError={() => {
+                            if (process.env.NODE_ENV !== "production") {
+                              console.warn("[branding] cover failed:", { path: s.publicCoverPath, url: coverUrl });
+                            }
+                          }}
+                        />
                       </div>
                     ) : (
                       <div className="flex h-16 w-full items-center justify-center text-xs text-neutral-400">
@@ -423,7 +445,7 @@ export default function ParametresPage() {
                       type="button"
                       className={`${btnGhostClass} w-fit`}
                       onClick={() => void removeAsset("cover")}
-                      disabled={!s.publicCoverUrl || brandingLoading !== null}
+                      disabled={!s.publicCoverPath && !s.publicCoverUrl || brandingLoading !== null}
                     >
                       Supprimer
                     </button>

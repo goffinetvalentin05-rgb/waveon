@@ -15,6 +15,7 @@ import { landingSection } from "@/components/landing/landing-tokens";
 import { btnPrimaryClass, inputClass, labelClass } from "@/lib/wavon/tokens";
 import { supabase } from "@/lib/supabase/client";
 import type { DayKey, Service, WavonState } from "@/lib/wavon/types";
+import { getBrandingPublicUrl } from "@/lib/wavon/storage";
 
 type DbBusiness = {
   id: string;
@@ -475,11 +476,29 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
     <div className="min-h-screen bg-[#f7f7f5] text-neutral-950">
       <div className={`${landingSection} flex min-h-screen flex-col py-10 sm:py-16`}>
         <header className="mb-10 sm:mb-12">
+          {/** Generate URLs dynamically from stored paths (preferred). */}
+          {/** Fallback to legacy stored URLs if present. */}
+          {(() => {
+            const coverUrl =
+              getBrandingPublicUrl(state.settings.publicCoverPath) ||
+              state.settings.publicCoverUrl ||
+              "";
+            const logoUrl =
+              getBrandingPublicUrl(state.settings.publicLogoPath) ||
+              state.settings.publicLogoUrl ||
+              "";
+            const displayName =
+              state.settings.publicDisplayName?.trim() ||
+              state.settings.businessName ||
+              publishedName ||
+              "Réservation";
+
+            return (
           <div className="overflow-hidden rounded-3xl border border-neutral-200/90 bg-white shadow-[0_2px_20px_-6px_rgba(0,0,0,0.08)]">
-            {state.settings.publicCoverUrl?.trim() ? (
+            {coverUrl ? (
               <div className="relative h-28 w-full sm:h-36">
                 <Image
-                  src={state.settings.publicCoverUrl}
+                  src={coverUrl}
                   alt=""
                   fill
                   className="object-cover"
@@ -494,15 +513,25 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
             <div className="px-6 pb-6 pt-5 sm:px-8 sm:pb-8">
               <div className="-mt-10 flex flex-col items-center text-center sm:-mt-12">
                 <div className="relative mb-4 flex size-20 items-center justify-center overflow-hidden rounded-3xl border border-neutral-200/90 bg-white shadow-[0_12px_36px_-18px_rgba(0,0,0,0.35)] sm:size-24">
-                  {state.settings.publicLogoUrl?.trim() ? (
-                    <Image src={state.settings.publicLogoUrl} alt="" fill className="object-cover" />
+                  {logoUrl ? (
+                    <Image
+                      src={logoUrl}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      onError={() => {
+                        if (process.env.NODE_ENV !== "production") {
+                          console.warn("[public booking] logo failed:", {
+                            path: state.settings.publicLogoPath,
+                            url: logoUrl,
+                          });
+                        }
+                      }}
+                    />
                   ) : (
                     <span className="text-lg font-semibold text-neutral-600">
                       {(
-                        (state.settings.publicDisplayName ||
-                          state.settings.businessName ||
-                          publishedName ||
-                          "?")
+                        (displayName || "?")
                           .trim()
                           .slice(0, 2) || "?"
                       ).toUpperCase()}
@@ -511,10 +540,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
                 </div>
 
                 <h1 className="text-2xl font-semibold tracking-tight text-neutral-950 sm:text-[1.65rem]">
-                  {state.settings.publicDisplayName?.trim() ||
-                    state.settings.businessName ||
-                    publishedName ||
-                    "Réservation"}
+                  {displayName}
                 </h1>
 
                 <p className="mx-auto mt-2 max-w-md text-sm text-neutral-500">
@@ -546,6 +572,8 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
               </div>
             </div>
           </div>
+            );
+          })()}
         </header>
 
         <div className="mx-auto w-full max-w-lg flex-1">
