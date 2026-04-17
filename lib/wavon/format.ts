@@ -33,3 +33,10 @@ export function formatPriceEUR(n: number): string {
     currency: "EUR",
   }).format(n);
 }
+
+export function formatPriceCHF(n: number): string {
+  return new Intl.NumberFormat("fr-CH", {
+    style: "currency",
+    currency: "CHF",
+  }).format(n);
+}

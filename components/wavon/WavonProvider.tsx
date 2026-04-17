@@ -968,6 +968,19 @@ export function WavonProvider({
           .update(payload)
           .eq("id", id)
           .eq("business_id", businessId);
+
+        // Email d'annulation au client si le commerçant annule depuis le dashboard
+        if (patch.status === "cancelled") {
+          void fetch("/api/emails/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: "cancellation_by_merchant",
+              reservationId: id,
+              businessId,
+            }),
+          }).catch(() => {});
+        }
       }
       return errorMsg ? { ok: false, error: errorMsg } : { ok: true };
     },

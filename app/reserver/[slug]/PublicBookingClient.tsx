@@ -601,6 +601,17 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
         };
       });
 
+      // Envoi des emails de confirmation (fire-and-forget)
+      void fetch("/api/emails/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "new_booking",
+          reservationId: (createdRes as { id: string }).id,
+          businessId,
+        }),
+      }).catch(() => {});
+
       setMsg(state.settings.publicAfterBookingMessage || "Ta demande est enregistrée. À très bientôt.");
     } catch (e) {
       if (process.env.NODE_ENV !== "production") {
