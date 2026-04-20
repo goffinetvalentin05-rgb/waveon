@@ -1,6 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { render } from "@react-email/render";
-import { getResend, EMAIL_FROM } from "@/lib/resend";
+import {
+  getResend,
+  getResendApiKey,
+  resendApiKeyMissingUserMessage,
+  resendRelatedEnvKeyNames,
+  EMAIL_FROM,
+} from "@/lib/resend";
 import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import ReminderClient from "@/lib/emails/templates/reminder-client";
@@ -45,70 +51,82 @@ function formatBizAddress(b: DbBusiness | null): string {
 }
 
 export async function POST(req: NextRequest) {
-  if (!process.env.RESEND_API_KEY) {
-    return NextResponse.json({ ok: false, error: "RESEND_API_KEY manquante." }, { status: 503 });
-  }
-
-  let supabase;
-  try {
-    supabase = await createRouteHandlerSupabase();
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "Configuration Supabase invalide.";
-    return NextResponse.json({ ok: false, error: msg }, { status: 500 });
-  }
-  const {
-    data: { user },
-    error: authErr,
-  } = await supabase.auth.getUser();
-  if (authErr || !user) {
+  if (!getResendApiKey()) {
     return NextResponse.json(
-      { ok: false, error: authErr?.message || "Non authentifié." },
-      { status: 401 }
+      {
+        ok: false,
+        error: resendApiKeyMissingUserMessage(),
+        resendEnvKeyNames: resendRelatedEnvKeyNames(),
+      },
+      { status: 503 }
+    );
+  }
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          "SUPABASE_SERVICE_ROLE_KEY manquante côté serveur. Ajoute-la dans les variables d'environnement (ex. Vercel) puis redéploie.",
+      },
+      { status: 503 }
     );
   }
 
-  const parsed = (await req.json().catch(() => null)) as Body | null;
-  const businessId = String(parsed?.businessId ?? "").trim();
-  const to = String(parsed?.to ?? "").trim();
-  const mode = parsed?.mode ?? "scheduled";
+  try {
+    const supabase = await createRouteHandlerSupabase();
+    const {
+      data: { user },
+      error: authErr,
+    } = await supabase.auth.getUser();
+    if (authErr || !user) {
+      return NextResponse.json(
+        { ok: false, error: authErr?.message || "Non authentifié." },
+        { status: 401 }
+      );
+    }
 
-  if (!businessId || !to) {
-    return NextResponse.json({ ok: false, error: "businessId et to requis." }, { status: 400 });
-  }
+    const parsed = (await req.json().catch(() => null)) as Body | null;
+    const businessId = String(parsed?.businessId ?? "").trim();
+    const to = String(parsed?.to ?? "").trim();
+    const mode = parsed?.mode ?? "scheduled";
 
-  const { data: bizRow, error: bizErr } = await supabase
-    .from("wavon_businesses")
-    .select("id,user_id")
-    .eq("id", businessId)
-    .maybeSingle();
-  if (bizErr || !bizRow || (bizRow as { user_id: string }).user_id !== user.id) {
-    return NextResponse.json({ ok: false, error: "Accès refusé." }, { status: 403 });
-  }
+    if (!businessId || !to) {
+      return NextResponse.json({ ok: false, error: "businessId et to requis." }, { status: 400 });
+    }
 
-  const admin = createAdminSupabaseClient();
-  const { data: biz } = await admin
-    .from("wavon_businesses")
-    .select("business_name,public_display_name,phone,address,city,postal_code,email")
-    .eq("id", businessId)
-    .maybeSingle();
-  const business = (biz as DbBusiness | null) ?? null;
-  const displayName = business?.public_display_name?.trim() || business?.business_name || "Commerce";
+    const { data: bizRow, error: bizErr } = await supabase
+      .from("wavon_businesses")
+      .select("id,user_id")
+      .eq("id", businessId)
+      .maybeSingle();
+    if (bizErr || !bizRow || (bizRow as { user_id: string }).user_id !== user.id) {
+      return NextResponse.json({ ok: false, error: "Accès refusé." }, { status: 403 });
+    }
 
-  const vars = {
-    business_name: displayName,
-    client_name: "Client test",
-    service_name: "Prestation test",
-    reservation_date: "mardi 21 avril 2026",
-    reservation_time: "14h30",
-    business_phone: String(business?.phone ?? ""),
-    business_address: formatBizAddress(business),
-    service_price: "45,00 €",
-  };
+    const admin = createAdminSupabaseClient();
+    const { data: biz } = await admin
+      .from("wavon_businesses")
+      .select("business_name,public_display_name,phone,address,city,postal_code,email")
+      .eq("id", businessId)
+      .maybeSingle();
+    const business = (biz as DbBusiness | null) ?? null;
+    const displayName = business?.public_display_name?.trim() || business?.business_name || "Commerce";
 
-  let html: string;
-  let subject: string;
+    const vars = {
+      business_name: displayName,
+      client_name: "Client test",
+      service_name: "Prestation test",
+      reservation_date: "mardi 21 avril 2026",
+      reservation_time: "14h30",
+      business_phone: String(business?.phone ?? ""),
+      business_address: formatBizAddress(business),
+      service_price: "45,00 €",
+    };
 
-  if (mode === "template") {
+    let html: string;
+    let subject: string;
+
+    if (mode === "template") {
     const templateType = parsed?.templateType ?? "confirmation";
     if (templateType === "reminder") {
       return NextResponse.json({ ok: false, error: "Utilise le mode rappel planifié." }, { status: 400 });
@@ -229,5 +247,13 @@ export async function POST(req: NextRequest) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("[api/emails/test-configurable]", msg);
     return NextResponse.json({ ok: false, error: msg }, { status: 500 });
+  }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[api/emails/test-configurable] exception", e);
+    return NextResponse.json(
+      { ok: false, error: msg || "Erreur serveur lors de l'envoi de test." },
+      { status: 500 }
+    );
   }
 }

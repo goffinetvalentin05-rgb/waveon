@@ -1,6 +1,6 @@
 import { render } from "@react-email/render";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getResend, EMAIL_FROM, EMAIL_REPLY_TO_FALLBACK } from "@/lib/resend";
+import { getResend, getResendApiKey, EMAIL_FROM, EMAIL_REPLY_TO_FALLBACK } from "@/lib/resend";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { formatPriceEUR } from "@/lib/wavon/format";
 import type { EmailTemplateType } from "@/lib/wavon/types";
@@ -205,7 +205,7 @@ async function sendResendAndLog(args: {
   const { admin, businessId, reservationId, emailType, to, subject, html, replyTo } = args;
   const logBase = `[emails] type=${emailType} to=${to}`;
 
-  if (!process.env.RESEND_API_KEY) {
+  if (!getResendApiKey()) {
     console.warn(`${logBase} — RESEND_API_KEY manquante, envoi ignoré.`);
     await insertEmailDeliveryLog(admin, {
       business_id: businessId,

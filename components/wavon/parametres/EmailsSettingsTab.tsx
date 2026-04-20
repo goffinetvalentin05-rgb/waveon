@@ -54,7 +54,27 @@ function normalizeLinks(obj: Record<string, unknown> | null | undefined) {
   };
 }
 
-type TestConfigurableJson = { ok?: boolean; error?: string };
+type TestConfigurableJson = { ok?: boolean; error?: string; resendEnvKeyNames?: string[] };
+
+function formatTestConfigurableError(json: TestConfigurableJson | null, res: Response, text: string): string {
+  const nonJsonHint =
+    text.trim() && !text.trim().startsWith("{") ? text.trim().slice(0, 240) : "";
+  let message =
+    json?.error ||
+    nonJsonHint ||
+    (res.status === 401
+      ? "Session expirée ou non authentifié. Recharge la page puis réessaie."
+      : `Envoi test impossible (${res.status}).`);
+  if (json?.resendEnvKeyNames !== undefined) {
+    if (json.resendEnvKeyNames.length > 0) {
+      message += ` — Variables visibles côté serveur contenant « RESEND » : ${json.resendEnvKeyNames.join(", ")} (le code exige le nom exact RESEND_API_KEY).`;
+    } else {
+      message +=
+        " — Aucune variable « RESEND* » n’est visible sur ce serveur : la clé n’est pas injectée dans cet environnement (mauvais projet Vercel, Preview vs Production, ou déploiement trop ancien).";
+    }
+  }
+  return message;
+}
 
 async function postConfigurableEmailTest(body: unknown): Promise<{ ok: boolean; error: string }> {
   const res = await fetch("/api/emails/test-configurable", {
@@ -71,15 +91,7 @@ async function postConfigurableEmailTest(body: unknown): Promise<{ ok: boolean; 
     /* réponse non-JSON */
   }
   if (res.ok && json?.ok) return { ok: true, error: "" };
-  const nonJsonHint =
-    text.trim() && !text.trim().startsWith("{") ? text.trim().slice(0, 240) : "";
-  const message =
-    json?.error ||
-    nonJsonHint ||
-    (res.status === 401
-      ? "Session expirée ou non authentifié. Recharge la page puis réessaie."
-      : `Envoi test impossible (${res.status}).`);
-  return { ok: false, error: message };
+  return { ok: false, error: formatTestConfigurableError(json, res, text) };
 }
 
 export function EmailsSettingsTab() {
