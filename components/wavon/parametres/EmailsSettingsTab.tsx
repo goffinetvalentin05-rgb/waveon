@@ -54,7 +54,12 @@ function normalizeLinks(obj: Record<string, unknown> | null | undefined) {
   };
 }
 
-type TestConfigurableJson = { ok?: boolean; error?: string; resendEnvKeyNames?: string[] };
+type TestConfigurableJson = {
+  ok?: boolean;
+  error?: string;
+  resendEnvKeyNames?: string[];
+  serviceRoleEnvKeyNames?: string[];
+};
 
 function formatTestConfigurableError(json: TestConfigurableJson | null, res: Response, text: string): string {
   const nonJsonHint =
@@ -71,6 +76,14 @@ function formatTestConfigurableError(json: TestConfigurableJson | null, res: Res
     } else {
       message +=
         " — Aucune variable « RESEND* » n’est visible sur ce serveur : la clé n’est pas injectée dans cet environnement (mauvais projet Vercel, Preview vs Production, ou déploiement trop ancien).";
+    }
+  }
+  if (json?.serviceRoleEnvKeyNames !== undefined) {
+    if (json.serviceRoleEnvKeyNames.length > 0) {
+      message += ` — Noms d’env contenant « SERVICE_ROLE » visibles : ${json.serviceRoleEnvKeyNames.join(", ")} (il faut exactement SUPABASE_SERVICE_ROLE_KEY).`;
+    } else {
+      message +=
+        " — Aucune variable « *SERVICE_ROLE* » n’est visible sur ce serveur : ajoute SUPABASE_SERVICE_ROLE_KEY sur Vercel (Production) puis Redeploy.";
     }
   }
   return message;

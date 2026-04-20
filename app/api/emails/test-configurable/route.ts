@@ -8,7 +8,12 @@ import {
   EMAIL_FROM,
 } from "@/lib/resend";
 import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
-import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import {
+  createAdminSupabaseClient,
+  getSupabaseServiceRoleKey,
+  supabaseServiceRoleKeyMissingUserMessage,
+  supabaseServiceRoleRelatedEnvKeyNames,
+} from "@/lib/supabase/admin";
 import ReminderClient from "@/lib/emails/templates/reminder-client";
 import PostServiceClient from "@/lib/emails/templates/post-service-client";
 import { renderTemplateText, sanitizeUrl, splitLines } from "@/lib/emails/configurable";
@@ -61,12 +66,12 @@ export async function POST(req: NextRequest) {
       { status: 503 }
     );
   }
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
+  if (!getSupabaseServiceRoleKey()) {
     return NextResponse.json(
       {
         ok: false,
-        error:
-          "SUPABASE_SERVICE_ROLE_KEY manquante côté serveur. Ajoute-la dans les variables d'environnement (ex. Vercel) puis redéploie.",
+        error: supabaseServiceRoleKeyMissingUserMessage(),
+        serviceRoleEnvKeyNames: supabaseServiceRoleRelatedEnvKeyNames(),
       },
       { status: 503 }
     );

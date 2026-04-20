@@ -1,6 +1,6 @@
 import { render } from "@react-email/render";
 import { getResend, getResendApiKey, EMAIL_FROM, EMAIL_REPLY_TO_FALLBACK } from "@/lib/resend";
-import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { createAdminSupabaseClient, getSupabaseServiceRoleKey } from "@/lib/supabase/admin";
 import { formatPriceEUR } from "@/lib/wavon/format";
 import ReminderClient from "@/lib/emails/templates/reminder-client";
 import PostServiceClient from "@/lib/emails/templates/post-service-client";
@@ -206,7 +206,7 @@ async function ensureLogAndSend(args: {
 
 export async function runScheduledEmails(options?: { now?: Date; limitBusinesses?: number }) {
   if (!getResendApiKey()) return { ok: false as const, error: "RESEND_API_KEY manquante." };
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return { ok: false as const, error: "SUPABASE_SERVICE_ROLE_KEY manquante." };
+  if (!getSupabaseServiceRoleKey()) return { ok: false as const, error: "SUPABASE_SERVICE_ROLE_KEY manquante." };
 
   const admin = createAdminSupabaseClient();
   const now = options?.now ?? new Date();
