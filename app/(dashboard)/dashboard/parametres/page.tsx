@@ -109,7 +109,7 @@ export default function ParametresPage() {
     setBrandingLoading(kind);
     try {
       const prevPath = kind === "logo" ? state.settings.publicLogoPath : state.settings.publicCoverPath;
-      const { path, publicUrl } = await uploadBrandingAsset({ businessId, kind, file });
+      const { path } = await uploadBrandingAsset({ businessId, kind, file });
 
       patchSettings(
         kind === "logo"

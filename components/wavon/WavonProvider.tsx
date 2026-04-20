@@ -604,14 +604,19 @@ export function WavonProvider({
 
     // Confirm state with DB-returned row (source of truth).
     if (data) {
-      const k = dayKeyFromDow(Number((data as any).day_of_week));
+      const row = data as unknown as {
+        day_of_week: number;
+        is_open: boolean;
+        segments: unknown;
+      };
+      const k = dayKeyFromDow(Number(row.day_of_week));
       setState((prev) => ({
         ...prev,
         weekly: {
           ...prev.weekly,
           [k]: {
-            enabled: Boolean((data as any).is_open),
-            segments: segmentsFromJson((data as any).segments),
+            enabled: Boolean(row.is_open),
+            segments: segmentsFromJson(row.segments),
           },
         },
       }));

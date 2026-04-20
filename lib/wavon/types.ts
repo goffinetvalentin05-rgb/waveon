@@ -131,6 +131,27 @@ export type EmailTemplate = {
   body: string;
 };
 
+export type EmailSettingType = "reminder_before" | "post_service";
+
+export type EmailCustomLinks = {
+  google_review?: string;
+  instagram?: string;
+  tiktok?: string;
+  website?: string;
+  other_label?: string;
+  other_url?: string;
+};
+
+export type EmailSetting = {
+  id: string;
+  type: EmailSettingType;
+  enabled: boolean;
+  delayHours: number;
+  subject: string;
+  body: string;
+  customLinks: EmailCustomLinks;
+};
+
 export type WavonState = {
   version: 1;
   weekly: Record<DayKey, WeeklyDaySchedule>;
@@ -143,5 +164,6 @@ export type WavonState = {
   reservations: Reservation[];
   settings: BusinessSettings;
   emailTemplates: EmailTemplate[];
+  emailSettings?: EmailSetting[];
   whatsappThreads: WhatsAppThread[];
 };

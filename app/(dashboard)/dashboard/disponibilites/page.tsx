@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useWavon } from "@/components/wavon/WavonProvider";
 import { PageHeader } from "@/components/wavon/ui/PageHeader";
 import { useToast } from "@/components/wavon/Toast";
@@ -213,7 +213,17 @@ function ModeButton({
   );
 }
 
-function DayEditor({
+function DayEditor(props: {
+  label: string;
+  value: WeeklyDaySchedule;
+  onSave: (v: WeeklyDaySchedule) => void;
+}) {
+  // Avoid setState-in-effect lint rule by resetting local state via key.
+  const resetKey = `${props.value.enabled ? "1" : "0"}:${JSON.stringify(props.value.segments)}`;
+  return <DayEditorInner key={resetKey} {...props} />;
+}
+
+function DayEditorInner({
   label,
   value,
   onSave,
@@ -224,12 +234,6 @@ function DayEditor({
 }) {
   const [enabled, setEnabled] = useState(value.enabled);
   const [segments, setSegments] = useState<TimeSegment[]>(value.segments);
-
-  // Keep editor in sync with DB-backed state when navigating/reloading.
-  useEffect(() => {
-    setEnabled(value.enabled);
-    setSegments(value.segments);
-  }, [value.enabled, value.segments]);
 
   return (
     <div className={cardClass}>

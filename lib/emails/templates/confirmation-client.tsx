@@ -1,5 +1,6 @@
 import {
   Body,
+  Button,
   Column,
   Container,
   Head,
@@ -23,6 +24,7 @@ export interface ConfirmationClientProps {
   address?: string;
   phone?: string;
   isPending: boolean;
+  cancelUrl?: string;
 }
 
 export default function ConfirmationClient({
@@ -36,6 +38,7 @@ export default function ConfirmationClient({
   address,
   phone,
   isPending,
+  cancelUrl,
 }: ConfirmationClientProps) {
   const statusLabel = isPending
     ? "Demande enregistrée"
@@ -87,6 +90,17 @@ export default function ConfirmationClient({
                 )}
               </Section>
             )}
+
+            {cancelUrl ? (
+              <Section style={{ textAlign: "center", marginTop: "28px" }}>
+                <Button href={cancelUrl} style={styles.cancelButton}>
+                  Annuler ce rendez-vous
+                </Button>
+                <Text style={styles.cancelHint}>
+                  Si vous n’êtes pas à l’origine de cette réservation, vous pouvez ignorer cet email.
+                </Text>
+              </Section>
+            ) : null}
           </Section>
 
           {/* Pied de page */}
@@ -201,6 +215,23 @@ const styles = {
     margin: "0 0 6px",
     fontSize: "13px",
     color: "#78716c",
+  },
+  cancelButton: {
+    backgroundColor: "#ffffff",
+    borderRadius: "8px",
+    color: "#991b1b",
+    fontSize: "14px",
+    fontWeight: "700",
+    padding: "12px 18px",
+    textDecoration: "none",
+    display: "inline-block",
+    border: "1px solid #fecaca",
+  },
+  cancelHint: {
+    margin: "12px 0 0",
+    fontSize: "12px",
+    color: "#a8a29e",
+    lineHeight: "1.5",
   },
   footer: {
     backgroundColor: "#ffffff",

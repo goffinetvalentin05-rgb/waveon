@@ -15,6 +15,7 @@ const navItems = [
   { id: "clients", label: "Clients", href: "/dashboard/clients" },
   { id: "diagnostics", label: "Diagnostics", href: "/dashboard/diagnostics" },
   { id: "settings", label: "Paramètres", href: "/dashboard/parametres" },
+  { id: "emails", label: "Emails", href: "/dashboard/parametres/emails" },
 ];
 
 function NavLinks({

@@ -129,7 +129,14 @@ create table if not exists public.wavon_reservations (
 
 -- Prevent overlapping reservations per business (confirmed + pending block)
 -- Uses the generated busy_range which includes buffers.
-do $$ begin
+do $$
+begin
+  -- This constraint creates a backing index which can already exist on reruns.
+  -- Make it fully idempotent.
+  alter table public.wavon_reservations
+    drop constraint if exists wavon_reservations_no_overlap;
+  drop index if exists public.wavon_reservations_no_overlap;
+
   alter table public.wavon_reservations
     add constraint wavon_reservations_no_overlap
     exclude using gist (
@@ -139,6 +146,7 @@ do $$ begin
     where (status in ('confirmed','pending'));
 exception
   when duplicate_object then null;
+  when duplicate_table then null;
 end $$;
 
 create index if not exists wavon_reservations_busy_range_gist
@@ -366,6 +374,35 @@ begin
   select v_business_id, d, false, '[]'::jsonb
   from generate_series(0,6) as d
   on conflict (business_id, day_of_week) do nothing;
+
+  -- Ensure configurable email settings exist (Phase 3)
+  -- Note: types/tables might be added by later migrations; this is best-effort.
+  begin
+    insert into public.wavon_email_settings (business_id, type, enabled, delay_hours, subject, body, custom_links)
+    values
+      (v_business_id, 'reminder_before'::public.wavon_email_setting_type, true, 24,
+        'Rappel de votre rendez-vous chez {{business_name}}',
+        'Bonjour {{client_name}},\n\nPetit rappel : {{service_name}} le {{reservation_date}} à {{reservation_time}}.\n\nÀ bientôt,\n{{business_name}}',
+        '{}'::jsonb
+      ),
+      (v_business_id, 'post_service'::public.wavon_email_setting_type, true, 2,
+        'Merci pour votre visite chez {{business_name}}',
+        'Bonjour {{client_name}},\n\nMerci pour votre venue.\n\nSi vous avez 30 secondes, un avis nous aide énormément :',
+        jsonb_build_object(
+          'google_review', '',
+          'instagram', '',
+          'tiktok', '',
+          'website', '',
+          'other_label', '',
+          'other_url', ''
+        )
+      )
+    on conflict (business_id, type) do nothing;
+  exception
+    when undefined_table then null;
+    when undefined_object then null;
+    when others then null;
+  end;
 
   return new;
 end;

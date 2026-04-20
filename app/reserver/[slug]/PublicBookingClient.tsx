@@ -65,6 +65,17 @@ type DbService = {
   sort_order?: number;
 };
 
+type DbServiceFresh = {
+  id: string;
+  business_id: string;
+  is_active: boolean;
+  is_public: boolean;
+  duration_minutes: number;
+  buffer_before_minutes: number;
+  buffer_after_minutes: number;
+  booking_notice_hours: number | null;
+};
+
 type DbReservation = {
   id: string;
   client_name: string;
@@ -456,17 +467,18 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
         .eq("business_id", businessId)
         .maybeSingle();
       if (svcErr) throw svcErr;
-      if (!dbSvc || !(dbSvc as any).is_active || !(dbSvc as any).is_public) {
+      const freshSvc = dbSvc as DbServiceFresh | null;
+      if (!freshSvc || !freshSvc.is_active || !freshSvc.is_public) {
         setErr("Ce service n’est plus disponible.");
         return;
       }
 
       const effectiveSvc: Service = {
         ...svc,
-        durationMin: Number((dbSvc as any).duration_minutes) || svc.durationMin,
-        bufferBeforeMin: Math.max(0, Number((dbSvc as any).buffer_before_minutes) || 0),
-        bufferAfterMin: Math.max(0, Number((dbSvc as any).buffer_after_minutes) || 0),
-        bookingNoticeHours: (dbSvc as any).booking_notice_hours ?? svc.bookingNoticeHours ?? null,
+        durationMin: Number(freshSvc.duration_minutes) || svc.durationMin,
+        bufferBeforeMin: Math.max(0, Number(freshSvc.buffer_before_minutes) || 0),
+        bufferAfterMin: Math.max(0, Number(freshSvc.buffer_after_minutes) || 0),
+        bookingNoticeHours: freshSvc.booking_notice_hours ?? svc.bookingNoticeHours ?? null,
       };
 
       const end = addMinutes(start, effectiveSvc.durationMin);
@@ -487,7 +499,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
 
       const nextState: WavonState = {
         ...state,
-        reservations: (freshRes as any[]).map((r) => ({
+        reservations: ((freshRes ?? []) as DbReservation[]).map((r) => ({
           id: r.id,
           clientId: r.client_id,
           clientName: r.client_name || "Client",
@@ -570,7 +582,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
         .select("id,created_at")
         .single();
       if (rErr) {
-        const code = (rErr as any)?.code;
+        const code = (rErr as { code?: string } | null)?.code;
         if (code === "23P01") {
           setErr("Ce créneau vient d’être pris. Choisis un autre horaire.");
           return;

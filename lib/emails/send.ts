@@ -36,11 +36,43 @@ type ReservationData = {
   durationMin: number;
   startAt: string;
   status: string;
+  cancelToken: string | null;
   businessName: string;
   businessDisplayName: string | null;
   merchantEmail: string | null;
   businessPhone: string | null;
   businessAddress: string | null;
+};
+
+type DbReservationRow = {
+  id: string;
+  client_id: string | null;
+  client_name: string | null;
+  service_id: string;
+  start_at: string;
+  duration_minutes: number | null;
+  status: "confirmed" | "cancelled" | "pending" | string;
+  cancel_token: string | null;
+};
+
+type DbServiceRow = {
+  name: string | null;
+  price: number | null;
+  duration_minutes: number | null;
+};
+
+type DbBusinessRow = {
+  business_name: string | null;
+  public_display_name: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+};
+
+type DbClientRow = {
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
 };
 
 async function fetchReservationData(
@@ -51,12 +83,14 @@ async function fetchReservationData(
 
   const { data: res, error: resErr } = await supabase
     .from("wavon_reservations")
-    .select("id,client_id,client_name,service_id,start_at,duration_minutes,status")
+    .select("id,client_id,client_name,service_id,start_at,duration_minutes,status,cancel_token")
     .eq("id", reservationId)
     .eq("business_id", businessId)
     .maybeSingle();
 
-  if (resErr || !res) {
+  const reservation = res as DbReservationRow | null;
+
+  if (resErr || !reservation) {
     if (process.env.NODE_ENV !== "production") {
       console.error("[emails] reservation not found:", resErr?.message);
     }
@@ -67,18 +101,18 @@ async function fetchReservationData(
     supabase
       .from("wavon_services")
       .select("name,price,duration_minutes")
-      .eq("id", (res as any).service_id)
+      .eq("id", reservation.service_id)
       .maybeSingle(),
     supabase
       .from("wavon_businesses")
       .select("business_name,public_display_name,email,phone,address")
       .eq("id", businessId)
       .maybeSingle(),
-    (res as any).client_id
+    reservation.client_id
       ? supabase
           .from("wavon_clients")
           .select("email,phone,full_name")
-          .eq("id", (res as any).client_id)
+          .eq("id", reservation.client_id)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
   ]);
@@ -90,20 +124,21 @@ async function fetchReservationData(
     return null;
   }
 
-  const svc = svcRes.data as any;
-  const biz = bizRes.data as any;
-  const client = clientRes.data as any;
+  const svc = (svcRes.data as DbServiceRow | null) ?? null;
+  const biz = (bizRes.data as DbBusinessRow | null) ?? null;
+  const client = (clientRes.data as DbClientRow | null) ?? null;
 
   return {
-    id: (res as any).id,
-    clientName: (res as any).client_name || client?.full_name || "Client",
+    id: reservation.id,
+    clientName: reservation.client_name || client?.full_name || "Client",
     clientEmail: client?.email ?? null,
     clientPhone: client?.phone ?? null,
     serviceName: svc?.name ?? "Prestation",
     servicePrice: svc?.price ?? 0,
-    durationMin: (res as any).duration_minutes ?? svc?.duration_minutes ?? 0,
-    startAt: (res as any).start_at,
-    status: (res as any).status,
+    durationMin: reservation.duration_minutes ?? svc?.duration_minutes ?? 0,
+    startAt: reservation.start_at,
+    status: reservation.status,
+    cancelToken: reservation.cancel_token ?? null,
     businessName: biz?.business_name ?? "Commerce",
     businessDisplayName: biz?.public_display_name ?? null,
     merchantEmail: biz?.email ?? null,
@@ -144,6 +179,10 @@ export async function sendNewBookingEmails(
     const replyTo = data.merchantEmail ?? EMAIL_REPLY_TO_FALLBACK;
     const from = getFromAddress(displayName);
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://waevon.com";
+    const cancelUrl =
+      data.cancelToken
+        ? `${baseUrl}/annuler?reservationId=${encodeURIComponent(reservationId)}&businessId=${encodeURIComponent(businessId)}&token=${encodeURIComponent(data.cancelToken)}`
+        : null;
 
     const sends: Promise<unknown>[] = [];
 
@@ -161,6 +200,7 @@ export async function sendNewBookingEmails(
           address: data.businessAddress ?? undefined,
           phone: data.businessPhone ?? undefined,
           isPending,
+          cancelUrl: cancelUrl ?? undefined,
         })
       );
       sends.push(
@@ -235,27 +275,55 @@ export async function sendCancellationByMerchantEmails(
     const from = getFromAddress(displayName);
     const replyTo = data.merchantEmail ?? EMAIL_REPLY_TO_FALLBACK;
 
-    if (!data.clientEmail) return;
+    const sends: Promise<unknown>[] = [];
 
-    const html = await render(
-      CancellationClient({
-        businessName: displayName,
-        clientName: data.clientName,
-        serviceName: data.serviceName,
-        date,
-        time,
-        phone: data.businessPhone ?? undefined,
-        reason,
-      })
-    );
+    // Client
+    if (data.clientEmail) {
+      const html = await render(
+        CancellationClient({
+          businessName: displayName,
+          clientName: data.clientName,
+          serviceName: data.serviceName,
+          date,
+          time,
+          phone: data.businessPhone ?? undefined,
+          reason,
+        })
+      );
+      sends.push(
+        resend.emails.send({
+          from,
+          to: data.clientEmail,
+          replyTo,
+          subject: `Votre réservation chez ${displayName} a été annulée`,
+          html,
+        })
+      );
+    }
 
-    await resend.emails.send({
-      from,
-      to: data.clientEmail,
-      replyTo,
-      subject: `Votre réservation chez ${displayName} a été annulée`,
-      html,
-    });
+    // Merchant
+    if (data.merchantEmail) {
+      const html = await render(
+        CancellationMerchant({
+          businessName: displayName,
+          clientName: data.clientName,
+          clientPhone: data.clientPhone ?? undefined,
+          serviceName: data.serviceName,
+          date,
+          time,
+        })
+      );
+      sends.push(
+        resend.emails.send({
+          from: EMAIL_FROM,
+          to: data.merchantEmail,
+          subject: `Annulation de réservation — ${data.clientName}`,
+          html,
+        })
+      );
+    }
+
+    await Promise.allSettled(sends);
   } catch (err) {
     console.error("[emails] sendCancellationByMerchantEmails error:", err);
   }
@@ -272,29 +340,62 @@ export async function sendCancellationByClientEmails(
   try {
     const resend = getResend();
     const data = await fetchReservationData(reservationId, businessId);
-    if (!data || !data.merchantEmail) return;
+    if (!data) return;
 
     const displayName = data.businessDisplayName?.trim() || data.businessName;
     const date = formatEmailDate(data.startAt);
     const time = formatEmailTime(data.startAt);
 
-    const html = await render(
-      CancellationMerchant({
-        businessName: displayName,
-        clientName: data.clientName,
-        clientPhone: data.clientPhone ?? undefined,
-        serviceName: data.serviceName,
-        date,
-        time,
-      })
-    );
+    const sends: Promise<unknown>[] = [];
 
-    await resend.emails.send({
-      from: EMAIL_FROM,
-      to: data.merchantEmail,
-      subject: `Annulation de réservation — ${data.clientName}`,
-      html,
-    });
+    // Merchant
+    if (data.merchantEmail) {
+      const html = await render(
+        CancellationMerchant({
+          businessName: displayName,
+          clientName: data.clientName,
+          clientPhone: data.clientPhone ?? undefined,
+          serviceName: data.serviceName,
+          date,
+          time,
+        })
+      );
+      sends.push(
+        resend.emails.send({
+          from: EMAIL_FROM,
+          to: data.merchantEmail,
+          subject: `Annulation de réservation — ${data.clientName}`,
+          html,
+        })
+      );
+    }
+
+    // Client (si email connu)
+    if (data.clientEmail) {
+      const html = await render(
+        CancellationClient({
+          businessName: displayName,
+          clientName: data.clientName,
+          serviceName: data.serviceName,
+          date,
+          time,
+          phone: data.businessPhone ?? undefined,
+        })
+      );
+      const replyTo = data.merchantEmail ?? EMAIL_REPLY_TO_FALLBACK;
+      const from = getFromAddress(displayName);
+      sends.push(
+        resend.emails.send({
+          from,
+          to: data.clientEmail,
+          replyTo,
+          subject: `Votre réservation chez ${displayName} a été annulée`,
+          html,
+        })
+      );
+    }
+
+    await Promise.allSettled(sends);
   } catch (err) {
     console.error("[emails] sendCancellationByClientEmails error:", err);
   }
