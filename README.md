@@ -1,6 +1,6 @@
-# Waevon (MVP)
+# Waevon
 
-MVP SaaS B2B pour convertir les clients en avis Google et abonnés Instagram.
+SaaS B2B (français) de prise de rendez-vous pour prestataires : services, calendrier, clients, disponibilités, page publique de réservation et emails transactionnels (Resend).
 
 ## Prérequis
 
@@ -9,21 +9,11 @@ MVP SaaS B2B pour convertir les clients en avis Google et abonnés Instagram.
 
 ## Configuration
 
-Créer un fichier `.env.local` à la racine :
+Copier `.env.example` vers `.env.local` et renseigner les variables (voir fichier pour la liste complète : Supabase, `NEXT_PUBLIC_BASE_URL`, Resend, `CRON_SECRET`, etc.).
 
-```
-NEXT_PUBLIC_SUPABASE_URL=...
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-NEXT_PUBLIC_BASE_URL=http://localhost:3000
-```
+Appliquer les migrations SQL du dossier `supabase/migrations/` sur ton projet Supabase.
 
-Variables requises : `NEXT_PUBLIC_SUPABASE_URL` et
-`NEXT_PUBLIC_SUPABASE_ANON_KEY`. Après modification de `.env.local`,
-redémarrer le serveur Next.js.
-
-Dans Supabase SQL Editor, exécuter `supabase/schema.sql`.
-
-Créer un bucket public `logos` dans Supabase Storage.
+Configurer le stockage pour les images de branding (bucket utilisé par l’app, voir `lib/wavon/storage.ts`).
 
 ## Démarrage
 
@@ -32,16 +22,9 @@ npm install
 npm run dev
 ```
 
-## Pages
+## Pages principales
 
-- `/` page marketing
-- `/login` auth (inscription / connexion)
-- `/dashboard` dashboard commerçant
-- `/:slug` page publique de campagne
-
-## MVP
-
-- Auth Supabase
-- Création de campagnes + QR code
-- Page publique avec jeu simple
-- Stats basiques (visites, participations, avis, gains)
+- `/` — landing marketing
+- `/login`, `/signup` — authentification
+- `/dashboard` — espace commerçant
+- `/reserver/[slug]` — page publique de réservation (`slug` = identifiant public du commerce)

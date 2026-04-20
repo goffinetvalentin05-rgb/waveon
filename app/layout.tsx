@@ -20,8 +20,8 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "waevon",
-  description: "Landing — contenu éditable dans lib/landing/config.ts",
+  title: "Waevon",
+  description: "Prise de rendez-vous pour prestataires — contenu marketing éditable dans lib/landing/config.ts",
 };
 
 export default function RootLayout({

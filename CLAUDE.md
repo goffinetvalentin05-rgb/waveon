@@ -10,23 +10,24 @@ npm run build    # Production build
 npm run lint     # Run ESLint
 ```
 
-Required environment variables (`.env.local`):
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `NEXT_PUBLIC_BASE_URL` (defaults to http://localhost:3000)
+Required environment variables (`.env.local`) — voir `.env.example` :
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- `NEXT_PUBLIC_BASE_URL`
+- `RESEND_API_KEY`, `EMAIL_FROM_ADDRESS` (et optionnellement `EMAIL_FROM_NAME`, `EMAIL_REPLY_TO_FALLBACK`)
+- `CRON_SECRET` (pour `POST /api/cron/emails`)
 
 ## Architecture
 
-**Waveon** is a B2B SaaS app (in French) that helps merchants convert customers into Google reviews and Instagram followers via gamified campaigns (spinning wheel mechanic).
+**Waevon** is a B2B SaaS app (in French) for appointment booking and merchant operations (services, clients, calendar, transactional emails).
 
 ### Route Groups
 
 ```
 app/
-├─ (auth)/          - Login, register, password reset
-├─ (dashboard)/     - Protected merchant area (dashboard, campaigns, clients, bookings, etc.)
-├─ (public)/[slug]/ - Public campaign landing pages with spin wheel
-└─ api/             - API routes (participations, wheel/spin, review/confirm)
+├─ (auth)/           - Login, register, password reset
+├─ (dashboard)/      - Espace commerçant (vue d’ensemble, calendrier, services, clients, disponibilités, paramètres)
+├─ reserver/[slug]/  - Page publique de réservation (slug = `public_slug` du business)
+└─ api/              - Réservations, emails, cron emails, annulation publique, etc.
 ```
 
 Middleware (`middleware.ts`) enforces auth: unauthenticated users on dashboard routes are redirected to `/login?redirect=<path>`.
@@ -35,14 +36,15 @@ Middleware (`middleware.ts`) enforces auth: unauthenticated users on dashboard r
 
 **Supabase clients** — three distinct clients in `lib/supabase/`:
 - `client.ts` — browser (client components)
-- `server.ts` — server components/actions (cookie-based)
-- `admin.ts` — service role key for privileged API routes
+- `server.ts` — server components/actions (anon, sans session cookie dans ce projet)
+- `admin.ts` — service role key for privileged API routes (emails, cron)
+- `route-handler.ts` — route handlers avec session (`createRouteHandlerSupabase`)
 
 **State management** — `WavonProvider` context (`components/wavon/`) wraps the dashboard and exposes business data (services, clients, reservations, settings) via `useWavon()` hook.
 
-**Campaign flow** — merchant creates a campaign → share QR code/link → customer visits `/[slug]` → spins wheel (calls `POST /api/wheel/spin` → `spin_wheel()` Supabase RPC) → lands on Google review or Instagram follow URL.
+**Booking flow** — le commerçant configure services et disponibilités → partage `/reserver/[slug]` → le client choisit un créneau → insertion `wavon_reservations` (+ emails transactionnels via Resend).
 
-**Database** — Supabase (PostgreSQL). Core tables: `users`, `campaigns`, `participations`, `rewards`, `wheel_items`. The `spin_wheel()` stored procedure handles atomic spin logic with probability weighting.
+**Database** — Supabase (PostgreSQL). Préfixe de tables métier : `wavon_*` (businesses, settings, services, clients, reservations, availability, email templates, email settings, email logs, etc.).
 
 ### Path Alias
 

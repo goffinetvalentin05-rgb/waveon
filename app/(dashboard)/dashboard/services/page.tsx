@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+
+const SERVICE_NAME_MAX = 60;
 import { useWavon } from "@/components/wavon/WavonProvider";
 import { Modal } from "@/components/wavon/Modal";
 import { PageHeader } from "@/components/wavon/ui/PageHeader";
@@ -64,7 +66,8 @@ export default function ServicesPage() {
   };
 
   const save = () => {
-    if (!name.trim()) {
+    const trimmedName = name.trim().slice(0, SERVICE_NAME_MAX);
+    if (!trimmedName) {
       toast.push({ kind: "error", message: "Le nom est requis." });
       return;
     }
@@ -77,7 +80,7 @@ export default function ServicesPage() {
     }
     if (editing) {
       updateService(editing.id, {
-        name: name.trim(),
+        name: trimmedName,
         durationMin,
         price,
         description: description.trim(),
@@ -92,7 +95,7 @@ export default function ServicesPage() {
       const nextOrder =
         state.services.length === 0 ? 0 : Math.max(...state.services.map((x) => x.sortOrder ?? 0)) + 1;
       addService({
-        name: name.trim(),
+        name: trimmedName,
         durationMin,
         price,
         description: description.trim(),
@@ -148,7 +151,9 @@ export default function ServicesPage() {
             <article key={s.id} className={cardClass}>
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <h2 className="truncate text-lg font-semibold tracking-tight text-neutral-950">{s.name}</h2>
+                  <h2 className="line-clamp-1 break-all text-lg font-semibold tracking-tight text-neutral-950">
+                    {s.name}
+                  </h2>
                   <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                     <span
                       className={`rounded-full border px-2.5 py-1 font-medium ${
@@ -228,9 +233,7 @@ export default function ServicesPage() {
                   </div>
                 </div>
               </div>
-              <p className="mt-2 text-sm leading-relaxed text-neutral-500">
-                {s.description || "Pas de description."}
-              </p>
+              <ServiceDescription text={s.description || ""} />
               <dl className="mt-5 flex flex-wrap gap-8 border-t border-neutral-100 pt-5 text-sm">
                 <div>
                   <dt className="text-xs font-medium uppercase tracking-wide text-neutral-400">
@@ -278,7 +281,15 @@ export default function ServicesPage() {
         <div className="grid gap-5">
           <div>
             <label className={labelClass}>Nom</label>
-            <input className={`${inputClass} mt-2`} value={name} onChange={(e) => setName(e.target.value)} />
+            <input
+              className={`${inputClass} mt-2`}
+              value={name}
+              maxLength={SERVICE_NAME_MAX}
+              onChange={(e) => setName(e.target.value.slice(0, SERVICE_NAME_MAX))}
+            />
+            <p className="mt-1 text-xs tabular-nums text-neutral-400">
+              {name.length}/{SERVICE_NAME_MAX}
+            </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -373,6 +384,32 @@ export default function ServicesPage() {
           </p>
         </div>
       </Modal>
+    </div>
+  );
+}
+
+function ServiceDescription({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  if (!text.trim()) {
+    return <p className="mt-2 text-sm leading-relaxed text-neutral-500">Pas de description.</p>;
+  }
+  const long = text.length > 200 || text.split("\n").length > 3;
+  return (
+    <div className="mt-2">
+      <p
+        className={`text-sm leading-relaxed text-neutral-500 ${expanded ? "" : "line-clamp-3"}`}
+      >
+        {text}
+      </p>
+      {long ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className={`${linkClass} mt-2 inline-block text-xs`}
+        >
+          {expanded ? "Voir moins" : "Voir plus"}
+        </button>
+      ) : null}
     </div>
   );
 }

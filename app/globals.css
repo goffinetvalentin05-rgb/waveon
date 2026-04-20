@@ -108,3 +108,11 @@ textarea::placeholder {
   }
 }
 
+.waevon-calendar-wrap .rbc-slot-outside {
+  background: rgba(243, 244, 246, 0.85);
+}
+
+.waevon-calendar-wrap .rbc-today {
+  background-color: rgba(250, 250, 250, 0.9);
+}
+

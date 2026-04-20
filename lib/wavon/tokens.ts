@@ -1,5 +1,5 @@
 /**
- * Design system Wavon — aligné sur la landing (clair, premium, sobre).
+ * Design system Waevon — aligné sur la landing (clair, premium, sobre).
  * Ne pas utiliser comme accent principal le vert néon ; hiérarchie noir / gris / blanc.
  */
 

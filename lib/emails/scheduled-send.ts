@@ -1,10 +1,17 @@
 import { render } from "@react-email/render";
 import { getResend, EMAIL_FROM, EMAIL_REPLY_TO_FALLBACK } from "@/lib/resend";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { formatPriceCHF } from "@/lib/wavon/format";
+import { formatPriceEUR } from "@/lib/wavon/format";
 import ReminderClient from "@/lib/emails/templates/reminder-client";
 import PostServiceClient from "@/lib/emails/templates/post-service-client";
 import { renderTemplateText, sanitizeUrl, splitLines } from "@/lib/emails/configurable";
+import {
+  insertEmailDeliveryLog,
+  logResendDomainHint,
+  type DeliveryEmailType,
+} from "@/lib/emails/delivery-log";
+
+type ResendSendResult = { data?: { id?: string } | null; error?: { message?: string } | null };
 
 type EmailSettingType = "reminder_before" | "post_service";
 
@@ -62,7 +69,7 @@ function buildVars(input: {
   reservationTime: string;
   businessPhone: string;
   businessAddress: string;
-  priceCHF: string;
+  priceEUR: string;
 }) {
   return {
     business_name: input.businessName,
@@ -72,7 +79,7 @@ function buildVars(input: {
     reservation_time: input.reservationTime,
     business_phone: input.businessPhone,
     business_address: input.businessAddress,
-    service_price: input.priceCHF,
+    service_price: input.priceEUR,
   } as const;
 }
 
@@ -81,15 +88,17 @@ async function ensureLogAndSend(args: {
   reservationId: string;
   businessId: string;
   type: EmailSettingType;
+  deliveryType: DeliveryEmailType;
   to: string;
   subject: string;
   html: string;
   replyTo?: string;
   from: string;
 }): Promise<{ sent: boolean; skipped: boolean }> {
-  const { admin, reservationId, businessId, type, to, subject, html, replyTo, from } = args;
+  const { admin, reservationId, businessId, type, deliveryType, to, subject, html, replyTo, from } =
+    args;
+  const logBase = `[emails/cron] type=${deliveryType} to=${to}`;
 
-  // Avoid duplicates via unique constraint + status check
   const { data: existing } = await admin
     .from("wavon_email_logs")
     .select("status")
@@ -117,20 +126,43 @@ async function ensureLogAndSend(args: {
     .single();
 
   if (insErr) {
-    // Best-effort: if log insertion fails, avoid sending to prevent duplicates
     return { sent: false, skipped: true };
   }
 
   try {
     const resend = getResend();
-    const result = await resend.emails.send({
+    const raw = await resend.emails.send({
       from,
       to,
       subject,
       html,
       ...(replyTo ? { replyTo } : {}),
     });
+    const result = raw as ResendSendResult;
+    const errMsg = result.error?.message ?? (result.error ? String(result.error) : null);
 
+    if (errMsg) {
+      console.error(`${logBase} — erreur Resend: ${errMsg}`);
+      logResendDomainHint(errMsg);
+      await admin
+        .from("wavon_email_logs")
+        .update({
+          status: "error",
+          error: errMsg,
+        })
+        .eq("id", (inserted as { id: string }).id);
+      await insertEmailDeliveryLog(admin, {
+        business_id: businessId,
+        reservation_id: reservationId,
+        email_type: deliveryType,
+        recipient: to,
+        status: "failed",
+        error_message: errMsg,
+      });
+      return { sent: false, skipped: false };
+    }
+
+    console.log(`${logBase} — succès Resend id=${result.data?.id ?? "n/a"}`);
     await admin
       .from("wavon_email_logs")
       .update({
@@ -140,16 +172,34 @@ async function ensureLogAndSend(args: {
         error: null,
       })
       .eq("id", (inserted as { id: string }).id);
-
+    await insertEmailDeliveryLog(admin, {
+      business_id: businessId,
+      reservation_id: reservationId,
+      email_type: deliveryType,
+      recipient: to,
+      status: "sent",
+      error_message: null,
+    });
     return { sent: true, skipped: false };
   } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(`${logBase} — exception:`, msg);
+    logResendDomainHint(msg);
     await admin
       .from("wavon_email_logs")
       .update({
         status: "error",
-        error: e instanceof Error ? e.message : String(e),
+        error: msg,
       })
       .eq("id", (inserted as { id: string }).id);
+    await insertEmailDeliveryLog(admin, {
+      business_id: businessId,
+      reservation_id: reservationId,
+      email_type: deliveryType,
+      recipient: to,
+      status: "failed",
+      error_message: msg,
+    });
     return { sent: false, skipped: false };
   }
 }
@@ -238,7 +288,7 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
 
         const date = formatEmailDate(r.start_at);
         const time = formatEmailTime(r.start_at);
-        const priceCHF = formatPriceCHF(Number(svc?.price ?? 0));
+        const priceEUR = formatPriceEUR(Number(svc?.price ?? 0));
         const vars = buildVars({
           businessName: displayName,
           clientName: r.client_name || client?.full_name || "Client",
@@ -247,7 +297,7 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
           reservationTime: time,
           businessPhone: business?.phone ?? "",
           businessAddress: business?.address ?? "",
-          priceCHF,
+          priceEUR,
         });
 
         const subject = renderTemplateText(reminder.subject || "", vars);
@@ -275,11 +325,12 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
           reservationId: r.id,
           businessId,
           type: "reminder_before",
+          deliveryType: "rappel",
           to,
           subject: subject || `Rappel de votre rendez-vous chez ${displayName}`,
           html,
           replyTo,
-          from: `${displayName} <${process.env.EMAIL_FROM_ADDRESS ?? "noreply@waevon.com"}>`,
+          from: EMAIL_FROM,
         });
 
         sentCount += outcome.sent ? 1 : 0;
@@ -313,7 +364,7 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
 
         const date = formatEmailDate(r.start_at);
         const time = formatEmailTime(r.start_at);
-        const priceCHF = formatPriceCHF(Number(svc?.price ?? 0));
+        const priceEUR = formatPriceEUR(Number(svc?.price ?? 0));
         const vars = buildVars({
           businessName: displayName,
           clientName: r.client_name || client?.full_name || "Client",
@@ -322,7 +373,7 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
           reservationTime: time,
           businessPhone: business?.phone ?? "",
           businessAddress: business?.address ?? "",
-          priceCHF,
+          priceEUR,
         });
 
         const subject = renderTemplateText(post.subject || "", vars);
@@ -359,6 +410,7 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
           reservationId: r.id,
           businessId,
           type: "post_service",
+          deliveryType: "post_prestation",
           to,
           subject: subject || `Merci pour votre visite chez ${displayName}`,
           html,

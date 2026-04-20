@@ -48,6 +48,7 @@ export type Client = {
   name: string;
   phone: string;
   email: string;
+  privateNote: string;
 };
 
 export type Reservation = {
@@ -62,6 +63,7 @@ export type Reservation = {
   bufferAfterMin: number;
   status: ReservationStatus;
   createdAt: string;
+  notes: string;
 };
 
 export type ConfirmationMode = "auto" | "manual";

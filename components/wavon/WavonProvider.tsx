@@ -86,6 +86,7 @@ type DbClient = {
   full_name: string;
   email: string | null;
   phone: string | null;
+  private_note: string | null;
 };
 
 type DbReservation = {
@@ -101,6 +102,7 @@ type DbReservation = {
   buffer_after_minutes: number;
   status: "confirmed" | "cancelled" | "pending";
   created_at: string;
+  notes: string | null;
 };
 
 type DbWeeklyAvailability = {
@@ -229,6 +231,7 @@ type Ctx = {
     clientName: string;
     serviceId: string;
     start: Date;
+    notes?: string;
   }) => { ok: true; id: string } | { ok: false; error: string };
   updateReservation: (
     id: string,
@@ -238,9 +241,10 @@ type Ctx = {
       serviceId: string;
       start: Date;
       status: ReservationStatus;
+      notes: string;
     }>
   ) => { ok: true } | { ok: false; error: string };
-  deleteReservation: (id: string) => void;
+  deleteReservation: (id: string) => Promise<void>;
   patchSettings: (patch: Partial<WavonState["settings"]>) => void;
   upsertEmailTemplate: (input: {
     type: EmailTemplateType;
@@ -329,13 +333,13 @@ export function WavonProvider({
           .order("created_at", { ascending: true }),
         supabase
           .from("wavon_clients")
-          .select("id,business_id,full_name,email,phone")
+          .select("id,business_id,full_name,email,phone,private_note")
           .eq("business_id", ensuredBusiness.id)
           .order("created_at", { ascending: true }),
         supabase
           .from("wavon_reservations")
           .select(
-            "id,business_id,client_id,client_name,service_id,start_at,end_at,duration_minutes,buffer_before_minutes,buffer_after_minutes,status,created_at"
+            "id,business_id,client_id,client_name,service_id,start_at,end_at,duration_minutes,buffer_before_minutes,buffer_after_minutes,status,created_at,notes"
           )
           .eq("business_id", ensuredBusiness.id)
           .order("start_at", { ascending: true }),
@@ -426,6 +430,7 @@ export function WavonProvider({
           name: c.full_name,
           phone: c.phone ?? "",
           email: c.email ?? "",
+          privateNote: c.private_note ?? "",
         })),
         reservations: dbReservations.map((r) => ({
           id: r.id,
@@ -439,6 +444,7 @@ export function WavonProvider({
           bufferAfterMin: r.buffer_after_minutes ?? 0,
           status: r.status,
           createdAt: r.created_at,
+          notes: r.notes ?? "",
         })),
         settings: {
           businessName: ensuredBusiness.business_name ?? "",
@@ -494,7 +500,7 @@ export function WavonProvider({
 
     void bootstrap().catch((err) => {
       if (process.env.NODE_ENV !== "production") {
-        console.error("[WavonProvider] bootstrap error:", err);
+        console.error("[WaevonProvider] bootstrap error:", err);
       }
       if (!cancelled) {
         setReady(true);
@@ -761,8 +767,9 @@ export function WavonProvider({
           full_name: c.name,
           phone: c.phone || null,
           email: c.email || null,
+          private_note: c.privateNote?.trim() || null,
         })
-        .select("id,business_id,full_name,email,phone")
+        .select("id,business_id,full_name,email,phone,private_note")
         .single();
       if (error) throw error;
       const row = data as DbClient;
@@ -775,6 +782,7 @@ export function WavonProvider({
             name: row.full_name,
             phone: row.phone ?? "",
             email: row.email ?? "",
+            privateNote: row.private_note ?? "",
           },
         ],
       }));
@@ -787,12 +795,15 @@ export function WavonProvider({
       clients: prev.clients.map((x) => (x.id === id ? { ...x, ...patch } : x)),
     }));
     if (!businessId) return;
-    void supabase
+      void supabase
       .from("wavon_clients")
       .update({
         ...(patch.name !== undefined ? { full_name: patch.name } : {}),
         ...(patch.phone !== undefined ? { phone: patch.phone || null } : {}),
         ...(patch.email !== undefined ? { email: patch.email || null } : {}),
+        ...(patch.privateNote !== undefined
+          ? { private_note: patch.privateNote.trim() || null }
+          : {}),
       })
       .eq("id", id)
       .eq("business_id", businessId);
@@ -816,6 +827,7 @@ export function WavonProvider({
       clientName: string;
       serviceId: string;
       start: Date;
+      notes?: string;
     }): { ok: true; id: string } | { ok: false; error: string } => {
       if (!businessId) {
         return { ok: false, error: "Compte non initialisé." };
@@ -859,6 +871,7 @@ export function WavonProvider({
           bufferAfterMin: service.bufferAfterMin ?? 0,
           status,
           createdAt: new Date().toISOString(),
+          notes: (input.notes ?? "").trim(),
         };
         outcome.current = { kind: "ok", reservation: res };
         return { ...prev, reservations: [...prev.reservations, res] };
@@ -882,9 +895,29 @@ export function WavonProvider({
           buffer_before_minutes: res.bufferBeforeMin,
           buffer_after_minutes: res.bufferAfterMin,
           status: res.status,
+          notes: res.notes || null,
         });
-        if (error && process.env.NODE_ENV !== "production") {
-          console.error("[WavonProvider] insert reservation:", error.message);
+        if (error) {
+          if (process.env.NODE_ENV !== "production") {
+            console.error("[WaevonProvider] insert reservation:", error.message);
+          }
+          return;
+        }
+        const base = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, "") || "";
+        const origin = base || (typeof window !== "undefined" ? window.location.origin : "");
+        if (!origin) return;
+        try {
+          await fetch(`${origin}/api/emails/send`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: "new_booking",
+              reservationId: res.id,
+              businessId,
+            }),
+          });
+        } catch {
+          /* email ne doit pas bloquer */
         }
       })();
 
@@ -902,6 +935,7 @@ export function WavonProvider({
         serviceId: string;
         start: Date;
         status: ReservationStatus;
+        notes: string;
       }>
     ): { ok: true } | { ok: false; error: string } => {
       let errorMsg: string | null = null;
@@ -930,6 +964,7 @@ export function WavonProvider({
           bufferBeforeMin: service.bufferBeforeMin ?? 0,
           bufferAfterMin: service.bufferAfterMin ?? 0,
           status: patch.status ?? cur.status,
+          notes: patch.notes !== undefined ? patch.notes : cur.notes,
         };
         const err = validateBooking({
           state: prev,
@@ -953,6 +988,7 @@ export function WavonProvider({
         if (patch.clientName !== undefined) payload.client_name = patch.clientName.trim();
         if (patch.serviceId !== undefined) payload.service_id = patch.serviceId;
         if (patch.status !== undefined) payload.status = patch.status;
+        if (patch.notes !== undefined) payload.notes = patch.notes.trim() || null;
         if (patch.start !== undefined || patch.serviceId !== undefined) {
           const svcId =
             patch.serviceId ??
@@ -992,14 +1028,37 @@ export function WavonProvider({
        [businessId, state.services, state.reservations]
   );
 
-  const deleteReservation = useCallback((id: string) => {
-    setState((prev) => ({
-      ...prev,
-      reservations: prev.reservations.filter((r) => r.id !== id),
-    }));
-    if (!businessId) return;
-    void supabase.from("wavon_reservations").delete().eq("id", id).eq("business_id", businessId);
-  }, [businessId]);
+  const deleteReservation = useCallback(
+    async (id: string) => {
+      const snap = state.reservations.find((r) => r.id === id);
+      if (businessId && snap && snap.status !== "cancelled") {
+        const base = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, "") || "";
+        const origin = base || (typeof window !== "undefined" ? window.location.origin : "");
+        if (origin) {
+          try {
+            await fetch(`${origin}/api/emails/send`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                type: "cancellation_by_merchant",
+                reservationId: id,
+                businessId,
+              }),
+            });
+          } catch {
+            /* email ne doit pas bloquer */
+          }
+        }
+      }
+      setState((prev) => ({
+        ...prev,
+        reservations: prev.reservations.filter((r) => r.id !== id),
+      }));
+      if (!businessId) return;
+      await supabase.from("wavon_reservations").delete().eq("id", id).eq("business_id", businessId);
+    },
+    [businessId, state.reservations]
+  );
 
   const patchSettings = useCallback((patch: Partial<WavonState["settings"]>) => {
     setState((prev) => {

@@ -88,6 +88,7 @@ type DbReservation = {
   buffer_after_minutes?: number;
   status: "confirmed" | "cancelled" | "pending";
   created_at: string;
+  notes?: string | null;
 };
 
 type DbWeeklyAvailability = {
@@ -194,7 +195,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
             supabase
               .from("wavon_reservations")
               .select(
-                "id,client_name,client_id,service_id,start_at,end_at,duration_minutes,buffer_before_minutes,buffer_after_minutes,status,created_at"
+                "id,client_name,client_id,service_id,start_at,end_at,duration_minutes,buffer_before_minutes,buffer_after_minutes,status,created_at,notes"
               )
               .eq("business_id", id)
               .order("start_at", { ascending: true }),
@@ -283,6 +284,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
             bufferAfterMin: r.buffer_after_minutes ?? 0,
             status: r.status,
             createdAt: r.created_at,
+            notes: r.notes ?? "",
           })),
           settings: {
             businessName: b.business_name ?? "",
@@ -355,26 +357,6 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
   const slots = useMemo(() => {
     if (!state || !svc || !dateYmd) return [];
     const out = getAvailableSlots(dateYmd, svc, state);
-    if (process.env.NODE_ENV !== "production") {
-      // Debug chain: availability → settings → computed slots
-      console.debug("[public booking] slots", {
-        dateYmd,
-        service: {
-          id: svc.id,
-          durationMin: svc.durationMin,
-          bufferBeforeMin: svc.bufferBeforeMin,
-          bufferAfterMin: svc.bufferAfterMin,
-          bookingNoticeHours: svc.bookingNoticeHours,
-        },
-        availabilityMode: state.availabilityMode,
-        slotIntervalMinutes: state.settings.slotIntervalMinutes,
-        weeklyForDay: state.weekly[dayKeyFromDate(parseYmd(dateYmd)) as DayKey],
-        customDay: state.customDays.find((d) => d.date === dateYmd) ?? null,
-        blocked: state.blockedDates.includes(dateYmd),
-        reservations: state.reservations.length,
-        slots: out.length,
-      });
-    }
     return out;
   }, [state, svc, dateYmd]);
 
@@ -489,7 +471,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
       const { data: freshRes, error: fresErr } = await supabase
         .from("wavon_reservations")
         .select(
-          "id,client_name,client_id,service_id,start_at,end_at,duration_minutes,buffer_before_minutes,buffer_after_minutes,status,created_at"
+          "id,client_name,client_id,service_id,start_at,end_at,duration_minutes,buffer_before_minutes,buffer_after_minutes,status,created_at,notes"
         )
         .eq("business_id", businessId)
         .gte("start_at", dayStart.toISOString())
@@ -511,6 +493,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
           bufferAfterMin: r.buffer_after_minutes ?? 0,
           status: r.status,
           createdAt: r.created_at,
+          notes: r.notes ?? "",
         })),
       };
 
@@ -608,6 +591,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
               bufferAfterMin: effectiveSvc.bufferAfterMin ?? 0,
               status,
               createdAt: (createdRes as { created_at: string }).created_at,
+              notes: "",
             },
           ],
         };
@@ -844,7 +828,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
               </div>
 
               <p className="mt-6 text-center text-xs text-neutral-400">
-                Réservation proposée par Wavon.
+                Réservation proposée par Waevon.
               </p>
             </div>
           );

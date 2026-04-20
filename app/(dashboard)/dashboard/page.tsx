@@ -70,7 +70,11 @@ export default function DashboardOverviewPage() {
     <div className="space-y-12 pb-8">
       <PageHeader
         title="Vue d'ensemble"
-        description={`${state.settings.businessName} — activité et rendez-vous en un coup d'œil.`}
+        description={
+          state.settings.businessName?.trim()
+            ? `${state.settings.businessName.trim()} — activité et rendez-vous en un coup d'œil.`
+            : "Activité et rendez-vous en un coup d'œil."
+        }
       />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -84,7 +88,7 @@ export default function DashboardOverviewPage() {
         <section className={cardClass}>
           <div className="mb-5 flex items-center justify-between gap-2">
             <h2 className="text-base font-semibold text-neutral-950">Prochains rendez-vous</h2>
-            <Link href="/dashboard/reservations" className={linkClass}>
+            <Link href="/dashboard/calendrier" className={linkClass}>
               Gérer
             </Link>
           </div>
@@ -116,7 +120,7 @@ export default function DashboardOverviewPage() {
         <section className={cardClass}>
           <div className="mb-5 flex items-center justify-between gap-2">
             <h2 className="text-base font-semibold text-neutral-950">Dernières réservations</h2>
-            <Link href="/dashboard/reservations" className={linkClass}>
+            <Link href="/dashboard/calendrier" className={linkClass}>
               Voir tout
             </Link>
           </div>
