@@ -49,12 +49,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "RESEND_API_KEY manquante." }, { status: 503 });
   }
 
-  const supabase = await createRouteHandlerSupabase();
+  let supabase;
+  try {
+    supabase = await createRouteHandlerSupabase();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Configuration Supabase invalide.";
+    return NextResponse.json({ ok: false, error: msg }, { status: 500 });
+  }
   const {
     data: { user },
+    error: authErr,
   } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ ok: false, error: "Non authentifié." }, { status: 401 });
+  if (authErr || !user) {
+    return NextResponse.json(
+      { ok: false, error: authErr?.message || "Non authentifié." },
+      { status: 401 }
+    );
   }
 
   const parsed = (await req.json().catch(() => null)) as Body | null;
@@ -200,16 +210,19 @@ export async function POST(req: NextRequest) {
 
   try {
     const resend = getResend();
-    const raw = await resend.emails.send({
+    const { error: resendErr } = await resend.emails.send({
       from: EMAIL_FROM,
       to,
       subject,
       html,
     });
-    const err = (raw as { error?: { message?: string } }).error;
-    if (err?.message) {
-      console.error("[api/emails/test-configurable] Resend:", err.message);
-      return NextResponse.json({ ok: false, error: err.message }, { status: 502 });
+    if (resendErr) {
+      const msg =
+        typeof resendErr === "object" && resendErr !== null && "message" in resendErr
+          ? String((resendErr as { message: unknown }).message)
+          : String(resendErr);
+      console.error("[api/emails/test-configurable] Resend:", msg);
+      return NextResponse.json({ ok: false, error: msg }, { status: 502 });
     }
     return NextResponse.json({ ok: true });
   } catch (e) {

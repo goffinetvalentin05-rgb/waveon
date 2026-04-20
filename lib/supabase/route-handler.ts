@@ -14,9 +14,14 @@ export async function createRouteHandlerSupabase() {
         return cookieStore.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          cookieStore.set(name, value, options);
-        });
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
+        } catch {
+          // Rafraîchissement de session depuis un Route Handler : `cookies().set` peut échouer.
+          // Le middleware continue de synchroniser la session sur les navigations /api ciblées.
+        }
       },
     },
   });

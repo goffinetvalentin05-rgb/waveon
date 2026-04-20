@@ -54,6 +54,34 @@ function normalizeLinks(obj: Record<string, unknown> | null | undefined) {
   };
 }
 
+type TestConfigurableJson = { ok?: boolean; error?: string };
+
+async function postConfigurableEmailTest(body: unknown): Promise<{ ok: boolean; error: string }> {
+  const res = await fetch("/api/emails/test-configurable", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const text = await res.text();
+  let json: TestConfigurableJson | null = null;
+  try {
+    json = text ? (JSON.parse(text) as TestConfigurableJson) : null;
+  } catch {
+    /* réponse non-JSON */
+  }
+  if (res.ok && json?.ok) return { ok: true, error: "" };
+  const nonJsonHint =
+    text.trim() && !text.trim().startsWith("{") ? text.trim().slice(0, 240) : "";
+  const message =
+    json?.error ||
+    nonJsonHint ||
+    (res.status === 401
+      ? "Session expirée ou non authentifié. Recharge la page puis réessaie."
+      : `Envoi test impossible (${res.status}).`);
+  return { ok: false, error: message };
+}
+
 export function EmailsSettingsTab() {
   const { ready, state, businessId, upsertEmailTemplate } = useWavon();
   const toast = useToast();
@@ -133,14 +161,14 @@ export function EmailsSettingsTab() {
       toast.push({ kind: "error", message: "Indique une adresse email pour le test." });
       return;
     }
-    const res = await fetch("/api/emails/test-configurable", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ businessId, mode: "scheduled", scheduledType: type, to }),
+    const { ok, error } = await postConfigurableEmailTest({
+      businessId,
+      mode: "scheduled",
+      scheduledType: type,
+      to,
     });
-    const json = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
-    if (!res.ok || !json?.ok) {
-      toast.push({ kind: "error", message: json?.error || "Envoi test impossible." });
+    if (!ok) {
+      toast.push({ kind: "error", message: error });
       return;
     }
     toast.push({ message: "Email test envoyé." });
@@ -153,14 +181,14 @@ export function EmailsSettingsTab() {
       toast.push({ kind: "error", message: "Indique une adresse email pour le test." });
       return;
     }
-    const res = await fetch("/api/emails/test-configurable", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ businessId, mode: "template", templateType, to }),
+    const { ok, error } = await postConfigurableEmailTest({
+      businessId,
+      mode: "template",
+      templateType,
+      to,
     });
-    const json = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
-    if (!res.ok || !json?.ok) {
-      toast.push({ kind: "error", message: json?.error || "Envoi test impossible." });
+    if (!ok) {
+      toast.push({ kind: "error", message: error });
       return;
     }
     toast.push({ message: "Email test envoyé." });
