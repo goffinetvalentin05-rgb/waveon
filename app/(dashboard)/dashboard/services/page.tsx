@@ -1,8 +1,6 @@
 "use client";
 
-import { useState } from "react";
-
-const SERVICE_NAME_MAX = 60;
+import { useState, type ReactNode } from "react";
 import { useWavon } from "@/components/wavon/WavonProvider";
 import { Modal } from "@/components/wavon/Modal";
 import { PageHeader } from "@/components/wavon/ui/PageHeader";
@@ -19,6 +17,35 @@ import {
   spinnerClass,
   textareaClass,
 } from "@/lib/wavon/tokens";
+
+const SERVICE_NAME_MAX = 60;
+
+const PREPARATION_BEFORE_TOOLTIP =
+  "Temps réservé avant le RDV pour préparer ton poste ou accueillir le client. Aucun autre rendez-vous ne pourra être pris pendant ce temps.";
+const PAUSE_AFTER_TOOLTIP =
+  "Temps réservé après le RDV pour nettoyer ou finir une tâche. Aucun autre rendez-vous ne pourra être pris pendant ce temps.";
+
+function InfoHintButton({ text }: { text: string }) {
+  return (
+    <button
+      type="button"
+      className="inline-flex size-[18px] shrink-0 items-center justify-center rounded-full border border-neutral-300/90 bg-white text-[10px] font-bold leading-none text-neutral-500 shadow-sm transition hover:border-neutral-400 hover:bg-neutral-50 hover:text-neutral-700"
+      title={text}
+      aria-label={text}
+    >
+      ?
+    </button>
+  );
+}
+
+function FieldLabelWithHint({ children, hint }: { children: ReactNode; hint: string }) {
+  return (
+    <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-neutral-500">
+      <span>{children}</span>
+      <InfoHintButton text={hint} />
+    </div>
+  );
+}
 
 export default function ServicesPage() {
   const { ready, state, addService, updateService, deleteService } = useWavon();
@@ -175,7 +202,7 @@ export default function ServicesPage() {
                     </span>
                     {(s.bufferBeforeMin ?? 0) > 0 || (s.bufferAfterMin ?? 0) > 0 ? (
                       <span className="rounded-full border border-neutral-200/90 bg-neutral-50 px-2.5 py-1 font-medium text-neutral-700">
-                        Buffer {s.bufferBeforeMin ?? 0} / {s.bufferAfterMin ?? 0} min
+                        Préparation {s.bufferBeforeMin ?? 0} min · Pause {s.bufferAfterMin ?? 0} min
                       </span>
                     ) : null}
                     {s.bookingNoticeHours !== null && s.bookingNoticeHours !== undefined ? (
@@ -337,7 +364,9 @@ export default function ServicesPage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
-              <label className={labelClass}>Buffer avant (min)</label>
+              <FieldLabelWithHint hint={PREPARATION_BEFORE_TOOLTIP}>
+                Temps de préparation avant (min)
+              </FieldLabelWithHint>
               <input
                 type="number"
                 min={0}
@@ -346,9 +375,10 @@ export default function ServicesPage() {
                 value={bufferBeforeMin}
                 onChange={(e) => setBufferBeforeMin(Math.max(0, Number(e.target.value) || 0))}
               />
+              <p className="mt-1 text-xs text-neutral-400">Laisse à 0 si tu n&apos;en as pas besoin.</p>
             </div>
             <div>
-              <label className={labelClass}>Buffer après (min)</label>
+              <FieldLabelWithHint hint={PAUSE_AFTER_TOOLTIP}>Temps de pause après (min)</FieldLabelWithHint>
               <input
                 type="number"
                 min={0}
@@ -357,6 +387,7 @@ export default function ServicesPage() {
                 value={bufferAfterMin}
                 onChange={(e) => setBufferAfterMin(Math.max(0, Number(e.target.value) || 0))}
               />
+              <p className="mt-1 text-xs text-neutral-400">Laisse à 0 si tu n&apos;en as pas besoin.</p>
             </div>
             <div>
               <label className={labelClass}>Préavis (heures)</label>
@@ -380,7 +411,8 @@ export default function ServicesPage() {
             />
           </div>
           <p className="text-xs leading-relaxed text-neutral-400">
-            La durée, les buffers et le préavis influencent directement les créneaux proposés sur la page publique.
+            La durée, la préparation et la pause après le rendez-vous, ainsi que le préavis, influencent directement les
+            créneaux proposés sur la page publique.
           </p>
         </div>
       </Modal>
