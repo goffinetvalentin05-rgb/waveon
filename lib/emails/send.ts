@@ -4,18 +4,19 @@ import { getResend, getResendApiKey, EMAIL_FROM, EMAIL_REPLY_TO_FALLBACK } from 
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { formatPrice, normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
 import type { EmailTemplateType } from "@/lib/wavon/types";
-import { renderTemplateText, splitLines } from "@/lib/emails/configurable";
+import { renderTemplateText } from "@/lib/emails/configurable";
+import { plainTextToParagraphs, templateBodyToParagraphs } from "@/lib/emails/email-body-utils";
 import { defaultEmailBody, defaultEmailSubject } from "@/lib/emails/default-copy";
 import {
   insertEmailDeliveryLog,
   logResendDomainHint,
   type DeliveryEmailType,
 } from "@/lib/emails/delivery-log";
-import ConfirmationClient from "./templates/confirmation-client";
-import NotificationMerchant from "./templates/notification-merchant";
-import CancellationClient from "./templates/cancellation-client";
-import CancellationMerchant from "./templates/cancellation-merchant";
-import ReminderClient from "./templates/reminder-client";
+import { publicBookingAbsoluteUrl } from "@/lib/wavon/public-page-url";
+import ReservationConfirmation from "@/lib/emails/templates/ReservationConfirmation";
+import ReservationNotification from "@/lib/emails/templates/ReservationNotification";
+import ReservationCancellation from "@/lib/emails/templates/ReservationCancellation";
+import ReservationCancellationOwner from "@/lib/emails/templates/ReservationCancellationOwner";
 
 function formatEmailDate(iso: string): string {
   return new Date(iso).toLocaleDateString("fr-FR", {
@@ -49,6 +50,10 @@ type ReservationData = {
   businessPhone: string | null;
   businessAddress: string;
   currency: string;
+  merchantLogoUrl: string | null;
+  publicSlug: string | null;
+  notifyOwnerOnNewReservation: boolean;
+  notifyOwnerOnCancellation: boolean;
 };
 
 type DbReservationRow = {
@@ -77,6 +82,10 @@ type DbBusinessRow = {
   city: string | null;
   postal_code: string | null;
   currency: string | null;
+  public_logo_url: string | null;
+  public_slug: string | null;
+  notify_owner_on_new_reservation: boolean | null;
+  notify_owner_on_cancellation: boolean | null;
 };
 
 type DbClientRow = {
@@ -118,7 +127,9 @@ async function fetchReservationData(
       .maybeSingle(),
     admin
       .from("wavon_businesses")
-      .select("business_name,public_display_name,email,phone,address,city,postal_code,currency")
+      .select(
+        "business_name,public_display_name,email,phone,address,city,postal_code,currency,public_logo_url,public_slug,notify_owner_on_new_reservation,notify_owner_on_cancellation"
+      )
       .eq("id", businessId)
       .maybeSingle(),
     reservation.client_id
@@ -156,6 +167,10 @@ async function fetchReservationData(
     businessPhone: biz?.phone ?? null,
     businessAddress: formatBusinessAddress(biz),
     currency: normalizeBusinessCurrency(biz?.currency),
+    merchantLogoUrl: biz?.public_logo_url?.trim() || null,
+    publicSlug: biz?.public_slug?.trim() || null,
+    notifyOwnerOnNewReservation: biz?.notify_owner_on_new_reservation !== false,
+    notifyOwnerOnCancellation: biz?.notify_owner_on_cancellation !== false,
   };
 }
 
@@ -311,18 +326,22 @@ export async function sendNewBookingEmails(
         (tpl?.body?.trim() ? tpl.body : defaultEmailBody("confirmation")) ||
         defaultEmailBody("confirmation");
       const subject = renderTemplateText(subjRaw, vars);
-      const bodyRendered = renderTemplateText(bodyRaw, vars);
-      const lines = splitLines(bodyRendered);
+      const customIntro = templateBodyToParagraphs(bodyRaw, vars);
       const html = await render(
-        ReminderClient({
+        ReservationConfirmation({
           businessName: displayName,
-          previewText: subject || `Message de ${displayName}`,
-          title: isPending ? "Demande enregistrée" : "Réservation confirmée",
-          greeting: `Bonjour ${data.clientName},`,
-          lines,
+          clientName: data.clientName,
+          serviceName: data.serviceName,
+          date,
+          time,
+          durationMin: data.durationMin,
+          formattedPrice: formattedServicePrice,
           address: data.businessAddress || undefined,
           phone: data.businessPhone || undefined,
           cancelUrl: cancelUrl ?? undefined,
+          isPending,
+          merchantLogoUrl: data.merchantLogoUrl,
+          customIntroParagraphs: customIntro,
         })
       );
       await sendResendAndLog({
@@ -345,7 +364,7 @@ export async function sendNewBookingEmails(
       );
     } else if (data.clientEmail) {
       const html = await render(
-        ConfirmationClient({
+        ReservationConfirmation({
           businessName: displayName,
           clientName: data.clientName,
           serviceName: data.serviceName,
@@ -357,6 +376,7 @@ export async function sendNewBookingEmails(
           phone: data.businessPhone || undefined,
           isPending,
           cancelUrl: cancelUrl ?? undefined,
+          merchantLogoUrl: data.merchantLogoUrl,
         })
       );
       await sendResendAndLog({
@@ -373,10 +393,9 @@ export async function sendNewBookingEmails(
       });
     }
 
-    if (data.merchantEmail) {
+    if (data.merchantEmail && data.notifyOwnerOnNewReservation) {
       const html = await render(
-        NotificationMerchant({
-          businessName: displayName,
+        ReservationNotification({
           clientName: data.clientName,
           clientEmail: data.clientEmail ?? undefined,
           clientPhone: data.clientPhone ?? undefined,
@@ -425,7 +444,13 @@ export async function sendCancellationByMerchantEmails(
     const displayName = data.businessDisplayName?.trim() || data.businessName;
     const date = formatEmailDate(data.startAt);
     const time = formatEmailTime(data.startAt);
+    const formattedServicePrice = formatPrice(data.servicePrice, data.currency);
     const replyTo = data.merchantEmail ?? EMAIL_REPLY_TO_FALLBACK;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://waevon.com";
+    const rebookUrl = data.publicSlug
+      ? publicBookingAbsoluteUrl(data.publicSlug)
+      : baseUrl;
+
     const tpl = await fetchEmailTemplate(admin, businessId, "cancellation");
     const vars = buildTemplateVars(data, displayName);
     const useTpl = tpl !== null && tpl.is_enabled !== false;
@@ -441,17 +466,20 @@ export async function sendCancellationByMerchantEmails(
       if (reason?.trim()) {
         bodyRendered += `\n\nMotif : ${reason.trim()}`;
       }
-      const lines = splitLines(bodyRendered);
+      const customIntro = plainTextToParagraphs(bodyRendered);
       const subject = renderTemplateText(subjRaw, vars);
       const html = await render(
-        ReminderClient({
+        ReservationCancellation({
           businessName: displayName,
-          previewText: subject || `Annulation — ${displayName}`,
-          title: "Réservation annulée",
-          greeting: `Bonjour ${data.clientName},`,
-          lines,
-          phone: data.businessPhone || undefined,
-          address: data.businessAddress || undefined,
+          clientName: data.clientName,
+          serviceName: data.serviceName,
+          date,
+          time,
+          durationMin: data.durationMin,
+          formattedPrice: formattedServicePrice,
+          rebookUrl,
+          merchantLogoUrl: data.merchantLogoUrl,
+          customIntroParagraphs: customIntro,
         })
       );
       await sendResendAndLog({
@@ -468,13 +496,16 @@ export async function sendCancellationByMerchantEmails(
       console.log(`[emails] annulation client désactivée — pas d'email pour ${data.clientEmail}`);
     } else if (data.clientEmail) {
       const html = await render(
-        CancellationClient({
+        ReservationCancellation({
           businessName: displayName,
           clientName: data.clientName,
           serviceName: data.serviceName,
           date,
           time,
-          phone: data.businessPhone ?? undefined,
+          durationMin: data.durationMin,
+          formattedPrice: formattedServicePrice,
+          rebookUrl,
+          merchantLogoUrl: data.merchantLogoUrl,
           reason,
         })
       );
@@ -490,15 +521,16 @@ export async function sendCancellationByMerchantEmails(
       });
     }
 
-    if (data.merchantEmail) {
+    if (data.merchantEmail && data.notifyOwnerOnCancellation) {
       const html = await render(
-        CancellationMerchant({
-          businessName: displayName,
+        ReservationCancellationOwner({
           clientName: data.clientName,
+          clientEmail: data.clientEmail ?? undefined,
           clientPhone: data.clientPhone ?? undefined,
           serviceName: data.serviceName,
           date,
           time,
+          durationMin: data.durationMin,
         })
       );
       await sendResendAndLog({
@@ -535,20 +567,27 @@ export async function sendCancellationByClientEmails(
     const displayName = data.businessDisplayName?.trim() || data.businessName;
     const date = formatEmailDate(data.startAt);
     const time = formatEmailTime(data.startAt);
+    const formattedServicePrice = formatPrice(data.servicePrice, data.currency);
     const replyTo = data.merchantEmail ?? EMAIL_REPLY_TO_FALLBACK;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://waevon.com";
+    const rebookUrl = data.publicSlug
+      ? publicBookingAbsoluteUrl(data.publicSlug)
+      : baseUrl;
+
     const tpl = await fetchEmailTemplate(admin, businessId, "cancellation");
     const vars = buildTemplateVars(data, displayName);
     const useTpl = tpl !== null && tpl.is_enabled !== false;
 
-    if (data.merchantEmail) {
+    if (data.merchantEmail && data.notifyOwnerOnCancellation) {
       const html = await render(
-        CancellationMerchant({
-          businessName: displayName,
+        ReservationCancellationOwner({
           clientName: data.clientName,
+          clientEmail: data.clientEmail ?? undefined,
           clientPhone: data.clientPhone ?? undefined,
           serviceName: data.serviceName,
           date,
           time,
+          durationMin: data.durationMin,
         })
       );
       await sendResendAndLog({
@@ -570,16 +609,19 @@ export async function sendCancellationByClientEmails(
         (tpl?.body?.trim() ? tpl.body : defaultEmailBody("cancellation")) ||
         defaultEmailBody("cancellation");
       const subject = renderTemplateText(subjRaw, vars);
-      const lines = splitLines(renderTemplateText(bodyRaw, vars));
+      const customIntro = templateBodyToParagraphs(bodyRaw, vars);
       const html = await render(
-        ReminderClient({
+        ReservationCancellation({
           businessName: displayName,
-          previewText: subject || `Annulation — ${displayName}`,
-          title: "Réservation annulée",
-          greeting: `Bonjour ${data.clientName},`,
-          lines,
-          phone: data.businessPhone || undefined,
-          address: data.businessAddress || undefined,
+          clientName: data.clientName,
+          serviceName: data.serviceName,
+          date,
+          time,
+          durationMin: data.durationMin,
+          formattedPrice: formattedServicePrice,
+          rebookUrl,
+          merchantLogoUrl: data.merchantLogoUrl,
+          customIntroParagraphs: customIntro,
         })
       );
       await sendResendAndLog({
@@ -596,13 +638,16 @@ export async function sendCancellationByClientEmails(
       console.log(`[emails] annulation client désactivée — pas d'email pour ${data.clientEmail}`);
     } else if (data.clientEmail) {
       const html = await render(
-        CancellationClient({
+        ReservationCancellation({
           businessName: displayName,
           clientName: data.clientName,
           serviceName: data.serviceName,
           date,
           time,
-          phone: data.businessPhone ?? undefined,
+          durationMin: data.durationMin,
+          formattedPrice: formattedServicePrice,
+          rebookUrl,
+          merchantLogoUrl: data.merchantLogoUrl,
         })
       );
       await sendResendAndLog({

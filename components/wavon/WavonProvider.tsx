@@ -57,6 +57,8 @@ type DbBusiness = {
   public_show_address: boolean | null;
   public_show_description: boolean | null;
   currency: string | null;
+  notify_owner_on_new_reservation: boolean | null;
+  notify_owner_on_cancellation: boolean | null;
 };
 
 type DbSettings = {
@@ -187,6 +189,8 @@ function createEmptyState(): WavonState {
       publicShowAddress: true,
       publicShowDescription: true,
       publicAfterBookingMessage: "Ta demande est enregistrée. À très bientôt.",
+      notifyOwnerOnNewReservation: true,
+      notifyOwnerOnCancellation: true,
     },
     emailTemplates: [],
     whatsappThreads: [],
@@ -294,7 +298,7 @@ export function WavonProvider({
       const { data: business, error: businessErr } = await supabase
         .from("wavon_businesses")
         .select(
-          "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description,currency"
+          "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description,currency,notify_owner_on_new_reservation,notify_owner_on_cancellation"
         )
         .eq("user_id", userId)
         .maybeSingle();
@@ -308,7 +312,7 @@ export function WavonProvider({
             .from("wavon_businesses")
             .insert({ user_id: userId, public_slug: provisionalSlug })
             .select(
-              "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description,currency"
+              "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description,currency,notify_owner_on_new_reservation,notify_owner_on_cancellation"
             )
             .single();
           if (error) throw error;
@@ -492,6 +496,8 @@ export function WavonProvider({
           publicAfterBookingMessage:
             dbSettings?.public_after_booking_message ??
             "Ta demande est enregistrée. À très bientôt.",
+          notifyOwnerOnNewReservation: ensuredBusiness.notify_owner_on_new_reservation ?? true,
+          notifyOwnerOnCancellation: ensuredBusiness.notify_owner_on_cancellation ?? true,
         },
         emailTemplates: dbTemplates.map(
           (t): EmailTemplate => ({
@@ -1135,6 +1141,12 @@ export function WavonProvider({
       if (patch.publicShowPhone !== undefined) businessPatch.public_show_phone = Boolean(patch.publicShowPhone);
       if (patch.publicShowAddress !== undefined) businessPatch.public_show_address = Boolean(patch.publicShowAddress);
       if (patch.publicShowDescription !== undefined) businessPatch.public_show_description = Boolean(patch.publicShowDescription);
+      if (patch.notifyOwnerOnNewReservation !== undefined) {
+        businessPatch.notify_owner_on_new_reservation = Boolean(patch.notifyOwnerOnNewReservation);
+      }
+      if (patch.notifyOwnerOnCancellation !== undefined) {
+        businessPatch.notify_owner_on_cancellation = Boolean(patch.notifyOwnerOnCancellation);
+      }
       if (patch.publicSlug !== undefined) {
         const v = validatePublicSlugFormat(normalizePublicSlugInput(patch.publicSlug));
         if (v.ok) businessPatch.public_slug = v.slug;

@@ -74,5 +74,6 @@ export const config = {
     "/reserver/:path*",
     // Permet de rafraîchir la session (cookies) avant le handler, comme pour le dashboard.
     "/api/emails/test-configurable",
+    "/api/emails/preview",
   ],
 };

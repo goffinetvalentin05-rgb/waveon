@@ -107,6 +107,10 @@ export type BusinessSettings = {
   publicShowAddress: boolean;
   publicShowDescription: boolean;
   publicAfterBookingMessage: string;
+
+  /** Emails : notifications commerçant (séparé des emails clients) */
+  notifyOwnerOnNewReservation: boolean;
+  notifyOwnerOnCancellation: boolean;
 };
 
 export type WhatsAppMessage = {

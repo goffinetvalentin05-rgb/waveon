@@ -2,9 +2,10 @@ import { render } from "@react-email/render";
 import { getResend, getResendApiKey, EMAIL_FROM, EMAIL_REPLY_TO_FALLBACK } from "@/lib/resend";
 import { createAdminSupabaseClient, getSupabaseServiceRoleKey } from "@/lib/supabase/admin";
 import { formatPrice, normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
-import ReminderClient from "@/lib/emails/templates/reminder-client";
-import PostServiceClient from "@/lib/emails/templates/post-service-client";
-import { renderTemplateText, sanitizeUrl, splitLines } from "@/lib/emails/configurable";
+import ReservationReminder from "@/lib/emails/templates/ReservationReminder";
+import ReservationPostService from "@/lib/emails/templates/ReservationPostService";
+import { renderTemplateText, sanitizeUrl } from "@/lib/emails/configurable";
+import { plainTextToParagraphs } from "@/lib/emails/email-body-utils";
 import {
   insertEmailDeliveryLog,
   logResendDomainHint,
@@ -32,6 +33,7 @@ type DbReservation = {
   client_id: string | null;
   service_id: string;
   start_at: string;
+  duration_minutes: number | null;
   status: "confirmed" | "cancelled" | "pending";
   cancel_token: string | null;
 };
@@ -44,8 +46,17 @@ type DbBusiness = {
   email: string | null;
   phone: string | null;
   address: string | null;
+  city: string | null;
+  postal_code: string | null;
   currency: string | null;
+  public_logo_url: string | null;
 };
+
+function formatBizAddress(b: DbBusiness | null): string {
+  if (!b) return "";
+  const line2 = [b.postal_code?.trim(), b.city?.trim()].filter(Boolean).join(" ");
+  return [b.address?.trim(), line2].filter(Boolean).join(", ");
+}
 
 function formatEmailDate(iso: string): string {
   return new Date(iso).toLocaleDateString("fr-FR", {
@@ -244,7 +255,7 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
     // Fetch business details once
     const { data: biz } = await admin
       .from("wavon_businesses")
-      .select("business_name,public_display_name,email,phone,address,currency")
+      .select("business_name,public_display_name,email,phone,address,city,postal_code,currency,public_logo_url")
       .eq("id", businessId)
       .maybeSingle();
     const business = (biz as DbBusiness | null) ?? null;
@@ -252,6 +263,9 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
     const businessCurrency = normalizeBusinessCurrency(business?.currency);
     const replyTo = business?.email ?? EMAIL_REPLY_TO_FALLBACK;
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://waevon.com";
+    const unsubscribeUrl = `${baseUrl}/confidentialite`;
+    const merchantLogoUrl = business?.public_logo_url?.trim() || null;
+    const businessAddressFull = formatBizAddress(business);
 
     async function hydrateReservation(resRow: DbReservation) {
       const [svcRes, clientRes] = await Promise.all([
@@ -273,7 +287,9 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
 
       const { data: due } = await admin
         .from("wavon_reservations")
-        .select("id,business_id,client_name,client_id,service_id,start_at,status,cancel_token")
+        .select(
+          "id,business_id,client_name,client_id,service_id,start_at,duration_minutes,status,cancel_token"
+        )
         .eq("business_id", businessId)
         .in("status", ["confirmed", "pending"])
         .gte("start_at", startMin.toISOString())
@@ -298,27 +314,33 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
           reservationDate: date,
           reservationTime: time,
           businessPhone: business?.phone ?? "",
-          businessAddress: business?.address ?? "",
+          businessAddress: businessAddressFull,
           formattedServicePrice,
         });
 
         const subject = renderTemplateText(reminder.subject || "", vars);
-        const bodyText = renderTemplateText(reminder.body || "", vars);
+        const bodyParas = plainTextToParagraphs(renderTemplateText(reminder.body || "", vars));
         const cancelUrl =
           r.cancel_token
             ? `${baseUrl}/annuler?reservationId=${encodeURIComponent(r.id)}&businessId=${encodeURIComponent(businessId)}&token=${encodeURIComponent(r.cancel_token)}`
             : undefined;
 
         const html = await render(
-          ReminderClient({
+          ReservationReminder({
             businessName: displayName,
-            previewText: subject || `Rappel — ${vars.service_name} le ${date}`,
-            title: "Rappel de rendez-vous",
-            greeting: `Bonjour ${vars.client_name},`,
-            lines: splitLines(bodyText),
-            address: business?.address ?? undefined,
+            clientName: vars.client_name,
+            serviceName: vars.service_name,
+            date,
+            time,
+            durationMin: Number(r.duration_minutes ?? svc?.duration_minutes ?? 0),
+            formattedPrice: formattedServicePrice,
+            address: businessAddressFull || undefined,
             phone: business?.phone ?? undefined,
             cancelUrl,
+            merchantLogoUrl,
+            customBodyParagraphs: bodyParas,
+            unsubscribeUrl,
+            previewText: subject || `Rappel — ${vars.service_name} le ${date}`,
           })
         );
 
@@ -349,7 +371,9 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
 
       const { data: done } = await admin
         .from("wavon_reservations")
-        .select("id,business_id,client_name,client_id,service_id,start_at,status,cancel_token")
+        .select(
+          "id,business_id,client_name,client_id,service_id,start_at,duration_minutes,status,cancel_token"
+        )
         .eq("business_id", businessId)
         .eq("status", "confirmed")
         .gte("start_at", startMin.toISOString())
@@ -374,12 +398,12 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
           reservationDate: date,
           reservationTime: time,
           businessPhone: business?.phone ?? "",
-          businessAddress: business?.address ?? "",
+          businessAddress: businessAddressFull,
           formattedServicePrice: formattedServicePricePost,
         });
 
         const subject = renderTemplateText(post.subject || "", vars);
-        const bodyText = renderTemplateText(post.body || "", vars);
+        const bodyParas = plainTextToParagraphs(renderTemplateText(post.body || "", vars));
 
         const links = post.custom_links ?? {};
         const buttons: Array<{ label: string; href: string }> = [];
@@ -391,19 +415,20 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
         const otherLabel = String(links.other_label ?? "").trim();
 
         if (google) buttons.push({ label: "Laisser un avis Google", href: google });
-        if (insta) buttons.push({ label: "Suivre sur Instagram", href: insta });
-        if (tiktok) buttons.push({ label: "Suivre sur TikTok", href: tiktok });
-        if (website) buttons.push({ label: "Visiter le site", href: website });
-        if (otherUrl) buttons.push({ label: otherLabel || "Ouvrir le lien", href: otherUrl });
+        if (insta) buttons.push({ label: "Nous suivre sur Instagram", href: insta });
+        if (tiktok) buttons.push({ label: "Nous suivre sur TikTok", href: tiktok });
+        if (website) buttons.push({ label: "Visiter notre site", href: website });
+        if (otherUrl) buttons.push({ label: otherLabel || "Autre lien", href: otherUrl });
 
         const html = await render(
-          PostServiceClient({
+          ReservationPostService({
             businessName: displayName,
-            previewText: subject || `Merci — ${displayName}`,
-            title: "Merci pour votre visite",
-            greeting: `Bonjour ${vars.client_name},`,
-            lines: splitLines(bodyText),
+            clientName: vars.client_name,
+            merchantLogoUrl,
+            customBodyParagraphs: bodyParas,
             buttons,
+            unsubscribeUrl,
+            previewText: subject || `Merci — ${displayName}`,
           })
         );
 

@@ -110,7 +110,7 @@ async function postConfigurableEmailTest(body: unknown): Promise<{ ok: boolean; 
 }
 
 export function EmailsSettingsTab() {
-  const { ready, state, businessId, upsertEmailTemplate } = useWavon();
+  const { ready, state, businessId, upsertEmailTemplate, patchSettings } = useWavon();
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<Record<EmailSettingType, ScheduledRow | null>>({
@@ -221,6 +221,26 @@ export function EmailsSettingsTab() {
     toast.push({ message: "Email test envoyé." });
   };
 
+  const sendMerchantTest = async (merchantKind: "new_booking" | "cancellation") => {
+    if (!businessId) return;
+    const to = effectiveTestTo;
+    if (!to) {
+      toast.push({ kind: "error", message: "Indique une adresse email pour le test." });
+      return;
+    }
+    const { ok, error } = await postConfigurableEmailTest({
+      businessId,
+      mode: "merchant",
+      merchantKind,
+      to,
+    });
+    if (!ok) {
+      toast.push({ kind: "error", message: error });
+      return;
+    }
+    toast.push({ message: "Email test envoyé." });
+  };
+
   if (!ready || loading) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
@@ -235,6 +255,60 @@ export function EmailsSettingsTab() {
 
   return (
     <div className="space-y-8">
+      <SectionCard
+        title="Notifications pour toi"
+        description="Choisis si tu veux recevoir un email à chaque fois qu'une réservation est prise ou annulée. Tes clients recevront toujours leurs emails, quelle que soit ton choix."
+      >
+        <div className="grid max-w-2xl gap-4">
+          <label className="flex cursor-pointer items-center gap-3 text-sm text-neutral-700">
+            <input
+              type="checkbox"
+              checked={state.settings.notifyOwnerOnNewReservation}
+              onChange={() =>
+                patchSettings({
+                  notifyOwnerOnNewReservation: !state.settings.notifyOwnerOnNewReservation,
+                })
+              }
+              className="size-4 rounded border-neutral-300 text-neutral-950"
+            />
+            <span className="font-medium text-neutral-950">
+              Me notifier par email à chaque nouvelle réservation
+            </span>
+          </label>
+          <label className="flex cursor-pointer items-center gap-3 text-sm text-neutral-700">
+            <input
+              type="checkbox"
+              checked={state.settings.notifyOwnerOnCancellation}
+              onChange={() =>
+                patchSettings({
+                  notifyOwnerOnCancellation: !state.settings.notifyOwnerOnCancellation,
+                })
+              }
+              className="size-4 rounded border-neutral-300 text-neutral-950"
+            />
+            <span className="font-medium text-neutral-950">
+              Me notifier par email à chaque annulation
+            </span>
+          </label>
+          <div className="flex flex-wrap gap-2 pt-2">
+            <button
+              type="button"
+              className={btnGhostClass}
+              onClick={() => void sendMerchantTest("new_booking")}
+            >
+              Test email nouvelle réservation (commerçant)
+            </button>
+            <button
+              type="button"
+              className={btnGhostClass}
+              onClick={() => void sendMerchantTest("cancellation")}
+            >
+              Test email annulation (commerçant)
+            </button>
+          </div>
+        </div>
+      </SectionCard>
+
       <div className="flex flex-wrap gap-2 border-b border-neutral-200/80 pb-4">
         {(
           [
@@ -255,7 +329,7 @@ export function EmailsSettingsTab() {
         ))}
       </div>
 
-      <SectionCard title="Email test" description="Envoie un exemplaire à ton adresse.">
+      <SectionCard title="Email test" description="Envoie un exemplaire à ton adresse (clients et commerçant).">
         <div className="grid max-w-xl gap-3">
           <div>
             <label className={labelClass}>Adresse de test</label>
@@ -271,9 +345,12 @@ export function EmailsSettingsTab() {
 
       {primaryTab === "confirmation" ? (
         <TemplateBlock
+          key={`email-tpl-confirmation-${state.emailTemplates.find((t) => t.type === "confirmation")?.id ?? "none"}`}
           title="Confirmation"
           description="Envoyé immédiatement après la réservation au client (et notification séparée au commerçant)."
           type="confirmation"
+          previewVariant="confirmation"
+          businessId={businessId}
           initial={state.emailTemplates.find((t) => t.type === "confirmation") ?? null}
           onSave={(next) => {
             upsertEmailTemplate(next);
@@ -286,10 +363,13 @@ export function EmailsSettingsTab() {
       {primaryTab === "reminder" ? (
         <>
           <ScheduledBlock
+            key={`email-sched-reminder-${reminder?.id ?? "none"}`}
             title="Rappel"
             description="Envoyé automatiquement X heures avant le rendez-vous."
             row={reminder}
             showDelay
+            previewVariant="reminder"
+            businessId={businessId}
             onSave={(p) => void saveScheduled("reminder_before", p)}
             onTest={() => void sendTestScheduled("reminder_before")}
           />
@@ -298,9 +378,12 @@ export function EmailsSettingsTab() {
 
       {primaryTab === "cancellation" ? (
         <TemplateBlock
+          key={`email-tpl-cancellation-${state.emailTemplates.find((t) => t.type === "cancellation")?.id ?? "none"}`}
           title="Annulation"
           description="Envoyé lorsque le rendez-vous est annulé."
           type="cancellation"
+          previewVariant="cancellation"
+          businessId={businessId}
           initial={state.emailTemplates.find((t) => t.type === "cancellation") ?? null}
           onSave={(next) => {
             upsertEmailTemplate(next);
@@ -313,10 +396,13 @@ export function EmailsSettingsTab() {
       {primaryTab === "post_service" ? (
         <>
           <ScheduledBlock
+            key={`email-sched-post-${post?.id ?? "none"}`}
             title="Post-prestation"
             description="Envoyé automatiquement X heures après le rendez-vous."
             row={post}
             showDelay
+            previewVariant="post_service"
+            businessId={businessId}
             onSave={(p) => void saveScheduled("post_service", p)}
             onTest={() => void sendTestScheduled("post_service")}
           />
@@ -431,6 +517,8 @@ function TemplateBlock(props: {
   title: string;
   description: string;
   type: EmailTemplateType;
+  previewVariant: "confirmation" | "cancellation";
+  businessId: string | null;
   initial: { isEnabled: boolean; subject: string; body: string } | null;
   onSave: (next: { type: EmailTemplateType; isEnabled: boolean; subject: string; body: string }) => void;
   onTest: () => void;
@@ -438,13 +526,65 @@ function TemplateBlock(props: {
   const [isEnabled, setIsEnabled] = useState(props.initial?.isEnabled ?? true);
   const [subject, setSubject] = useState(props.initial?.subject ?? "");
   const [body, setBody] = useState(props.initial?.body ?? "");
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState("");
+  const [previewError, setPreviewError] = useState("");
+  const [pendingLook, setPendingLook] = useState(false);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
+  /* Sync formulaire quand le template chargé depuis le provider change (ex. après enregistrement). */
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- synchronisation contrôlée depuis props.initial */
     setIsEnabled(props.initial?.isEnabled ?? true);
     setSubject(props.initial?.subject ?? "");
     setBody(props.initial?.body ?? "");
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [props.initial, props.type]);
+
+  useEffect(() => {
+    if (!showPreview || !props.businessId) return;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const res = await fetch("/api/emails/preview", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              businessId: props.businessId,
+              variant: props.previewVariant,
+              subject,
+              body,
+              isPending: props.type === "confirmation" ? pendingLook : undefined,
+            }),
+          });
+          const j = (await res.json()) as { ok?: boolean; html?: string; error?: string };
+          if (cancelled) return;
+          if (j.ok && j.html) {
+            setPreviewHtml(j.html);
+            setPreviewError("");
+          } else {
+            setPreviewError(j.error || "Aperçu impossible.");
+          }
+        } catch {
+          if (!cancelled) setPreviewError("Aperçu impossible.");
+        }
+      })();
+    }, 450);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [
+    showPreview,
+    props.businessId,
+    props.previewVariant,
+    props.type,
+    subject,
+    body,
+    pendingLook,
+  ]);
 
   const insertIntoBody = useCallback(
     (snippet: string) => {
@@ -487,6 +627,46 @@ function TemplateBlock(props: {
           <span className="font-medium text-neutral-950">Activer cet email</span>
         </label>
 
+        <label className="flex cursor-pointer items-center gap-3 text-sm text-neutral-700">
+          <input
+            type="checkbox"
+            checked={showPreview}
+            onChange={(e) => setShowPreview(e.target.checked)}
+            className="size-4 rounded border-neutral-300 text-neutral-950"
+          />
+          <span className="font-medium text-neutral-950">Aperçu</span>
+        </label>
+
+        {props.type === "confirmation" && showPreview ? (
+          <label className="flex cursor-pointer items-center gap-3 text-sm text-neutral-700">
+            <input
+              type="checkbox"
+              checked={pendingLook}
+              onChange={(e) => setPendingLook(e.target.checked)}
+              className="size-4 rounded border-neutral-300 text-neutral-950"
+            />
+            <span>Prévisualiser comme demande en attente (non confirmée)</span>
+          </label>
+        ) : null}
+
+        {showPreview ? (
+          <div className="overflow-hidden rounded-2xl border border-neutral-200/90 bg-neutral-100">
+            {previewError ? (
+              <p className="p-4 text-sm text-red-600">{previewError}</p>
+            ) : previewHtml ? (
+              <iframe
+                title="Aperçu email"
+                className="h-[min(70vh,640px)] w-full bg-white"
+                srcDoc={previewHtml}
+              />
+            ) : (
+              <div className="flex min-h-[200px] items-center justify-center">
+                <div className={spinnerClass} aria-hidden />
+              </div>
+            )}
+          </div>
+        ) : null}
+
         <div>
           <label className={labelClass}>Objet</label>
           <input
@@ -500,10 +680,14 @@ function TemplateBlock(props: {
           <label className={labelClass}>Contenu</label>
           <textarea
             ref={bodyRef}
-            className={`${textareaClass} mt-2 min-h-[220px] ${userTextBreakClass}`}
+            className={`${textareaClass} mt-2 min-h-[220px] whitespace-pre-wrap ${userTextBreakClass}`}
             value={body}
             onChange={(e) => setBody(e.target.value)}
           />
+          <p className="mt-1 text-xs text-neutral-400">
+            Les retours à la ligne sont conservés. Les séquences \n stockées en base sont corrigées à
+            l&apos;envoi.
+          </p>
           <p className={`${labelClass} mt-3`}>Insérer une variable</p>
           <div className="mt-2">
             <VariableButtons onInsert={insertIntoBody} />
@@ -528,6 +712,8 @@ function ScheduledBlock(props: {
   description: string;
   row: ScheduledRow | null;
   showDelay: boolean;
+  previewVariant: "reminder" | "post_service";
+  businessId: string | null;
   onSave: (patch: { enabled: boolean; delay_hours: number; subject: string; body: string }) => void;
   onTest: () => void;
 }) {
@@ -537,14 +723,55 @@ function ScheduledBlock(props: {
   );
   const [subject, setSubject] = useState(props.row?.subject ?? "");
   const [body, setBody] = useState(props.row?.body ?? "");
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState("");
+  const [previewError, setPreviewError] = useState("");
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- synchronisation contrôlée depuis props.row */
     setEnabled(props.row?.enabled ?? true);
     setDelayHours(props.row?.delay_hours ?? (props.title === "Post-prestation" ? 2 : 24));
     setSubject(props.row?.subject ?? "");
     setBody(props.row?.body ?? "");
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [props.row, props.title]);
+
+  useEffect(() => {
+    if (!showPreview || !props.businessId) return;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const res = await fetch("/api/emails/preview", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              businessId: props.businessId,
+              variant: props.previewVariant,
+              subject,
+              body,
+            }),
+          });
+          const j = (await res.json()) as { ok?: boolean; html?: string; error?: string };
+          if (cancelled) return;
+          if (j.ok && j.html) {
+            setPreviewHtml(j.html);
+            setPreviewError("");
+          } else {
+            setPreviewError(j.error || "Aperçu impossible.");
+          }
+        } catch {
+          if (!cancelled) setPreviewError("Aperçu impossible.");
+        }
+      })();
+    }, 450);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [showPreview, props.businessId, props.previewVariant, subject, body]);
 
   const insertIntoBody = useCallback(
     (snippet: string) => {
@@ -587,6 +814,34 @@ function ScheduledBlock(props: {
           <span className="font-medium text-neutral-950">Activer cet email</span>
         </label>
 
+        <label className="flex cursor-pointer items-center gap-3 text-sm text-neutral-700">
+          <input
+            type="checkbox"
+            checked={showPreview}
+            onChange={(e) => setShowPreview(e.target.checked)}
+            className="size-4 rounded border-neutral-300 text-neutral-950"
+          />
+          <span className="font-medium text-neutral-950">Aperçu</span>
+        </label>
+
+        {showPreview ? (
+          <div className="overflow-hidden rounded-2xl border border-neutral-200/90 bg-neutral-100">
+            {previewError ? (
+              <p className="p-4 text-sm text-red-600">{previewError}</p>
+            ) : previewHtml ? (
+              <iframe
+                title="Aperçu email"
+                className="h-[min(70vh,640px)] w-full bg-white"
+                srcDoc={previewHtml}
+              />
+            ) : (
+              <div className="flex min-h-[200px] items-center justify-center">
+                <div className={spinnerClass} aria-hidden />
+              </div>
+            )}
+          </div>
+        ) : null}
+
         {props.showDelay ? (
           <div>
             <label className={labelClass}>Délai (heures)</label>
@@ -614,10 +869,14 @@ function ScheduledBlock(props: {
           <label className={labelClass}>Contenu</label>
           <textarea
             ref={bodyRef}
-            className={`${textareaClass} mt-2 min-h-[220px] ${userTextBreakClass}`}
+            className={`${textareaClass} mt-2 min-h-[220px] whitespace-pre-wrap ${userTextBreakClass}`}
             value={body}
             onChange={(e) => setBody(e.target.value)}
           />
+          <p className="mt-1 text-xs text-neutral-400">
+            Les retours à la ligne sont conservés dans l&apos;éditeur et convertis en HTML à
+            l&apos;envoi.
+          </p>
           <p className={`${labelClass} mt-3`}>Insérer une variable</p>
           <div className="mt-2">
             <VariableButtons onInsert={insertIntoBody} />

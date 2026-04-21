@@ -313,6 +313,8 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
             publicAfterBookingMessage:
               dbSettings?.public_after_booking_message ??
               "Ta demande est enregistrée. À très bientôt.",
+            notifyOwnerOnNewReservation: true,
+            notifyOwnerOnCancellation: true,
           },
           emailTemplates: [],
           whatsappThreads: [],

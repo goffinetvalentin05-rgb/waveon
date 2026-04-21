@@ -14,21 +14,28 @@ import {
   supabaseServiceRoleKeyMissingUserMessage,
   supabaseServiceRoleRelatedEnvKeyNames,
 } from "@/lib/supabase/admin";
-import ReminderClient from "@/lib/emails/templates/reminder-client";
-import PostServiceClient from "@/lib/emails/templates/post-service-client";
-import { renderTemplateText, sanitizeUrl, splitLines } from "@/lib/emails/configurable";
+import { renderTemplateText, sanitizeUrl } from "@/lib/emails/configurable";
+import { plainTextToParagraphs, templateBodyToParagraphs } from "@/lib/emails/email-body-utils";
 import { defaultEmailBody, defaultEmailSubject } from "@/lib/emails/default-copy";
 import type { EmailTemplateType } from "@/lib/wavon/types";
 import { formatPrice, normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
+import { publicBookingAbsoluteUrl } from "@/lib/wavon/public-page-url";
+import ReservationConfirmation from "@/lib/emails/templates/ReservationConfirmation";
+import ReservationCancellation from "@/lib/emails/templates/ReservationCancellation";
+import ReservationReminder from "@/lib/emails/templates/ReservationReminder";
+import ReservationPostService from "@/lib/emails/templates/ReservationPostService";
+import ReservationNotification from "@/lib/emails/templates/ReservationNotification";
+import ReservationCancellationOwner from "@/lib/emails/templates/ReservationCancellationOwner";
 
 type ScheduledKind = "reminder_before" | "post_service";
 
 type Body = {
   businessId?: string;
   to?: string;
-  mode?: "scheduled" | "template";
+  mode?: "scheduled" | "template" | "merchant";
   scheduledType?: ScheduledKind;
   templateType?: EmailTemplateType;
+  merchantKind?: "new_booking" | "cancellation";
 };
 
 type DbSetting = {
@@ -49,6 +56,8 @@ type DbBusiness = {
   postal_code: string | null;
   email: string | null;
   currency: string | null;
+  public_logo_url: string | null;
+  public_slug: string | null;
 };
 
 function formatBizAddress(b: DbBusiness | null): string {
@@ -113,12 +122,20 @@ export async function POST(req: NextRequest) {
     const admin = createAdminSupabaseClient();
     const { data: biz } = await admin
       .from("wavon_businesses")
-      .select("business_name,public_display_name,phone,address,city,postal_code,email,currency")
+      .select(
+        "business_name,public_display_name,phone,address,city,postal_code,email,currency,public_logo_url,public_slug"
+      )
       .eq("id", businessId)
       .maybeSingle();
     const business = (biz as DbBusiness | null) ?? null;
     const displayName = business?.public_display_name?.trim() || business?.business_name || "Commerce";
     const testCurrency = normalizeBusinessCurrency(business?.currency);
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://waevon.com";
+    const merchantLogoUrl = business?.public_logo_url?.trim() || null;
+    const rebookUrl = business?.public_slug?.trim()
+      ? publicBookingAbsoluteUrl(business.public_slug)
+      : baseUrl;
+    const unsubscribeUrl = `${baseUrl}/confidentialite`;
 
     const vars = {
       business_name: displayName,
@@ -126,136 +143,187 @@ export async function POST(req: NextRequest) {
       service_name: "Prestation test",
       reservation_date: "mardi 21 avril 2026",
       reservation_time: "14h30",
-      business_phone: String(business?.phone ?? ""),
-      business_address: formatBizAddress(business),
+      business_phone: String(business?.phone ?? "022 000 00 00"),
+      business_address: formatBizAddress(business) || "Adresse test 1, 1000 Lausanne",
       service_price: formatPrice(40, testCurrency),
     };
 
     let html: string;
     let subject: string;
 
-    if (mode === "template") {
-    const templateType = parsed?.templateType ?? "confirmation";
-    if (templateType === "reminder") {
-      return NextResponse.json({ ok: false, error: "Utilise le mode rappel planifié." }, { status: 400 });
-    }
-    const { data: tpl } = await admin
-      .from("wavon_email_templates")
-      .select("subject,body,is_enabled")
-      .eq("business_id", businessId)
-      .eq("type", templateType)
-      .maybeSingle();
-    const row = tpl as { subject: string; body: string; is_enabled: boolean } | null;
-    const subjRaw =
-      row?.subject?.trim() ||
-      defaultEmailSubject(templateType as "confirmation" | "cancellation");
-    const bodyRaw =
-      row?.body?.trim() || defaultEmailBody(templateType as "confirmation" | "cancellation");
-    subject = `[Test] ${renderTemplateText(subjRaw, vars)}`;
-    const bodyText = renderTemplateText(bodyRaw, vars);
-    const lines = splitLines(bodyText);
-    if (templateType === "cancellation") {
-      html = await render(
-        ReminderClient({
-          businessName: displayName,
-          previewText: subject,
-          title: "Annulation (test)",
-          greeting: `Bonjour ${vars.client_name},`,
-          lines,
-          phone: vars.business_phone || undefined,
-          address: vars.business_address || undefined,
-        })
-      );
+    if (mode === "merchant") {
+      const mk = parsed?.merchantKind === "cancellation" ? "cancellation" : "new_booking";
+      if (mk === "new_booking") {
+        subject = `[Test] Nouvelle réservation — ${vars.client_name}`;
+        html = await render(
+          ReservationNotification({
+            clientName: vars.client_name,
+            clientEmail: "client@example.com",
+            clientPhone: "079 000 00 00",
+            serviceName: vars.service_name,
+            date: vars.reservation_date,
+            time: vars.reservation_time,
+            durationMin: 30,
+            dashboardUrl: `${baseUrl}/dashboard/calendrier`,
+            isPending: false,
+          })
+        );
+      } else {
+        subject = `[Test] Annulation commerçant — ${vars.client_name}`;
+        html = await render(
+          ReservationCancellationOwner({
+            clientName: vars.client_name,
+            clientEmail: "client@example.com",
+            clientPhone: "079 000 00 00",
+            serviceName: vars.service_name,
+            date: vars.reservation_date,
+            time: vars.reservation_time,
+            durationMin: 30,
+          })
+        );
+      }
+    } else if (mode === "template") {
+      const templateType = parsed?.templateType ?? "confirmation";
+      if (templateType === "reminder") {
+        return NextResponse.json({ ok: false, error: "Utilise le mode rappel planifié." }, { status: 400 });
+      }
+      const { data: tpl } = await admin
+        .from("wavon_email_templates")
+        .select("subject,body,is_enabled")
+        .eq("business_id", businessId)
+        .eq("type", templateType)
+        .maybeSingle();
+      const row = tpl as { subject: string; body: string; is_enabled: boolean } | null;
+      const subjRaw =
+        row?.subject?.trim() ||
+        defaultEmailSubject(templateType as "confirmation" | "cancellation");
+      const bodyRaw =
+        row?.body?.trim() || defaultEmailBody(templateType as "confirmation" | "cancellation");
+      subject = `[Test] ${renderTemplateText(subjRaw, vars)}`;
+      if (templateType === "cancellation") {
+        const customIntro = templateBodyToParagraphs(bodyRaw, vars);
+        html = await render(
+          ReservationCancellation({
+            businessName: displayName,
+            clientName: vars.client_name,
+            serviceName: vars.service_name,
+            date: vars.reservation_date,
+            time: vars.reservation_time,
+            durationMin: 30,
+            formattedPrice: vars.service_price,
+            rebookUrl,
+            merchantLogoUrl,
+            customIntroParagraphs: customIntro,
+          })
+        );
+      } else {
+        const customIntro = templateBodyToParagraphs(bodyRaw, vars);
+        html = await render(
+          ReservationConfirmation({
+            businessName: displayName,
+            clientName: vars.client_name,
+            serviceName: vars.service_name,
+            date: vars.reservation_date,
+            time: vars.reservation_time,
+            durationMin: 30,
+            formattedPrice: vars.service_price,
+            address: vars.business_address,
+            phone: vars.business_phone,
+            cancelUrl: `${baseUrl}/annuler?reservationId=demo&token=demo`,
+            isPending: false,
+            merchantLogoUrl,
+            customIntroParagraphs: customIntro,
+          })
+        );
+      }
     } else {
-      html = await render(
-        ReminderClient({
-          businessName: displayName,
-          previewText: subject,
-          title: "Confirmation (test)",
-          greeting: `Bonjour ${vars.client_name},`,
-          lines,
-          address: vars.business_address || undefined,
-          phone: vars.business_phone || undefined,
-        })
-      );
-    }
-  } else {
-    const scheduledType: ScheduledKind = parsed?.scheduledType === "post_service" ? "post_service" : "reminder_before";
-    const { data: s } = await admin
-      .from("wavon_email_settings")
-      .select("type,enabled,delay_hours,subject,body,custom_links")
-      .eq("business_id", businessId)
-      .eq("type", scheduledType)
-      .maybeSingle();
-    if (!s) {
-      return NextResponse.json({ ok: false, error: "Réglage introuvable." }, { status: 404 });
-    }
-    const setting = s as DbSetting;
-    subject = renderTemplateText(setting.subject || "", vars);
-    const bodyText = renderTemplateText(setting.body || "", vars);
+      const scheduledType: ScheduledKind =
+        parsed?.scheduledType === "post_service" ? "post_service" : "reminder_before";
+      const { data: s } = await admin
+        .from("wavon_email_settings")
+        .select("type,enabled,delay_hours,subject,body,custom_links")
+        .eq("business_id", businessId)
+        .eq("type", scheduledType)
+        .maybeSingle();
+      if (!s) {
+        return NextResponse.json({ ok: false, error: "Réglage introuvable." }, { status: 404 });
+      }
+      const setting = s as DbSetting;
+      subject = `[Test] ${renderTemplateText(setting.subject || "", vars)}`;
+      const bodyText = renderTemplateText(setting.body || "", vars);
 
-    if (scheduledType === "post_service") {
-      const links = setting.custom_links ?? {};
-      const buttons: Array<{ label: string; href: string }> = [];
-      const google = sanitizeUrl(typeof links.google_review === "string" ? links.google_review : "");
-      const insta = sanitizeUrl(typeof links.instagram === "string" ? links.instagram : "");
-      const tiktok = sanitizeUrl(typeof links.tiktok === "string" ? links.tiktok : "");
-      const website = sanitizeUrl(typeof links.website === "string" ? links.website : "");
-      const otherUrl = sanitizeUrl(typeof links.other_url === "string" ? links.other_url : "");
-      const otherLabel = String(links.other_label ?? "").trim();
-      if (google) buttons.push({ label: "Laisser un avis Google", href: google });
-      if (insta) buttons.push({ label: "Suivre sur Instagram", href: insta });
-      if (tiktok) buttons.push({ label: "Suivre sur TikTok", href: tiktok });
-      if (website) buttons.push({ label: "Visiter le site", href: website });
-      if (otherUrl) buttons.push({ label: otherLabel || "Ouvrir le lien", href: otherUrl });
-      html = await render(
-        PostServiceClient({
-          businessName: displayName,
-          previewText: subject || `[Test] Merci — ${displayName}`,
-          title: "Merci pour votre visite",
-          greeting: `Bonjour ${vars.client_name},`,
-          lines: splitLines(bodyText),
-          buttons,
-        })
-      );
-    } else {
-      html = await render(
-        ReminderClient({
-          businessName: displayName,
-          previewText: subject || `[Test] Rappel — ${displayName}`,
-          title: "Rappel de rendez-vous",
-          greeting: `Bonjour ${vars.client_name},`,
-          lines: splitLines(bodyText),
-          address: vars.business_address || undefined,
-          phone: vars.business_phone || undefined,
-        })
-      );
+      if (scheduledType === "post_service") {
+        const links = setting.custom_links ?? {};
+        const buttons: Array<{ label: string; href: string }> = [];
+        const google = sanitizeUrl(typeof links.google_review === "string" ? links.google_review : "");
+        const insta = sanitizeUrl(typeof links.instagram === "string" ? links.instagram : "");
+        const tiktok = sanitizeUrl(typeof links.tiktok === "string" ? links.tiktok : "");
+        const website = sanitizeUrl(typeof links.website === "string" ? links.website : "");
+        const otherUrl = sanitizeUrl(typeof links.other_url === "string" ? links.other_url : "");
+        const otherLabel = String(links.other_label ?? "").trim();
+        if (google) buttons.push({ label: "Laisser un avis Google", href: google });
+        if (insta) buttons.push({ label: "Nous suivre sur Instagram", href: insta });
+        if (tiktok) buttons.push({ label: "Nous suivre sur TikTok", href: tiktok });
+        if (website) buttons.push({ label: "Visiter notre site", href: website });
+        if (otherUrl) buttons.push({ label: otherLabel || "Autre lien", href: otherUrl });
+        if (buttons.length === 0) {
+          buttons.push({ label: "Exemple — Waevon", href: "https://waevon.com" });
+        }
+        html = await render(
+          ReservationPostService({
+            businessName: displayName,
+            clientName: vars.client_name,
+            merchantLogoUrl,
+            customBodyParagraphs: plainTextToParagraphs(bodyText),
+            buttons,
+            unsubscribeUrl,
+            previewText: subject,
+          })
+        );
+      } else {
+        html = await render(
+          ReservationReminder({
+            businessName: displayName,
+            clientName: vars.client_name,
+            serviceName: vars.service_name,
+            date: vars.reservation_date,
+            time: vars.reservation_time,
+            durationMin: 30,
+            formattedPrice: vars.service_price,
+            address: vars.business_address,
+            phone: vars.business_phone,
+            cancelUrl: `${baseUrl}/annuler?reservationId=demo&token=demo`,
+            merchantLogoUrl,
+            customBodyParagraphs: plainTextToParagraphs(bodyText),
+            unsubscribeUrl,
+            previewText: subject,
+          })
+        );
+      }
     }
-    subject = subject || `[Test] Email ${scheduledType}`;
-  }
 
-  try {
-    const resend = getResend();
-    const { error: resendErr } = await resend.emails.send({
-      from: EMAIL_FROM,
-      to,
-      subject,
-      html,
-    });
-    if (resendErr) {
-      const msg =
-        typeof resendErr === "object" && resendErr !== null && "message" in resendErr
-          ? String((resendErr as { message: unknown }).message)
-          : String(resendErr);
-      console.error("[api/emails/test-configurable] Resend:", msg);
-      return NextResponse.json({ ok: false, error: msg }, { status: 502 });
+    try {
+      const resend = getResend();
+      const { error: resendErr } = await resend.emails.send({
+        from: EMAIL_FROM,
+        to,
+        subject: subject || `[Test] Waevon`,
+        html,
+      });
+      if (resendErr) {
+        const msg =
+          typeof resendErr === "object" && resendErr !== null && "message" in resendErr
+            ? String((resendErr as { message: unknown }).message)
+            : String(resendErr);
+        console.error("[api/emails/test-configurable] Resend:", msg);
+        return NextResponse.json({ ok: false, error: msg }, { status: 502 });
+      }
+      return NextResponse.json({ ok: true });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[api/emails/test-configurable]", msg);
+      return NextResponse.json({ ok: false, error: msg }, { status: 500 });
     }
-    return NextResponse.json({ ok: true });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    console.error("[api/emails/test-configurable]", msg);
-    return NextResponse.json({ ok: false, error: msg }, { status: 500 });
-  }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("[api/emails/test-configurable] exception", e);
