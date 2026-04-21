@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/wavon/ui/PageHeader";
 import { StatusBadge } from "@/components/wavon/ui/StatusBadge";
 import { activeReservations, fillRateWeekApprox, toYmd } from "@/lib/wavon/booking-logic";
 import { formatDateTime } from "@/lib/wavon/format";
-import { cardClass, kpiCardClass, linkClass, spinnerClass } from "@/lib/wavon/tokens";
+import { cardClass, kpiCardClass, linkClass, spinnerClass, userTextBreakClass } from "@/lib/wavon/tokens";
 
 export default function DashboardOverviewPage() {
   const { ready, state } = useWavon();
@@ -103,9 +103,11 @@ export default function DashboardOverviewPage() {
                     key={r.id}
                     className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-neutral-100 bg-neutral-50/40 px-4 py-3"
                   >
-                    <div>
-                      <p className="text-sm font-medium text-neutral-950">{r.clientName}</p>
-                      <p className="text-xs text-neutral-500">
+                    <div className="min-w-0 max-w-full">
+                      <p className={`text-sm font-medium text-neutral-950 ${userTextBreakClass}`}>
+                        {r.clientName}
+                      </p>
+                      <p className={`text-xs text-neutral-500 ${userTextBreakClass}`}>
                         {svc?.name ?? "Service"} · {formatDateTime(r.start)}
                       </p>
                     </div>
@@ -135,9 +137,11 @@ export default function DashboardOverviewPage() {
                     key={r.id}
                     className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-neutral-100 bg-neutral-50/40 px-4 py-3"
                   >
-                    <div>
-                      <p className="text-sm font-medium text-neutral-950">{r.clientName}</p>
-                      <p className="text-xs text-neutral-500">
+                    <div className="min-w-0 max-w-full">
+                      <p className={`text-sm font-medium text-neutral-950 ${userTextBreakClass}`}>
+                        {r.clientName}
+                      </p>
+                      <p className={`text-xs text-neutral-500 ${userTextBreakClass}`}>
                         {svc?.name ?? "Service"} · {formatDateTime(r.start)}
                       </p>
                     </div>
@@ -161,7 +165,7 @@ export default function DashboardOverviewPage() {
           <ul className="divide-y divide-neutral-100">
             {activity.map((r) => (
               <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-3 first:pt-0 last:pb-0">
-                <p className="text-sm text-neutral-700">
+                <p className={`min-w-0 max-w-full text-sm text-neutral-700 ${userTextBreakClass}`}>
                   <span className="font-medium text-neutral-950">Réservation</span>
                   {" · "}
                   {r.clientName}

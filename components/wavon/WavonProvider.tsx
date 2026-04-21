@@ -23,6 +23,16 @@ import type {
 } from "@/lib/wavon/types";
 import { supabase } from "@/lib/supabase/client";
 import { normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
+import { normalizePublicSlugInput, validatePublicSlugFormat } from "@/lib/wavon/public-slug";
+
+const SERVICE_DESCRIPTION_DB_MAX = 300;
+const PUBLIC_DISPLAY_NAME_MAX = 60;
+const PUBLIC_WELCOME_MAX = 200;
+const PUBLIC_DESCRIPTION_MAX = 300;
+
+function clipServiceDescription(text: string): string {
+  return text.trim().slice(0, SERVICE_DESCRIPTION_DB_MAX);
+}
 
 type DbBusiness = {
   id: string;
@@ -52,7 +62,6 @@ type DbBusiness = {
 type DbSettings = {
   business_id: string;
   minimum_notice_hours: number;
-  minimum_service_duration: number;
   auto_confirm_reservations: boolean;
   availability_mode: "fixed" | "custom";
   maximum_days_in_advance: number;
@@ -164,7 +173,6 @@ function createEmptyState(): WavonState {
       address: "",
       phone: "",
       publicSlug: "",
-      minServiceDurationMin: 15,
       minNoticeHours: 0,
       maxDaysInAdvance: 365,
       slotIntervalMinutes: 15,
@@ -295,9 +303,10 @@ export function WavonProvider({
       const ensuredBusiness: DbBusiness =
         (business as DbBusiness | null) ??
         (await (async () => {
+          const provisionalSlug = `c-${crypto.randomUUID().replace(/-/g, "").slice(0, 11)}`;
           const { data: created, error } = await supabase
             .from("wavon_businesses")
-            .insert({ user_id: userId })
+            .insert({ user_id: userId, public_slug: provisionalSlug })
             .select(
               "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description,currency"
             )
@@ -322,7 +331,7 @@ export function WavonProvider({
         supabase
           .from("wavon_settings")
           .select(
-            "business_id,minimum_notice_hours,minimum_service_duration,auto_confirm_reservations,availability_mode,maximum_days_in_advance,slot_interval_minutes,minimum_gap_between_bookings,allow_cancellation,cancellation_deadline_hours,allow_reschedule,reschedule_deadline_hours,same_day_booking_allowed,public_after_booking_message"
+            "business_id,minimum_notice_hours,auto_confirm_reservations,availability_mode,maximum_days_in_advance,slot_interval_minutes,minimum_gap_between_bookings,allow_cancellation,cancellation_deadline_hours,allow_reschedule,reschedule_deadline_hours,same_day_booking_allowed,public_after_booking_message"
           )
           .eq("business_id", ensuredBusiness.id)
           .maybeSingle(),
@@ -455,7 +464,6 @@ export function WavonProvider({
           address: ensuredBusiness.address ?? "",
           phone: ensuredBusiness.phone ?? "",
           publicSlug: ensuredBusiness.public_slug ?? "",
-          minServiceDurationMin: dbSettings?.minimum_service_duration ?? 15,
           minNoticeHours: dbSettings?.minimum_notice_hours ?? 0,
           maxDaysInAdvance: dbSettings?.maximum_days_in_advance ?? 365,
           slotIntervalMinutes: dbSettings?.slot_interval_minutes ?? 15,
@@ -688,7 +696,7 @@ export function WavonProvider({
           name: s.name,
           duration_minutes: s.durationMin,
           price: s.price,
-          description: s.description ?? "",
+          description: clipServiceDescription(s.description ?? ""),
           is_active: s.isActive,
           is_public: s.isPublic,
           color: s.color ?? null,
@@ -727,25 +735,29 @@ export function WavonProvider({
   }, [businessId]);
 
   const updateService = useCallback((id: string, patch: Partial<Service>) => {
+    const nextPatch =
+      patch.description !== undefined
+        ? { ...patch, description: clipServiceDescription(patch.description) }
+        : patch;
     setState((prev) => ({
       ...prev,
-      services: prev.services.map((x) => (x.id === id ? { ...x, ...patch } : x)),
+      services: prev.services.map((x) => (x.id === id ? { ...x, ...nextPatch } : x)),
     }));
     if (!businessId) return;
     void supabase
       .from("wavon_services")
       .update({
-        ...(patch.name !== undefined ? { name: patch.name } : {}),
-        ...(patch.durationMin !== undefined ? { duration_minutes: patch.durationMin } : {}),
-        ...(patch.price !== undefined ? { price: patch.price } : {}),
-        ...(patch.description !== undefined ? { description: patch.description } : {}),
-        ...(patch.isActive !== undefined ? { is_active: patch.isActive } : {}),
-        ...(patch.isPublic !== undefined ? { is_public: patch.isPublic } : {}),
-        ...(patch.color !== undefined ? { color: patch.color } : {}),
-        ...(patch.bufferBeforeMin !== undefined ? { buffer_before_minutes: patch.bufferBeforeMin } : {}),
-        ...(patch.bufferAfterMin !== undefined ? { buffer_after_minutes: patch.bufferAfterMin } : {}),
-        ...(patch.bookingNoticeHours !== undefined ? { booking_notice_hours: patch.bookingNoticeHours } : {}),
-        ...(patch.sortOrder !== undefined ? { sort_order: patch.sortOrder } : {}),
+        ...(nextPatch.name !== undefined ? { name: nextPatch.name } : {}),
+        ...(nextPatch.durationMin !== undefined ? { duration_minutes: nextPatch.durationMin } : {}),
+        ...(nextPatch.price !== undefined ? { price: nextPatch.price } : {}),
+        ...(nextPatch.description !== undefined ? { description: nextPatch.description } : {}),
+        ...(nextPatch.isActive !== undefined ? { is_active: nextPatch.isActive } : {}),
+        ...(nextPatch.isPublic !== undefined ? { is_public: nextPatch.isPublic } : {}),
+        ...(nextPatch.color !== undefined ? { color: nextPatch.color } : {}),
+        ...(nextPatch.bufferBeforeMin !== undefined ? { buffer_before_minutes: nextPatch.bufferBeforeMin } : {}),
+        ...(nextPatch.bufferAfterMin !== undefined ? { buffer_after_minutes: nextPatch.bufferAfterMin } : {}),
+        ...(nextPatch.bookingNoticeHours !== undefined ? { booking_notice_hours: nextPatch.bookingNoticeHours } : {}),
+        ...(nextPatch.sortOrder !== undefined ? { sort_order: nextPatch.sortOrder } : {}),
       })
       .eq("id", id)
       .eq("business_id", businessId);
@@ -1066,19 +1078,28 @@ export function WavonProvider({
 
   const patchSettings = useCallback((patch: Partial<WavonState["settings"]>) => {
     setState((prev) => {
-      const slug =
-        patch.publicSlug !== undefined
-          ? patch.publicSlug
-              .trim()
-              .toLowerCase()
-              .replace(/[^a-z0-9-]/g, "-")
-              .replace(/-+/g, "-")
-              .replace(/^-|-$/g, "")
-          : undefined;
+      const { publicSlug: patchSlug, ...patchRest } = patch;
+      const slugMerge: { publicSlug?: string } = {};
+      if (patchSlug !== undefined) {
+        const v = validatePublicSlugFormat(normalizePublicSlugInput(patchSlug));
+        if (v.ok) slugMerge.publicSlug = v.slug;
+      }
+      const clippedPatch = {
+        ...patchRest,
+        ...(patch.publicDisplayName !== undefined
+          ? { publicDisplayName: patch.publicDisplayName.trim().slice(0, PUBLIC_DISPLAY_NAME_MAX) }
+          : {}),
+        ...(patch.publicWelcomeMessage !== undefined
+          ? { publicWelcomeMessage: patch.publicWelcomeMessage.trim().slice(0, PUBLIC_WELCOME_MAX) }
+          : {}),
+        ...(patch.publicDescription !== undefined
+          ? { publicDescription: patch.publicDescription.trim().slice(0, PUBLIC_DESCRIPTION_MAX) }
+          : {}),
+      };
       const next = {
         ...prev.settings,
-        ...patch,
-        ...(slug !== undefined ? { publicSlug: slug } : {}),
+        ...clippedPatch,
+        ...slugMerge,
       };
       return { ...prev, settings: next };
     });
@@ -1095,9 +1116,18 @@ export function WavonProvider({
       if (patch.website !== undefined) businessPatch.website = patch.website.trim() || null;
       if (patch.city !== undefined) businessPatch.city = patch.city.trim() || null;
       if (patch.postalCode !== undefined) businessPatch.postal_code = patch.postalCode.trim() || null;
-      if (patch.publicDescription !== undefined) businessPatch.public_description = patch.publicDescription.trim() || null;
-      if (patch.publicWelcomeMessage !== undefined) businessPatch.public_welcome_message = patch.publicWelcomeMessage.trim() || null;
-      if (patch.publicDisplayName !== undefined) businessPatch.public_display_name = patch.publicDisplayName.trim() || null;
+      if (patch.publicDescription !== undefined) {
+        businessPatch.public_description =
+          patch.publicDescription.trim().slice(0, PUBLIC_DESCRIPTION_MAX) || null;
+      }
+      if (patch.publicWelcomeMessage !== undefined) {
+        businessPatch.public_welcome_message =
+          patch.publicWelcomeMessage.trim().slice(0, PUBLIC_WELCOME_MAX) || null;
+      }
+      if (patch.publicDisplayName !== undefined) {
+        businessPatch.public_display_name =
+          patch.publicDisplayName.trim().slice(0, PUBLIC_DISPLAY_NAME_MAX) || null;
+      }
       if (patch.publicLogoUrl !== undefined) businessPatch.public_logo_url = patch.publicLogoUrl.trim() || null;
       if (patch.publicLogoPath !== undefined) businessPatch.public_logo_path = patch.publicLogoPath.trim() || null;
       if (patch.publicCoverUrl !== undefined) businessPatch.public_cover_url = patch.publicCoverUrl.trim() || null;
@@ -1106,22 +1136,14 @@ export function WavonProvider({
       if (patch.publicShowAddress !== undefined) businessPatch.public_show_address = Boolean(patch.publicShowAddress);
       if (patch.publicShowDescription !== undefined) businessPatch.public_show_description = Boolean(patch.publicShowDescription);
       if (patch.publicSlug !== undefined) {
-        businessPatch.public_slug =
-          patch.publicSlug
-            .trim()
-            .toLowerCase()
-            .replace(/[^a-z0-9-]/g, "-")
-            .replace(/-+/g, "-")
-            .replace(/^-|-$/g, "") || null;
+        const v = validatePublicSlugFormat(normalizePublicSlugInput(patch.publicSlug));
+        if (v.ok) businessPatch.public_slug = v.slug;
       }
       if (Object.keys(businessPatch).length > 0) {
         await supabase.from("wavon_businesses").update(businessPatch).eq("id", businessId);
       }
 
       const settingsPatch: Record<string, unknown> = {};
-      if (patch.minServiceDurationMin !== undefined) {
-        settingsPatch.minimum_service_duration = patch.minServiceDurationMin;
-      }
       if (patch.minNoticeHours !== undefined) {
         settingsPatch.minimum_notice_hours = patch.minNoticeHours;
       }

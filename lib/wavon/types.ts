@@ -80,11 +80,10 @@ export type BusinessSettings = {
   website?: string;
   city?: string;
   postalCode?: string;
-  /** URL publique : /reserver/[publicSlug] */
+  /** URL publique : /{publicSlug} */
   publicSlug: string;
 
   /** Réservation */
-  minServiceDurationMin: number;
   minNoticeHours: number;
   maxDaysInAdvance: number;
   slotIntervalMinutes: number;

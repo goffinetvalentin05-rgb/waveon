@@ -19,6 +19,7 @@ import {
   tableHeadClass,
   tableRowClass,
   textareaClass,
+  userTextBreakClass,
 } from "@/lib/wavon/tokens";
 
 export default function ClientsPage() {
@@ -197,7 +198,9 @@ export default function ClientsPage() {
                     className={`${tableRowClass} cursor-pointer hover:bg-neutral-50/80`}
                     onClick={() => openDrawer(c)}
                   >
-                    <td className="px-3 py-3.5 font-medium text-neutral-950">{c.name}</td>
+                    <td className={`px-3 py-3.5 font-medium text-neutral-950 ${userTextBreakClass}`}>
+                      {c.name}
+                    </td>
                     <td className="px-3 py-3.5 text-neutral-600">{c.phone || "—"}</td>
                     <td className="px-3 py-3.5 text-neutral-600">{c.email || "—"}</td>
                     <td className="px-3 py-3.5 tabular-nums text-neutral-700">{counts.get(c.id) ?? 0}</td>
@@ -274,8 +277,10 @@ export default function ClientsPage() {
           />
           <aside className="relative z-[71] flex h-full w-full max-w-md flex-col border-l border-neutral-200/90 bg-white shadow-2xl">
             <div className="flex items-start justify-between gap-3 border-b border-neutral-100 px-6 py-5">
-              <div>
-                <h2 className="text-lg font-semibold text-neutral-950">{drawerClient.name}</h2>
+              <div className="min-w-0 flex-1">
+                <h2 className={`text-lg font-semibold text-neutral-950 ${userTextBreakClass}`}>
+                  {drawerClient.name}
+                </h2>
                 <p className="mt-1 text-sm text-neutral-600">{drawerClient.phone || "—"}</p>
                 <p className="text-sm text-neutral-600">{drawerClient.email || "—"}</p>
               </div>
@@ -314,7 +319,9 @@ export default function ClientsPage() {
                         {history.map((h) => (
                           <tr key={h.id} className="border-b border-neutral-50 last:border-0">
                             <td className="px-3 py-2 text-neutral-800">{formatDateShort(h.start)}</td>
-                            <td className="px-3 py-2 text-neutral-700">{h.serviceName}</td>
+                            <td className={`px-3 py-2 text-neutral-700 ${userTextBreakClass}`}>
+                              {h.serviceName}
+                            </td>
                             <td className="px-3 py-2 text-neutral-700">
                               {h.status === "confirmed"
                                 ? "Confirmé"
@@ -337,7 +344,7 @@ export default function ClientsPage() {
                 <label className={labelClass}>Note privée</label>
                 <p className="mt-1 text-xs text-neutral-400">Visible uniquement par toi.</p>
                 <textarea
-                  className={`${textareaClass} mt-2 min-h-[120px]`}
+                  className={`${textareaClass} mt-2 min-h-[120px] ${userTextBreakClass}`}
                   value={privateNote}
                   onChange={(e) => setPrivateNote(e.target.value)}
                   onBlur={() => {

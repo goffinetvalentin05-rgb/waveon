@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useWavon } from "@/components/wavon/WavonProvider";
 import { EmailsSettingsTab } from "@/components/wavon/parametres/EmailsSettingsTab";
+import { MonLienTab } from "@/components/wavon/parametres/MonLienTab";
 import { PageHeader } from "@/components/wavon/ui/PageHeader";
 import { SectionCard } from "@/components/wavon/ui/SectionCard";
 import { useToast } from "@/components/wavon/Toast";
@@ -19,15 +20,23 @@ import {
 } from "@/lib/wavon/tokens";
 import { deleteBrandingAsset, getBrandingPublicUrl, uploadBrandingAsset } from "@/lib/wavon/storage";
 import { BUSINESS_CURRENCY_OPTIONS, normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
+import { publicBookingPath } from "@/lib/wavon/public-page-url";
 
-type SettingsTab = "business" | "reservation" | "public" | "emails";
+type SettingsTab = "business" | "reservation" | "public" | "mon-lien" | "emails";
 
 const TAB_LABELS: Record<SettingsTab, string> = {
   business: "Business",
   reservation: "Réservation",
   public: "Page publique",
+  "mon-lien": "Mon lien",
   emails: "Emails",
 };
+
+const SETTINGS_TAB_IDS: SettingsTab[] = ["business", "reservation", "public", "mon-lien", "emails"];
+
+const PUBLIC_DISPLAY_NAME_MAX = 60;
+const PUBLIC_WELCOME_MAX = 200;
+const PUBLIC_DESCRIPTION_MAX = 300;
 
 function ParametresPageContent() {
   const searchParams = useSearchParams();
@@ -35,15 +44,27 @@ function ParametresPageContent() {
   const toast = useToast();
   const [saving, setSaving] = useState(false);
   const [brandingLoading, setBrandingLoading] = useState<null | "logo" | "cover">(null);
+  const [pubDisplayName, setPubDisplayName] = useState("");
+  const [pubWelcomeMessage, setPubWelcomeMessage] = useState("");
+  const [pubDescriptionField, setPubDescriptionField] = useState("");
 
   const tabParam = searchParams.get("tab") as SettingsTab | null;
   const [tab, setTab] = useState<SettingsTab>("business");
 
   useEffect(() => {
-    if (tabParam && ["business", "reservation", "public", "emails"].includes(tabParam)) {
+    if (tabParam && SETTINGS_TAB_IDS.includes(tabParam)) {
       setTab(tabParam);
     }
   }, [tabParam]);
+
+  const s = state.settings;
+
+  useEffect(() => {
+    if (!ready) return;
+    setPubDisplayName(s.publicDisplayName ?? "");
+    setPubWelcomeMessage(s.publicWelcomeMessage ?? "");
+    setPubDescriptionField(s.publicDescription ?? "");
+  }, [ready, s.publicDisplayName, s.publicWelcomeMessage, s.publicDescription]);
 
   if (!ready) {
     return (
@@ -52,8 +73,6 @@ function ParametresPageContent() {
       </div>
     );
   }
-
-  const s = state.settings;
 
   const onSubmitBusiness = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -77,7 +96,6 @@ function ParametresPageContent() {
     setSaving(true);
     const fd = new FormData(e.currentTarget);
     patchSettings({
-      minServiceDurationMin: Math.max(5, Number(fd.get("minServiceDurationMin")) || 15),
       minNoticeHours: Math.max(0, Number(fd.get("minNoticeHours")) || 0),
       maxDaysInAdvance: Math.max(0, Number(fd.get("maxDaysInAdvance")) || 365),
       slotIntervalMinutes: Number(fd.get("slotIntervalMinutes")) === 60
@@ -102,10 +120,9 @@ function ParametresPageContent() {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     patchSettings({
-      publicSlug: String(fd.get("publicSlug") ?? "").trim(),
-      publicDisplayName: String(fd.get("publicDisplayName") ?? "").trim(),
-      publicWelcomeMessage: String(fd.get("publicWelcomeMessage") ?? "").trim(),
-      publicDescription: String(fd.get("publicDescription") ?? "").trim(),
+      publicDisplayName: pubDisplayName.trim().slice(0, PUBLIC_DISPLAY_NAME_MAX),
+      publicWelcomeMessage: pubWelcomeMessage.trim().slice(0, PUBLIC_WELCOME_MAX),
+      publicDescription: pubDescriptionField.trim().slice(0, PUBLIC_DESCRIPTION_MAX),
       publicShowPhone: fd.get("publicShowPhone") === "on",
       publicShowAddress: fd.get("publicShowAddress") === "on",
       publicShowDescription: fd.get("publicShowDescription") === "on",
@@ -165,7 +182,7 @@ function ParametresPageContent() {
   };
 
   const slug = s.publicSlug?.trim() ?? "";
-  const publicUrl = slug ? `/reserver/${slug}` : null;
+  const publicPath = slug ? publicBookingPath(slug) : null;
   const logoUrl = getBrandingPublicUrl(s.publicLogoPath) || s.publicLogoUrl || "";
   const coverUrl = getBrandingPublicUrl(s.publicCoverPath) || s.publicCoverUrl || "";
 
@@ -177,7 +194,7 @@ function ParametresPageContent() {
       />
 
       <div className="flex flex-wrap gap-2 border-b border-neutral-200/80 pb-4">
-        {(Object.keys(TAB_LABELS) as SettingsTab[]).map((id) => (
+        {SETTINGS_TAB_IDS.map((id) => (
           <Link
             key={id}
             href={id === "business" ? "/dashboard/parametres" : `/dashboard/parametres?tab=${id}`}
@@ -247,22 +264,11 @@ function ParametresPageContent() {
       {tab === "reservation" ? (
         <SectionCard
           title="Réservation"
-          description="Durées, délais et confirmation : ce que voient tes clients et comment les créneaux sont validés."
+          description="Délais, créneaux et confirmation : ce que voient tes clients et comment les réservations sont validées."
         >
           <form className="grid max-w-2xl gap-6" onSubmit={onSubmitBooking}>
             <div>
-              <label className={labelClass}>Durée minimum d’un service (minutes)</label>
-              <input
-                type="number"
-                name="minServiceDurationMin"
-                min={5}
-                step={5}
-                className={`${inputClass} mt-2`}
-                defaultValue={s.minServiceDurationMin}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Délai minimum avant réservation (heures)</label>
+              <label className={labelClass}>Délai minimum avant le RDV (heures)</label>
               <input
                 type="number"
                 name="minNoticeHours"
@@ -271,6 +277,10 @@ function ParametresPageContent() {
                 className={`${inputClass} mt-2`}
                 defaultValue={s.minNoticeHours}
               />
+              <p className="mt-1 text-xs text-neutral-400">
+                Combien de temps à l&apos;avance un client doit réserver. Par exemple 1 = un client ne peut pas réserver
+                un RDV qui commence dans moins d&apos;une heure.
+              </p>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
@@ -283,9 +293,12 @@ function ParametresPageContent() {
                   className={`${inputClass} mt-2`}
                   defaultValue={s.maxDaysInAdvance}
                 />
+                <p className="mt-1 text-xs text-neutral-400">
+                  Nombre maximum de jours dans le futur pendant lesquels un client peut réserver.
+                </p>
               </div>
               <div>
-                <label className={labelClass}>Granularité des créneaux</label>
+                <label className={labelClass}>Pas entre deux créneaux</label>
                 <select name="slotIntervalMinutes" className={`${inputClass} mt-2`} defaultValue={s.slotIntervalMinutes}>
                   <option value={5}>5 min</option>
                   <option value={10}>10 min</option>
@@ -294,6 +307,10 @@ function ParametresPageContent() {
                   <option value={30}>30 min</option>
                   <option value={60}>60 min</option>
                 </select>
+                <p className="mt-1 text-xs text-neutral-400">
+                  Intervalle entre les horaires proposés aux clients. Par exemple 15 min affiche 9h00, 9h15, 9h30, 9h45. 30
+                  min affiche 9h00, 9h30, 10h00.
+                </p>
               </div>
             </div>
             <label className="flex cursor-pointer items-center gap-3 text-sm text-neutral-700">
@@ -353,33 +370,17 @@ function ParametresPageContent() {
         >
           <form className="grid max-w-2xl gap-6" onSubmit={onSubmitPublic}>
             <div>
-              <label className={labelClass}>Identifiant de la page (slug)</label>
-              <input
-                name="publicSlug"
-                className={`${inputClass} mt-2`}
-                defaultValue={s.publicSlug}
-                placeholder="ex. mon-salon"
-              />
-              <p className="mt-2 text-sm text-neutral-500">
-                {publicUrl ? (
-                  <>
-                    Lien :{" "}
-                    <code className="rounded-lg bg-neutral-100 px-2 py-0.5 text-xs text-neutral-800">{publicUrl}</code>
-                  </>
-                ) : (
-                  <span className="text-neutral-400">Définis un identifiant pour activer ta page.</span>
-                )}
-              </p>
-            </div>
-
-            <div>
               <label className={labelClass}>Nom affiché publiquement</label>
               <input
-                name="publicDisplayName"
                 className={`${inputClass} mt-2`}
-                defaultValue={s.publicDisplayName ?? ""}
+                value={pubDisplayName}
+                maxLength={PUBLIC_DISPLAY_NAME_MAX}
+                onChange={(e) => setPubDisplayName(e.target.value.slice(0, PUBLIC_DISPLAY_NAME_MAX))}
                 placeholder="Ex. Salon Jeanne"
               />
+              <p className="mt-1 text-xs tabular-nums text-neutral-400">
+                {pubDisplayName.length}/{PUBLIC_DISPLAY_NAME_MAX}
+              </p>
               <p className="mt-2 text-xs text-neutral-400">Si vide, le nom de l’entreprise est utilisé.</p>
             </div>
 
@@ -463,20 +464,28 @@ function ParametresPageContent() {
             <div>
               <label className={labelClass}>Message d’accueil</label>
               <input
-                name="publicWelcomeMessage"
                 className={`${inputClass} mt-2`}
-                defaultValue={s.publicWelcomeMessage ?? ""}
+                value={pubWelcomeMessage}
+                maxLength={PUBLIC_WELCOME_MAX}
+                onChange={(e) => setPubWelcomeMessage(e.target.value.slice(0, PUBLIC_WELCOME_MAX))}
                 placeholder="Ex. Bienvenue — choisissez votre prestation."
               />
+              <p className="mt-1 text-xs tabular-nums text-neutral-400">
+                {pubWelcomeMessage.length}/{PUBLIC_WELCOME_MAX}
+              </p>
             </div>
             <div>
               <label className={labelClass}>Description courte</label>
               <input
-                name="publicDescription"
                 className={`${inputClass} mt-2`}
-                defaultValue={s.publicDescription ?? ""}
+                value={pubDescriptionField}
+                maxLength={PUBLIC_DESCRIPTION_MAX}
+                onChange={(e) => setPubDescriptionField(e.target.value.slice(0, PUBLIC_DESCRIPTION_MAX))}
                 placeholder="Ex. Salon premium — centre-ville."
               />
+              <p className="mt-1 text-xs tabular-nums text-neutral-400">
+                {pubDescriptionField.length}/{PUBLIC_DESCRIPTION_MAX}
+              </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
               <label className="flex cursor-pointer items-center gap-3 text-sm text-neutral-700">
@@ -520,15 +529,21 @@ function ParametresPageContent() {
               <button type="submit" className={btnPrimaryClass}>
                 Enregistrer
               </button>
-              {publicUrl ? (
-                <Link href={publicUrl} className={linkClass}>
+              {publicPath ? (
+                <Link href={publicPath} target="_blank" rel="noopener noreferrer" className={linkClass}>
                   Prévisualiser la page publique
                 </Link>
-              ) : null}
+              ) : (
+                <Link href="/dashboard/parametres?tab=mon-lien" className={linkClass}>
+                  Définir mon lien de réservation
+                </Link>
+              )}
             </div>
           </form>
         </SectionCard>
       ) : null}
+
+      {tab === "mon-lien" ? <MonLienTab key={s.publicSlug ?? ""} /> : null}
 
       {tab === "emails" ? <EmailsSettingsTab /> : null}
     </div>

@@ -28,6 +28,7 @@ import {
   selectCompactClass,
   spinnerClass,
   textareaClass,
+  userTextBreakClass,
 } from "@/lib/wavon/tokens";
 
 const locales = { fr };
@@ -381,7 +382,7 @@ export default function CalendrierPage() {
                     <button
                       key={c.id}
                       type="button"
-                      className="block w-full px-3 py-2 text-left text-sm hover:bg-neutral-50"
+                      className={`block w-full px-3 py-2 text-left text-sm hover:bg-neutral-50 ${userTextBreakClass}`}
                       onClick={() => {
                         setFilterClientId(c.id);
                         setFilterClientQuery("");
@@ -576,7 +577,7 @@ function ReservationFields({
       <div>
         <label className={labelClass}>Nom du client</label>
         <input
-          className={`${inputClass} mt-2`}
+          className={`${inputClass} mt-2 min-w-0 max-w-full ${userTextBreakClass}`}
           value={clientName}
           onChange={(e) => setClientName(e.target.value)}
           placeholder="Nom complet"
@@ -584,9 +585,13 @@ function ReservationFields({
       </div>
       <div>
         <label className={labelClass}>Service</label>
-        <select className={`${inputClass} mt-2`} value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
+        <select
+          className={`${inputClass} mt-2 max-w-full min-w-0`}
+          value={serviceId}
+          onChange={(e) => setServiceId(e.target.value)}
+        >
           {state.services.map((s) => (
-            <option key={s.id} value={s.id}>
+            <option key={s.id} value={s.id} title={`${s.name} (${s.durationMin} min)`}>
               {s.name} ({s.durationMin} min)
             </option>
           ))}
@@ -619,7 +624,11 @@ function ReservationFields({
       </div>
       <div>
         <label className={labelClass}>Notes (interne)</label>
-        <textarea className={`${textareaClass} mt-2 min-h-[88px]`} value={notes} onChange={(e) => setNotes(e.target.value)} />
+        <textarea
+          className={`${textareaClass} mt-2 min-h-[88px] ${userTextBreakClass}`}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+        />
       </div>
     </div>
   );
@@ -648,7 +657,7 @@ function DetailBody({
     <div className="grid gap-4 text-sm">
       <div className="grid gap-1">
         <span className="text-xs font-medium uppercase tracking-wide text-neutral-400">Client</span>
-        <p className="font-medium text-neutral-950">{reservation.clientName}</p>
+        <p className={`font-medium text-neutral-950 ${userTextBreakClass}`}>{reservation.clientName}</p>
         {client ? (
           <>
             <p className="text-neutral-600">{client.phone || "—"}</p>
@@ -660,7 +669,7 @@ function DetailBody({
       </div>
       <div className="grid gap-1">
         <span className="text-xs font-medium uppercase tracking-wide text-neutral-400">Prestation</span>
-        <p className="text-neutral-900">{service?.name ?? "—"}</p>
+        <p className={`text-neutral-900 ${userTextBreakClass}`}>{service?.name ?? "—"}</p>
       </div>
       {service ? (
         <div className="grid gap-1">
@@ -690,7 +699,7 @@ function DetailBody({
       <div>
         <label className={labelClass}>Notes (interne)</label>
         <textarea
-          className={`${textareaClass} mt-2 min-h-[100px]`}
+          className={`${textareaClass} mt-2 min-h-[100px] ${userTextBreakClass}`}
           value={notesLocal}
           onChange={(e) => setNotesLocal(e.target.value)}
           onBlur={() => onNotesBlur(notesLocal.trim())}

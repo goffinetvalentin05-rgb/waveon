@@ -13,6 +13,7 @@ import {
   labelClass,
   spinnerClass,
   textareaClass,
+  userTextBreakClass,
 } from "@/lib/wavon/tokens";
 
 type ScheduledRow = {
@@ -488,14 +489,18 @@ function TemplateBlock(props: {
 
         <div>
           <label className={labelClass}>Objet</label>
-          <input className={`${inputClass} mt-2`} value={subject} onChange={(e) => setSubject(e.target.value)} />
+          <input
+            className={`${inputClass} mt-2 ${userTextBreakClass}`}
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+          />
         </div>
 
         <div>
           <label className={labelClass}>Contenu</label>
           <textarea
             ref={bodyRef}
-            className={`${textareaClass} mt-2 min-h-[220px]`}
+            className={`${textareaClass} mt-2 min-h-[220px] ${userTextBreakClass}`}
             value={body}
             onChange={(e) => setBody(e.target.value)}
           />
@@ -598,14 +603,18 @@ function ScheduledBlock(props: {
 
         <div>
           <label className={labelClass}>Objet</label>
-          <input className={`${inputClass} mt-2`} value={subject} onChange={(e) => setSubject(e.target.value)} />
+          <input
+            className={`${inputClass} mt-2 ${userTextBreakClass}`}
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+          />
         </div>
 
         <div>
           <label className={labelClass}>Contenu</label>
           <textarea
             ref={bodyRef}
-            className={`${textareaClass} mt-2 min-h-[220px]`}
+            className={`${textareaClass} mt-2 min-h-[220px] ${userTextBreakClass}`}
             value={body}
             onChange={(e) => setBody(e.target.value)}
           />

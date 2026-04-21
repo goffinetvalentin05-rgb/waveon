@@ -19,6 +19,7 @@ import {
 } from "@/lib/wavon/tokens";
 
 const SERVICE_NAME_MAX = 60;
+const SERVICE_DESCRIPTION_MAX = 300;
 
 const PREPARATION_BEFORE_TOOLTIP =
   "Temps réservé avant le RDV pour préparer ton poste ou accueillir le client. Aucun autre rendez-vous ne pourra être pris pendant ce temps.";
@@ -82,7 +83,7 @@ export default function ServicesPage() {
     setName(s.name);
     setDurationMin(s.durationMin);
     setPrice(s.price);
-    setDescription(s.description);
+    setDescription((s.description ?? "").slice(0, SERVICE_DESCRIPTION_MAX));
     setIsActive(Boolean(s.isActive));
     setIsPublic(Boolean(s.isPublic));
     setBufferBeforeMin(Math.max(0, s.bufferBeforeMin ?? 0));
@@ -99,10 +100,10 @@ export default function ServicesPage() {
       toast.push({ kind: "error", message: "Le nom est requis." });
       return;
     }
-    if (durationMin < state.settings.minServiceDurationMin) {
+    if (durationMin < 5) {
       toast.push({
         kind: "error",
-        message: `Durée minimum ${state.settings.minServiceDurationMin} min (paramètres).`,
+        message: "La durée minimum d’un service est de 5 minutes.",
       });
       return;
     }
@@ -111,7 +112,7 @@ export default function ServicesPage() {
         name: trimmedName,
         durationMin,
         price,
-        description: description.trim(),
+        description: description.trim().slice(0, SERVICE_DESCRIPTION_MAX),
         isActive,
         isPublic,
         bufferBeforeMin,
@@ -126,7 +127,7 @@ export default function ServicesPage() {
         name: trimmedName,
         durationMin,
         price,
-        description: description.trim(),
+        description: description.trim().slice(0, SERVICE_DESCRIPTION_MAX),
         isActive,
         isPublic,
         bufferBeforeMin,
@@ -176,10 +177,10 @@ export default function ServicesPage() {
           </div>
         ) : (
           state.services.map((s, idx) => (
-            <article key={s.id} className={cardClass}>
+            <article key={s.id} className={`${cardClass} overflow-hidden`}>
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <h2 className="line-clamp-1 break-all text-lg font-semibold tracking-tight text-neutral-950">
+                  <h2 className="line-clamp-2 min-w-0 max-w-full break-words text-lg font-semibold tracking-tight text-neutral-950 [overflow-wrap:anywhere]">
                     {s.name}
                   </h2>
                   <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
@@ -413,8 +414,12 @@ export default function ServicesPage() {
             <textarea
               className={`${textareaClass} mt-2`}
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              maxLength={SERVICE_DESCRIPTION_MAX}
+              onChange={(e) => setDescription(e.target.value.slice(0, SERVICE_DESCRIPTION_MAX))}
             />
+            <p className="mt-1 text-xs tabular-nums text-neutral-400">
+              {description.length}/{SERVICE_DESCRIPTION_MAX}
+            </p>
           </div>
           <p className="text-xs leading-relaxed text-neutral-400">
             La durée, la préparation et la pause après le rendez-vous, ainsi que le préavis, influencent directement les
@@ -431,11 +436,11 @@ function ServiceDescription({ text }: { text: string }) {
   if (!text.trim()) {
     return <p className="mt-2 text-sm leading-relaxed text-neutral-500">Pas de description.</p>;
   }
-  const long = text.length > 200 || text.split("\n").length > 3;
+  const long = text.length > 180 || text.split("\n").length > 3;
   return (
-    <div className="mt-2">
+    <div className="mt-2 min-w-0 overflow-hidden">
       <p
-        className={`text-sm leading-relaxed text-neutral-500 ${expanded ? "" : "line-clamp-3"}`}
+        className={`max-w-full break-words text-sm leading-relaxed text-neutral-500 [overflow-wrap:anywhere] ${expanded ? "" : "line-clamp-3"}`}
       >
         {text}
       </p>

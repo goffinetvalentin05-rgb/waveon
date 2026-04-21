@@ -2,6 +2,16 @@ import { createServerClient } from "@supabase/auth-helpers-nextjs";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  if (path.startsWith("/reserver/")) {
+    const slug = path.slice("/reserver/".length);
+    if (slug && !slug.includes("/")) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/${slug}`;
+      return NextResponse.redirect(url, 301);
+    }
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -40,8 +50,6 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const path = request.nextUrl.pathname;
-
   const isProtected =
     path.startsWith("/dashboard");
 
@@ -63,6 +71,7 @@ export const config = {
     "/dashboard/:path*",
     "/login",
     "/signup",
+    "/reserver/:path*",
     // Permet de rafraîchir la session (cookies) avant le handler, comme pour le dashboard.
     "/api/emails/test-configurable",
   ],

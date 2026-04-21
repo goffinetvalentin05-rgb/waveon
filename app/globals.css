@@ -38,6 +38,14 @@ select {
   background-color: #ffffff;
 }
 
+/* Waevon calendrier — titres d’événements (noms longs sans espaces) */
+.waevon-calendar-wrap .rbc-event-content,
+.waevon-calendar-wrap .rbc-event-label {
+  overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
 input::placeholder,
 textarea::placeholder {
   color: #94a3b8;

@@ -142,9 +142,6 @@ export function validateReservationWindow(
   service: Service,
   settings: WavonState["settings"]
 ): string | null {
-  if (service.durationMin < settings.minServiceDurationMin) {
-    return `Durée du service inférieure au minimum configuré (${settings.minServiceDurationMin} min).`;
-  }
   const notice = Math.max(
     0,
     service.bookingNoticeHours ?? settings.minNoticeHours ?? 0

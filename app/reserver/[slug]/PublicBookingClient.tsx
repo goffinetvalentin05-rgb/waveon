@@ -16,7 +16,7 @@ import {
 } from "@/lib/wavon/booking-logic";
 import { formatPrice, normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
 import { landingSection } from "@/components/landing/landing-tokens";
-import { btnPrimaryClass, inputClass, labelClass } from "@/lib/wavon/tokens";
+import { btnPrimaryClass, inputClass, labelClass, userTextBreakClass } from "@/lib/wavon/tokens";
 import { supabase } from "@/lib/supabase/client";
 import type { DayKey, Service, WavonState } from "@/lib/wavon/types";
 import { getBrandingPublicUrl } from "@/lib/wavon/storage";
@@ -41,7 +41,6 @@ type DbBusiness = {
 type DbSettings = {
   business_id: string;
   minimum_notice_hours: number;
-  minimum_service_duration: number;
   auto_confirm_reservations: boolean;
   availability_mode: "fixed" | "custom";
   maximum_days_in_advance?: number;
@@ -167,7 +166,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
             supabase
               .from("wavon_settings")
               .select(
-                "business_id,minimum_notice_hours,minimum_service_duration,auto_confirm_reservations,availability_mode,maximum_days_in_advance,slot_interval_minutes,minimum_gap_between_bookings,same_day_booking_allowed,public_after_booking_message"
+                "business_id,minimum_notice_hours,auto_confirm_reservations,availability_mode,maximum_days_in_advance,slot_interval_minutes,minimum_gap_between_bookings,same_day_booking_allowed,public_after_booking_message"
               )
               .eq("business_id", id)
               .maybeSingle(),
@@ -293,7 +292,6 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
             address: b.address ?? "",
             phone: b.phone ?? "",
             publicSlug: b.public_slug ?? slug,
-            minServiceDurationMin: dbSettings?.minimum_service_duration ?? 15,
             minNoticeHours: dbSettings?.minimum_notice_hours ?? 0,
             maxDaysInAdvance: dbSettings?.maximum_days_in_advance ?? 365,
             slotIntervalMinutes: dbSettings?.slot_interval_minutes ?? 15,
@@ -402,12 +400,12 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
         <div className={`${landingSection} text-center`}>
           <div className="mx-auto max-w-md rounded-3xl border border-neutral-200/90 bg-white px-8 py-12 shadow-[0_2px_16px_-4px_rgba(0,0,0,0.06)]">
             <h1 className="text-lg font-semibold text-neutral-950">
-              {loadingInit ? "Chargement…" : "Page introuvable"}
+              {loadingInit ? "Chargement…" : "Lien introuvable"}
             </h1>
             <p className="mt-3 text-sm leading-relaxed text-neutral-500">
               {loadingInit
                 ? "Connexion au planning…"
-                : `Aucune page publique n’est configurée pour « ${slug} ».`}
+                : "Ce lien de réservation n’existe pas ou n’est plus actif."}
             </p>
           </div>
         </div>
@@ -659,7 +657,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
 
                 {/* Identity */}
                 <div className="px-6 pb-6 pt-5 sm:px-8 sm:pb-8">
-                  <div className="-mt-10 flex flex-col items-center text-center sm:-mt-12">
+                  <div className="-mt-10 flex w-full min-w-0 flex-col items-center text-center sm:-mt-12">
                     <div className="relative mb-4 flex size-20 items-center justify-center overflow-hidden rounded-3xl border border-neutral-200/90 bg-white shadow-[0_12px_36px_-18px_rgba(0,0,0,0.35)] sm:size-24">
                       {logoUrl ? (
                         <Image
@@ -681,18 +679,24 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
                       )}
                     </div>
 
-                    <h1 className="text-2xl font-semibold tracking-tight text-neutral-950 sm:text-[1.65rem]">
+                    <h1
+                      className={`mx-auto max-w-full text-2xl font-semibold tracking-tight text-neutral-950 sm:text-[1.65rem] ${userTextBreakClass} line-clamp-2 text-center`}
+                    >
                       {displayName}
                     </h1>
 
                     {state.settings.publicWelcomeMessage?.trim() ? (
-                      <p className="mx-auto mt-2 max-w-md text-sm text-neutral-500">
+                      <p
+                        className={`mx-auto mt-2 max-w-md text-sm text-neutral-500 ${userTextBreakClass} line-clamp-4 text-center`}
+                      >
                         {state.settings.publicWelcomeMessage}
                       </p>
                     ) : null}
 
                     {state.settings.publicShowDescription && state.settings.publicDescription?.trim() ? (
-                      <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-neutral-400">
+                      <p
+                        className={`mx-auto mt-2 max-w-md text-xs leading-relaxed text-neutral-400 ${userTextBreakClass} line-clamp-3 text-center`}
+                      >
                         {state.settings.publicDescription}
                       </p>
                     ) : null}
@@ -700,12 +704,16 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
                     {(state.settings.publicShowPhone || state.settings.publicShowAddress) ? (
                       <div className="mx-auto mt-4 flex max-w-md flex-wrap items-center justify-center gap-2 text-xs text-neutral-400">
                         {state.settings.publicShowPhone && state.settings.phone?.trim() ? (
-                          <span className="rounded-full border border-neutral-200/90 bg-white px-3 py-1.5">
+                          <span
+                            className={`max-w-full rounded-full border border-neutral-200/90 bg-white px-3 py-1.5 ${userTextBreakClass}`}
+                          >
                             {state.settings.phone}
                           </span>
                         ) : null}
                         {state.settings.publicShowAddress && state.settings.address?.trim() ? (
-                          <span className="rounded-full border border-neutral-200/90 bg-white px-3 py-1.5">
+                          <span
+                            className={`max-w-full rounded-full border border-neutral-200/90 bg-white px-3 py-1.5 ${userTextBreakClass}`}
+                          >
                             {state.settings.address}
                           </span>
                         ) : null}
@@ -717,21 +725,25 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
                 {/* Form section (integrated) */}
                 <div className="border-t border-neutral-100 px-6 py-6 sm:px-8 sm:py-8">
                   <div className="space-y-6">
-              <div>
+              <div className="min-w-0 overflow-hidden">
                 <label className={labelClass}>Prestation</label>
                 <select
-                  className={`${inputClass} mt-2`}
+                  className={`${inputClass} mt-2 max-w-full`}
                   value={resolvedServiceId ?? ""}
                   onChange={(e) => setServiceId(e.target.value)}
                 >
                   {state.services.map((s) => (
-                    <option key={s.id} value={s.id}>
+                    <option key={s.id} value={s.id} title={`${s.name} — ${s.durationMin} min`}>
                       {s.name} — {s.durationMin} min — {formatPrice(s.price, state.settings.currency)}
                     </option>
                   ))}
                 </select>
                 {svc?.description ? (
-                  <p className="mt-2 text-xs leading-relaxed text-neutral-500">{svc.description}</p>
+                  <p
+                    className={`mt-2 text-xs leading-relaxed text-neutral-500 ${userTextBreakClass} line-clamp-3`}
+                  >
+                    {svc.description}
+                  </p>
                 ) : null}
               </div>
 
@@ -763,7 +775,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
                     )}
                   </select>
                   {noSlotsHint ? (
-                    <p className="mt-2 text-xs leading-relaxed text-neutral-500">
+                    <p className={`mt-2 text-xs leading-relaxed text-neutral-500 ${userTextBreakClass}`}>
                       {noSlotsHint}
                     </p>
                   ) : null}
@@ -797,12 +809,16 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
               </div>
 
               {err ? (
-                <div className="rounded-2xl border border-red-200/90 bg-red-50/80 px-4 py-3 text-sm text-red-900">
+                <div
+                  className={`rounded-2xl border border-red-200/90 bg-red-50/80 px-4 py-3 text-sm text-red-900 ${userTextBreakClass}`}
+                >
                   {err}
                 </div>
               ) : null}
               {msg ? (
-                <div className="rounded-2xl border border-neutral-200/90 bg-neutral-50 px-4 py-3 text-sm text-neutral-800">
+                <div
+                  className={`rounded-2xl border border-neutral-200/90 bg-neutral-50 px-4 py-3 text-sm text-neutral-800 ${userTextBreakClass}`}
+                >
                   {msg}
                 </div>
               ) : null}

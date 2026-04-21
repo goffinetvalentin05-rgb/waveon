@@ -57,6 +57,9 @@ export const btnGhostClass =
 /** Lien texte */
 export const linkClass = "text-sm font-medium text-neutral-950 underline-offset-4 hover:underline";
 
+/** Texte saisi par l’utilisateur : évite le débordement horizontal (chaînes sans espaces) */
+export const userTextBreakClass = "min-w-0 max-w-full break-words [overflow-wrap:anywhere]";
+
 /** Tableau */
 export const tableHeadClass = "border-b border-neutral-200/80 text-left text-xs font-medium uppercase tracking-wide text-neutral-500";
 export const tableRowClass = "border-b border-neutral-100 last:border-0 transition hover:bg-neutral-50/80";

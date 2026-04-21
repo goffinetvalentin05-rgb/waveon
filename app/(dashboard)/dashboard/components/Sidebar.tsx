@@ -6,6 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useWavon } from "@/components/wavon/WavonProvider";
 import { supabase } from "@/lib/supabase/client";
+import { publicBookingAbsoluteUrl } from "@/lib/wavon/public-page-url";
+import { normalizePublicSlugInput, validatePublicSlugFormat } from "@/lib/wavon/public-slug";
 import { sidebarNavActive, sidebarNavInactive } from "@/lib/wavon/tokens";
 
 const navItems = [
@@ -43,6 +45,56 @@ function NavLinks({
         );
       })}
     </nav>
+  );
+}
+
+function ExternalLinkIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <polyline points="15 3 21 3 21 9" />
+      <line x1="10" y1="14" x2="21" y2="3" />
+    </svg>
+  );
+}
+
+function SidebarFooterActions({ onNavigate }: { onNavigate?: () => void }) {
+  const { ready, state } = useWavon();
+  if (!ready) return null;
+  const raw = state.settings.publicSlug?.trim() ?? "";
+  const slugParsed = validatePublicSlugFormat(normalizePublicSlugInput(raw));
+  const linkClassName =
+    "flex w-full items-center gap-2 rounded-xl py-2.5 text-left text-sm font-medium text-neutral-700 transition hover:bg-neutral-100 hover:text-neutral-950";
+
+  if (slugParsed.ok) {
+    return (
+      <a
+        href={publicBookingAbsoluteUrl(slugParsed.slug)}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={onNavigate}
+        className={linkClassName}
+      >
+        Voir ma page publique
+        <ExternalLinkIcon className="shrink-0 opacity-70" />
+      </a>
+    );
+  }
+  return (
+    <Link href="/dashboard/parametres?tab=mon-lien" onClick={onNavigate} className={linkClassName}>
+      Définir mon lien de réservation
+    </Link>
   );
 }
 
@@ -113,7 +165,8 @@ export default function Sidebar() {
               <SidebarBrand compact />
             </div>
             <NavLinks pathname={pathname} onNavigate={closeMobile} />
-            <div className="mt-auto border-t border-neutral-100 pt-6">
+            <div className="mt-auto space-y-1 border-t border-neutral-100 pt-6">
+              <SidebarFooterActions onNavigate={closeMobile} />
               <button
                 type="button"
                 onClick={() => {
@@ -136,7 +189,8 @@ export default function Sidebar() {
           <NavLinks pathname={pathname} />
         </div>
 
-        <div className="mt-auto border-t border-neutral-100 px-1 pt-6">
+        <div className="mt-auto space-y-1 border-t border-neutral-100 px-1 pt-6">
+          <SidebarFooterActions />
           <button
             type="button"
             onClick={() => void handleLogout()}
