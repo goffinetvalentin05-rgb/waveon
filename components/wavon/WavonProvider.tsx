@@ -22,6 +22,7 @@ import type {
   WavonState,
 } from "@/lib/wavon/types";
 import { supabase } from "@/lib/supabase/client";
+import { normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
 
 type DbBusiness = {
   id: string;
@@ -45,6 +46,7 @@ type DbBusiness = {
   public_show_phone: boolean | null;
   public_show_address: boolean | null;
   public_show_description: boolean | null;
+  currency: string | null;
 };
 
 type DbSettings = {
@@ -158,6 +160,7 @@ function createEmptyState(): WavonState {
     reservations: [],
     settings: {
       businessName: "",
+      currency: "CHF",
       address: "",
       phone: "",
       publicSlug: "",
@@ -283,7 +286,7 @@ export function WavonProvider({
       const { data: business, error: businessErr } = await supabase
         .from("wavon_businesses")
         .select(
-          "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description"
+          "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description,currency"
         )
         .eq("user_id", userId)
         .maybeSingle();
@@ -296,7 +299,7 @@ export function WavonProvider({
             .from("wavon_businesses")
             .insert({ user_id: userId })
             .select(
-              "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description"
+              "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description,currency"
             )
             .single();
           if (error) throw error;
@@ -448,6 +451,7 @@ export function WavonProvider({
         })),
         settings: {
           businessName: ensuredBusiness.business_name ?? "",
+          currency: normalizeBusinessCurrency(ensuredBusiness.currency),
           address: ensuredBusiness.address ?? "",
           phone: ensuredBusiness.phone ?? "",
           publicSlug: ensuredBusiness.public_slug ?? "",
@@ -1087,6 +1091,7 @@ export function WavonProvider({
       if (patch.phone !== undefined) businessPatch.phone = patch.phone.trim();
       if (patch.email !== undefined) businessPatch.email = patch.email.trim() || null;
       if (patch.businessType !== undefined) businessPatch.business_type = patch.businessType.trim() || null;
+      if (patch.currency !== undefined) businessPatch.currency = normalizeBusinessCurrency(patch.currency);
       if (patch.website !== undefined) businessPatch.website = patch.website.trim() || null;
       if (patch.city !== undefined) businessPatch.city = patch.city.trim() || null;
       if (patch.postalCode !== undefined) businessPatch.postal_code = patch.postalCode.trim() || null;

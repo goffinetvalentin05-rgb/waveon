@@ -27,6 +27,13 @@ export function formatTime(iso: string): string {
   return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 }
 
+export {
+  formatPrice,
+  normalizeBusinessCurrency,
+  currencyFieldAffix,
+} from "@/lib/utils/formatPrice";
+
+/** @deprecated Préférer formatPrice(montant, deviseDuBusiness) */
 export function formatPriceEUR(n: number): string {
   return new Intl.NumberFormat("fr-FR", {
     style: "currency",
@@ -34,6 +41,7 @@ export function formatPriceEUR(n: number): string {
   }).format(n);
 }
 
+/** @deprecated Préférer formatPrice(montant, deviseDuBusiness) */
 export function formatPriceCHF(n: number): string {
   return new Intl.NumberFormat("fr-CH", {
     style: "currency",

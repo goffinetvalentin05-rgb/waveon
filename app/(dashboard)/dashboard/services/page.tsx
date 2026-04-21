@@ -5,7 +5,7 @@ import { useWavon } from "@/components/wavon/WavonProvider";
 import { Modal } from "@/components/wavon/Modal";
 import { PageHeader } from "@/components/wavon/ui/PageHeader";
 import { useToast } from "@/components/wavon/Toast";
-import { formatPriceEUR } from "@/lib/wavon/format";
+import { currencyFieldAffix, formatPrice } from "@/lib/utils/formatPrice";
 import type { Service } from "@/lib/wavon/types";
 import {
   btnGhostClass,
@@ -50,6 +50,7 @@ function FieldLabelWithHint({ children, hint }: { children: ReactNode; hint: str
 export default function ServicesPage() {
   const { ready, state, addService, updateService, deleteService } = useWavon();
   const toast = useToast();
+  const currency = state.settings.currency;
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Service | null>(null);
   const [name, setName] = useState("");
@@ -270,7 +271,7 @@ export default function ServicesPage() {
                 </div>
                 <div>
                   <dt className="text-xs font-medium uppercase tracking-wide text-neutral-400">Prix</dt>
-                  <dd className="mt-1 font-medium text-neutral-950">{formatPriceEUR(s.price)}</dd>
+                  <dd className="mt-1 font-medium text-neutral-950">{formatPrice(s.price, currency)}</dd>
                 </div>
               </dl>
               <div className="mt-6 flex flex-wrap gap-4">
@@ -331,15 +332,20 @@ export default function ServicesPage() {
               />
             </div>
             <div>
-              <label className={labelClass}>Prix (€)</label>
-              <input
-                type="number"
-                min={0}
-                step={1}
-                className={`${inputClass} mt-2`}
-                value={price}
-                onChange={(e) => setPrice(Number(e.target.value))}
-              />
+              <label className={labelClass}>Prix</label>
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  className={`${inputClass} min-w-0 flex-1`}
+                  value={price}
+                  onChange={(e) => setPrice(Number(e.target.value))}
+                />
+                <span className="shrink-0 text-sm font-medium tabular-nums text-neutral-500">
+                  {currencyFieldAffix(currency)}
+                </span>
+              </div>
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">

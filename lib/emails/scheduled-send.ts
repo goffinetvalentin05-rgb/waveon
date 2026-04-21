@@ -1,7 +1,7 @@
 import { render } from "@react-email/render";
 import { getResend, getResendApiKey, EMAIL_FROM, EMAIL_REPLY_TO_FALLBACK } from "@/lib/resend";
 import { createAdminSupabaseClient, getSupabaseServiceRoleKey } from "@/lib/supabase/admin";
-import { formatPriceEUR } from "@/lib/wavon/format";
+import { formatPrice, normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
 import ReminderClient from "@/lib/emails/templates/reminder-client";
 import PostServiceClient from "@/lib/emails/templates/post-service-client";
 import { renderTemplateText, sanitizeUrl, splitLines } from "@/lib/emails/configurable";
@@ -44,6 +44,7 @@ type DbBusiness = {
   email: string | null;
   phone: string | null;
   address: string | null;
+  currency: string | null;
 };
 
 function formatEmailDate(iso: string): string {
@@ -69,7 +70,7 @@ function buildVars(input: {
   reservationTime: string;
   businessPhone: string;
   businessAddress: string;
-  priceEUR: string;
+  formattedServicePrice: string;
 }) {
   return {
     business_name: input.businessName,
@@ -79,7 +80,7 @@ function buildVars(input: {
     reservation_time: input.reservationTime,
     business_phone: input.businessPhone,
     business_address: input.businessAddress,
-    service_price: input.priceEUR,
+    service_price: input.formattedServicePrice,
   } as const;
 }
 
@@ -243,11 +244,12 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
     // Fetch business details once
     const { data: biz } = await admin
       .from("wavon_businesses")
-      .select("business_name,public_display_name,email,phone,address")
+      .select("business_name,public_display_name,email,phone,address,currency")
       .eq("id", businessId)
       .maybeSingle();
     const business = (biz as DbBusiness | null) ?? null;
     const displayName = business?.public_display_name?.trim() || business?.business_name || "Commerce";
+    const businessCurrency = normalizeBusinessCurrency(business?.currency);
     const replyTo = business?.email ?? EMAIL_REPLY_TO_FALLBACK;
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://waevon.com";
 
@@ -288,7 +290,7 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
 
         const date = formatEmailDate(r.start_at);
         const time = formatEmailTime(r.start_at);
-        const priceEUR = formatPriceEUR(Number(svc?.price ?? 0));
+        const formattedServicePrice = formatPrice(Number(svc?.price ?? 0), businessCurrency);
         const vars = buildVars({
           businessName: displayName,
           clientName: r.client_name || client?.full_name || "Client",
@@ -297,7 +299,7 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
           reservationTime: time,
           businessPhone: business?.phone ?? "",
           businessAddress: business?.address ?? "",
-          priceEUR,
+          formattedServicePrice,
         });
 
         const subject = renderTemplateText(reminder.subject || "", vars);
@@ -364,7 +366,7 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
 
         const date = formatEmailDate(r.start_at);
         const time = formatEmailTime(r.start_at);
-        const priceEUR = formatPriceEUR(Number(svc?.price ?? 0));
+        const formattedServicePricePost = formatPrice(Number(svc?.price ?? 0), businessCurrency);
         const vars = buildVars({
           businessName: displayName,
           clientName: r.client_name || client?.full_name || "Client",
@@ -373,7 +375,7 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
           reservationTime: time,
           businessPhone: business?.phone ?? "",
           businessAddress: business?.address ?? "",
-          priceEUR,
+          formattedServicePrice: formattedServicePricePost,
         });
 
         const subject = renderTemplateText(post.subject || "", vars);

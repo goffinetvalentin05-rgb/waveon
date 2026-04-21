@@ -18,6 +18,7 @@ import {
   spinnerClass,
 } from "@/lib/wavon/tokens";
 import { deleteBrandingAsset, getBrandingPublicUrl, uploadBrandingAsset } from "@/lib/wavon/storage";
+import { BUSINESS_CURRENCY_OPTIONS, normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
 
 type SettingsTab = "business" | "reservation" | "public" | "emails";
 
@@ -60,6 +61,7 @@ function ParametresPageContent() {
     patchSettings({
       businessName: String(fd.get("businessName") ?? "").trim(),
       businessType: String(fd.get("businessType") ?? "").trim(),
+      currency: normalizeBusinessCurrency(String(fd.get("currency") ?? "CHF")),
       address: String(fd.get("address") ?? "").trim(),
       city: String(fd.get("city") ?? "").trim(),
       postalCode: String(fd.get("postalCode") ?? "").trim(),
@@ -210,6 +212,23 @@ function ParametresPageContent() {
                 </select>
               </div>
               <Field label="Email" name="email" defaultValue={s.email ?? ""} />
+            </div>
+            <div>
+              <label className={labelClass}>Devise</label>
+              <select
+                name="currency"
+                className={`${inputClass} mt-2`}
+                defaultValue={normalizeBusinessCurrency(s.currency)}
+              >
+                {BUSINESS_CURRENCY_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-neutral-400">
+                Devise utilisée pour afficher tes prix sur ta page publique et dans ton interface.
+              </p>
             </div>
             <Field label="Site web (optionnel)" name="website" defaultValue={s.website ?? ""} />
             <Field label="Adresse" name="address" defaultValue={s.address} />

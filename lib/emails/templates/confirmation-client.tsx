@@ -20,7 +20,8 @@ export interface ConfirmationClientProps {
   date: string;
   time: string;
   durationMin: number;
-  priceCHF: string;
+  /** Prix déjà formaté avec la devise du commerce */
+  formattedPrice: string;
   address?: string;
   phone?: string;
   isPending: boolean;
@@ -34,7 +35,7 @@ export default function ConfirmationClient({
   date,
   time,
   durationMin,
-  priceCHF,
+  formattedPrice,
   address,
   phone,
   isPending,
@@ -77,7 +78,7 @@ export default function ConfirmationClient({
               <InfoRow label="Date" value={date} />
               <InfoRow label="Heure" value={time} />
               <InfoRow label="Durée" value={`${durationMin} min`} />
-              <InfoRow label="Prix" value={priceCHF} isLast />
+              <InfoRow label="Prix" value={formattedPrice} isLast />
             </Section>
 
             {(address || phone) && (

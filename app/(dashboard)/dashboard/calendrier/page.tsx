@@ -16,6 +16,7 @@ import {
   isSlotOutsideBusiness,
 } from "@/lib/wavon/calendar-hours";
 import { formatDateShort, formatTime } from "@/lib/wavon/format";
+import { formatPrice } from "@/lib/utils/formatPrice";
 import type { Client, Reservation, ReservationStatus, WavonState } from "@/lib/wavon/types";
 import {
   btnGhostClass,
@@ -496,6 +497,7 @@ export default function CalendrierPage() {
           <DetailBody
             reservation={detailRes}
             service={state.services.find((s) => s.id === detailRes.serviceId)}
+            currency={state.settings.currency}
             client={clientRow}
             onStatusChange={(status) => {
               const res = updateReservation(detailRes.id, { status });
@@ -626,12 +628,14 @@ function ReservationFields({
 function DetailBody({
   reservation,
   service,
+  currency,
   client,
   onStatusChange,
   onNotesBlur,
 }: {
   reservation: Reservation;
   service?: { name: string; price: number; durationMin: number };
+  currency: string;
   client: Client | null;
   onStatusChange: (s: ReservationStatus) => void;
   onNotesBlur: (notes: string) => void;
@@ -658,6 +662,12 @@ function DetailBody({
         <span className="text-xs font-medium uppercase tracking-wide text-neutral-400">Prestation</span>
         <p className="text-neutral-900">{service?.name ?? "—"}</p>
       </div>
+      {service ? (
+        <div className="grid gap-1">
+          <span className="text-xs font-medium uppercase tracking-wide text-neutral-400">Prix</span>
+          <p className="text-neutral-900">{formatPrice(service.price, currency)}</p>
+        </div>
+      ) : null}
       <div className="grid gap-1">
         <span className="text-xs font-medium uppercase tracking-wide text-neutral-400">Date et heure</span>
         <p className="text-neutral-900">

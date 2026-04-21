@@ -31,6 +31,7 @@ type UiEmailTab = "confirmation" | "reminder" | "cancellation" | "post_service";
 const INSERT_VARS = [
   "{{client_name}}",
   "{{service_name}}",
+  "{{service_price}}",
   "{{reservation_date}}",
   "{{reservation_time}}",
   "{{business_name}}",

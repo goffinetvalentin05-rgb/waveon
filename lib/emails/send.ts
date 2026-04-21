@@ -2,7 +2,7 @@ import { render } from "@react-email/render";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getResend, getResendApiKey, EMAIL_FROM, EMAIL_REPLY_TO_FALLBACK } from "@/lib/resend";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { formatPriceEUR } from "@/lib/wavon/format";
+import { formatPrice, normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
 import type { EmailTemplateType } from "@/lib/wavon/types";
 import { renderTemplateText, splitLines } from "@/lib/emails/configurable";
 import { defaultEmailBody, defaultEmailSubject } from "@/lib/emails/default-copy";
@@ -48,6 +48,7 @@ type ReservationData = {
   merchantEmail: string | null;
   businessPhone: string | null;
   businessAddress: string;
+  currency: string;
 };
 
 type DbReservationRow = {
@@ -75,6 +76,7 @@ type DbBusinessRow = {
   address: string | null;
   city: string | null;
   postal_code: string | null;
+  currency: string | null;
 };
 
 type DbClientRow = {
@@ -116,7 +118,7 @@ async function fetchReservationData(
       .maybeSingle(),
     admin
       .from("wavon_businesses")
-      .select("business_name,public_display_name,email,phone,address,city,postal_code")
+      .select("business_name,public_display_name,email,phone,address,city,postal_code,currency")
       .eq("id", businessId)
       .maybeSingle(),
     reservation.client_id
@@ -153,13 +155,14 @@ async function fetchReservationData(
     merchantEmail: biz?.email ?? null,
     businessPhone: biz?.phone ?? null,
     businessAddress: formatBusinessAddress(biz),
+    currency: normalizeBusinessCurrency(biz?.currency),
   };
 }
 
 function buildTemplateVars(data: ReservationData, displayName: string) {
   const date = formatEmailDate(data.startAt);
   const time = formatEmailTime(data.startAt);
-  const price = formatPriceEUR(data.servicePrice);
+  const price = formatPrice(data.servicePrice, data.currency);
   return {
     client_name: data.clientName,
     service_name: data.serviceName,
@@ -287,7 +290,7 @@ export async function sendNewBookingEmails(
     const displayName = data.businessDisplayName?.trim() || data.businessName;
     const date = formatEmailDate(data.startAt);
     const time = formatEmailTime(data.startAt);
-    const priceEUR = formatPriceEUR(data.servicePrice);
+    const formattedServicePrice = formatPrice(data.servicePrice, data.currency);
     const isPending = data.status === "pending";
     const replyTo = data.merchantEmail ?? EMAIL_REPLY_TO_FALLBACK;
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://waevon.com";
@@ -349,7 +352,7 @@ export async function sendNewBookingEmails(
           date,
           time,
           durationMin: data.durationMin,
-          priceCHF: priceEUR,
+          formattedPrice: formattedServicePrice,
           address: data.businessAddress || undefined,
           phone: data.businessPhone || undefined,
           isPending,

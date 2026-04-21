@@ -19,6 +19,7 @@ import PostServiceClient from "@/lib/emails/templates/post-service-client";
 import { renderTemplateText, sanitizeUrl, splitLines } from "@/lib/emails/configurable";
 import { defaultEmailBody, defaultEmailSubject } from "@/lib/emails/default-copy";
 import type { EmailTemplateType } from "@/lib/wavon/types";
+import { formatPrice, normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
 
 type ScheduledKind = "reminder_before" | "post_service";
 
@@ -47,6 +48,7 @@ type DbBusiness = {
   city: string | null;
   postal_code: string | null;
   email: string | null;
+  currency: string | null;
 };
 
 function formatBizAddress(b: DbBusiness | null): string {
@@ -111,11 +113,12 @@ export async function POST(req: NextRequest) {
     const admin = createAdminSupabaseClient();
     const { data: biz } = await admin
       .from("wavon_businesses")
-      .select("business_name,public_display_name,phone,address,city,postal_code,email")
+      .select("business_name,public_display_name,phone,address,city,postal_code,email,currency")
       .eq("id", businessId)
       .maybeSingle();
     const business = (biz as DbBusiness | null) ?? null;
     const displayName = business?.public_display_name?.trim() || business?.business_name || "Commerce";
+    const testCurrency = normalizeBusinessCurrency(business?.currency);
 
     const vars = {
       business_name: displayName,
@@ -125,7 +128,7 @@ export async function POST(req: NextRequest) {
       reservation_time: "14h30",
       business_phone: String(business?.phone ?? ""),
       business_address: formatBizAddress(business),
-      service_price: "45,00 €",
+      service_price: formatPrice(40, testCurrency),
     };
 
     let html: string;

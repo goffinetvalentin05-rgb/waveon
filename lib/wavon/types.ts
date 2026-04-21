@@ -71,6 +71,8 @@ export type ConfirmationMode = "auto" | "manual";
 export type BusinessSettings = {
   /** Identité */
   businessName: string;
+  /** ISO 4217 : CHF, EUR, USD, GBP, CAD */
+  currency: string;
   address: string;
   phone: string;
   email?: string;

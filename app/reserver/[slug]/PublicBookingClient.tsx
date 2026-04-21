@@ -14,7 +14,7 @@ import {
   validateReservationWindow,
   weeklyDefault,
 } from "@/lib/wavon/booking-logic";
-import { formatPriceEUR } from "@/lib/wavon/format";
+import { formatPrice, normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
 import { landingSection } from "@/components/landing/landing-tokens";
 import { btnPrimaryClass, inputClass, labelClass } from "@/lib/wavon/tokens";
 import { supabase } from "@/lib/supabase/client";
@@ -24,6 +24,7 @@ import { getBrandingPublicUrl } from "@/lib/wavon/storage";
 type DbBusiness = {
   id: string;
   business_name: string | null;
+  currency?: string | null;
   public_slug: string | null;
   public_welcome_message?: string | null;
   public_description?: string | null;
@@ -149,7 +150,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
         const { data: business, error: businessErr } = await supabase
           .from("wavon_businesses")
           .select(
-            "id,business_name,public_slug,public_welcome_message,public_description,public_display_name,public_logo_url,public_cover_url,public_show_phone,public_show_address,public_show_description,phone,address"
+            "id,business_name,currency,public_slug,public_welcome_message,public_description,public_display_name,public_logo_url,public_cover_url,public_show_phone,public_show_address,public_show_description,phone,address"
           )
           .eq("public_slug", slug)
           .maybeSingle();
@@ -288,6 +289,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
           })),
           settings: {
             businessName: b.business_name ?? "",
+            currency: normalizeBusinessCurrency(b.currency),
             address: b.address ?? "",
             phone: b.phone ?? "",
             publicSlug: b.public_slug ?? slug,
@@ -724,7 +726,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
                 >
                   {state.services.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.name} — {s.durationMin} min — {formatPriceEUR(s.price)}
+                      {s.name} — {s.durationMin} min — {formatPrice(s.price, state.settings.currency)}
                     </option>
                   ))}
                 </select>

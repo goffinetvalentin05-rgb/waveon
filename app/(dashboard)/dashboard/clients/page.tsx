@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/wavon/ui/PageHeader";
 import { useToast } from "@/components/wavon/Toast";
 import type { Client } from "@/lib/wavon/types";
 import { formatDateShort } from "@/lib/wavon/format";
-import { formatPriceEUR } from "@/lib/wavon/format";
+import { formatPrice } from "@/lib/utils/formatPrice";
 import {
   btnGhostClass,
   btnPrimaryClass,
@@ -24,6 +24,7 @@ import {
 export default function ClientsPage() {
   const { ready, state, addClient, updateClient, deleteClient } = useWavon();
   const toast = useToast();
+  const currency = state.settings.currency;
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Client | null>(null);
   const [name, setName] = useState("");
@@ -286,7 +287,7 @@ export default function ClientsPage() {
               <div className="grid grid-cols-2 gap-4 rounded-2xl border border-neutral-100 bg-neutral-50/50 p-4">
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">Total dépensé</p>
-                  <p className="mt-1 text-lg font-semibold text-neutral-950">{formatPriceEUR(totalSpent)}</p>
+                  <p className="mt-1 text-lg font-semibold text-neutral-950">{formatPrice(totalSpent, currency)}</p>
                 </div>
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">Nombre de RDV</p>
@@ -322,7 +323,7 @@ export default function ClientsPage() {
                                   : "Annulé"}
                             </td>
                             <td className="px-3 py-2 text-right tabular-nums text-neutral-800">
-                              {formatPriceEUR(h.price)}
+                              {formatPrice(h.price, currency)}
                             </td>
                           </tr>
                         ))}
