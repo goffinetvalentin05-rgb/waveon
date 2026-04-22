@@ -2,7 +2,7 @@
 
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Calendar, dateFnsLocalizer, type View } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay, addMonths, addWeeks, addDays } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -17,14 +17,13 @@ import {
 } from "@/lib/wavon/calendar-hours";
 import { formatDateShort, formatTime } from "@/lib/wavon/format";
 import { formatPrice } from "@/lib/utils/formatPrice";
-import type { Client, Reservation, ReservationStatus, WavonState } from "@/lib/wavon/types";
+import type { BlockedSlot, Client, Reservation, ReservationStatus, WavonState } from "@/lib/wavon/types";
 import {
   btnGhostClass,
   btnPrimaryClass,
   cardClass,
   inputClass,
   labelClass,
-  linkClass,
   selectCompactClass,
   spinnerClass,
   textareaClass,
@@ -63,7 +62,9 @@ type CalEvent = {
   title: string;
   start: Date;
   end: Date;
-  resource: Reservation;
+  resource:
+    | { kind: "reservation"; reservation: Reservation }
+    | { kind: "blocked_slot"; blockedSlot: BlockedSlot };
 };
 
 export default function CalendrierPage() {
@@ -120,7 +121,7 @@ export default function CalendrierPage() {
   }, [state.clients, filterClientQuery]);
 
   const events = useMemo((): CalEvent[] => {
-    return state.reservations
+    const resEvents: CalEvent[] = state.reservations
       .filter((r) => {
         if (filterServiceId && r.serviceId !== filterServiceId) return false;
         if (filterStatus && r.status !== filterStatus) return false;
@@ -135,10 +136,42 @@ export default function CalendrierPage() {
           title: `${r.clientName} — ${svc?.name ?? "Service"}`,
           start: new Date(r.start),
           end: new Date(r.end),
-          resource: r,
+          resource: { kind: "reservation", reservation: r },
         };
       });
-  }, [state.reservations, state.services, filterServiceId, filterStatus, filterClientId, filterEmployeeId]);
+
+    const blocked = (state.blockedSlots ?? [])
+      .filter((b) => {
+        if (!filterEmployeeId) return true;
+        return b.employeeId === null || b.employeeId === filterEmployeeId;
+      })
+      .map((b) => {
+        const emp =
+          b.employeeId
+            ? (state.employees ?? []).find((e) => e.id === b.employeeId) ?? null
+            : null;
+        const base = b.reason?.trim() ? b.reason.trim() : "Créneau bloqué";
+        const title = emp ? `${base} (${emp.name})` : base;
+        return {
+          id: `blocked:${b.id}`,
+          title,
+          start: new Date(b.start),
+          end: new Date(b.end),
+          resource: { kind: "blocked_slot", blockedSlot: b },
+        };
+      });
+
+    return [...resEvents, ...blocked];
+  }, [
+    state.reservations,
+    state.services,
+    state.blockedSlots,
+    state.employees,
+    filterServiceId,
+    filterStatus,
+    filterClientId,
+    filterEmployeeId,
+  ]);
 
   const slots = useMemo(() => {
     const svc = state.services.find((s) => s.id === serviceId);
@@ -227,15 +260,34 @@ export default function CalendrierPage() {
 
   const onSelectEvent = useCallback(
     (ev: CalEvent) => {
-      openDetail(ev.resource);
+      if (ev.resource.kind === "reservation") {
+        openDetail(ev.resource.reservation);
+        return;
+      }
+      // Modal blocage implémenté dans la section suivante
+      toast.push({ message: "Édition des blocages : en cours d’ajout." });
     },
-    [openDetail]
+    [openDetail, toast]
   );
 
   const eventPropGetter = useCallback((event: CalEvent) => {
-    const st = event.resource.status;
+    if (event.resource.kind === "blocked_slot") {
+      const stripeBg =
+        "repeating-linear-gradient(135deg, rgba(0,0,0,0.06) 0 8px, rgba(0,0,0,0.02) 8px 16px)";
+      return {
+        style: {
+          backgroundImage: stripeBg,
+          backgroundColor: "#f3f4f6",
+          border: "1px solid #e5e7eb",
+          borderLeft: "6px solid #9ca3af",
+          color: "#374151",
+        },
+      };
+    }
+
+    const st = event.resource.reservation.status;
     const empColor =
-      (state.employees ?? []).find((e) => e.id === (event.resource.employeeId ?? ""))?.color ?? null;
+      (state.employees ?? []).find((e) => e.id === (event.resource.reservation.employeeId ?? ""))?.color ?? null;
     const pale =
       empColor && /^#[0-9a-fA-F]{6}$/.test(empColor)
         ? `${empColor}1A` // ~10% alpha
@@ -298,9 +350,18 @@ export default function CalendrierPage() {
         title="Calendrier"
         description="Visualise et gère tes rendez-vous sur une grille horaire."
         actions={
-          <button type="button" onClick={openCreate} className={btnPrimaryClass}>
-            Nouvelle réservation
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => toast.push({ message: "Création de blocages : en cours d’ajout." })}
+              className={btnGhostClass}
+            >
+              Bloquer un créneau
+            </button>
+            <button type="button" onClick={openCreate} className={btnPrimaryClass}>
+              Nouvelle réservation
+            </button>
+          </div>
         }
       />
 
@@ -536,6 +597,7 @@ export default function CalendrierPage() {
       >
         {detailRes ? (
           <DetailBody
+            key={detailRes.id}
             reservation={detailRes}
             service={state.services.find((s) => s.id === detailRes.serviceId)}
             currency={state.settings.currency}
@@ -734,9 +796,6 @@ function DetailBody({
   onNotesBlur: (notes: string) => void;
 }) {
   const [notesLocal, setNotesLocal] = useState(reservation.notes ?? "");
-  useEffect(() => {
-    setNotesLocal(reservation.notes ?? "");
-  }, [reservation.id, reservation.notes]);
   return (
     <div className="grid gap-4 text-sm">
       <div className="grid gap-1">

@@ -10,6 +10,7 @@ import {
 } from "react";
 import { addMinutes, validateBooking, weeklyDefault } from "@/lib/wavon/booking-logic";
 import type {
+  BlockedSlot,
   Client,
   CustomDaySlot,
   DayKey,
@@ -121,6 +122,17 @@ type DbReservation = {
   notes: string | null;
 };
 
+type DbBlockedSlot = {
+  id: string;
+  business_id: string;
+  employee_id: string | null;
+  start_at: string;
+  end_at: string;
+  reason: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 type DbWeeklyAvailability = {
   business_id: string;
   day_of_week: number;
@@ -186,6 +198,7 @@ function createEmptyState(): WavonState {
     availabilityMode: "fixed",
     customDays: [],
     blockedDates: [],
+    blockedSlots: [],
     services: [],
     clients: [],
     reservations: [],
@@ -380,6 +393,7 @@ export function WavonProvider({
         servicesRes,
         clientsRes,
         reservationsRes,
+        blockedSlotsRes,
         weeklyRes,
         customDaysRes,
         blockedRes,
@@ -413,6 +427,11 @@ export function WavonProvider({
           .eq("business_id", ensuredBusiness.id)
           .order("start_at", { ascending: true }),
         supabase
+          .from("blocked_slots")
+          .select("id,business_id,employee_id,start_at,end_at,reason,created_at,updated_at")
+          .eq("business_id", ensuredBusiness.id)
+          .order("start_at", { ascending: true }),
+        supabase
           .from("wavon_availability_rules")
           .select("business_id,employee_id,day_of_week,is_open,segments")
           .eq("business_id", ensuredBusiness.id)
@@ -438,6 +457,7 @@ export function WavonProvider({
         servicesRes.error ||
         clientsRes.error ||
         reservationsRes.error ||
+        blockedSlotsRes.error ||
         weeklyRes.error ||
         customDaysRes.error ||
         blockedRes.error ||
@@ -448,6 +468,7 @@ export function WavonProvider({
           servicesRes.error ||
           clientsRes.error ||
           reservationsRes.error ||
+          blockedSlotsRes.error ||
           weeklyRes.error ||
           customDaysRes.error ||
           blockedRes.error ||
@@ -459,6 +480,7 @@ export function WavonProvider({
       const dbServices = (servicesRes.data as (DbService & { employee_ids?: string[] | null })[]) ?? [];
       const dbClients = (clientsRes.data as DbClient[]) ?? [];
       const dbReservations = (reservationsRes.data as DbReservation[]) ?? [];
+      const dbBlockedSlots = (blockedSlotsRes.data as DbBlockedSlot[]) ?? [];
       const dbWeekly = (weeklyRes.data as DbWeeklyAvailability[]) ?? [];
       const dbCustomDays = (customDaysRes.data as DbCustomDay[]) ?? [];
       const dbBlocked = (blockedRes.data as DbBlockedDate[]) ?? [];
@@ -475,6 +497,17 @@ export function WavonProvider({
       const customDays: CustomDaySlot[] = dbCustomDays.map((r) => ({
         date: String(r.day),
         segments: segmentsFromJson(r.segments),
+      }));
+
+      const blockedSlots: BlockedSlot[] = dbBlockedSlots.map((s) => ({
+        id: s.id,
+        businessId: s.business_id,
+        employeeId: s.employee_id ?? null,
+        start: s.start_at,
+        end: s.end_at,
+        reason: s.reason ?? null,
+        createdAt: s.created_at,
+        updatedAt: s.updated_at,
       }));
 
       const next: WavonState = {
@@ -498,6 +531,7 @@ export function WavonProvider({
         availabilityMode: dbSettings?.availability_mode ?? "fixed",
         customDays,
         blockedDates: dbBlocked.map((r) => String(r.blocked_date)).sort(),
+        blockedSlots,
         services: dbServices.map((s) => ({
           id: s.id,
           name: s.name,
@@ -930,7 +964,7 @@ export function WavonProvider({
     }));
     if (!businessId) return;
     void updateServiceChecked(id, nextPatch);
-  }, [businessId]);
+  }, [businessId, updateServiceChecked]);
 
   const deleteService = useCallback((id: string) => {
     setState((prev) => ({

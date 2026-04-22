@@ -86,6 +86,18 @@ export type Reservation = {
   notes: string;
 };
 
+export type BlockedSlot = {
+  id: string;
+  businessId: string;
+  /** null = tous les prestataires */
+  employeeId: string | null;
+  start: string; // ISO
+  end: string; // ISO
+  reason: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type ConfirmationMode = "auto" | "manual";
 
 export type BusinessSettings = {
@@ -187,6 +199,7 @@ export type WavonState = {
   /** Mode custom : créneaux par date */
   customDays: CustomDaySlot[];
   blockedDates: string[];
+  blockedSlots?: BlockedSlot[];
   services: Service[];
   clients: Client[];
   reservations: Reservation[];
