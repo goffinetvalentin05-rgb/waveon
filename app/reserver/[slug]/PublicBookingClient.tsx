@@ -437,7 +437,15 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
     return all.filter((e) => ids.includes(e.id));
   }, [employees, svc]);
 
-  const showEmployeeStep = eligibleEmployees.length > 1;
+  const employeesLoaded = employees.length > 0;
+  // IMPORTANT: on ne doit jamais "auto-skip" l'étape prestataire si le service peut
+  // être effectué par plusieurs employés. Si la liste employees n'est pas encore
+  // chargée, on bloque l'avancement plutôt que d'assigner silencieusement.
+  const serviceExplicitEmployeeIds = svc?.employeeIds ?? [];
+  const serviceCanBeDoneByMany =
+    serviceExplicitEmployeeIds.length > 1 ||
+    (serviceExplicitEmployeeIds.length === 0 && employees.length > 1);
+  const showEmployeeStep = serviceCanBeDoneByMany;
 
   const totalSteps = showEmployeeStep ? 5 : 4;
   const currentStepNumber = useMemo(() => {
@@ -462,11 +470,17 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
     if (step === "service") {
       if (!svc) return;
       if (showEmployeeStep) {
+        if (!employeesLoaded) {
+          setErr("Chargement de l’équipe… Réessaie dans un instant.");
+          return;
+        }
         setStep("employee");
-      } else {
-        setEmployeeChoice(eligibleEmployees[0]?.id ?? "");
-        setStep("slot");
+        return;
       }
+
+      // Cas A : un seul prestataire éligible -> assignation auto en arrière-plan
+      setEmployeeChoice(eligibleEmployees[0]?.id ?? "");
+      setStep("slot");
       return;
     }
     if (step === "employee") {
@@ -1042,7 +1056,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
                         <div className="mt-4 space-y-3">
                           <button
                             type="button"
-                            className="w-full rounded-2xl border border-neutral-200/90 bg-white px-4 py-3 text-left text-sm transition hover:bg-neutral-50"
+                            className="w-full rounded-2xl border border-dashed border-neutral-300/90 bg-neutral-50/60 px-4 py-3 text-left text-sm transition hover:bg-neutral-50"
                             onClick={() => {
                               setEmployeeChoice("");
                               setStep("slot");
