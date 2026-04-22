@@ -1,44 +1,36 @@
 /**
- * Noms des tables métier `public.*`.
+ * Noms des tables métier `public.wavon_*` (préfixe SQL sans « e »).
  *
- * - Par défaut : préfixe **`wavon_`** (migrations du dépôt).
- * - Production (tables renommées) : définir **`NEXT_PUBLIC_WAEVON_DB_TABLE_PREFIX=waevon`**
- *   sur Vercel (rebuild), ou **`WAEVON_DB_TABLE_PREFIX=waevon`** côté serveur uniquement.
+ * Les tables Supabase de ce projet sont toujours `wavon_businesses`, `wavon_clients`, etc.
+ * La marque affichée reste « Waevon » ; ne pas confondre avec le préfixe SQL.
  *
- * La marque s’écrit « Waevon » ; le préfixe SQL peut être `wavon` ou `waevon` selon le projet Supabase.
+ * Les variables d’environnement `NEXT_PUBLIC_WAEVON_DB_TABLE_PREFIX` /
+ * `WAEVON_DB_TABLE_PREFIX` ne sont plus lues : elles provoquaient des requêtes vers
+ * `waevon_*` alors que ces tables n’existent pas sur la base réelle.
  */
-export type WavonSqlTablePrefix = "wavon" | "waevon";
 
-function resolveTablePrefix(): WavonSqlTablePrefix {
-  if (typeof process === "undefined") return "wavon";
-  const v = (
-    process.env.NEXT_PUBLIC_WAEVON_DB_TABLE_PREFIX?.trim() ||
-    process.env.WAEVON_DB_TABLE_PREFIX?.trim() ||
-    ""
-  ).toLowerCase();
-  return v === "waevon" ? "waevon" : "wavon";
-}
+const TABLE_PREFIX = "wavon" as const;
 
-const P = resolveTablePrefix();
+export type WavonSqlTablePrefix = typeof TABLE_PREFIX;
 
 export function getWavonDbTablePrefix(): WavonSqlTablePrefix {
-  return P;
+  return TABLE_PREFIX;
 }
 
-/** Tables avec le préfixe métier (`${prefix}_…`). `blocked_slots` reste sans préfixe historique. */
+/** Tables avec le préfixe métier (`wavon_…`). */
 export const WavonDbTable = {
-  businesses: `${P}_businesses`,
-  settings: `${P}_settings`,
-  services: `${P}_services`,
-  clients: `${P}_clients`,
-  reservations: `${P}_reservations`,
-  employees: `${P}_employees`,
-  availabilityRules: `${P}_availability_rules`,
-  customDays: `${P}_custom_days`,
-  blockedDates: `${P}_blocked_dates`,
-  emailTemplates: `${P}_email_templates`,
-  emailSettings: `${P}_email_settings`,
-  emailLogs: `${P}_email_logs`,
-  emailDeliveryLogs: `${P}_email_delivery_logs`,
+  businesses: `${TABLE_PREFIX}_businesses`,
+  settings: `${TABLE_PREFIX}_settings`,
+  services: `${TABLE_PREFIX}_services`,
+  clients: `${TABLE_PREFIX}_clients`,
+  reservations: `${TABLE_PREFIX}_reservations`,
+  employees: `${TABLE_PREFIX}_employees`,
+  availabilityRules: `${TABLE_PREFIX}_availability_rules`,
+  customDays: `${TABLE_PREFIX}_custom_days`,
+  blockedDates: `${TABLE_PREFIX}_blocked_dates`,
+  emailTemplates: `${TABLE_PREFIX}_email_templates`,
+  emailSettings: `${TABLE_PREFIX}_email_settings`,
+  emailLogs: `${TABLE_PREFIX}_email_logs`,
+  emailDeliveryLogs: `${TABLE_PREFIX}_email_delivery_logs`,
   blockedSlots: "blocked_slots",
 } as const;

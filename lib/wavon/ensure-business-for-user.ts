@@ -10,7 +10,7 @@ const selectCols = "id,stripe_customer_id";
 
 /**
  * Retourne le business du user, ou en crée un (slug provisoire) comme dans WavonProvider.
- * Table : {@link WavonDbTable.businesses} — nom réel = `{prefix}_businesses` (wavon ou waevon selon l’env).
+ * Table : {@link WavonDbTable.businesses} — toujours `wavon_businesses` pour ce projet.
  */
 export async function ensureBusinessForUser(
   supabase: SupabaseClient,

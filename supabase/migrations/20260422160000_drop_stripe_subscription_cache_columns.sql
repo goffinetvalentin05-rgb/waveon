@@ -11,13 +11,4 @@ BEGIN
       DROP COLUMN IF EXISTS current_period_end,
       DROP COLUMN IF EXISTS cancel_at_period_end;
   END IF;
-
-  IF to_regclass('public.waevon_businesses') IS NOT NULL THEN
-    ALTER TABLE public.waevon_businesses
-      DROP COLUMN IF EXISTS subscription_status,
-      DROP COLUMN IF EXISTS subscription_plan,
-      DROP COLUMN IF EXISTS trial_ends_at,
-      DROP COLUMN IF EXISTS current_period_end,
-      DROP COLUMN IF EXISTS cancel_at_period_end;
-  END IF;
 END $body$;

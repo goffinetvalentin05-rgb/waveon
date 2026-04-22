@@ -1,7 +1,7 @@
 # Stripe / facturation — notes techniques
 
-- **Préfixe des tables `wavon_` vs `waevon_`** : les migrations du dépôt créent `wavon_*`. Si le projet Supabase distant utilise `waevon_*` (ex. `waevon_businesses`), définir **`NEXT_PUBLIC_WAEVON_DB_TABLE_PREFIX=waevon`** sur Vercel puis **rebuild**. Appliquer aussi la migration `20260422150000_stripe_subscription_waevon_businesses.sql` (ou ajouter les colonnes Stripe à la main sur `waevon_businesses`). Erreur **42703** = colonne absente → migration Stripe non appliquée sur la table réelle.
+- **Préfixe SQL des tables** : toujours **`wavon_*`** (sans « e ») dans ce dépôt et sur la prod. Le code ne doit pas cibler `waevon_businesses` : cette orthographe ne correspond pas aux tables Supabase. Erreur **PGRST205** / table introuvable → vérifier que le client utilise bien `wavon_*`. Erreur **42703** = colonne absente → migration Stripe (`wavon_businesses`) non appliquée.
 - **API Stripe récente (SDK 22 / `2026-03-25.dahlia`)** : `current_period_end` n’est plus sur l’objet `Subscription` racine ; la fin de période est lue sur `subscription.items.data[0].current_period_end`. Les factures d’abonnement exposent l’ID d’abonnement sous `invoice.parent.subscription_details.subscription`, pas un champ `subscription` racine sur `Invoice`.
-- **Webhooks** : après vérification de la signature, les erreurs de traitement sont loguées mais la route répond **200** pour éviter des boucles de retry Stripe sur erreurs métier (choix explicite du cahier des charges).
+- **Stripe sans webhooks** : l’état d’abonnement est lu via l’API Stripe à la demande (voir `lib/stripe/subscription.ts`).
 - **Statut `paused` (Stripe)** : mappé en base sur `active` faute de valeur dans la contrainte CHECK SQL — à affiner si tu veux un statut dédié.
 - **Portail client** : à activer et configurer dans le Dashboard Stripe (produits, annulation, etc.) pour que `/api/stripe/portal` fonctionne en production.

@@ -73,6 +73,12 @@ export async function POST(req: Request) {
 
     const business = await ensureBusinessForUser(supabase, user.id);
     console.log("[stripe/checkout] step=ensure_business ok business_id=", business.id);
+    console.log(
+      "[stripe/checkout] step=supabase_table resolved name=",
+      WavonDbTable.businesses,
+      "prefix=",
+      getWavonDbTablePrefix()
+    );
 
     const priceId = getStripePriceIdForPlan(plan);
     console.log("[stripe/checkout] step=price_id ok (masked length)", priceId.length);
@@ -146,7 +152,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Session Stripe sans URL." }, { status: 500 });
     }
 
-    console.log("[stripe/checkout] step=done session_id=", session.id);
+    console.log(
+      "[stripe/checkout] step=done session_id=",
+      session.id,
+      "ok_supabase_table=",
+      WavonDbTable.businesses
+    );
     return NextResponse.json({ url: session.url });
   } catch (err) {
     const message =
