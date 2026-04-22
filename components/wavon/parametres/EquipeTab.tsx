@@ -7,6 +7,7 @@ import { Modal } from "@/components/wavon/Modal";
 import { useToast } from "@/components/wavon/Toast";
 import { getBrandingPublicUrl, uploadEmployeePhoto, deleteEmployeePhoto } from "@/lib/wavon/storage";
 import type { Employee } from "@/lib/wavon/types";
+import { supabase } from "@/lib/supabase/client";
 import {
   btnGhostClass,
   btnPrimaryClass,
