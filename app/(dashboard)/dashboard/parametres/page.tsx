@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useWavon } from "@/components/wavon/WavonProvider";
 import { EmailsSettingsTab } from "@/components/wavon/parametres/EmailsSettingsTab";
+import { EquipeTab } from "@/components/wavon/parametres/EquipeTab";
 import { MonLienTab } from "@/components/wavon/parametres/MonLienTab";
 import { PageHeader } from "@/components/wavon/ui/PageHeader";
 import { SectionCard } from "@/components/wavon/ui/SectionCard";
@@ -22,17 +23,18 @@ import { deleteBrandingAsset, getBrandingPublicUrl, uploadBrandingAsset } from "
 import { BUSINESS_CURRENCY_OPTIONS, normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
 import { publicBookingPath } from "@/lib/wavon/public-page-url";
 
-type SettingsTab = "business" | "reservation" | "public" | "mon-lien" | "emails";
+type SettingsTab = "business" | "equipe" | "reservation" | "public" | "mon-lien" | "emails";
 
 const TAB_LABELS: Record<SettingsTab, string> = {
   business: "Business",
+  equipe: "Équipe",
   reservation: "Réservation",
   public: "Page publique",
   "mon-lien": "Mon lien",
   emails: "Emails",
 };
 
-const SETTINGS_TAB_IDS: SettingsTab[] = ["business", "reservation", "public", "mon-lien", "emails"];
+const SETTINGS_TAB_IDS: SettingsTab[] = ["business", "equipe", "reservation", "public", "mon-lien", "emails"];
 
 const PUBLIC_DISPLAY_NAME_MAX = 60;
 const PUBLIC_WELCOME_MAX = 200;
@@ -260,6 +262,8 @@ function ParametresPageContent() {
           </form>
         </SectionCard>
       ) : null}
+
+      {tab === "equipe" ? <EquipeTab /> : null}
 
       {tab === "reservation" ? (
         <SectionCard

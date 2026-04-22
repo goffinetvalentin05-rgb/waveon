@@ -48,3 +48,25 @@ export async function deleteBrandingAsset(input: {
   if (error) throw error;
 }
 
+export async function uploadEmployeePhoto(input: {
+  businessId: string;
+  file: File;
+}): Promise<{ path: string; publicUrl: string }> {
+  const { businessId, file } = input;
+  const ext = extFromFile(file);
+  const path = `businesses/${businessId}/employees/photo-${Date.now()}.${ext}`;
+  const { error: upErr } = await supabase.storage
+    .from(BRANDING_BUCKET)
+    .upload(path, file, { upsert: false, contentType: file.type || undefined });
+  if (upErr) throw upErr;
+  const { data } = supabase.storage.from(BRANDING_BUCKET).getPublicUrl(path);
+  return { path, publicUrl: data.publicUrl };
+}
+
+export async function deleteEmployeePhoto(input: { path?: string | null }): Promise<void> {
+  const path = input.path?.trim();
+  if (!path) return;
+  const { error } = await supabase.storage.from(BRANDING_BUCKET).remove([path]);
+  if (error) throw error;
+}
+

@@ -22,6 +22,8 @@ export default function DisponibilitesPage() {
   const {
     ready,
     state,
+    availabilityEmployeeId,
+    setAvailabilityEmployeeId,
     setAvailabilityMode,
     setWeeklyDay,
     setCustomDays,
@@ -29,6 +31,9 @@ export default function DisponibilitesPage() {
   } = useWavon();
   const toast = useToast();
   const [blockInput, setBlockInput] = useState("");
+  const employees = state.employees ?? [];
+  const activeEmployees = employees.filter((e) => e.isActive);
+  const showEmployeeSelect = activeEmployees.length > 1;
 
   const blockedSorted = useMemo(
     () => [...state.blockedDates].sort(),
@@ -83,6 +88,34 @@ export default function DisponibilitesPage() {
         title="Disponibilités"
         description="Horaires d’ouverture, pauses et exceptions. Les plages ne peuvent pas se chevaucher."
       />
+
+      {showEmployeeSelect ? (
+        <section className={cardClass}>
+          <h2 className={sectionTitleClass}>Prestataire</h2>
+          <p className={sectionDescClass}>
+            Chaque membre de l’équipe a ses propres horaires.
+          </p>
+          <div className="mt-5 max-w-sm">
+            <label className={labelClass}>Choisir un prestataire</label>
+            <select
+              className={`${inputClass} mt-2`}
+              value={availabilityEmployeeId ?? ""}
+              onChange={(e) => {
+                const id = e.target.value || null;
+                void setAvailabilityEmployeeId(id);
+                const name = activeEmployees.find((x) => x.id === id)?.name ?? "Prestataire";
+                toast.push({ message: `Horaires : ${name}.` });
+              }}
+            >
+              {activeEmployees.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </section>
+      ) : null}
 
       <section className={cardClass}>
         <h2 className={sectionTitleClass}>Mode de planning</h2>

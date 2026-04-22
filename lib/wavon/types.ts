@@ -37,10 +37,29 @@ export type Service = {
   isActive: boolean;
   isPublic: boolean;
   color?: string | null;
+  /**
+   * Liste d'employés autorisés à effectuer ce service.
+   * Tableau vide = tous les employés actifs (comportement par défaut).
+   */
+  employeeIds?: string[];
   bufferBeforeMin: number;
   bufferAfterMin: number;
   bookingNoticeHours?: number | null;
   sortOrder: number;
+};
+
+export type Employee = {
+  id: string;
+  businessId: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  photoUrl: string | null;
+  color: string;
+  isActive: boolean;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type Client = {
@@ -56,6 +75,7 @@ export type Reservation = {
   clientId: string | null;
   clientName: string;
   serviceId: string;
+  employeeId?: string | null;
   start: string; // ISO
   end: string; // ISO
   durationMin: number;
@@ -161,6 +181,7 @@ export type EmailSetting = {
 
 export type WavonState = {
   version: 1;
+  employees?: Employee[];
   weekly: Record<DayKey, WeeklyDaySchedule>;
   availabilityMode: AvailabilityMode;
   /** Mode custom : créneaux par date */

@@ -172,11 +172,12 @@ export type BookingValidationContext = {
   service: Service;
   start: Date;
   end: Date;
+  employeeId?: string | null;
   ignoreReservationId?: string;
 };
 
 export function validateBooking(ctx: BookingValidationContext): string | null {
-  const { state, service, start, end, ignoreReservationId } = ctx;
+  const { state, service, start, end, ignoreReservationId, employeeId } = ctx;
   const ymd = toYmd(start);
   if (isDateBlocked(ymd, state.blockedDates)) {
     return "Cette date est bloquée.";
@@ -203,11 +204,15 @@ export function validateBooking(ctx: BookingValidationContext): string | null {
     end,
     Math.max(0, (service.bufferAfterMin || 0) + gap)
   );
+  const reservations =
+    employeeId === undefined
+      ? state.reservations
+      : state.reservations.filter((r) => (r.employeeId ?? null) === (employeeId ?? null));
   if (
     overlapsAnyReservation(
       busyStart,
       busyEnd,
-      state.reservations,
+      reservations,
       ignoreReservationId,
       gap
     )
@@ -220,7 +225,8 @@ export function validateBooking(ctx: BookingValidationContext): string | null {
 export function getAvailableSlots(
   ymd: string,
   service: Service,
-  state: WavonState
+  state: WavonState,
+  employeeId?: string | null
 ): string[] {
   if (isDateBlocked(ymd, state.blockedDates)) return [];
   const day = parseYmd(ymd);
@@ -249,6 +255,7 @@ export function getAvailableSlots(
         service,
         start,
         end,
+        employeeId,
       });
       if (!err) {
         slots.push(minutesToTime(cur));

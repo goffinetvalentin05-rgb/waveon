@@ -13,6 +13,7 @@ import type {
   Client,
   CustomDaySlot,
   DayKey,
+  Employee,
   EmailTemplate,
   EmailTemplateType,
   Reservation,
@@ -87,6 +88,7 @@ type DbService = {
   is_active: boolean;
   is_public: boolean;
   color: string | null;
+  employee_ids?: string[] | null;
   buffer_before_minutes: number;
   buffer_after_minutes: number;
   booking_notice_hours: number | null;
@@ -108,6 +110,7 @@ type DbReservation = {
   client_id: string | null;
   client_name: string;
   service_id: string;
+  employee_id?: string | null;
   start_at: string;
   end_at: string;
   duration_minutes: number;
@@ -121,18 +124,21 @@ type DbReservation = {
 type DbWeeklyAvailability = {
   business_id: string;
   day_of_week: number;
+  employee_id?: string | null;
   is_open: boolean;
   segments: unknown;
 };
 
 type DbCustomDay = {
   business_id: string;
+  employee_id?: string | null;
   day: string; // date
   segments: unknown;
 };
 
 type DbBlockedDate = {
   business_id: string;
+  employee_id?: string | null;
   blocked_date: string; // date
 };
 
@@ -143,6 +149,20 @@ type DbEmailTemplate = {
   is_enabled: boolean;
   subject: string;
   body: string;
+};
+
+type DbEmployee = {
+  id: string;
+  business_id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  photo_url: string | null;
+  color: string;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
 };
 
 function emptyWeekly(): Record<DayKey, WeeklyDaySchedule> {
@@ -228,6 +248,19 @@ type Ctx = {
   ready: boolean;
   state: WavonState;
   businessId: string | null;
+  availabilityEmployeeId: string | null;
+  setAvailabilityEmployeeId: (employeeId: string | null) => Promise<void>;
+  upsertEmployee: (input: {
+    id?: string;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    photoUrl: string | null;
+    color: string;
+    isActive: boolean;
+    displayOrder: number;
+  }) => Promise<{ ok: true; id: string } | { ok: false; error: string }>;
+  deleteEmployee: (employeeId: string) => Promise<{ ok: true } | { ok: false; error: string }>;
   setWeeklyDay: (
     day: DayKey,
     patch: WeeklyDaySchedule
@@ -245,6 +278,7 @@ type Ctx = {
     clientId: string | null;
     clientName: string;
     serviceId: string;
+    employeeId?: string | null;
     start: Date;
     notes?: string;
   }) => { ok: true; id: string } | { ok: false; error: string };
@@ -254,6 +288,7 @@ type Ctx = {
       clientId: string | null;
       clientName: string;
       serviceId: string;
+      employeeId: string | null;
       start: Date;
       status: ReservationStatus;
       notes: string;
@@ -285,6 +320,7 @@ export function WavonProvider({
   const [ready, setReady] = useState(false);
   const [state, setState] = useState<WavonState>(() => createEmptyState());
   const [businessId, setBusinessId] = useState<string | null>(null);
+  const [availabilityEmployeeId, setAvailabilityEmployeeIdState] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -322,6 +358,21 @@ export function WavonProvider({
       if (cancelled) return;
       setBusinessId(ensuredBusiness.id);
 
+      const employeesRes = await supabase
+        .from("wavon_employees")
+        .select("id,business_id,name,email,phone,photo_url,color,is_active,display_order,created_at,updated_at")
+        .eq("business_id", ensuredBusiness.id)
+        .order("display_order", { ascending: true })
+        .order("created_at", { ascending: true });
+      if (employeesRes.error) throw employeesRes.error;
+      const dbEmployees = (employeesRes.data as DbEmployee[]) ?? [];
+      const activeEmployees = dbEmployees.filter((e) => Boolean(e.is_active));
+      const defaultEmployeeId =
+        (activeEmployees[0]?.id ?? dbEmployees[0]?.id ?? null);
+      if (!cancelled) {
+        setAvailabilityEmployeeIdState(defaultEmployeeId);
+      }
+
       const [
         settingsRes,
         servicesRes,
@@ -342,7 +393,7 @@ export function WavonProvider({
         supabase
           .from("wavon_services")
           .select(
-            "id,business_id,name,duration_minutes,price,description,is_active,is_public,color,buffer_before_minutes,buffer_after_minutes,booking_notice_hours,sort_order"
+            "id,business_id,name,duration_minutes,price,description,is_active,is_public,color,employee_ids,buffer_before_minutes,buffer_after_minutes,booking_notice_hours,sort_order"
           )
           .eq("business_id", ensuredBusiness.id)
           .order("sort_order", { ascending: true })
@@ -355,22 +406,25 @@ export function WavonProvider({
         supabase
           .from("wavon_reservations")
           .select(
-            "id,business_id,client_id,client_name,service_id,start_at,end_at,duration_minutes,buffer_before_minutes,buffer_after_minutes,status,created_at,notes"
+            "id,business_id,client_id,client_name,service_id,employee_id,start_at,end_at,duration_minutes,buffer_before_minutes,buffer_after_minutes,status,created_at,notes"
           )
           .eq("business_id", ensuredBusiness.id)
           .order("start_at", { ascending: true }),
         supabase
           .from("wavon_availability_rules")
-          .select("business_id,day_of_week,is_open,segments")
-          .eq("business_id", ensuredBusiness.id),
+          .select("business_id,employee_id,day_of_week,is_open,segments")
+          .eq("business_id", ensuredBusiness.id)
+          .eq("employee_id", defaultEmployeeId),
         supabase
           .from("wavon_custom_days")
-          .select("business_id,day,segments")
-          .eq("business_id", ensuredBusiness.id),
+          .select("business_id,employee_id,day,segments")
+          .eq("business_id", ensuredBusiness.id)
+          .eq("employee_id", defaultEmployeeId),
         supabase
           .from("wavon_blocked_dates")
-          .select("business_id,blocked_date")
-          .eq("business_id", ensuredBusiness.id),
+          .select("business_id,employee_id,blocked_date")
+          .eq("business_id", ensuredBusiness.id)
+          .eq("employee_id", defaultEmployeeId),
         supabase
           .from("wavon_email_templates")
           .select("id,business_id,type,is_enabled,subject,body")
@@ -400,7 +454,7 @@ export function WavonProvider({
       }
 
       const dbSettings = (settingsRes.data as DbSettings | null) ?? null;
-      const dbServices = (servicesRes.data as DbService[]) ?? [];
+      const dbServices = (servicesRes.data as (DbService & { employee_ids?: string[] | null })[]) ?? [];
       const dbClients = (clientsRes.data as DbClient[]) ?? [];
       const dbReservations = (reservationsRes.data as DbReservation[]) ?? [];
       const dbWeekly = (weeklyRes.data as DbWeeklyAvailability[]) ?? [];
@@ -423,6 +477,21 @@ export function WavonProvider({
 
       const next: WavonState = {
         version: 1,
+        employees: dbEmployees.map(
+          (e): Employee => ({
+            id: e.id,
+            businessId: e.business_id,
+            name: e.name,
+            email: e.email,
+            phone: e.phone,
+            photoUrl: e.photo_url,
+            color: e.color,
+            isActive: Boolean(e.is_active),
+            displayOrder: e.display_order ?? 0,
+            createdAt: e.created_at,
+            updatedAt: e.updated_at,
+          })
+        ),
         weekly,
         availabilityMode: dbSettings?.availability_mode ?? "fixed",
         customDays,
@@ -436,6 +505,9 @@ export function WavonProvider({
           isActive: Boolean(s.is_active),
           isPublic: Boolean(s.is_public),
           color: s.color,
+          employeeIds: Array.isArray((s as { employee_ids?: unknown }).employee_ids)
+            ? (((s as { employee_ids?: unknown }).employee_ids ?? []) as string[])
+            : [],
           bufferBeforeMin: Math.max(0, s.buffer_before_minutes ?? 0),
           bufferAfterMin: Math.max(0, s.buffer_after_minutes ?? 0),
           bookingNoticeHours: s.booking_notice_hours,
@@ -453,6 +525,7 @@ export function WavonProvider({
           clientId: r.client_id,
           clientName: r.client_name || "Client",
           serviceId: r.service_id,
+          employeeId: r.employee_id ?? null,
           start: r.start_at,
           end: r.end_at,
           durationMin: r.duration_minutes ?? 0,
@@ -569,6 +642,7 @@ export function WavonProvider({
 
     const payload = {
       business_id: businessId,
+      employee_id: availabilityEmployeeId,
       day_of_week: dayOfWeek[day],
       is_open: Boolean(patch.enabled),
       // Keep segments even when closed to avoid losing configuration.
@@ -577,7 +651,7 @@ export function WavonProvider({
 
     const { data, error } = await supabase
       .from("wavon_availability_rules")
-      .upsert(payload, { onConflict: "business_id,day_of_week" })
+      .upsert(payload, { onConflict: "business_id,employee_id,day_of_week" })
       .select("day_of_week,is_open,segments")
       .single();
 
@@ -648,7 +722,7 @@ export function WavonProvider({
 
     return { ok: true };
     },
-    [businessId]
+    [businessId, availabilityEmployeeId]
   );
 
   const setAvailabilityMode = useCallback((mode: WavonState["availabilityMode"]) => {
@@ -662,35 +736,45 @@ export function WavonProvider({
 
   const setCustomDays = useCallback((days: CustomDaySlot[]) => {
     setState((prev) => ({ ...prev, customDays: days }));
-    if (!businessId) return;
+    if (!businessId || !availabilityEmployeeId) return;
     // Simple sync: replace all (acceptable for now; can be optimized later)
     void (async () => {
-      await supabase.from("wavon_custom_days").delete().eq("business_id", businessId);
+      await supabase
+        .from("wavon_custom_days")
+        .delete()
+        .eq("business_id", businessId)
+        .eq("employee_id", availabilityEmployeeId);
       if (days.length === 0) return;
       await supabase.from("wavon_custom_days").insert(
         days.map((d) => ({
           business_id: businessId,
+          employee_id: availabilityEmployeeId,
           day: d.date,
           segments: d.segments,
         }))
       );
     })();
-  }, [businessId]);
+  }, [businessId, availabilityEmployeeId]);
 
   const setBlockedDates = useCallback((dates: string[]) => {
     setState((prev) => ({ ...prev, blockedDates: dates }));
-    if (!businessId) return;
+    if (!businessId || !availabilityEmployeeId) return;
     void (async () => {
-      await supabase.from("wavon_blocked_dates").delete().eq("business_id", businessId);
+      await supabase
+        .from("wavon_blocked_dates")
+        .delete()
+        .eq("business_id", businessId)
+        .eq("employee_id", availabilityEmployeeId);
       if (dates.length === 0) return;
       await supabase.from("wavon_blocked_dates").insert(
         dates.map((d) => ({
           business_id: businessId,
+          employee_id: availabilityEmployeeId,
           blocked_date: d,
         }))
       );
     })();
-  }, [businessId]);
+  }, [businessId, availabilityEmployeeId]);
 
   const addService = useCallback((s: Omit<Service, "id">) => {
     if (!businessId) return;
@@ -706,17 +790,18 @@ export function WavonProvider({
           is_active: s.isActive,
           is_public: s.isPublic,
           color: s.color ?? null,
+          employee_ids: (s.employeeIds ?? []).length ? (s.employeeIds ?? []) : [],
           buffer_before_minutes: s.bufferBeforeMin ?? 0,
           buffer_after_minutes: s.bufferAfterMin ?? 0,
           booking_notice_hours: s.bookingNoticeHours ?? null,
           sort_order: s.sortOrder ?? 0,
         })
         .select(
-          "id,business_id,name,duration_minutes,price,description,is_active,is_public,color,buffer_before_minutes,buffer_after_minutes,booking_notice_hours,sort_order"
+          "id,business_id,name,duration_minutes,price,description,is_active,is_public,color,employee_ids,buffer_before_minutes,buffer_after_minutes,booking_notice_hours,sort_order"
         )
         .single();
       if (error) throw error;
-      const row = data as DbService;
+      const row = data as DbService & { employee_ids?: string[] | null };
       setState((prev) => ({
         ...prev,
         services: [
@@ -730,6 +815,7 @@ export function WavonProvider({
             isActive: Boolean(row.is_active),
             isPublic: Boolean(row.is_public),
             color: row.color,
+            employeeIds: (row.employee_ids ?? []) as string[],
             bufferBeforeMin: Math.max(0, row.buffer_before_minutes ?? 0),
             bufferAfterMin: Math.max(0, row.buffer_after_minutes ?? 0),
             bookingNoticeHours: row.booking_notice_hours,
@@ -760,6 +846,9 @@ export function WavonProvider({
         ...(nextPatch.isActive !== undefined ? { is_active: nextPatch.isActive } : {}),
         ...(nextPatch.isPublic !== undefined ? { is_public: nextPatch.isPublic } : {}),
         ...(nextPatch.color !== undefined ? { color: nextPatch.color } : {}),
+        ...(nextPatch.employeeIds !== undefined
+          ? { employee_ids: nextPatch.employeeIds.length ? nextPatch.employeeIds : [] }
+          : {}),
         ...(nextPatch.bufferBeforeMin !== undefined ? { buffer_before_minutes: nextPatch.bufferBeforeMin } : {}),
         ...(nextPatch.bufferAfterMin !== undefined ? { buffer_after_minutes: nextPatch.bufferAfterMin } : {}),
         ...(nextPatch.bookingNoticeHours !== undefined ? { booking_notice_hours: nextPatch.bookingNoticeHours } : {}),
@@ -867,6 +956,7 @@ export function WavonProvider({
           outcome.current = { kind: "err", message: "Service introuvable." };
           return prev;
         }
+        const employeeId = input.employeeId ?? null;
         const end = addMinutes(input.start, service.durationMin);
         const status: ReservationStatus =
           prev.settings.confirmationMode === "auto" ? "confirmed" : "pending";
@@ -875,6 +965,7 @@ export function WavonProvider({
           service,
           start: input.start,
           end,
+          employeeId,
         });
         if (err) {
           outcome.current = { kind: "err", message: err };
@@ -886,6 +977,7 @@ export function WavonProvider({
           clientId: input.clientId,
           clientName: input.clientName.trim(),
           serviceId: service.id,
+          employeeId,
           start: input.start.toISOString(),
           end: end.toISOString(),
           durationMin: service.durationMin,
@@ -911,6 +1003,7 @@ export function WavonProvider({
           client_id: res.clientId,
           client_name: res.clientName.trim(),
           service_id: res.serviceId,
+          employee_id: res.employeeId ?? null,
           start_at: res.start,
           end_at: res.end,
           duration_minutes: res.durationMin,
@@ -973,6 +1066,8 @@ export function WavonProvider({
           errorMsg = "Service introuvable.";
           return prev;
         }
+        const employeeId =
+          patch.employeeId !== undefined ? patch.employeeId : (cur.employeeId ?? null);
         const start = patch.start ?? new Date(cur.start);
         const end = addMinutes(start, service.durationMin);
         const next: Reservation = {
@@ -980,6 +1075,7 @@ export function WavonProvider({
           clientId: patch.clientId !== undefined ? patch.clientId : cur.clientId,
           clientName: patch.clientName?.trim() ?? cur.clientName,
           serviceId,
+          employeeId,
           start: start.toISOString(),
           end: end.toISOString(),
           durationMin: service.durationMin,
@@ -993,6 +1089,7 @@ export function WavonProvider({
           service,
           start: new Date(next.start),
           end: new Date(next.end),
+          employeeId,
           ignoreReservationId: id,
         });
         if (err) {
@@ -1009,6 +1106,7 @@ export function WavonProvider({
         if (patch.clientId !== undefined) payload.client_id = patch.clientId || null;
         if (patch.clientName !== undefined) payload.client_name = patch.clientName.trim();
         if (patch.serviceId !== undefined) payload.service_id = patch.serviceId;
+        if (patch.employeeId !== undefined) payload.employee_id = patch.employeeId || null;
         if (patch.status !== undefined) payload.status = patch.status;
         if (patch.notes !== undefined) payload.notes = patch.notes.trim() || null;
         if (patch.start !== undefined || patch.serviceId !== undefined) {
@@ -1048,6 +1146,131 @@ export function WavonProvider({
       return errorMsg ? { ok: false, error: errorMsg } : { ok: true };
     },
        [businessId, state.services, state.reservations]
+  );
+
+  const setAvailabilityEmployeeId = useCallback(
+    async (employeeId: string | null) => {
+      setAvailabilityEmployeeIdState(employeeId);
+      if (!businessId || !employeeId) return;
+      const [weeklyRes, customDaysRes, blockedRes] = await Promise.all([
+        supabase
+          .from("wavon_availability_rules")
+          .select("day_of_week,is_open,segments")
+          .eq("business_id", businessId)
+          .eq("employee_id", employeeId),
+        supabase
+          .from("wavon_custom_days")
+          .select("day,segments")
+          .eq("business_id", businessId)
+          .eq("employee_id", employeeId),
+        supabase
+          .from("wavon_blocked_dates")
+          .select("blocked_date")
+          .eq("business_id", businessId)
+          .eq("employee_id", employeeId),
+      ]);
+      if (weeklyRes.error || customDaysRes.error || blockedRes.error) {
+        if (process.env.NODE_ENV !== "production") {
+          console.error("[WavonProvider] load availability by employee failed", {
+            employeeId,
+            weekly: weeklyRes.error?.message ?? null,
+            custom: customDaysRes.error?.message ?? null,
+            blocked: blockedRes.error?.message ?? null,
+          });
+        }
+        return;
+      }
+      const baseWeekly = emptyWeekly();
+      const weekly = { ...baseWeekly };
+      for (const row of ((weeklyRes.data as DbWeeklyAvailability[]) ?? [])) {
+        const k = dayKeyFromDow(row.day_of_week);
+        weekly[k] = { enabled: Boolean(row.is_open), segments: segmentsFromJson(row.segments) };
+      }
+      const customDays: CustomDaySlot[] = (((customDaysRes.data as DbCustomDay[]) ?? [])).map((r) => ({
+        date: String(r.day),
+        segments: segmentsFromJson(r.segments),
+      }));
+      const blockedDates = (((blockedRes.data as DbBlockedDate[]) ?? [])).map((r) => String(r.blocked_date)).sort();
+      setState((prev) => ({ ...prev, weekly, customDays, blockedDates }));
+    },
+    [businessId]
+  );
+
+  const upsertEmployee = useCallback(
+    async (input: {
+      id?: string;
+      name: string;
+      email: string | null;
+      phone: string | null;
+      photoUrl: string | null;
+      color: string;
+      isActive: boolean;
+      displayOrder: number;
+    }): Promise<{ ok: true; id: string } | { ok: false; error: string }> => {
+      if (!businessId) return { ok: false, error: "Compte non initialisé." };
+      const payload = {
+        ...(input.id ? { id: input.id } : {}),
+        business_id: businessId,
+        name: input.name.trim(),
+        email: input.email?.trim() || null,
+        phone: input.phone?.trim() || null,
+        photo_url: input.photoUrl?.trim() || null,
+        color: input.color,
+        is_active: Boolean(input.isActive),
+        display_order: input.displayOrder ?? 0,
+      };
+      const { data, error } = await supabase
+        .from("wavon_employees")
+        .upsert(payload, { onConflict: "id" })
+        .select("id,business_id,name,email,phone,photo_url,color,is_active,display_order,created_at,updated_at")
+        .single();
+      if (error) return { ok: false, error: error.message };
+      const row = data as DbEmployee;
+      setState((prev) => {
+        const nextEmployees = [
+          ...(((prev.employees ?? []) as Employee[]).filter((e) => e.id !== row.id)),
+          {
+            id: row.id,
+            businessId: row.business_id,
+            name: row.name,
+            email: row.email,
+            phone: row.phone,
+            photoUrl: row.photo_url,
+            color: row.color,
+            isActive: Boolean(row.is_active),
+            displayOrder: row.display_order ?? 0,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+          } satisfies Employee,
+        ].sort((a, b) => (a.displayOrder - b.displayOrder) || a.createdAt.localeCompare(b.createdAt));
+        return { ...prev, employees: nextEmployees };
+      });
+      return { ok: true, id: row.id };
+    },
+    [businessId]
+  );
+
+  const deleteEmployee = useCallback(
+    async (employeeId: string): Promise<{ ok: true } | { ok: false; error: string }> => {
+      if (!businessId) return { ok: false, error: "Compte non initialisé." };
+      const { error } = await supabase
+        .from("wavon_employees")
+        .delete()
+        .eq("business_id", businessId)
+        .eq("id", employeeId);
+      if (error) return { ok: false, error: error.message };
+      setState((prev) => ({
+        ...prev,
+        employees: (prev.employees ?? []).filter((e) => e.id !== employeeId),
+      }));
+      if (availabilityEmployeeId === employeeId) {
+        const remaining = (state.employees ?? []).filter((e) => e.id !== employeeId && e.isActive);
+        const next = remaining[0]?.id ?? null;
+        void setAvailabilityEmployeeId(next);
+      }
+      return { ok: true };
+    },
+    [businessId, availabilityEmployeeId, setAvailabilityEmployeeId, state.employees]
   );
 
   const deleteReservation = useCallback(
@@ -1247,6 +1470,10 @@ export function WavonProvider({
       ready,
       state,
       businessId,
+      availabilityEmployeeId,
+      setAvailabilityEmployeeId,
+      upsertEmployee,
+      deleteEmployee,
       setWeeklyDay,
       setAvailabilityMode,
       setCustomDays,
@@ -1268,6 +1495,10 @@ export function WavonProvider({
       ready,
       state,
       businessId,
+      availabilityEmployeeId,
+      setAvailabilityEmployeeId,
+      upsertEmployee,
+      deleteEmployee,
       setWeeklyDay,
       setAvailabilityMode,
       setCustomDays,
