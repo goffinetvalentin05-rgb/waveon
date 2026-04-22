@@ -16,6 +16,7 @@ export const landingContent = {
     /** Ancres : ids #presentation et #tarifs sur la page */
     navLinks: [
       { label: "Présentation", href: "#presentation" },
+      { label: "Formules", href: "/pricing" },
       { label: "Tarifs", href: "#tarifs" },
     ],
     login: { label: "Connexion", href: "/login" },
