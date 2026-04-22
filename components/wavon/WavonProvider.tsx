@@ -261,6 +261,7 @@ type Ctx = {
     displayOrder: number;
   }) => Promise<{ ok: true; id: string } | { ok: false; error: string }>;
   deleteEmployee: (employeeId: string) => Promise<{ ok: true } | { ok: false; error: string }>;
+  refreshServices: () => Promise<void>;
   setWeeklyDay: (
     day: DayKey,
     patch: WeeklyDaySchedule
@@ -826,6 +827,43 @@ export function WavonProvider({
     })();
   }, [businessId]);
 
+  const refreshServices = useCallback(async () => {
+    if (!businessId) return;
+    const { data, error } = await supabase
+      .from("wavon_services")
+      .select(
+        "id,business_id,name,duration_minutes,price,description,is_active,is_public,color,employee_ids,buffer_before_minutes,buffer_after_minutes,booking_notice_hours,sort_order"
+      )
+      .eq("business_id", businessId)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+    if (error) {
+      if (process.env.NODE_ENV !== "production") {
+        console.error("[WavonProvider] refreshServices error:", error.message);
+      }
+      return;
+    }
+    const rows = (data as (DbService & { employee_ids?: string[] | null })[]) ?? [];
+    setState((prev) => ({
+      ...prev,
+      services: rows.map((s) => ({
+        id: s.id,
+        name: s.name,
+        durationMin: s.duration_minutes,
+        price: s.price,
+        description: s.description ?? "",
+        isActive: Boolean(s.is_active),
+        isPublic: Boolean(s.is_public),
+        color: s.color,
+        employeeIds: (s.employee_ids ?? []) as string[],
+        bufferBeforeMin: Math.max(0, s.buffer_before_minutes ?? 0),
+        bufferAfterMin: Math.max(0, s.buffer_after_minutes ?? 0),
+        bookingNoticeHours: s.booking_notice_hours,
+        sortOrder: s.sort_order ?? 0,
+      })),
+    }));
+  }, [businessId]);
+
   const updateService = useCallback((id: string, patch: Partial<Service>) => {
     const nextPatch =
       patch.description !== undefined
@@ -1245,9 +1283,12 @@ export function WavonProvider({
         ].sort((a, b) => (a.displayOrder - b.displayOrder) || a.createdAt.localeCompare(b.createdAt));
         return { ...prev, employees: nextEmployees };
       });
+      if (!availabilityEmployeeId && Boolean(row.is_active)) {
+        setAvailabilityEmployeeIdState(row.id);
+      }
       return { ok: true, id: row.id };
     },
-    [businessId]
+    [businessId, availabilityEmployeeId]
   );
 
   const deleteEmployee = useCallback(
@@ -1474,6 +1515,7 @@ export function WavonProvider({
       setAvailabilityEmployeeId,
       upsertEmployee,
       deleteEmployee,
+      refreshServices,
       setWeeklyDay,
       setAvailabilityMode,
       setCustomDays,
@@ -1499,6 +1541,7 @@ export function WavonProvider({
       setAvailabilityEmployeeId,
       upsertEmployee,
       deleteEmployee,
+      refreshServices,
       setWeeklyDay,
       setAvailabilityMode,
       setCustomDays,

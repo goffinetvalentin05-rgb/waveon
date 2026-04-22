@@ -17,7 +17,6 @@ import {
   sectionTitleClass,
   userTextBreakClass,
 } from "@/lib/wavon/tokens";
-import { supabase } from "@/lib/supabase/client";
 
 const EMPLOYEE_NAME_MAX = 60;
 
@@ -40,7 +39,7 @@ function initialsFromName(name: string): string {
 }
 
 export function EquipeTab() {
-  const { state, businessId, upsertEmployee, deleteEmployee } = useWavon();
+  const { state, businessId, upsertEmployee, deleteEmployee, updateService } = useWavon();
   const toast = useToast();
   const employees = (state.employees ?? []).slice().sort((a, b) => (a.displayOrder - b.displayOrder) || a.createdAt.localeCompare(b.createdAt));
   const services = state.services;
@@ -136,9 +135,7 @@ export function EquipeTab() {
     const activeServices = services.filter((s) => s.isActive);
     const desiredAssigned = allServices ? new Set<string>() : new Set(selectedServiceIds);
 
-    // Pour chaque service actif:
-    // - Si allServices -> employee_ids = []
-    // - Sinon -> ajouter/retirer l'employé en conservant les autres
+    // On met à jour les services via le provider (qui persiste en DB).
     for (const s of activeServices) {
       const cur = new Set((s.employeeIds ?? []).filter(Boolean));
       const next = new Set(cur);
@@ -154,13 +151,7 @@ export function EquipeTab() {
         nextArr.length === (s.employeeIds ?? []).length &&
         nextArr.every((id) => (s.employeeIds ?? []).includes(id));
       if (same) continue;
-      // Optimistic: patch local state via provider updateService (non exposé ici), donc on écrit en DB directement
-      // et on laisse le refresh utilisateur/flow principal recharger si nécessaire.
-      await supabase
-        .from("wavon_services")
-        .update({ employee_ids: nextArr })
-        .eq("id", s.id)
-        .eq("business_id", businessId ?? "");
+      updateService(s.id, { employeeIds: nextArr });
     }
 
     toast.push({ message: editing ? "Membre mis à jour." : "Membre ajouté." });
