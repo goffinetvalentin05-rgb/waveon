@@ -2,7 +2,7 @@ import type Stripe from "stripe";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { EMPTY_SUBSCRIPTION_SNAPSHOT, type SubscriptionSnapshot } from "@/lib/wavon/types";
-import { planFromStripePriceId } from "./config";
+import { planFromStripePriceId, WAEVON_TRIAL_DAYS } from "./config";
 import { requireStripe } from "./client";
 
 type CacheEntry = { expiresAt: number; value: SubscriptionSnapshot };
@@ -50,6 +50,29 @@ function snapshotFromStripe(sub: Stripe.Subscription): SubscriptionSnapshot {
   };
 }
 
+const MS_PER_DAY = 86_400_000;
+
+/** Fin d’essai Waevon : colonne dédiée, ou repli `created_at + WAEVON_TRIAL_DAYS` (ex. migration pas encore appliquée). */
+function effectiveTrialEndMs(row: {
+  trial_ends_at: string | null;
+  created_at: string | null;
+}): { endMs: number; iso: string } | null {
+  if (row.trial_ends_at) {
+    const endMs = new Date(row.trial_ends_at).getTime();
+    if (Number.isFinite(endMs)) {
+      return { endMs, iso: row.trial_ends_at };
+    }
+  }
+  if (row.created_at) {
+    const c = new Date(row.created_at).getTime();
+    if (Number.isFinite(c)) {
+      const endMs = c + WAEVON_TRIAL_DAYS * MS_PER_DAY;
+      return { endMs, iso: new Date(endMs).toISOString() };
+    }
+  }
+  return null;
+}
+
 function waevonTrialSnapshot(trialEndsAtIso: string, expired: boolean): SubscriptionSnapshot {
   if (expired) {
     return {
@@ -72,7 +95,7 @@ function waevonTrialSnapshot(trialEndsAtIso: string, expired: boolean): Subscrip
 }
 
 /**
- * Accès facturation : abonnement Stripe (API live + cache 60 s) ou essai Waevon (`trial_ends_at`).
+ * Accès facturation : abonnement Stripe (API live + cache 60 s) ou essai Waevon (`trial_ends_at` / repli sur `created_at`).
  */
 export async function getBusinessSubscriptionStatus(businessId: string): Promise<SubscriptionSnapshot> {
   const now = Date.now();
@@ -84,12 +107,16 @@ export async function getBusinessSubscriptionStatus(businessId: string): Promise
   const admin = createAdminSupabaseClient();
   const { data, error } = await admin
     .from(WavonDbTable.businesses)
-    .select("stripe_subscription_id, trial_ends_at")
+    .select("stripe_subscription_id, trial_ends_at, created_at")
     .eq("id", businessId)
     .maybeSingle();
   if (error) throw error;
 
-  const row = data as { stripe_subscription_id: string | null; trial_ends_at: string | null } | null;
+  const row = data as {
+    stripe_subscription_id: string | null;
+    trial_ends_at: string | null;
+    created_at: string | null;
+  } | null;
   const subId = row?.stripe_subscription_id?.trim() ?? "";
 
   let snapshot: SubscriptionSnapshot;
@@ -117,18 +144,9 @@ export async function getBusinessSubscriptionStatus(businessId: string): Promise
       }
     }
   } else {
-    const trialRaw = row?.trial_ends_at ?? null;
-    if (trialRaw) {
-      const endMs = new Date(trialRaw).getTime();
-      if (!Number.isFinite(endMs)) {
-        snapshot = {
-          ...EMPTY_SUBSCRIPTION_SNAPSHOT,
-          status: "trial_expired",
-          accessSource: "waevon",
-        };
-      } else {
-        snapshot = waevonTrialSnapshot(trialRaw, endMs <= now);
-      }
+    const eff = row ? effectiveTrialEndMs(row) : null;
+    if (eff) {
+      snapshot = waevonTrialSnapshot(eff.iso, eff.endMs <= now);
     } else {
       snapshot = {
         ...EMPTY_SUBSCRIPTION_SNAPSHOT,

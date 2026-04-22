@@ -25,6 +25,9 @@ const hasSupabaseConfig = Boolean(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
+/**
+ * Inscription : auth Supabase + business créé côté DB (trigger). Aucun appel Stripe ici.
+ */
 export default function SignupPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -37,7 +40,10 @@ export default function SignupPage() {
     event.preventDefault();
     setMessage(null);
 
+    console.log("[signup] step=form_submit (aucun Stripe à cette étape)");
+
     if (!hasSupabaseConfig) {
+      console.log("[signup] step=abort reason=no_supabase_env");
       setMessage(
         "Configuration Supabase manquante. Vérifiez NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY."
       );
@@ -45,11 +51,13 @@ export default function SignupPage() {
     }
 
     if (password.length < 6) {
+      console.log("[signup] step=abort reason=password_too_short");
       setMessage("Le mot de passe doit contenir au moins 6 caractères.");
       return;
     }
 
     if (password !== confirmPassword) {
+      console.log("[signup] step=abort reason=password_mismatch");
       setMessage("Les mots de passe ne correspondent pas.");
       return;
     }
@@ -57,39 +65,54 @@ export default function SignupPage() {
     setLoading(true);
     try {
       const normalizedEmail = email.trim().toLowerCase();
+      const emailRedirectTo =
+        typeof window !== "undefined" ? `${window.location.origin}/dashboard` : undefined;
+      console.log("[signup] step=signUp_call email=", normalizedEmail, "emailRedirectTo=", emailRedirectTo);
+
       const { data, error } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
+        options: emailRedirectTo
+          ? {
+              emailRedirectTo,
+            }
+          : undefined,
       });
 
       if (error) {
-        console.log("[signup] signUp error:", error);
+        console.log("[signup] step=signUp_error", error.message, error);
         setMessage(error.message);
         return;
       }
 
+      console.log("[signup] step=signUp_ok session=", Boolean(data.session), "user_id=", data.user?.id);
+
       if (!data.session) {
+        console.log("[signup] step=no_session trying signInWithPassword");
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email: normalizedEmail,
           password,
         });
         if (signInError) {
-          console.log("[signup] signIn fallback error:", signInError);
+          console.log("[signup] step=signIn_fallback_error", signInError.message);
           setMessage(
             "Compte créé, mais la session n'a pas pu être ouverte. Vérifie la confirmation email dans Supabase, puis reconnecte-toi."
           );
           return;
         }
+        console.log("[signup] step=signIn_fallback_ok");
       }
 
-      router.replace("/dashboard");
+      console.log("[signup] step=redirect /dashboard?welcome=1 (pas de /pricing, pas de checkout Stripe)");
+      router.replace("/dashboard?welcome=1");
     } catch (err) {
-      console.log("[signup] unexpected error:", err);
+      console.log("[signup] step=catch_fatal", err);
       setMessage(
         "Impossible de contacter Supabase (Failed to fetch). Vérifie les variables NEXT_PUBLIC_SUPABASE_* sur Vercel et que le projet Supabase est actif."
       );
     } finally {
       setLoading(false);
+      console.log("[signup] step=finally loading=false");
     }
   };
 

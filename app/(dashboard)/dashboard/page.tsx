@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import Link from "next/link";
 import { useWavon } from "@/components/wavon/WavonProvider";
 import { PageHeader } from "@/components/wavon/ui/PageHeader";
@@ -8,9 +8,20 @@ import { StatusBadge } from "@/components/wavon/ui/StatusBadge";
 import { activeReservations, fillRateWeekApprox, toYmd } from "@/lib/wavon/booking-logic";
 import { formatDateTime } from "@/lib/wavon/format";
 import { cardClass, kpiCardClass, linkClass, spinnerClass, userTextBreakClass } from "@/lib/wavon/tokens";
+import { WAEVON_TRIAL_DAYS } from "@/lib/stripe/config";
 
 export default function DashboardOverviewPage() {
   const { ready, state } = useWavon();
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("welcome") !== "1") return;
+    setShowWelcome(true);
+    q.delete("welcome");
+    const next = `${window.location.pathname}${q.toString() ? `?${q}` : ""}`;
+    window.history.replaceState({}, "", next);
+  }, []);
 
   const todayYmd = useMemo(() => toYmd(new Date()), []);
 
@@ -68,6 +79,24 @@ export default function DashboardOverviewPage() {
 
   return (
     <div className="space-y-12 pb-8">
+      {showWelcome ? (
+        <div className="rounded-xl border border-emerald-200/90 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
+          <span className="font-medium">Bienvenue !</span> Ton essai de {WAEVON_TRIAL_DAYS} jours sans carte
+          a commencé. Tu peux configurer Waevon tranquillement ; l&apos;abonnement payant est optionnel
+          depuis{" "}
+          <Link href="/dashboard/facturation" className="font-semibold underline">
+            Facturation
+          </Link>
+          .
+          <button
+            type="button"
+            className="ml-3 text-xs font-medium text-emerald-800 underline"
+            onClick={() => setShowWelcome(false)}
+          >
+            Fermer
+          </button>
+        </div>
+      ) : null}
       <PageHeader
         title="Vue d'ensemble"
         description={

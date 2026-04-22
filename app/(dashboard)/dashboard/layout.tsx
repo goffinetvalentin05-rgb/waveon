@@ -49,11 +49,22 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     if (businessId && !isFacturation) {
       try {
         const live = await getBusinessSubscriptionStatus(businessId);
-        if (!hasActiveSubscription({ status: live.status, plan: live.plan })) {
+        const allowed = hasActiveSubscription({ status: live.status, plan: live.plan });
+        console.log(
+          "[dashboard/layout] gate businessId=",
+          businessId,
+          "status=",
+          live.status,
+          "accessSource=",
+          live.accessSource,
+          "allowed=",
+          allowed
+        );
+        if (!allowed) {
           redirect("/dashboard/facturation?trial_expired=1");
         }
       } catch (e) {
-        console.error("[dashboard/layout] accès facturation / essai", e);
+        console.error("[dashboard/layout] gate_error → facturation", e);
         redirect("/dashboard/facturation?trial_expired=1");
       }
     }
