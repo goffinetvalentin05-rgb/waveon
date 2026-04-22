@@ -310,6 +310,22 @@ type Ctx = {
     }>
   ) => { ok: true } | { ok: false; error: string };
   deleteReservation: (id: string) => Promise<void>;
+  addBlockedSlot: (input: {
+    employeeId: string | null;
+    start: Date;
+    end: Date;
+    reason: string | null;
+  }) => { ok: true; id: string } | { ok: false; error: string };
+  updateBlockedSlot: (
+    id: string,
+    patch: Partial<{
+      employeeId: string | null;
+      start: Date;
+      end: Date;
+      reason: string | null;
+    }>
+  ) => { ok: true } | { ok: false; error: string };
+  deleteBlockedSlot: (id: string) => Promise<void>;
   patchSettings: (patch: Partial<WavonState["settings"]>) => void;
   upsertEmailTemplate: (input: {
     type: EmailTemplateType;
@@ -1418,6 +1434,127 @@ export function WavonProvider({
     [businessId, state.reservations]
   );
 
+  const addBlockedSlot = useCallback(
+    (input: {
+      employeeId: string | null;
+      start: Date;
+      end: Date;
+      reason: string | null;
+    }): { ok: true; id: string } | { ok: false; error: string } => {
+      if (!businessId) return { ok: false, error: "Compte non initialisé." };
+      if (!(input.end > input.start)) {
+        return { ok: false, error: "La fin doit être après le début." };
+      }
+      const reason = input.reason?.trim() ? input.reason.trim().slice(0, 80) : null;
+
+      const outcome: {
+        current: { kind: "ok"; slot: BlockedSlot } | { kind: "err"; message: string };
+      } = { current: { kind: "err", message: "Erreur" } };
+
+      setState((prev) => {
+        const id = crypto.randomUUID();
+        const nowIso = new Date().toISOString();
+        const slot: BlockedSlot = {
+          id,
+          businessId,
+          employeeId: input.employeeId,
+          start: input.start.toISOString(),
+          end: input.end.toISOString(),
+          reason,
+          createdAt: nowIso,
+          updatedAt: nowIso,
+        };
+        outcome.current = { kind: "ok", slot };
+        return { ...prev, blockedSlots: [...(prev.blockedSlots ?? []), slot] };
+      });
+
+      if (outcome.current.kind === "err") {
+        return { ok: false, error: outcome.current.message };
+      }
+
+      const slot = outcome.current.slot;
+      void supabase.from("blocked_slots").insert({
+        id: slot.id,
+        business_id: businessId,
+        employee_id: slot.employeeId,
+        start_at: slot.start,
+        end_at: slot.end,
+        reason: slot.reason,
+      });
+
+      return { ok: true, id: slot.id };
+    },
+    [businessId]
+  );
+
+  const updateBlockedSlot = useCallback(
+    (
+      id: string,
+      patch: Partial<{
+        employeeId: string | null;
+        start: Date;
+        end: Date;
+        reason: string | null;
+      }>
+    ): { ok: true } | { ok: false; error: string } => {
+      let errorMsg: string | null = null;
+      setState((prev) => {
+        const list = prev.blockedSlots ?? [];
+        const cur = list.find((s) => s.id === id) ?? null;
+        if (!cur) {
+          errorMsg = "Créneau bloqué introuvable.";
+          return prev;
+        }
+        const start = patch.start ?? new Date(cur.start);
+        const end = patch.end ?? new Date(cur.end);
+        if (!(end > start)) {
+          errorMsg = "La fin doit être après le début.";
+          return prev;
+        }
+        const next: BlockedSlot = {
+          ...cur,
+          employeeId: patch.employeeId !== undefined ? patch.employeeId : cur.employeeId,
+          start: start.toISOString(),
+          end: end.toISOString(),
+          reason:
+            patch.reason !== undefined
+              ? (patch.reason?.trim() ? patch.reason.trim().slice(0, 80) : null)
+              : cur.reason,
+          updatedAt: new Date().toISOString(),
+        };
+        return { ...prev, blockedSlots: list.map((s) => (s.id === id ? next : s)) };
+      });
+
+      if (!businessId || errorMsg) {
+        return errorMsg ? { ok: false, error: errorMsg } : { ok: true };
+      }
+
+      const payload: Record<string, unknown> = {};
+      if (patch.employeeId !== undefined) payload.employee_id = patch.employeeId;
+      if (patch.start !== undefined) payload.start_at = patch.start.toISOString();
+      if (patch.end !== undefined) payload.end_at = patch.end.toISOString();
+      if (patch.reason !== undefined) {
+        payload.reason = patch.reason?.trim() ? patch.reason.trim().slice(0, 80) : null;
+      }
+      void supabase.from("blocked_slots").update(payload).eq("id", id).eq("business_id", businessId);
+
+      return { ok: true };
+    },
+    [businessId]
+  );
+
+  const deleteBlockedSlot = useCallback(
+    async (id: string) => {
+      setState((prev) => ({
+        ...prev,
+        blockedSlots: (prev.blockedSlots ?? []).filter((s) => s.id !== id),
+      }));
+      if (!businessId) return;
+      await supabase.from("blocked_slots").delete().eq("id", id).eq("business_id", businessId);
+    },
+    [businessId]
+  );
+
   const patchSettings = useCallback((patch: Partial<WavonState["settings"]>) => {
     setState((prev) => {
       const { publicSlug: patchSlug, ...patchRest } = patch;
@@ -1602,6 +1739,9 @@ export function WavonProvider({
       addReservation,
       updateReservation,
       deleteReservation,
+      addBlockedSlot,
+      updateBlockedSlot,
+      deleteBlockedSlot,
       patchSettings,
       upsertEmailTemplate,
       replaceWhatsAppMessages,
@@ -1629,6 +1769,9 @@ export function WavonProvider({
       addReservation,
       updateReservation,
       deleteReservation,
+      addBlockedSlot,
+      updateBlockedSlot,
+      deleteBlockedSlot,
       patchSettings,
       upsertEmailTemplate,
       replaceWhatsAppMessages,

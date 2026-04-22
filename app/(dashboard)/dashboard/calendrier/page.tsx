@@ -68,7 +68,16 @@ type CalEvent = {
 };
 
 export default function CalendrierPage() {
-  const { ready, state, addReservation, updateReservation, deleteReservation } = useWavon();
+  const {
+    ready,
+    state,
+    addReservation,
+    updateReservation,
+    deleteReservation,
+    addBlockedSlot,
+    updateBlockedSlot,
+    deleteBlockedSlot,
+  } = useWavon();
   const toast = useToast();
   const [view, setView] = useState<View>("week");
   const [date, setDate] = useState(() => new Date());
@@ -85,6 +94,16 @@ export default function CalendrierPage() {
   const [editing, setEditing] = useState<Reservation | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailRes, setDetailRes] = useState<Reservation | null>(null);
+
+  const [blockedModalOpen, setBlockedModalOpen] = useState(false);
+  const [blockedModalMode, setBlockedModalMode] = useState<"create" | "edit">("create");
+  const [editingBlocked, setEditingBlocked] = useState<BlockedSlot | null>(null);
+  const [blockedStartDate, setBlockedStartDate] = useState(toYmd(new Date()));
+  const [blockedStartTime, setBlockedStartTime] = useState("12:00");
+  const [blockedEndDate, setBlockedEndDate] = useState(toYmd(new Date()));
+  const [blockedEndTime, setBlockedEndTime] = useState("13:00");
+  const [blockedReason, setBlockedReason] = useState("");
+  const [blockedEmployeeId, setBlockedEmployeeId] = useState<string>(""); // "" = tous
 
   const [clientName, setClientName] = useState("");
   const [clientId, setClientId] = useState<string>("");
@@ -206,6 +225,45 @@ export default function CalendrierPage() {
     setModalOpen(true);
   };
 
+  const timeOptions15 = useMemo(() => {
+    const out: string[] = [];
+    for (let m = 0; m < 24 * 60; m += 15) {
+      const h = Math.floor(m / 60);
+      const mm = m % 60;
+      out.push(`${String(h).padStart(2, "0")}:${String(mm).padStart(2, "0")}`);
+    }
+    return out;
+  }, []);
+
+  const openBlockedCreate = (prefill?: { start: Date; end: Date }) => {
+    setBlockedModalMode("create");
+    setEditingBlocked(null);
+    const s = prefill?.start ?? new Date();
+    const e = prefill?.end ?? new Date(s.getTime() + 60 * 60_000);
+    setBlockedStartDate(toYmd(s));
+    setBlockedEndDate(toYmd(e));
+    setBlockedStartTime(`${String(s.getHours()).padStart(2, "0")}:${String(s.getMinutes()).padStart(2, "0")}`);
+    setBlockedEndTime(`${String(e.getHours()).padStart(2, "0")}:${String(e.getMinutes()).padStart(2, "0")}`);
+    setBlockedReason("");
+    // Par défaut: tous les prestataires (sauf si un seul, voir render)
+    setBlockedEmployeeId("");
+    setBlockedModalOpen(true);
+  };
+
+  const openBlockedEdit = (b: BlockedSlot) => {
+    setBlockedModalMode("edit");
+    setEditingBlocked(b);
+    const s = new Date(b.start);
+    const e = new Date(b.end);
+    setBlockedStartDate(toYmd(s));
+    setBlockedEndDate(toYmd(e));
+    setBlockedStartTime(`${String(s.getHours()).padStart(2, "0")}:${String(s.getMinutes()).padStart(2, "0")}`);
+    setBlockedEndTime(`${String(e.getHours()).padStart(2, "0")}:${String(e.getMinutes()).padStart(2, "0")}`);
+    setBlockedReason(b.reason ?? "");
+    setBlockedEmployeeId(b.employeeId ?? "");
+    setBlockedModalOpen(true);
+  };
+
   const submitForm = () => {
     const svc = state.services.find((s) => s.id === serviceId);
     if (!svc) {
@@ -264,10 +322,9 @@ export default function CalendrierPage() {
         openDetail(ev.resource.reservation);
         return;
       }
-      // Modal blocage implémenté dans la section suivante
-      toast.push({ message: "Édition des blocages : en cours d’ajout." });
+      openBlockedEdit(ev.resource.blockedSlot);
     },
-    [openDetail, toast]
+    [openDetail]
   );
 
   const eventPropGetter = useCallback((event: CalEvent) => {
@@ -353,7 +410,7 @@ export default function CalendrierPage() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => toast.push({ message: "Création de blocages : en cours d’ajout." })}
+              onClick={() => openBlockedCreate()}
               className={btnGhostClass}
             >
               Bloquer un créneau
@@ -556,6 +613,66 @@ export default function CalendrierPage() {
         />
       </Modal>
 
+      <BlockedSlotModal
+        open={blockedModalOpen}
+        mode={blockedModalMode}
+        state={state}
+        activeEmployees={activeEmployees}
+        timeOptions={timeOptions15}
+        startDate={blockedStartDate}
+        startTime={blockedStartTime}
+        endDate={blockedEndDate}
+        endTime={blockedEndTime}
+        reason={blockedReason}
+        employeeId={blockedEmployeeId}
+        onChangeStartDate={setBlockedStartDate}
+        onChangeStartTime={setBlockedStartTime}
+        onChangeEndDate={setBlockedEndDate}
+        onChangeEndTime={setBlockedEndTime}
+        onChangeReason={setBlockedReason}
+        onChangeEmployeeId={setBlockedEmployeeId}
+        onClose={() => setBlockedModalOpen(false)}
+        onSubmit={() => {
+          const onlyOne = activeEmployees.length === 1;
+          const effectiveEmployeeId = onlyOne ? (activeEmployees[0]?.id ?? null) : (blockedEmployeeId ? blockedEmployeeId : null);
+          const start = combineYmdTime(blockedStartDate, blockedStartTime);
+          const end = combineYmdTime(blockedEndDate, blockedEndTime);
+          if (blockedModalMode === "create") {
+            const res = addBlockedSlot({
+              employeeId: effectiveEmployeeId,
+              start,
+              end,
+              reason: blockedReason.trim() ? blockedReason.trim() : null,
+            });
+            if (!res.ok) {
+              toast.push({ kind: "error", message: res.error });
+              return;
+            }
+            toast.push({ message: "Créneau bloqué." });
+          } else if (editingBlocked) {
+            const res = updateBlockedSlot(editingBlocked.id, {
+              employeeId: effectiveEmployeeId,
+              start,
+              end,
+              reason: blockedReason.trim() ? blockedReason.trim() : null,
+            });
+            if (!res.ok) {
+              toast.push({ kind: "error", message: res.error });
+              return;
+            }
+            toast.push({ message: "Blocage mis à jour." });
+          }
+          setBlockedModalOpen(false);
+        }}
+        onDelete={async () => {
+          if (!editingBlocked) return;
+          if (!confirm("Supprimer ce blocage ?")) return;
+          await deleteBlockedSlot(editingBlocked.id);
+          setBlockedModalOpen(false);
+          toast.push({ message: "Blocage supprimé." });
+        }}
+      />
+
       <Modal
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
@@ -620,6 +737,194 @@ export default function CalendrierPage() {
       </Modal>
 
     </div>
+  );
+}
+
+function BlockedSlotModal({
+  open,
+  mode,
+  state,
+  activeEmployees,
+  timeOptions,
+  startDate,
+  startTime,
+  endDate,
+  endTime,
+  reason,
+  employeeId,
+  onChangeStartDate,
+  onChangeStartTime,
+  onChangeEndDate,
+  onChangeEndTime,
+  onChangeReason,
+  onChangeEmployeeId,
+  onClose,
+  onSubmit,
+  onDelete,
+}: {
+  open: boolean;
+  mode: "create" | "edit";
+  state: WavonState;
+  activeEmployees: Array<{ id: string; name: string }>;
+  timeOptions: string[];
+  startDate: string;
+  startTime: string;
+  endDate: string;
+  endTime: string;
+  reason: string;
+  employeeId: string; // "" = tous
+  onChangeStartDate: (v: string) => void;
+  onChangeStartTime: (v: string) => void;
+  onChangeEndDate: (v: string) => void;
+  onChangeEndTime: (v: string) => void;
+  onChangeReason: (v: string) => void;
+  onChangeEmployeeId: (v: string) => void;
+  onClose: () => void;
+  onSubmit: () => void;
+  onDelete: () => Promise<void>;
+}) {
+  const start = useMemo(() => combineYmdTime(startDate, startTime), [startDate, startTime]);
+  const end = useMemo(() => combineYmdTime(endDate, endTime), [endDate, endTime]);
+  const endValid = end > start;
+  const remaining = Math.max(0, 80 - (reason?.length ?? 0));
+  const onlyOneEmployee = activeEmployees.length === 1;
+  const effectiveEmployeeId = onlyOneEmployee ? (activeEmployees[0]?.id ?? "") : employeeId;
+
+  const overlappingReservations = useMemo(() => {
+    if (!endValid) return [];
+    const list = state.reservations.filter((r) => r.status === "confirmed" || r.status === "pending");
+    const targetEmployeeId = onlyOneEmployee ? (activeEmployees[0]?.id ?? null) : (effectiveEmployeeId ? effectiveEmployeeId : null);
+    return list
+      .filter((r) => {
+        if (targetEmployeeId) {
+          return (r.employeeId ?? null) === targetEmployeeId;
+        }
+        return true; // blocage tous prestataires
+      })
+      .filter((r) => start < new Date(r.end) && end > new Date(r.start))
+      .sort((a, b) => a.start.localeCompare(b.start))
+      .slice(0, 6);
+  }, [state.reservations, start, end, endValid, effectiveEmployeeId, onlyOneEmployee, activeEmployees]);
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={mode === "create" ? "Bloquer un créneau" : "Modifier le blocage"}
+      footer={
+        <>
+          {mode === "edit" ? (
+            <button
+              type="button"
+              className="mr-auto text-sm font-medium text-red-600/90 underline-offset-4 hover:underline"
+              onClick={() => void onDelete()}
+            >
+              Supprimer
+            </button>
+          ) : null}
+          <button type="button" className={btnGhostClass} onClick={onClose}>
+            Annuler
+          </button>
+          <button type="button" className={btnPrimaryClass} onClick={onSubmit} disabled={!endValid}>
+            {mode === "create" ? "Confirmer le blocage" : "Enregistrer"}
+          </button>
+        </>
+      }
+    >
+      <div className="grid gap-5">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className={labelClass}>Date début</label>
+            <input type="date" className={`${inputClass} mt-2`} value={startDate} onChange={(e) => onChangeStartDate(e.target.value)} />
+          </div>
+          <div>
+            <label className={labelClass}>Heure début</label>
+            <select className={`${inputClass} mt-2`} value={startTime} onChange={(e) => onChangeStartTime(e.target.value)}>
+              {timeOptions.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelClass}>Date fin</label>
+            <input type="date" className={`${inputClass} mt-2`} value={endDate} onChange={(e) => onChangeEndDate(e.target.value)} />
+          </div>
+          <div>
+            <label className={labelClass}>Heure fin</label>
+            <select className={`${inputClass} mt-2`} value={endTime} onChange={(e) => onChangeEndTime(e.target.value)}>
+              {timeOptions.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {!endValid ? (
+          <p className="text-sm text-red-700">La fin doit être strictement après le début.</p>
+        ) : null}
+
+        {!onlyOneEmployee ? (
+          <div>
+            <label className={labelClass}>Prestataire concerné</label>
+            <select
+              className={`${inputClass} mt-2`}
+              value={employeeId}
+              onChange={(e) => onChangeEmployeeId(e.target.value)}
+            >
+              <option value="">Tous les prestataires</option>
+              {activeEmployees.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
+
+        <div>
+          <label className={labelClass}>Raison (optionnel)</label>
+          <div className="mt-2">
+            <input
+              className={`${inputClass} ${userTextBreakClass}`}
+              value={reason}
+              onChange={(e) => onChangeReason(e.target.value.slice(0, 80))}
+              placeholder="ex: Rendez-vous personnel, pause déjeuner, livraison…"
+              maxLength={80}
+            />
+            <div className="mt-2 flex items-start justify-between gap-4 text-xs text-neutral-500">
+              <p className="leading-relaxed">Uniquement visible par toi, tes clients ne voient rien.</p>
+              <p className="shrink-0 tabular-nums">{remaining}</p>
+            </div>
+          </div>
+        </div>
+
+        {overlappingReservations.length > 0 ? (
+          <div className="rounded-2xl border border-amber-200/90 bg-amber-50/70 px-4 py-3 text-sm text-amber-950">
+            <p className="font-medium">
+              Attention, {overlappingReservations.length} réservation(s) existent déjà sur cette plage :
+            </p>
+            <ul className="mt-2 list-disc pl-5 text-xs text-amber-900">
+              {overlappingReservations.map((r) => {
+                const d = new Date(r.start);
+                const hh = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+                return (
+                  <li key={r.id} className={userTextBreakClass}>
+                    {r.clientName} · {hh}
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="mt-2 text-xs text-amber-900">
+              Tu peux quand même confirmer : les réservations existantes restent valides.
+            </p>
+          </div>
+        ) : null}
+      </div>
+    </Modal>
   );
 }
 
