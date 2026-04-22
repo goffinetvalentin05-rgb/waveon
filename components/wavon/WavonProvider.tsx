@@ -975,6 +975,7 @@ export function WavonProvider({
       clientId: string | null;
       clientName: string;
       serviceId: string;
+      employeeId?: string | null;
       start: Date;
       notes?: string;
     }): { ok: true; id: string } | { ok: false; error: string } => {
