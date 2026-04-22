@@ -17,6 +17,7 @@ const navItems = [
   { id: "clients", label: "Clients", href: "/dashboard/clients" },
   { id: "availability", label: "Disponibilités", href: "/dashboard/disponibilites" },
   { id: "settings", label: "Paramètres", href: "/dashboard/parametres" },
+  { id: "billing", label: "Facturation", href: "/dashboard/facturation" },
 ];
 
 function NavLinks({

@@ -1,13 +1,6 @@
-# TODO (hors scope multi-employés)
+# Stripe / facturation — notes techniques
 
-- **PowerShell / commits**: prévoir une note projet (ou script) pour échapper les chemins avec parenthèses lors des commandes git.
-- **Équipe → assignation services**: la métrique “X services” ignore volontairement les services en mode “Tous les prestataires” (employee_ids = []). Si tu préfères compter “tous”, adapter l’affichage.
-- **RLS Storage**: vérifier/ajuster les policies Supabase Storage pour autoriser upload/suppression des photos employés (bucket `wavon-branding`).
-- **PublicBookingClient**: l’étape prestataire est intégrée à l’UI existante plutôt qu’un vrai wizard step-by-step (à factoriser si tu veux un vrai stepper).
-- **Calendrier**: “Vue par prestataire” en colonnes (jour) non implémentée (react-big-calendar ne le rend pas trivial sans custom layout).
-
-- **Blocage rapide (v1)**: le chemin “clic-drag sur zone vide → menu contextuel (Nouvelle réservation / Bloquer)” n’est pas implémenté. `react-big-calendar` expose `onSelectSlot`, mais l’intégration propre d’un popover contextuel (positionné à la souris, en évitant conflits avec le flow existant) mérite une itération dédiée.
-- **Blocage rapide (v2)**: ajouter une gestion de récurrence (ex: tous les mercredis 12h-14h) + UI de duplication/édition en série.
-- **PublicBookingClient (lint)**: warning `react-hooks/exhaustive-deps` existant sur un `useEffect` (dépendance `svc`) — à corriger quand tu veux nettoyer les warnings ESLint.
-- **Blocages (debug)** : le calcul des créneaux publics est entièrement côté client ; les logs `[waevon][public slots]` sont dans la console navigateur (pas de route API serveur pour les dispos).
-
+- **API Stripe récente (SDK 22 / `2026-03-25.dahlia`)** : `current_period_end` n’est plus sur l’objet `Subscription` racine ; la fin de période est lue sur `subscription.items.data[0].current_period_end`. Les factures d’abonnement exposent l’ID d’abonnement sous `invoice.parent.subscription_details.subscription`, pas un champ `subscription` racine sur `Invoice`.
+- **Webhooks** : après vérification de la signature, les erreurs de traitement sont loguées mais la route répond **200** pour éviter des boucles de retry Stripe sur erreurs métier (choix explicite du cahier des charges).
+- **Statut `paused` (Stripe)** : mappé en base sur `active` faute de valeur dans la contrainte CHECK SQL — à affiner si tu veux un statut dédié.
+- **Portail client** : à activer et configurer dans le Dashboard Stripe (produits, annulation, etc.) pour que `/api/stripe/portal` fonctionne en production.

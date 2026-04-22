@@ -9,20 +9,22 @@ import {
   useState,
 } from "react";
 import { addMinutes, validateBooking, weeklyDefault } from "@/lib/wavon/booking-logic";
-import type {
-  BlockedSlot,
-  Client,
-  CustomDaySlot,
-  DayKey,
-  Employee,
-  EmailTemplate,
-  EmailTemplateType,
-  Reservation,
-  ReservationStatus,
-  Service,
-  WeeklyDaySchedule,
-  WavonState,
+import {
+  EMPTY_SUBSCRIPTION_SNAPSHOT,
+  type BlockedSlot,
+  type Client,
+  type CustomDaySlot,
+  type DayKey,
+  type Employee,
+  type EmailTemplate,
+  type EmailTemplateType,
+  type Reservation,
+  type ReservationStatus,
+  type Service,
+  type WeeklyDaySchedule,
+  type WavonState,
 } from "@/lib/wavon/types";
+import { parseSubscriptionPlan } from "@/lib/subscription/access";
 import { supabase } from "@/lib/supabase/client";
 import { normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
 import { normalizePublicSlugInput, validatePublicSlugFormat } from "@/lib/wavon/public-slug";
@@ -61,6 +63,13 @@ type DbBusiness = {
   currency: string | null;
   notify_owner_on_new_reservation: boolean | null;
   notify_owner_on_cancellation: boolean | null;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  subscription_status: string | null;
+  subscription_plan: string | null;
+  trial_ends_at: string | null;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean | null;
 };
 
 type DbSettings = {
@@ -207,6 +216,7 @@ function emptyWeekly(): Record<DayKey, WeeklyDaySchedule> {
 function createEmptyState(): WavonState {
   return {
     version: 1,
+    subscription: { ...EMPTY_SUBSCRIPTION_SNAPSHOT },
     weekly: emptyWeekly(),
     availabilityMode: "fixed",
     customDays: [],
@@ -378,7 +388,7 @@ export function WavonProvider({
       const { data: business, error: businessErr } = await supabase
         .from("wavon_businesses")
         .select(
-          "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description,currency,notify_owner_on_new_reservation,notify_owner_on_cancellation"
+          "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description,currency,notify_owner_on_new_reservation,notify_owner_on_cancellation,stripe_customer_id,stripe_subscription_id,subscription_status,subscription_plan,trial_ends_at,current_period_end,cancel_at_period_end"
         )
         .eq("user_id", userId)
         .maybeSingle();
@@ -392,7 +402,7 @@ export function WavonProvider({
             .from("wavon_businesses")
             .insert({ user_id: userId, public_slug: provisionalSlug })
             .select(
-              "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description,currency,notify_owner_on_new_reservation,notify_owner_on_cancellation"
+              "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description,currency,notify_owner_on_new_reservation,notify_owner_on_cancellation,stripe_customer_id,stripe_subscription_id,subscription_status,subscription_plan,trial_ends_at,current_period_end,cancel_at_period_end"
             )
             .single();
           if (error) throw error;
@@ -532,6 +542,13 @@ export function WavonProvider({
 
       const next: WavonState = {
         version: 1,
+        subscription: {
+          status: ensuredBusiness.subscription_status ?? null,
+          plan: parseSubscriptionPlan(ensuredBusiness.subscription_plan),
+          trialEndsAt: ensuredBusiness.trial_ends_at ?? null,
+          currentPeriodEnd: ensuredBusiness.current_period_end ?? null,
+          cancelAtPeriodEnd: Boolean(ensuredBusiness.cancel_at_period_end),
+        },
         employees: dbEmployees.map(
           (e): Employee => ({
             id: e.id,

@@ -191,8 +191,26 @@ export type EmailSetting = {
   customLinks: EmailCustomLinks;
 };
 
+/** État d’abonnement Stripe (wavon_businesses) — utilisé pour l’UI et le gating. */
+export type SubscriptionSnapshot = {
+  status: string | null;
+  plan: "starter" | "pro" | null;
+  trialEndsAt: string | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+};
+
+export const EMPTY_SUBSCRIPTION_SNAPSHOT: SubscriptionSnapshot = {
+  status: null,
+  plan: null,
+  trialEndsAt: null,
+  currentPeriodEnd: null,
+  cancelAtPeriodEnd: false,
+};
+
 export type WavonState = {
   version: 1;
+  subscription: SubscriptionSnapshot;
   employees?: Employee[];
   weekly: Record<DayKey, WeeklyDaySchedule>;
   availabilityMode: AvailabilityMode;

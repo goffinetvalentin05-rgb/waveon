@@ -21,6 +21,7 @@ import { landingSection } from "@/components/landing/landing-tokens";
 import { btnPrimaryClass, inputClass, labelClass, userTextBreakClass } from "@/lib/wavon/tokens";
 import { supabase } from "@/lib/supabase/client";
 import type { BlockedSlot, DayKey, Employee, Service, WavonState } from "@/lib/wavon/types";
+import { EMPTY_SUBSCRIPTION_SNAPSHOT } from "@/lib/wavon/types";
 import { getBrandingPublicUrl } from "@/lib/wavon/storage";
 
 type DbBusiness = {
@@ -298,6 +299,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
 
         const next: WavonState = {
           version: 1,
+          subscription: { ...EMPTY_SUBSCRIPTION_SNAPSHOT },
           employees: emp,
           weekly: emptyWeekly,
           availabilityMode: dbSettings?.availability_mode ?? "fixed",

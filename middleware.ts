@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/auth-helpers-nextjs";
 import { type NextRequest, NextResponse } from "next/server";
+import { hasActiveSubscription } from "@/lib/subscription/access";
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
@@ -57,6 +58,27 @@ export async function middleware(request: NextRequest) {
     const login = new URL("/login", request.url);
     login.searchParams.set("redirect", path);
     return NextResponse.redirect(login);
+  }
+
+  if (isProtected && user) {
+    const isBilling =
+      path === "/dashboard/facturation" || path.startsWith("/dashboard/facturation/");
+    if (!isBilling) {
+      const { data: biz } = await supabase
+        .from("wavon_businesses")
+        .select("subscription_status, subscription_plan")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const row = biz as { subscription_status?: string | null; subscription_plan?: string | null } | null;
+      if (
+        !hasActiveSubscription({
+          subscription_status: row?.subscription_status ?? null,
+          subscription_plan: row?.subscription_plan ?? null,
+        })
+      ) {
+        return NextResponse.redirect(new URL("/pricing", request.url));
+      }
+    }
   }
 
   if ((path === "/login" || path === "/signup") && user) {
