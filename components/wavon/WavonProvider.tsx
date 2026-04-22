@@ -414,7 +414,7 @@ export function WavonProvider({
       setBusinessId(ensuredBusiness.id);
 
       const employeesRes = await supabase
-        .from("wavon_employees")
+        .from(WavonDbTable.employees)
         .select("id,business_id,name,email,phone,photo_url,color,is_active,display_order,created_at,updated_at")
         .eq("business_id", ensuredBusiness.id)
         .order("display_order", { ascending: true })
@@ -440,14 +440,14 @@ export function WavonProvider({
         templatesRes,
       ] = await Promise.all([
         supabase
-          .from("wavon_settings")
+          .from(WavonDbTable.settings)
           .select(
             "business_id,minimum_notice_hours,auto_confirm_reservations,availability_mode,maximum_days_in_advance,slot_interval_minutes,minimum_gap_between_bookings,allow_cancellation,cancellation_deadline_hours,allow_reschedule,reschedule_deadline_hours,same_day_booking_allowed,public_after_booking_message"
           )
           .eq("business_id", ensuredBusiness.id)
           .maybeSingle(),
         supabase
-          .from("wavon_services")
+          .from(WavonDbTable.services)
           .select(
             "id,business_id,name,duration_minutes,price,description,is_active,is_public,color,employee_ids,buffer_before_minutes,buffer_after_minutes,booking_notice_hours,sort_order"
           )
@@ -455,39 +455,39 @@ export function WavonProvider({
           .order("sort_order", { ascending: true })
           .order("created_at", { ascending: true }),
         supabase
-          .from("wavon_clients")
+          .from(WavonDbTable.clients)
           .select("id,business_id,full_name,email,phone,private_note")
           .eq("business_id", ensuredBusiness.id)
           .order("created_at", { ascending: true }),
         supabase
-          .from("wavon_reservations")
+          .from(WavonDbTable.reservations)
           .select(
             "id,business_id,client_id,client_name,service_id,employee_id,start_at,end_at,duration_minutes,buffer_before_minutes,buffer_after_minutes,status,created_at,notes"
           )
           .eq("business_id", ensuredBusiness.id)
           .order("start_at", { ascending: true }),
         supabase
-          .from("blocked_slots")
+          .from(WavonDbTable.blockedSlots)
           .select("id,business_id,employee_id,start_at,end_at,reason,created_at,updated_at")
           .eq("business_id", ensuredBusiness.id)
           .order("start_at", { ascending: true }),
         supabase
-          .from("wavon_availability_rules")
+          .from(WavonDbTable.availabilityRules)
           .select("business_id,employee_id,day_of_week,is_open,segments")
           .eq("business_id", ensuredBusiness.id)
           .eq("employee_id", defaultEmployeeId),
         supabase
-          .from("wavon_custom_days")
+          .from(WavonDbTable.customDays)
           .select("business_id,employee_id,day,segments")
           .eq("business_id", ensuredBusiness.id)
           .eq("employee_id", defaultEmployeeId),
         supabase
-          .from("wavon_blocked_dates")
+          .from(WavonDbTable.blockedDates)
           .select("business_id,employee_id,blocked_date")
           .eq("business_id", ensuredBusiness.id)
           .eq("employee_id", defaultEmployeeId),
         supabase
-          .from("wavon_email_templates")
+          .from(WavonDbTable.emailTemplates)
           .select("id,business_id,type,is_enabled,subject,body")
           .eq("business_id", ensuredBusiness.id),
       ]);
@@ -724,7 +724,7 @@ export function WavonProvider({
     };
 
     const { data, error } = await supabase
-      .from("wavon_availability_rules")
+      .from(WavonDbTable.availabilityRules)
       .upsert(payload, { onConflict: "business_id,employee_id,day_of_week" })
       .select("day_of_week,is_open,segments")
       .single();
@@ -743,7 +743,7 @@ export function WavonProvider({
     if (error) {
       // Hard-reload this business weekly rules to avoid UI drifting from DB.
       const { data: rows, error: readErr } = await supabase
-        .from("wavon_availability_rules")
+        .from(WavonDbTable.availabilityRules)
         .select("day_of_week,is_open,segments")
         .eq("business_id", businessId);
 
@@ -803,7 +803,7 @@ export function WavonProvider({
     setState((prev) => ({ ...prev, availabilityMode: mode }));
     if (!businessId) return;
     void supabase
-      .from("wavon_settings")
+      .from(WavonDbTable.settings)
       .update({ availability_mode: mode })
       .eq("business_id", businessId);
   }, [businessId]);
@@ -814,12 +814,12 @@ export function WavonProvider({
     // Simple sync: replace all (acceptable for now; can be optimized later)
     void (async () => {
       await supabase
-        .from("wavon_custom_days")
+        .from(WavonDbTable.customDays)
         .delete()
         .eq("business_id", businessId)
         .eq("employee_id", availabilityEmployeeId);
       if (days.length === 0) return;
-      await supabase.from("wavon_custom_days").insert(
+      await supabase.from(WavonDbTable.customDays).insert(
         days.map((d) => ({
           business_id: businessId,
           employee_id: availabilityEmployeeId,
@@ -835,12 +835,12 @@ export function WavonProvider({
     if (!businessId || !availabilityEmployeeId) return;
     void (async () => {
       await supabase
-        .from("wavon_blocked_dates")
+        .from(WavonDbTable.blockedDates)
         .delete()
         .eq("business_id", businessId)
         .eq("employee_id", availabilityEmployeeId);
       if (dates.length === 0) return;
-      await supabase.from("wavon_blocked_dates").insert(
+      await supabase.from(WavonDbTable.blockedDates).insert(
         dates.map((d) => ({
           business_id: businessId,
           employee_id: availabilityEmployeeId,
@@ -854,7 +854,7 @@ export function WavonProvider({
     if (!businessId) return;
     void (async () => {
       const { data, error } = await supabase
-        .from("wavon_services")
+        .from(WavonDbTable.services)
         .insert({
           business_id: businessId,
           name: s.name,
@@ -903,7 +903,7 @@ export function WavonProvider({
   const refreshServices = useCallback(async () => {
     if (!businessId) return;
     const { data, error } = await supabase
-      .from("wavon_services")
+      .from(WavonDbTable.services)
       .select(
         "id,business_id,name,duration_minutes,price,description,is_active,is_public,color,employee_ids,buffer_before_minutes,buffer_after_minutes,booking_notice_hours,sort_order"
       )
@@ -953,7 +953,7 @@ export function WavonProvider({
       }));
 
       const { error } = await supabase
-        .from("wavon_services")
+        .from(WavonDbTable.services)
         .update({
           ...(nextPatch.name !== undefined ? { name: nextPatch.name } : {}),
           ...(nextPatch.durationMin !== undefined ? { duration_minutes: nextPatch.durationMin } : {}),
@@ -1011,14 +1011,14 @@ export function WavonProvider({
       reservations: prev.reservations.filter((r) => r.serviceId !== id),
     }));
     if (!businessId) return;
-    void supabase.from("wavon_services").delete().eq("id", id).eq("business_id", businessId);
+    void supabase.from(WavonDbTable.services).delete().eq("id", id).eq("business_id", businessId);
   }, [businessId]);
 
   const addClient = useCallback((c: Omit<Client, "id">) => {
     if (!businessId) return;
     void (async () => {
       const { data, error } = await supabase
-        .from("wavon_clients")
+        .from(WavonDbTable.clients)
         .insert({
           business_id: businessId,
           full_name: c.name,
@@ -1053,7 +1053,7 @@ export function WavonProvider({
     }));
     if (!businessId) return;
       void supabase
-      .from("wavon_clients")
+      .from(WavonDbTable.clients)
       .update({
         ...(patch.name !== undefined ? { full_name: patch.name } : {}),
         ...(patch.phone !== undefined ? { phone: patch.phone || null } : {}),
@@ -1075,7 +1075,7 @@ export function WavonProvider({
       ),
     }));
     if (!businessId) return;
-    void supabase.from("wavon_clients").delete().eq("id", id).eq("business_id", businessId);
+    void supabase.from(WavonDbTable.clients).delete().eq("id", id).eq("business_id", businessId);
   }, [businessId]);
 
   const addReservation = useCallback(
@@ -1144,7 +1144,7 @@ export function WavonProvider({
 
       const res = outcome.current.reservation;
       void (async () => {
-        const { error } = await supabase.from("wavon_reservations").insert({
+        const { error } = await supabase.from(WavonDbTable.reservations).insert({
           id: res.id,
           business_id: businessId,
           client_id: res.clientId,
@@ -1273,7 +1273,7 @@ export function WavonProvider({
           }
         }
         void supabase
-          .from("wavon_reservations")
+          .from(WavonDbTable.reservations)
           .update(payload)
           .eq("id", id)
           .eq("business_id", businessId);
@@ -1302,17 +1302,17 @@ export function WavonProvider({
       if (!businessId || !employeeId) return;
       const [weeklyRes, customDaysRes, blockedRes] = await Promise.all([
         supabase
-          .from("wavon_availability_rules")
+          .from(WavonDbTable.availabilityRules)
           .select("day_of_week,is_open,segments")
           .eq("business_id", businessId)
           .eq("employee_id", employeeId),
         supabase
-          .from("wavon_custom_days")
+          .from(WavonDbTable.customDays)
           .select("day,segments")
           .eq("business_id", businessId)
           .eq("employee_id", employeeId),
         supabase
-          .from("wavon_blocked_dates")
+          .from(WavonDbTable.blockedDates)
           .select("blocked_date")
           .eq("business_id", businessId)
           .eq("employee_id", employeeId),
@@ -1368,7 +1368,7 @@ export function WavonProvider({
         display_order: input.displayOrder ?? 0,
       };
       const { data, error } = await supabase
-        .from("wavon_employees")
+        .from(WavonDbTable.employees)
         .upsert(payload, { onConflict: "id" })
         .select("id,business_id,name,email,phone,photo_url,color,is_active,display_order,created_at,updated_at")
         .single();
@@ -1405,7 +1405,7 @@ export function WavonProvider({
     async (employeeId: string): Promise<{ ok: true } | { ok: false; error: string }> => {
       if (!businessId) return { ok: false, error: "Compte non initialisé." };
       const { error } = await supabase
-        .from("wavon_employees")
+        .from(WavonDbTable.employees)
         .delete()
         .eq("business_id", businessId)
         .eq("id", employeeId);
@@ -1451,7 +1451,7 @@ export function WavonProvider({
         reservations: prev.reservations.filter((r) => r.id !== id),
       }));
       if (!businessId) return;
-      await supabase.from("wavon_reservations").delete().eq("id", id).eq("business_id", businessId);
+      await supabase.from(WavonDbTable.reservations).delete().eq("id", id).eq("business_id", businessId);
     },
     [businessId, state.reservations]
   );
@@ -1470,7 +1470,7 @@ export function WavonProvider({
       const reason = input.reason?.trim() ? input.reason.trim().slice(0, 80) : null;
 
       const { data, error } = await supabase
-        .from("blocked_slots")
+        .from(WavonDbTable.blockedSlots)
         .insert({
           business_id: businessId,
           employee_id: input.employeeId,
@@ -1539,7 +1539,7 @@ export function WavonProvider({
       }
 
       const { data, error } = await supabase
-        .from("blocked_slots")
+        .from(WavonDbTable.blockedSlots)
         .update(payload)
         .eq("id", id)
         .eq("business_id", businessId)
@@ -1573,7 +1573,7 @@ export function WavonProvider({
     async (id: string): Promise<{ ok: true } | { ok: false; error: string }> => {
       if (!businessId) return { ok: false, error: "Compte non initialisé." };
       const { error } = await supabase
-        .from("blocked_slots")
+        .from(WavonDbTable.blockedSlots)
         .delete()
         .eq("id", id)
         .eq("business_id", businessId);
@@ -1692,7 +1692,7 @@ export function WavonProvider({
         settingsPatch.public_after_booking_message = patch.publicAfterBookingMessage.trim();
       }
       if (Object.keys(settingsPatch).length > 0) {
-        await supabase.from("wavon_settings").update(settingsPatch).eq("business_id", businessId);
+        await supabase.from(WavonDbTable.settings).update(settingsPatch).eq("business_id", businessId);
       }
     })();
   }, [businessId]);
@@ -1720,7 +1720,7 @@ export function WavonProvider({
         };
       });
 
-      void supabase.from("wavon_email_templates").upsert(
+      void supabase.from(WavonDbTable.emailTemplates).upsert(
         {
           business_id: businessId,
           type: input.type,

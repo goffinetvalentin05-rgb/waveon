@@ -113,7 +113,7 @@ async function ensureLogAndSend(args: {
   const logBase = `[emails/cron] type=${deliveryType} to=${to}`;
 
   const { data: existing } = await admin
-    .from("wavon_email_logs")
+    .from(WavonDbTable.emailLogs)
     .select("status")
     .eq("business_id", businessId)
     .eq("reservation_id", reservationId)
@@ -124,7 +124,7 @@ async function ensureLogAndSend(args: {
   if (existing?.status === "sent") return { sent: false, skipped: true };
 
   const { data: inserted, error: insErr } = await admin
-    .from("wavon_email_logs")
+    .from(WavonDbTable.emailLogs)
     .upsert(
       {
         business_id: businessId,
@@ -158,7 +158,7 @@ async function ensureLogAndSend(args: {
       console.error(`${logBase} — erreur Resend: ${errMsg}`);
       logResendDomainHint(errMsg);
       await admin
-        .from("wavon_email_logs")
+        .from(WavonDbTable.emailLogs)
         .update({
           status: "error",
           error: errMsg,
@@ -177,7 +177,7 @@ async function ensureLogAndSend(args: {
 
     console.log(`${logBase} — succès Resend id=${result.data?.id ?? "n/a"}`);
     await admin
-      .from("wavon_email_logs")
+      .from(WavonDbTable.emailLogs)
       .update({
         status: "sent",
         provider_id: result.data?.id ?? null,
@@ -199,7 +199,7 @@ async function ensureLogAndSend(args: {
     console.error(`${logBase} — exception:`, msg);
     logResendDomainHint(msg);
     await admin
-      .from("wavon_email_logs")
+      .from(WavonDbTable.emailLogs)
       .update({
         status: "error",
         error: msg,
@@ -240,7 +240,7 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
     const businessId = (b as { id: string }).id;
 
     const { data: settings } = await admin
-      .from("wavon_email_settings")
+      .from(WavonDbTable.emailSettings)
       .select("business_id,type,enabled,delay_hours,subject,body,custom_links")
       .eq("business_id", businessId);
 
@@ -270,9 +270,9 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
 
     async function hydrateReservation(resRow: DbReservation) {
       const [svcRes, clientRes] = await Promise.all([
-        admin.from("wavon_services").select("name,price,duration_minutes").eq("id", resRow.service_id).maybeSingle(),
+        admin.from(WavonDbTable.services).select("name,price,duration_minutes").eq("id", resRow.service_id).maybeSingle(),
         resRow.client_id
-          ? admin.from("wavon_clients").select("email,phone,full_name").eq("id", resRow.client_id).maybeSingle()
+          ? admin.from(WavonDbTable.clients).select("email,phone,full_name").eq("id", resRow.client_id).maybeSingle()
           : Promise.resolve({ data: null as DbClient | null, error: null }),
       ]);
       const svc = svcRes.data as DbService | null;
@@ -287,7 +287,7 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
       const startMax = new Date(startMin.getTime() + windowMs);
 
       const { data: due } = await admin
-        .from("wavon_reservations")
+        .from(WavonDbTable.reservations)
         .select(
           "id,business_id,client_name,client_id,service_id,start_at,duration_minutes,status,cancel_token"
         )
@@ -371,7 +371,7 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
       const startMin = new Date(startMax.getTime() - windowMs);
 
       const { data: done } = await admin
-        .from("wavon_reservations")
+        .from(WavonDbTable.reservations)
         .select(
           "id,business_id,client_name,client_id,service_id,start_at,duration_minutes,status,cancel_token"
         )

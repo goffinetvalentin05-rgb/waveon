@@ -113,7 +113,7 @@ async function fetchReservationData(
   businessId: string
 ): Promise<ReservationData | null> {
   const { data: res, error: resErr } = await admin
-    .from("wavon_reservations")
+    .from(WavonDbTable.reservations)
     .select("id,client_id,client_name,service_id,employee_id,start_at,duration_minutes,status,cancel_token")
     .eq("id", reservationId)
     .eq("business_id", businessId)
@@ -128,7 +128,7 @@ async function fetchReservationData(
 
   const [svcRes, bizRes, clientRes, empRes] = await Promise.all([
     admin
-      .from("wavon_services")
+      .from(WavonDbTable.services)
       .select("name,price,duration_minutes")
       .eq("id", reservation.service_id)
       .maybeSingle(),
@@ -141,14 +141,14 @@ async function fetchReservationData(
       .maybeSingle(),
     reservation.client_id
       ? admin
-          .from("wavon_clients")
+          .from(WavonDbTable.clients)
           .select("email,phone,full_name")
           .eq("id", reservation.client_id)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
     reservation.employee_id
       ? admin
-          .from("wavon_employees")
+          .from(WavonDbTable.employees)
           .select("name")
           .eq("id", reservation.employee_id)
           .eq("business_id", businessId)
@@ -214,7 +214,7 @@ async function fetchEmailTemplate(
   type: EmailTemplateType
 ): Promise<{ is_enabled: boolean; subject: string; body: string } | null> {
   const { data, error } = await admin
-    .from("wavon_email_templates")
+    .from(WavonDbTable.emailTemplates)
     .select("is_enabled,subject,body")
     .eq("business_id", businessId)
     .eq("type", type)

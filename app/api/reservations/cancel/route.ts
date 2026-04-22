@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { sendCancellationByClientEmails } from "@/lib/emails/send";
 
 type Body = {
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
     const admin = createAdminSupabaseClient();
 
     const { data: settings, error: sErr } = await admin
-      .from("wavon_settings")
+      .from(WavonDbTable.settings)
       .select("allow_cancellation,cancellation_deadline_hours")
       .eq("business_id", businessId)
       .maybeSingle();
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { data: res, error: rErr } = await admin
-      .from("wavon_reservations")
+      .from(WavonDbTable.reservations)
       .select("id,status,start_at,cancel_token")
       .eq("id", reservationId)
       .eq("business_id", businessId)
@@ -92,7 +93,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { error: uErr } = await admin
-      .from("wavon_reservations")
+      .from(WavonDbTable.reservations)
       .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
       .eq("id", reservationId)
       .eq("business_id", businessId)

@@ -189,7 +189,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ ok: false, error: "Utilise le mode rappel planifié." }, { status: 400 });
       }
       const { data: tpl } = await admin
-        .from("wavon_email_templates")
+        .from(WavonDbTable.emailTemplates)
         .select("subject,body,is_enabled")
         .eq("business_id", businessId)
         .eq("type", templateType)
@@ -241,7 +241,7 @@ export async function POST(req: NextRequest) {
       const scheduledType: ScheduledKind =
         parsed?.scheduledType === "post_service" ? "post_service" : "reminder_before";
       const { data: s } = await admin
-        .from("wavon_email_settings")
+        .from(WavonDbTable.emailSettings)
         .select("type,enabled,delay_hours,subject,body,custom_links")
         .eq("business_id", businessId)
         .eq("type", scheduledType)

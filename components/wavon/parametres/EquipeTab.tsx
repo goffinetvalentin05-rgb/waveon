@@ -8,6 +8,7 @@ import { useToast } from "@/components/wavon/Toast";
 import { getBrandingPublicUrl, uploadEmployeePhoto, deleteEmployeePhoto } from "@/lib/wavon/storage";
 import type { Employee } from "@/lib/wavon/types";
 import { supabase } from "@/lib/supabase/client";
+import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import {
   btnGhostClass,
   btnPrimaryClass,
@@ -194,7 +195,7 @@ export function EquipeTab() {
     // Bloquer si réservations futures
     const nowIso = new Date().toISOString();
     const { count, error } = await supabase
-      .from("wavon_reservations")
+      .from(WavonDbTable.reservations)
       .select("id", { count: "exact", head: true })
       .eq("business_id", businessId)
       .eq("employee_id", e.id)

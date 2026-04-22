@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
-import { WavonDbTable } from "@/lib/supabase/wavon-tables";
+import { getWavonDbTablePrefix, WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { requireStripe } from "@/lib/stripe/client";
 import {
   getStripePriceIdForPlan,
@@ -33,7 +33,7 @@ function logSupabaseErr(step: string, err: unknown) {
 }
 
 export async function POST(req: Request) {
-  console.log("[stripe/checkout] step=request_received");
+  console.log("[stripe/checkout] step=request_received table_prefix=", getWavonDbTablePrefix());
   let plan: BillingPlanId;
   try {
     const body = (await req.json()) as { plan?: unknown };

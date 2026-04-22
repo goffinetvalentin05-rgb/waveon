@@ -191,7 +191,7 @@ export type EmailSetting = {
   customLinks: EmailCustomLinks;
 };
 
-/** État d’abonnement Stripe (table SQL `wavon_businesses`, constante `WavonDbTable.businesses`). */
+/** État d’abonnement Stripe — table = `WavonDbTable.businesses` (préfixe `NEXT_PUBLIC_WAEVON_DB_TABLE_PREFIX`). */
 export type SubscriptionSnapshot = {
   status: string | null;
   plan: "starter" | "pro" | null;

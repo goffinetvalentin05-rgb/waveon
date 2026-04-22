@@ -5,6 +5,7 @@ import { useWavon } from "@/components/wavon/WavonProvider";
 import { SectionCard } from "@/components/wavon/ui/SectionCard";
 import { useToast } from "@/components/wavon/Toast";
 import { supabase } from "@/lib/supabase/client";
+import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import type { EmailSettingType, EmailTemplateType } from "@/lib/wavon/types";
 import {
   btnGhostClass,
@@ -129,7 +130,7 @@ export function EmailsSettingsTab() {
       if (!businessId) return;
       setLoading(true);
       const { data, error } = await supabase
-        .from("wavon_email_settings")
+        .from(WavonDbTable.emailSettings)
         .select("id,business_id,type,enabled,delay_hours,subject,body,custom_links")
         .eq("business_id", businessId);
       if (error) {
@@ -162,7 +163,7 @@ export function EmailsSettingsTab() {
       custom_links: patch.custom_links ?? cur?.custom_links ?? {},
     };
     setRows((prev) => ({ ...prev, [type]: next }));
-    const { error } = await supabase.from("wavon_email_settings").upsert(
+    const { error } = await supabase.from(WavonDbTable.emailSettings).upsert(
       {
         business_id: businessId,
         type,

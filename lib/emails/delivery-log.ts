@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 
 export type DeliveryEmailType = "confirmation" | "rappel" | "annulation" | "post_prestation";
 
@@ -13,7 +14,7 @@ export async function insertEmailDeliveryLog(
     error_message: string | null;
   }
 ): Promise<void> {
-  const { error } = await admin.from("wavon_email_delivery_logs").insert({
+  const { error } = await admin.from(WavonDbTable.emailDeliveryLogs).insert({
     business_id: row.business_id,
     reservation_id: row.reservation_id,
     email_type: row.email_type,

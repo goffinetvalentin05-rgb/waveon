@@ -202,14 +202,14 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
         const [settingsRes, servicesRes, reservationsRes, blockedSlotsRes, employeesRes] =
           await Promise.all([
             supabase
-              .from("wavon_settings")
+              .from(WavonDbTable.settings)
               .select(
                 "business_id,minimum_notice_hours,auto_confirm_reservations,availability_mode,maximum_days_in_advance,slot_interval_minutes,minimum_gap_between_bookings,same_day_booking_allowed,public_after_booking_message"
               )
               .eq("business_id", id)
               .maybeSingle(),
             supabase
-              .from("wavon_services")
+              .from(WavonDbTable.services)
               .select(
                 "id,name,duration_minutes,price,description,is_active,is_public,color,employee_ids,buffer_before_minutes,buffer_after_minutes,booking_notice_hours,sort_order"
               )
@@ -219,19 +219,19 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
               .order("sort_order", { ascending: true })
               .order("created_at", { ascending: true }),
             supabase
-              .from("wavon_reservations")
+              .from(WavonDbTable.reservations)
               .select(
                 "id,client_name,client_id,service_id,employee_id,start_at,end_at,duration_minutes,buffer_before_minutes,buffer_after_minutes,status,created_at,notes"
               )
               .eq("business_id", id)
               .order("start_at", { ascending: true }),
             supabase
-              .from("blocked_slots")
+              .from(WavonDbTable.blockedSlots)
               .select("id,business_id,employee_id,start_at,end_at,reason,created_at,updated_at")
               .eq("business_id", id)
               .order("start_at", { ascending: true }),
             supabase
-              .from("wavon_employees")
+              .from(WavonDbTable.employees)
               .select("id,business_id,name,email,phone,photo_url,color,is_active,display_order,created_at,updated_at")
               .eq("business_id", id)
               .eq("is_active", true)
@@ -388,17 +388,17 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
             toLoad.map(async (employeeId) => {
               const [weeklyRes, customRes, blockedRes] = await Promise.all([
                 supabase
-                  .from("wavon_availability_rules")
+                  .from(WavonDbTable.availabilityRules)
                   .select("day_of_week,is_open,segments")
                   .eq("business_id", id)
                   .eq("employee_id", employeeId),
                 supabase
-                  .from("wavon_custom_days")
+                  .from(WavonDbTable.customDays)
                   .select("day,segments")
                   .eq("business_id", id)
                   .eq("employee_id", employeeId),
                 supabase
-                  .from("wavon_blocked_dates")
+                  .from(WavonDbTable.blockedDates)
                   .select("blocked_date")
                   .eq("business_id", id)
                   .eq("employee_id", employeeId),
@@ -806,7 +806,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
       const start = combineYmdTime(dateYmd, time);
       // Re-validate against fresh DB data right before creating reservation.
       const { data: dbSvc, error: svcErr } = await supabase
-        .from("wavon_services")
+        .from(WavonDbTable.services)
         .select(
           "id,business_id,is_active,is_public,duration_minutes,buffer_before_minutes,buffer_after_minutes,booking_notice_hours"
         )
@@ -834,7 +834,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
       const dayStart = combineYmdTime(dateYmd, "00:00");
       const dayEnd = addMinutes(dayStart, 24 * 60);
       const { data: freshRes, error: fresErr } = await supabase
-        .from("wavon_reservations")
+        .from(WavonDbTable.reservations)
         .select(
           "id,client_name,client_id,service_id,employee_id,start_at,end_at,duration_minutes,buffer_before_minutes,buffer_after_minutes,status,created_at,notes"
         )
@@ -845,7 +845,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
       if (fresErr) throw fresErr;
 
       const { data: freshBlocked, error: fbErr } = await supabase
-        .from("blocked_slots")
+        .from(WavonDbTable.blockedSlots)
         .select("id,business_id,employee_id,start_at,end_at,reason,created_at,updated_at")
         .eq("business_id", businessId)
         .lt("start_at", dayEnd.toISOString())
@@ -945,7 +945,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
 
       if (normalizedEmail) {
         const { data } = await supabase
-          .from("wavon_clients")
+          .from(WavonDbTable.clients)
           .select("id")
           .eq("business_id", businessId)
           .eq("email", normalizedEmail)
@@ -953,7 +953,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
         clientId = (data as { id: string } | null)?.id ?? null;
       } else if (normalizedPhone) {
         const { data } = await supabase
-          .from("wavon_clients")
+          .from(WavonDbTable.clients)
           .select("id")
           .eq("business_id", businessId)
           .eq("phone", normalizedPhone)
@@ -963,7 +963,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
 
       if (!clientId) {
         const { data: created, error: cErr } = await supabase
-          .from("wavon_clients")
+          .from(WavonDbTable.clients)
           .insert({
             business_id: businessId,
             full_name: clientName.trim(),
@@ -979,7 +979,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
       const status = state.settings.confirmationMode === "auto" ? "confirmed" : "pending";
       const displayName = clientName.trim();
       const { data: createdRes, error: rErr } = await supabase
-        .from("wavon_reservations")
+        .from(WavonDbTable.reservations)
         .insert({
           business_id: businessId,
           client_id: clientId,
