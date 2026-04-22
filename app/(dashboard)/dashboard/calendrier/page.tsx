@@ -155,7 +155,7 @@ export default function CalendrierPage() {
           title: `${r.clientName} — ${svc?.name ?? "Service"}`,
           start: new Date(r.start),
           end: new Date(r.end),
-          resource: { kind: "reservation", reservation: r },
+          resource: { kind: "reservation" as const, reservation: r },
         };
       });
 
@@ -176,7 +176,7 @@ export default function CalendrierPage() {
           title,
           start: new Date(b.start),
           end: new Date(b.end),
-          resource: { kind: "blocked_slot", blockedSlot: b },
+          resource: { kind: "blocked_slot" as const, blockedSlot: b },
         };
       });
 
@@ -328,7 +328,8 @@ export default function CalendrierPage() {
   );
 
   const eventPropGetter = useCallback((event: CalEvent) => {
-    if (event.resource.kind === "blocked_slot") {
+    const resource = event.resource;
+    if (resource.kind === "blocked_slot") {
       const stripeBg =
         "repeating-linear-gradient(135deg, rgba(0,0,0,0.06) 0 8px, rgba(0,0,0,0.02) 8px 16px)";
       return {
@@ -342,9 +343,9 @@ export default function CalendrierPage() {
       };
     }
 
-    const st = event.resource.reservation.status;
+    const st = resource.reservation.status;
     const empColor =
-      (state.employees ?? []).find((e) => e.id === (event.resource.reservation.employeeId ?? ""))?.color ?? null;
+      (state.employees ?? []).find((e) => e.id === (resource.reservation.employeeId ?? ""))?.color ?? null;
     const pale =
       empColor && /^#[0-9a-fA-F]{6}$/.test(empColor)
         ? `${empColor}1A` // ~10% alpha
@@ -555,7 +556,7 @@ export default function CalendrierPage() {
         </div>
 
         <div className="waevon-calendar-wrap min-h-[560px]">
-          <Calendar
+          <Calendar<CalEvent>
             culture="fr"
             localizer={localizer}
             events={events}
