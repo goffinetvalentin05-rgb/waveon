@@ -9,4 +9,5 @@
 - **Blocage rapide (v1)**: le chemin “clic-drag sur zone vide → menu contextuel (Nouvelle réservation / Bloquer)” n’est pas implémenté. `react-big-calendar` expose `onSelectSlot`, mais l’intégration propre d’un popover contextuel (positionné à la souris, en évitant conflits avec le flow existant) mérite une itération dédiée.
 - **Blocage rapide (v2)**: ajouter une gestion de récurrence (ex: tous les mercredis 12h-14h) + UI de duplication/édition en série.
 - **PublicBookingClient (lint)**: warning `react-hooks/exhaustive-deps` existant sur un `useEffect` (dépendance `svc`) — à corriger quand tu veux nettoyer les warnings ESLint.
+- **Blocages (debug)** : le calcul des créneaux publics est entièrement côté client ; les logs `[waevon][public slots]` sont dans la console navigateur (pas de route API serveur pour les dispos).
 

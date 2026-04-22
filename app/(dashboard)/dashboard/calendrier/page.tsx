@@ -17,7 +17,14 @@ import {
 } from "@/lib/wavon/calendar-hours";
 import { formatDateShort, formatTime } from "@/lib/wavon/format";
 import { formatPrice } from "@/lib/utils/formatPrice";
-import type { BlockedSlot, Client, Reservation, ReservationStatus, WavonState } from "@/lib/wavon/types";
+import type {
+  BlockedSlot,
+  Client,
+  Employee,
+  Reservation,
+  ReservationStatus,
+  WavonState,
+} from "@/lib/wavon/types";
 import {
   btnGhostClass,
   btnPrimaryClass,
@@ -66,6 +73,31 @@ type CalEvent = {
     | { kind: "reservation"; reservation: Reservation }
     | { kind: "blocked_slot"; blockedSlot: BlockedSlot };
 };
+
+function WavonCalendarEventContent({
+  event,
+  employees,
+}: {
+  event: CalEvent;
+  employees: Employee[] | undefined;
+}) {
+  const resource = event.resource;
+  if (resource.kind === "blocked_slot") {
+    const b = resource.blockedSlot;
+    const base = b.reason?.trim() ? b.reason.trim() : "Créneau bloqué";
+    const empName =
+      b.employeeId && employees
+        ? (employees.find((e) => e.id === b.employeeId)?.name ?? null)
+        : null;
+    return (
+      <div className="leading-tight text-[#374151]">
+        <div className="truncate text-[11px] font-medium">{base}</div>
+        {empName ? <div className="truncate text-[10px] text-neutral-600">{empName}</div> : null}
+      </div>
+    );
+  }
+  return <span className="line-clamp-2 text-[11px]">{event.title}</span>;
+}
 
 export default function CalendrierPage() {
   const {
@@ -165,12 +197,8 @@ export default function CalendrierPage() {
         return b.employeeId === null || b.employeeId === filterEmployeeId;
       })
       .map((b) => {
-        const emp =
-          b.employeeId
-            ? (state.employees ?? []).find((e) => e.id === b.employeeId) ?? null
-            : null;
         const base = b.reason?.trim() ? b.reason.trim() : "Créneau bloqué";
-        const title = emp ? `${base} (${emp.name})` : base;
+        const title = base;
         return {
           id: `blocked:${b.id}`,
           title,
@@ -185,7 +213,6 @@ export default function CalendrierPage() {
     state.reservations,
     state.services,
     state.blockedSlots,
-    state.employees,
     filterServiceId,
     filterStatus,
     filterClientId,
@@ -331,7 +358,7 @@ export default function CalendrierPage() {
     const resource = event.resource;
     if (resource.kind === "blocked_slot") {
       const stripeBg =
-        "repeating-linear-gradient(135deg, rgba(0,0,0,0.06) 0 8px, rgba(0,0,0,0.02) 8px 16px)";
+        "repeating-linear-gradient(135deg, rgba(0,0,0,0.055) 0 8px, rgba(0,0,0,0.02) 8px 16px)";
       return {
         style: {
           backgroundImage: stripeBg,
@@ -575,6 +602,11 @@ export default function CalendrierPage() {
             eventPropGetter={eventPropGetter}
             slotPropGetter={slotPropGetter}
             onSelectEvent={onSelectEvent}
+            components={{
+              event: ({ event }) => (
+                <WavonCalendarEventContent event={event} employees={state.employees} />
+              ),
+            }}
           />
         </div>
       </div>
@@ -633,13 +665,13 @@ export default function CalendrierPage() {
         onChangeReason={setBlockedReason}
         onChangeEmployeeId={setBlockedEmployeeId}
         onClose={() => setBlockedModalOpen(false)}
-        onSubmit={() => {
+        onSubmit={async () => {
           const onlyOne = activeEmployees.length === 1;
           const effectiveEmployeeId = onlyOne ? (activeEmployees[0]?.id ?? null) : (blockedEmployeeId ? blockedEmployeeId : null);
           const start = combineYmdTime(blockedStartDate, blockedStartTime);
           const end = combineYmdTime(blockedEndDate, blockedEndTime);
           if (blockedModalMode === "create") {
-            const res = addBlockedSlot({
+            const res = await addBlockedSlot({
               employeeId: effectiveEmployeeId,
               start,
               end,
@@ -651,7 +683,7 @@ export default function CalendrierPage() {
             }
             toast.push({ message: "Créneau bloqué." });
           } else if (editingBlocked) {
-            const res = updateBlockedSlot(editingBlocked.id, {
+            const res = await updateBlockedSlot(editingBlocked.id, {
               employeeId: effectiveEmployeeId,
               start,
               end,
@@ -668,7 +700,11 @@ export default function CalendrierPage() {
         onDelete={async () => {
           if (!editingBlocked) return;
           if (!confirm("Supprimer ce blocage ?")) return;
-          await deleteBlockedSlot(editingBlocked.id);
+          const res = await deleteBlockedSlot(editingBlocked.id);
+          if (!res.ok) {
+            toast.push({ kind: "error", message: res.error });
+            return;
+          }
           setBlockedModalOpen(false);
           toast.push({ message: "Blocage supprimé." });
         }}
@@ -781,7 +817,7 @@ function BlockedSlotModal({
   onChangeReason: (v: string) => void;
   onChangeEmployeeId: (v: string) => void;
   onClose: () => void;
-  onSubmit: () => void;
+  onSubmit: () => void | Promise<void>;
   onDelete: () => Promise<void>;
 }) {
   const start = useMemo(() => combineYmdTime(startDate, startTime), [startDate, startTime]);

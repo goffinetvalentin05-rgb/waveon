@@ -253,13 +253,27 @@ export function validateBooking(ctx: BookingValidationContext): string | null {
   return null;
 }
 
+export type AvailableSlotsDebug = {
+  candidateCount: number;
+  returnedCount: number;
+  blockedSlotsInState: number;
+};
+
 export function getAvailableSlots(
   ymd: string,
   service: Service,
   state: WavonState,
-  employeeId?: string | null
+  employeeId?: string | null,
+  onDebug?: (info: AvailableSlotsDebug) => void
 ): string[] {
-  if (isDateBlocked(ymd, state.blockedDates)) return [];
+  if (isDateBlocked(ymd, state.blockedDates)) {
+    onDebug?.({
+      candidateCount: 0,
+      returnedCount: 0,
+      blockedSlotsInState: (state.blockedSlots ?? []).length,
+    });
+    return [];
+  }
   const day = parseYmd(ymd);
   const dk = dayKeyFromDate(day);
   const segments = segmentsForDate(
@@ -269,16 +283,25 @@ export function getAvailableSlots(
     ymd,
     dk
   );
-  if (segments.length === 0) return [];
+  if (segments.length === 0) {
+    onDebug?.({
+      candidateCount: 0,
+      returnedCount: 0,
+      blockedSlotsInState: (state.blockedSlots ?? []).length,
+    });
+    return [];
+  }
 
   const slots: string[] = [];
   const duration = service.durationMin;
   const step = Math.max(5, state.settings.slotIntervalMinutes || 15);
+  let candidateCount = 0;
 
   for (const seg of segments) {
     let cur = timeToMinutes(seg.start);
     const max = timeToMinutes(seg.end);
     while (cur + duration <= max) {
+      candidateCount += 1;
       const start = combineYmdTime(ymd, minutesToTime(cur));
       const end = addMinutes(start, duration);
       const err = validateBooking({
@@ -294,6 +317,11 @@ export function getAvailableSlots(
       cur += step;
     }
   }
+  onDebug?.({
+    candidateCount,
+    returnedCount: slots.length,
+    blockedSlotsInState: (state.blockedSlots ?? []).length,
+  });
   return slots;
 }
 

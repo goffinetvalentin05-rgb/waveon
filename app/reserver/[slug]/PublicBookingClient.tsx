@@ -599,6 +599,103 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
     return Object.keys(slotsByEmployee ?? {}).sort();
   }, [state, svc, dateYmd, showEmployeeStep, employeeChoice, statesByEmployeeId, eligibleEmployees, slotsByEmployee]);
 
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+    if (!state || !svc || !dateYmd) return;
+
+    const dayStart = combineYmdTime(dateYmd, "00:00");
+    const dayEnd = addMinutes(dayStart, 24 * 60);
+    const blockedOverlappingDay = (state.blockedSlots ?? []).filter(
+      (b) => new Date(b.start) < dayEnd && new Date(b.end) > dayStart
+    );
+
+    let employeeLabel: string;
+    if (!showEmployeeStep) {
+      employeeLabel = eligibleEmployees[0]?.name ?? "(prestataire unique)";
+    } else if (employeeChoice) {
+      employeeLabel = employees.find((e) => e.id === employeeChoice)?.name ?? employeeChoice;
+    } else {
+      employeeLabel = "sans préférence";
+    }
+
+    if (!showEmployeeStep) {
+      const only = eligibleEmployees[0]?.id ?? null;
+      const st = only ? statesByEmployeeId[only] ?? state : state;
+      let dbg: { candidateCount: number; returnedCount: number; blockedSlotsInState: number } | undefined;
+      const list = getAvailableSlots(dateYmd, svc, st, only, (d) => {
+        dbg = d;
+      });
+      console.debug("[waevon][public slots]", {
+        service: svc.name,
+        dateYmd,
+        employeeLabel,
+        mode: "prestataire_unique",
+        blockedOverlappingDay: blockedOverlappingDay.length,
+        blockedTotalInState: (state.blockedSlots ?? []).length,
+        candidateCount: dbg?.candidateCount,
+        returnedAfterFilter: dbg?.returnedCount,
+        uiSlotOptions: list.length,
+      });
+      return;
+    }
+
+    if (employeeChoice && statesByEmployeeId[employeeChoice]) {
+      let dbg: { candidateCount: number; returnedCount: number; blockedSlotsInState: number } | undefined;
+      const list = getAvailableSlots(
+        dateYmd,
+        svc,
+        statesByEmployeeId[employeeChoice],
+        employeeChoice,
+        (d) => {
+          dbg = d;
+        }
+      );
+      console.debug("[waevon][public slots]", {
+        service: svc.name,
+        dateYmd,
+        employeeLabel,
+        mode: "prestataire_choisi",
+        blockedOverlappingDay: blockedOverlappingDay.length,
+        blockedTotalInState: (state.blockedSlots ?? []).length,
+        candidateCount: dbg?.candidateCount,
+        returnedAfterFilter: dbg?.returnedCount,
+        uiSlotOptions: list.length,
+      });
+      return;
+    }
+
+    const unionKeys = Object.keys(slotsByEmployee ?? {}).sort();
+    let sumCandidates = 0;
+    for (const eid of employeeIdsInOrder) {
+      const st = statesByEmployeeId[eid];
+      if (!st) continue;
+      getAvailableSlots(dateYmd, svc, st, eid, (d) => {
+        sumCandidates += d.candidateCount;
+      });
+    }
+    console.debug("[waevon][public slots]", {
+      service: svc.name,
+      dateYmd,
+      employeeLabel,
+      mode: "sans_pref",
+      blockedOverlappingDay: blockedOverlappingDay.length,
+      blockedTotalInState: (state.blockedSlots ?? []).length,
+      sumCandidateCountAcrossEmployees: sumCandidates,
+      uiSlotOptions: unionKeys.length,
+    });
+  }, [
+    state,
+    svc,
+    dateYmd,
+    showEmployeeStep,
+    employeeChoice,
+    eligibleEmployees,
+    employees,
+    statesByEmployeeId,
+    employeeIdsInOrder,
+    slotsByEmployee,
+  ]);
+
   const assignedEmployeeIdPreview = useMemo(() => {
     if (!svc) return null;
     if (!showEmployeeStep) return eligibleEmployees[0]?.id ?? null;

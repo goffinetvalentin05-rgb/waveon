@@ -133,6 +133,19 @@ type DbBlockedSlot = {
   updated_at: string;
 };
 
+function blockedSlotFromDbRow(s: DbBlockedSlot): BlockedSlot {
+  return {
+    id: s.id,
+    businessId: s.business_id,
+    employeeId: s.employee_id ?? null,
+    start: s.start_at,
+    end: s.end_at,
+    reason: s.reason ?? null,
+    createdAt: s.created_at,
+    updatedAt: s.updated_at,
+  };
+}
+
 type DbWeeklyAvailability = {
   business_id: string;
   day_of_week: number;
@@ -315,7 +328,7 @@ type Ctx = {
     start: Date;
     end: Date;
     reason: string | null;
-  }) => { ok: true; id: string } | { ok: false; error: string };
+  }) => Promise<{ ok: true; id: string } | { ok: false; error: string }>;
   updateBlockedSlot: (
     id: string,
     patch: Partial<{
@@ -324,8 +337,8 @@ type Ctx = {
       end: Date;
       reason: string | null;
     }>
-  ) => { ok: true } | { ok: false; error: string };
-  deleteBlockedSlot: (id: string) => Promise<void>;
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
+  deleteBlockedSlot: (id: string) => Promise<{ ok: true } | { ok: false; error: string }>;
   patchSettings: (patch: Partial<WavonState["settings"]>) => void;
   upsertEmailTemplate: (input: {
     type: EmailTemplateType;
@@ -515,16 +528,7 @@ export function WavonProvider({
         segments: segmentsFromJson(r.segments),
       }));
 
-      const blockedSlots: BlockedSlot[] = dbBlockedSlots.map((s) => ({
-        id: s.id,
-        businessId: s.business_id,
-        employeeId: s.employee_id ?? null,
-        start: s.start_at,
-        end: s.end_at,
-        reason: s.reason ?? null,
-        createdAt: s.created_at,
-        updatedAt: s.updated_at,
-      }));
+      const blockedSlots: BlockedSlot[] = dbBlockedSlots.map((s) => blockedSlotFromDbRow(s));
 
       const next: WavonState = {
         version: 1,
@@ -1435,60 +1439,66 @@ export function WavonProvider({
   );
 
   const addBlockedSlot = useCallback(
-    (input: {
+    async (input: {
       employeeId: string | null;
       start: Date;
       end: Date;
       reason: string | null;
-    }): { ok: true; id: string } | { ok: false; error: string } => {
+    }): Promise<{ ok: true; id: string } | { ok: false; error: string }> => {
       if (!businessId) return { ok: false, error: "Compte non initialisé." };
       if (!(input.end > input.start)) {
         return { ok: false, error: "La fin doit être après le début." };
       }
       const reason = input.reason?.trim() ? input.reason.trim().slice(0, 80) : null;
 
-      const outcome: {
-        current: { kind: "ok"; slot: BlockedSlot } | { kind: "err"; message: string };
-      } = { current: { kind: "err", message: "Erreur" } };
-
-      setState((prev) => {
-        const id = crypto.randomUUID();
-        const nowIso = new Date().toISOString();
-        const slot: BlockedSlot = {
-          id,
-          businessId,
-          employeeId: input.employeeId,
-          start: input.start.toISOString(),
-          end: input.end.toISOString(),
+      const { data, error } = await supabase
+        .from("blocked_slots")
+        .insert({
+          business_id: businessId,
+          employee_id: input.employeeId,
+          start_at: input.start.toISOString(),
+          end_at: input.end.toISOString(),
           reason,
-          createdAt: nowIso,
-          updatedAt: nowIso,
-        };
-        outcome.current = { kind: "ok", slot };
-        return { ...prev, blockedSlots: [...(prev.blockedSlots ?? []), slot] };
-      });
+        })
+        .select("id,business_id,employee_id,start_at,end_at,reason,created_at,updated_at")
+        .single();
 
-      if (outcome.current.kind === "err") {
-        return { ok: false, error: outcome.current.message };
+      if (error) {
+        if (process.env.NODE_ENV !== "production") {
+          console.error("[WavonProvider] blocked_slots insert", {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+          });
+        }
+        return {
+          ok: false,
+          error:
+            error.message ||
+            "Impossible d’enregistrer le blocage (vérifie la migration SQL et les droits RLS).",
+        };
+      }
+      if (!data) {
+        if (process.env.NODE_ENV !== "production") {
+          console.error("[WavonProvider] blocked_slots insert: réponse vide (souvent RLS ou table absente)");
+        }
+        return {
+          ok: false,
+          error:
+            "Enregistrement refusé : aucune ligne retournée. Vérifie que la table blocked_slots existe et que les policies RLS autorisent l’insert.",
+        };
       }
 
-      const slot = outcome.current.slot;
-      void supabase.from("blocked_slots").insert({
-        id: slot.id,
-        business_id: businessId,
-        employee_id: slot.employeeId,
-        start_at: slot.start,
-        end_at: slot.end,
-        reason: slot.reason,
-      });
-
+      const slot = blockedSlotFromDbRow(data as DbBlockedSlot);
+      setState((prev) => ({ ...prev, blockedSlots: [...(prev.blockedSlots ?? []), slot] }));
       return { ok: true, id: slot.id };
     },
     [businessId]
   );
 
   const updateBlockedSlot = useCallback(
-    (
+    async (
       id: string,
       patch: Partial<{
         employeeId: string | null;
@@ -1496,38 +1506,8 @@ export function WavonProvider({
         end: Date;
         reason: string | null;
       }>
-    ): { ok: true } | { ok: false; error: string } => {
-      let errorMsg: string | null = null;
-      setState((prev) => {
-        const list = prev.blockedSlots ?? [];
-        const cur = list.find((s) => s.id === id) ?? null;
-        if (!cur) {
-          errorMsg = "Créneau bloqué introuvable.";
-          return prev;
-        }
-        const start = patch.start ?? new Date(cur.start);
-        const end = patch.end ?? new Date(cur.end);
-        if (!(end > start)) {
-          errorMsg = "La fin doit être après le début.";
-          return prev;
-        }
-        const next: BlockedSlot = {
-          ...cur,
-          employeeId: patch.employeeId !== undefined ? patch.employeeId : cur.employeeId,
-          start: start.toISOString(),
-          end: end.toISOString(),
-          reason:
-            patch.reason !== undefined
-              ? (patch.reason?.trim() ? patch.reason.trim().slice(0, 80) : null)
-              : cur.reason,
-          updatedAt: new Date().toISOString(),
-        };
-        return { ...prev, blockedSlots: list.map((s) => (s.id === id ? next : s)) };
-      });
-
-      if (!businessId || errorMsg) {
-        return errorMsg ? { ok: false, error: errorMsg } : { ok: true };
-      }
+    ): Promise<{ ok: true } | { ok: false; error: string }> => {
+      if (!businessId) return { ok: false, error: "Compte non initialisé." };
 
       const payload: Record<string, unknown> = {};
       if (patch.employeeId !== undefined) payload.employee_id = patch.employeeId;
@@ -1536,21 +1516,60 @@ export function WavonProvider({
       if (patch.reason !== undefined) {
         payload.reason = patch.reason?.trim() ? patch.reason.trim().slice(0, 80) : null;
       }
-      void supabase.from("blocked_slots").update(payload).eq("id", id).eq("business_id", businessId);
+      if (Object.keys(payload).length === 0) {
+        return { ok: true };
+      }
 
+      const { data, error } = await supabase
+        .from("blocked_slots")
+        .update(payload)
+        .eq("id", id)
+        .eq("business_id", businessId)
+        .select("id,business_id,employee_id,start_at,end_at,reason,created_at,updated_at")
+        .single();
+
+      if (error) {
+        if (process.env.NODE_ENV !== "production") {
+          console.error("[WavonProvider] blocked_slots update", {
+            message: error.message,
+            code: error.code,
+          });
+        }
+        return { ok: false, error: error.message || "Mise à jour impossible." };
+      }
+      if (!data) {
+        return { ok: false, error: "Blocage introuvable ou déjà supprimé." };
+      }
+
+      const slot = blockedSlotFromDbRow(data as DbBlockedSlot);
+      setState((prev) => ({
+        ...prev,
+        blockedSlots: (prev.blockedSlots ?? []).map((s) => (s.id === id ? slot : s)),
+      }));
       return { ok: true };
     },
     [businessId]
   );
 
   const deleteBlockedSlot = useCallback(
-    async (id: string) => {
+    async (id: string): Promise<{ ok: true } | { ok: false; error: string }> => {
+      if (!businessId) return { ok: false, error: "Compte non initialisé." };
+      const { error } = await supabase
+        .from("blocked_slots")
+        .delete()
+        .eq("id", id)
+        .eq("business_id", businessId);
+      if (error) {
+        if (process.env.NODE_ENV !== "production") {
+          console.error("[WavonProvider] blocked_slots delete", error.message);
+        }
+        return { ok: false, error: error.message || "Suppression impossible." };
+      }
       setState((prev) => ({
         ...prev,
         blockedSlots: (prev.blockedSlots ?? []).filter((s) => s.id !== id),
       }));
-      if (!businessId) return;
-      await supabase.from("blocked_slots").delete().eq("id", id).eq("business_id", businessId);
+      return { ok: true };
     },
     [businessId]
   );
