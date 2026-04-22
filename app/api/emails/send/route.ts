@@ -4,6 +4,7 @@ import {
   sendCancellationByMerchantEmails,
   sendCancellationByClientEmails,
 } from "@/lib/emails/send";
+import { billingGateResponseForBusinessId } from "@/lib/subscription/api-billing-guard";
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,6 +21,11 @@ export async function POST(req: NextRequest) {
         { error: "Paramètres manquants : type, reservationId, businessId requis." },
         { status: 400 }
       );
+    }
+
+    if (type !== "cancellation_by_client") {
+      const blocked = await billingGateResponseForBusinessId(businessId);
+      if (blocked) return blocked;
     }
 
     if (type === "new_booking") {

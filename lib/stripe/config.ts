@@ -15,8 +15,8 @@ export const PLAN_LABELS: Record<BillingPlanId, string> = {
 
 /** Prix affichés (CHF / mois) — alignés sur les produits Stripe. */
 export const PLAN_MONTHLY_PRICE_CHF: Record<BillingPlanId, number> = {
-  starter: 19,
-  pro: 29,
+  starter: 20,
+  pro: 35,
 };
 
 export function getStripePriceIdForPlan(plan: BillingPlanId): string {

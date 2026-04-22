@@ -2,7 +2,8 @@ import type Stripe from "stripe";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { EMPTY_SUBSCRIPTION_SNAPSHOT, type SubscriptionSnapshot } from "@/lib/wavon/types";
-import { planFromStripePriceId, WAEVON_TRIAL_DAYS } from "./config";
+import { getEffectiveTrialEnd } from "@/lib/subscription/trial-window";
+import { planFromStripePriceId } from "./config";
 import { requireStripe } from "./client";
 
 type CacheEntry = { expiresAt: number; value: SubscriptionSnapshot };
@@ -48,29 +49,6 @@ function snapshotFromStripe(sub: Stripe.Subscription): SubscriptionSnapshot {
     cancelAtPeriodEnd: Boolean(sub.cancel_at_period_end),
     accessSource: "stripe",
   };
-}
-
-const MS_PER_DAY = 86_400_000;
-
-/** Fin d’essai Waevon : colonne dédiée, ou repli `created_at + WAEVON_TRIAL_DAYS` (ex. migration pas encore appliquée). */
-function effectiveTrialEndMs(row: {
-  trial_ends_at: string | null;
-  created_at: string | null;
-}): { endMs: number; iso: string } | null {
-  if (row.trial_ends_at) {
-    const endMs = new Date(row.trial_ends_at).getTime();
-    if (Number.isFinite(endMs)) {
-      return { endMs, iso: row.trial_ends_at };
-    }
-  }
-  if (row.created_at) {
-    const c = new Date(row.created_at).getTime();
-    if (Number.isFinite(c)) {
-      const endMs = c + WAEVON_TRIAL_DAYS * MS_PER_DAY;
-      return { endMs, iso: new Date(endMs).toISOString() };
-    }
-  }
-  return null;
 }
 
 function waevonTrialSnapshot(trialEndsAtIso: string, expired: boolean): SubscriptionSnapshot {
@@ -144,7 +122,7 @@ export async function getBusinessSubscriptionStatus(businessId: string): Promise
       }
     }
   } else {
-    const eff = row ? effectiveTrialEndMs(row) : null;
+    const eff = row ? getEffectiveTrialEnd(row) : null;
     if (eff) {
       snapshot = waevonTrialSnapshot(eff.iso, eff.endMs <= now);
     } else {

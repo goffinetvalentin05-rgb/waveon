@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/auth-helpers-nextjs";
 import { redirect } from "next/navigation";
 import DashboardShell from "./DashboardShell";
 import { getBusinessSubscriptionStatus } from "@/lib/stripe/subscription";
-import { hasActiveSubscription } from "@/lib/subscription/access";
+import { billingAccessStateFromSnapshot, isBillingBlockedState } from "@/lib/subscription/billing-access";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
@@ -36,6 +36,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     data: { user },
   } = await supabase.auth.getUser();
 
+  let billingLocked = false;
+
   if (user) {
     const { data: biz } = await supabase
       .from(WavonDbTable.businesses)
@@ -46,29 +48,21 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
     const isFacturation =
       pathname === "/dashboard/facturation" || pathname.startsWith("/dashboard/facturation/");
-    if (businessId && !isFacturation) {
+
+    if (businessId) {
       try {
         const live = await getBusinessSubscriptionStatus(businessId);
-        const allowed = hasActiveSubscription({ status: live.status, plan: live.plan });
-        console.log(
-          "[dashboard/layout] gate businessId=",
-          businessId,
-          "status=",
-          live.status,
-          "accessSource=",
-          live.accessSource,
-          "allowed=",
-          allowed
-        );
-        if (!allowed) {
-          redirect("/dashboard/facturation?trial_expired=1");
+        const accessState = billingAccessStateFromSnapshot(live);
+        billingLocked = isBillingBlockedState(accessState);
+
+        if (billingLocked && !isFacturation) {
+          redirect("/dashboard/facturation?expired=true");
         }
-      } catch (e) {
-        console.error("[dashboard/layout] gate_error → facturation", e);
-        redirect("/dashboard/facturation?trial_expired=1");
+      } catch {
+        redirect("/dashboard/facturation?expired=true");
       }
     }
   }
 
-  return <DashboardShell>{children}</DashboardShell>;
+  return <DashboardShell billingLocked={billingLocked}>{children}</DashboardShell>;
 }

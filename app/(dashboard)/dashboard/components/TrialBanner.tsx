@@ -39,8 +39,16 @@ export default function TrialBanner() {
         ? "Il te reste 1 jour d’essai."
         : `Il te reste ${daysLeft} jours d’essai.`;
 
+  const isLastDay = daysLeft <= 0;
+
   return (
-    <div className="border-b border-amber-200/90 bg-amber-50 px-4 py-2.5 text-center text-sm text-amber-950">
+    <div
+      className={
+        isLastDay
+          ? "border-b border-orange-300/90 bg-orange-50 px-4 py-3 text-center text-sm font-medium text-orange-950"
+          : "border-b border-amber-200/90 bg-amber-50 px-4 py-2.5 text-center text-sm text-amber-950"
+      }
+    >
       {label}{" "}
       <Link href="/dashboard/facturation" className="font-semibold underline underline-offset-2">
         Découvre les abonnements

@@ -171,9 +171,9 @@ export default function PricingPageClient() {
           Choisis ton abonnement Waevon
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-center text-neutral-600">
-          L&apos;inscription ouvre <strong>{WAEVON_TRIAL_DAYS} jours d&apos;essai sans carte</strong> sur tout
-          Waevon. Les abonnements payants sont souscrits depuis l&apos;espace facturation (paiement dès
-          souscription, sans essai Stripe).
+          L&apos;inscription ouvre <strong>{WAEVON_TRIAL_DAYS} jours d&apos;essai gratuit, sans engagement</strong>{" "}
+          (sans carte) sur tout Waevon. Les abonnements payants sont souscrits depuis l&apos;espace facturation
+          (paiement dès souscription, sans essai Stripe).
         </p>
 
         {canceled ? (
@@ -217,8 +217,8 @@ export default function PricingPageClient() {
         )}
 
         <p className="mt-12 text-center text-sm text-neutral-500">
-          Essai Waevon : {WAEVON_TRIAL_DAYS} jours sans carte à l&apos;inscription. Abonnements sans engagement,
-          résiliables depuis la facturation.
+          {WAEVON_TRIAL_DAYS} jours d&apos;essai gratuit, sans engagement — sans carte à l&apos;inscription.
+          Abonnements résiliables depuis la facturation.
         </p>
       </main>
     </div>

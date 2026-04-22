@@ -77,14 +77,15 @@ export const landingContent = {
 
   pricing: {
     title: "Choisis comment tu veux fonctionner.",
+    trialNote: "7 jours d'essai gratuit, sans engagement — sans carte à l'inscription.",
     starter: {
       name: "Starter",
-      price: "19.- / mois",
+      price: "20.- / mois",
       bullets: ["Réservations en ligne", "Agenda simple", "Base clients"],
     },
     pro: {
       name: "Pro",
-      price: "29.- / mois",
+      price: "35.- / mois",
       bullets: [
         "Tout dans Starter",
         "Factures générées automatiquement\n  → selon chaque prestation",
@@ -156,7 +157,8 @@ Par exemple :
       },
       {
         question: "Est-ce que je peux tester gratuitement ?",
-        answer: "Oui. Tu peux essayer Waevon gratuitement et voir si ça correspond à ton activité.",
+        answer:
+          "Oui. 7 jours d'essai gratuit, sans engagement — sans carte à l'inscription. Tu explores Waevon et tu vois si ça correspond à ton activité.",
       },
     ],
   },

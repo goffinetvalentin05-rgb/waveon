@@ -36,6 +36,9 @@ export function LandingPricing({ content }: LandingPricingProps) {
             {content.title}
           </h2>
         </ScrollReveal>
+        <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-neutral-600 md:text-base">
+          {content.trialNote}
+        </p>
         <div className="mt-12 grid gap-7 sm:mt-14 md:mt-20 md:grid-cols-2 md:gap-8 lg:mx-auto lg:max-w-4xl">
           <ScrollReveal delayMs={0}>
             <PlanCard

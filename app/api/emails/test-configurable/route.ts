@@ -21,6 +21,7 @@ import { defaultEmailBody, defaultEmailSubject } from "@/lib/emails/default-copy
 import type { EmailTemplateType } from "@/lib/wavon/types";
 import { formatPrice, normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
 import { publicBookingAbsoluteUrl } from "@/lib/wavon/public-page-url";
+import { merchantBillingGateResponse } from "@/lib/subscription/api-billing-guard";
 import ReservationConfirmation from "@/lib/emails/templates/ReservationConfirmation";
 import ReservationCancellation from "@/lib/emails/templates/ReservationCancellation";
 import ReservationReminder from "@/lib/emails/templates/ReservationReminder";
@@ -101,6 +102,9 @@ export async function POST(req: NextRequest) {
         { status: 401 }
       );
     }
+
+    const gate = await merchantBillingGateResponse();
+    if (gate) return gate;
 
     const parsed = (await req.json().catch(() => null)) as Body | null;
     const businessId = String(parsed?.businessId ?? "").trim();

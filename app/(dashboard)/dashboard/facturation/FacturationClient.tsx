@@ -14,6 +14,8 @@ import {
   type BillingPlanId,
 } from "@/lib/stripe/config";
 import { hasActiveSubscription } from "@/lib/subscription/access";
+import { billingAccessStateFromSnapshot, isBillingBlockedState } from "@/lib/subscription/billing-access";
+import { supabase } from "@/lib/supabase/client";
 import { wavonPage } from "@/lib/wavon/tokens";
 
 const SUPPORT_EMAIL = "contact@waevon.com";
@@ -46,6 +48,7 @@ export default function FacturationClient() {
   const { ready, state } = useWavon();
   const searchParams = useSearchParams();
   const trialExpiredParam = searchParams.get("trial_expired") === "1";
+  const expiredParam = searchParams.get("expired") === "true";
   const canceledParam = searchParams.get("canceled") === "true";
   const [portalLoading, setPortalLoading] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<BillingPlanId | null>(null);
@@ -53,12 +56,15 @@ export default function FacturationClient() {
   const sub = state.subscription;
   const access = { status: sub.status, plan: sub.plan };
   const active = hasActiveSubscription(access);
-  const planLabel = sub.plan ? PLAN_LABELS[sub.plan] : null;
-  const monthlyChf = sub.plan ? PLAN_MONTHLY_PRICE_CHF[sub.plan] : null;
-
   const isWaevonTrial = sub.accessSource === "waevon" && sub.status === "trialing";
   const isTrialExpired = sub.status === "trial_expired";
   const isStripe = sub.accessSource === "stripe";
+  const hardLocked = isBillingBlockedState(billingAccessStateFromSnapshot(sub));
+  const showExpiredWall = hardLocked || trialExpiredParam;
+  const showSubscriptionChoice =
+    isWaevonTrial || isTrialExpired || hardLocked || trialExpiredParam || expiredParam;
+  const planLabel = sub.plan ? PLAN_LABELS[sub.plan] : null;
+  const monthlyChf = sub.plan ? PLAN_MONTHLY_PRICE_CHF[sub.plan] : null;
 
   let waevonDaysLeft: number | null = null;
   if (isWaevonTrial && sub.trialEndsAt) {
@@ -159,10 +165,13 @@ export default function FacturationClient() {
         </p>
       </div>
 
-      {trialExpiredParam ? (
-        <div className="rounded-xl border border-amber-200/90 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-          Ta période d&apos;essai de {WAEVON_TRIAL_DAYS} jours est terminée. Choisis un abonnement pour
-          continuer à utiliser Waevon.
+      {showExpiredWall ? (
+        <div className="rounded-xl border border-red-300/90 bg-red-50 px-4 py-4 text-sm text-red-950 shadow-sm">
+          <p className="text-base font-semibold tracking-tight">Ton essai gratuit est terminé</p>
+          <p className="mt-2 leading-relaxed text-red-900/95">
+            Choisis un abonnement pour réactiver Waevon et retrouver tous tes rendez-vous, clients et
+            réglages. Rien n&apos;est perdu, ton compte est sauvegardé.
+          </p>
         </div>
       ) : null}
 
@@ -305,7 +314,7 @@ export default function FacturationClient() {
         ) : null}
       </section>
 
-      {(isWaevonTrial || isTrialExpired) && (
+      {showSubscriptionChoice && (
         <section className="space-y-4">
           <h2 className="text-lg font-semibold text-neutral-950">Choisir un abonnement</h2>
           <div className="grid gap-6 md:grid-cols-2">
@@ -374,6 +383,22 @@ export default function FacturationClient() {
           .
         </p>
       </section>
+
+      {showExpiredWall || expiredParam ? (
+        <div className="border-t border-neutral-200/90 pt-8 text-center">
+          <button
+            type="button"
+            className="text-sm font-medium text-neutral-600 underline underline-offset-2 hover:text-neutral-950"
+            onClick={() => {
+              void supabase.auth.signOut().then(() => {
+                window.location.href = "/login";
+              });
+            }}
+          >
+            Se déconnecter
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

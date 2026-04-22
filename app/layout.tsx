@@ -21,7 +21,8 @@ const instrumentSerif = Instrument_Serif({
 
 export const metadata: Metadata = {
   title: "Waevon",
-  description: "Prise de rendez-vous pour prestataires — contenu marketing éditable dans lib/landing/config.ts",
+  description:
+    "Prise de rendez-vous en ligne pour prestataires. Starter 20 CHF/mois, Pro 35 CHF/mois. 7 jours d'essai gratuit, sans engagement.",
 };
 
 export default function RootLayout({
