@@ -438,14 +438,14 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
   }, [employees, svc]);
 
   const employeesLoaded = employees.length > 0;
-  // IMPORTANT: on ne doit jamais "auto-skip" l'étape prestataire si le service peut
-  // être effectué par plusieurs employés. Si la liste employees n'est pas encore
-  // chargée, on bloque l'avancement plutôt que d'assigner silencieusement.
+  // IMPORTANT:
+  // - employeeIds=[] signifie "tous les prestataires actifs".
+  // - Tant qu'on n'a pas chargé la liste des employés, on ne doit JAMAIS auto-skip
+  //   car on ne sait pas si "tous" = 1 ou plusieurs.
   const serviceExplicitEmployeeIds = svc?.employeeIds ?? [];
-  const serviceCanBeDoneByMany =
+  const showEmployeeStep =
     serviceExplicitEmployeeIds.length > 1 ||
-    (serviceExplicitEmployeeIds.length === 0 && employees.length > 1);
-  const showEmployeeStep = serviceCanBeDoneByMany;
+    (serviceExplicitEmployeeIds.length === 0 && (!employeesLoaded || employees.length > 1));
 
   const totalSteps = showEmployeeStep ? 5 : 4;
   const currentStepNumber = useMemo(() => {
