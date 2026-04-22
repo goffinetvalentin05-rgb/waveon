@@ -77,6 +77,7 @@ export default function CalendrierPage() {
   const [filterClientQuery, setFilterClientQuery] = useState("");
   const [clientMenuOpen, setClientMenuOpen] = useState(false);
   const [filterClientId, setFilterClientId] = useState<string>("");
+  const [filterEmployeeId, setFilterEmployeeId] = useState<string>("");
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
@@ -87,9 +88,14 @@ export default function CalendrierPage() {
   const [clientName, setClientName] = useState("");
   const [clientId, setClientId] = useState<string>("");
   const [serviceId, setServiceId] = useState("");
+  const [employeeId, setEmployeeId] = useState<string>("");
   const [dateYmd, setDateYmd] = useState(toYmd(new Date()));
   const [time, setTime] = useState("10:00");
   const [notes, setNotes] = useState("");
+
+  const employees = state.employees ?? [];
+  const activeEmployees = employees.filter((e) => e.isActive);
+  const showEmployeeFilter = activeEmployees.length > 1;
 
   const rangeEnd = useMemo(() => {
     if (view === "month") return addMonths(date, 1);
@@ -119,6 +125,7 @@ export default function CalendrierPage() {
         if (filterServiceId && r.serviceId !== filterServiceId) return false;
         if (filterStatus && r.status !== filterStatus) return false;
         if (filterClientId && r.clientId !== filterClientId) return false;
+        if (filterEmployeeId && (r.employeeId ?? "") !== filterEmployeeId) return false;
         return true;
       })
       .map((r) => {
@@ -131,13 +138,13 @@ export default function CalendrierPage() {
           resource: r,
         };
       });
-  }, [state.reservations, state.services, filterServiceId, filterStatus, filterClientId]);
+  }, [state.reservations, state.services, filterServiceId, filterStatus, filterClientId, filterEmployeeId]);
 
   const slots = useMemo(() => {
     const svc = state.services.find((s) => s.id === serviceId);
     if (!svc || !dateYmd) return [];
-    return getAvailableSlots(dateYmd, svc, state);
-  }, [state, serviceId, dateYmd]);
+    return getAvailableSlots(dateYmd, svc, state, employeeId || null);
+  }, [state, serviceId, dateYmd, employeeId]);
 
   const openCreate = () => {
     setModalMode("create");
@@ -145,6 +152,7 @@ export default function CalendrierPage() {
     setClientName("");
     setClientId("");
     setServiceId(state.services[0]?.id ?? "");
+    setEmployeeId(activeEmployees[0]?.id ?? "");
     setDateYmd(toYmd(date));
     setTime("10:00");
     setNotes("");
@@ -157,6 +165,7 @@ export default function CalendrierPage() {
     setClientName(r.clientName);
     setClientId(r.clientId ?? "");
     setServiceId(r.serviceId);
+    setEmployeeId(r.employeeId ?? "");
     setDateYmd(toYmd(new Date(r.start)));
     const d = new Date(r.start);
     setTime(`${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`);
@@ -170,12 +179,14 @@ export default function CalendrierPage() {
       toast.push({ kind: "error", message: "Choisis un service." });
       return;
     }
+    const selectedEmployeeId = employeeId || null;
     const start = combineYmdTime(dateYmd, time);
     if (modalMode === "create") {
       const res = addReservation({
         clientId: clientId || null,
         clientName: clientName || "Client",
         serviceId,
+        employeeId: selectedEmployeeId,
         start,
         notes: notes.trim(),
       });
@@ -189,6 +200,7 @@ export default function CalendrierPage() {
         clientId: clientId || null,
         clientName,
         serviceId,
+        employeeId: selectedEmployeeId,
         start,
         notes: notes.trim(),
       });
@@ -222,39 +234,48 @@ export default function CalendrierPage() {
 
   const eventPropGetter = useCallback((event: CalEvent) => {
     const st = event.resource.status;
+    const empColor =
+      (state.employees ?? []).find((e) => e.id === (event.resource.employeeId ?? ""))?.color ?? null;
+    const pale =
+      empColor && /^#[0-9a-fA-F]{6}$/.test(empColor)
+        ? `${empColor}1A` // ~10% alpha
+        : null;
     if (st === "confirmed") {
       return {
         style: {
-          backgroundColor: "#dcfce7",
-          borderColor: "#86efac",
+          backgroundColor: pale ?? "#dcfce7",
+          borderColor: empColor ?? "#86efac",
           color: "#14532d",
-          borderWidth: 1,
+          borderWidth: empColor ? 0 : 1,
           borderStyle: "solid",
+          borderLeft: empColor ? `6px solid ${empColor}` : undefined,
         },
       };
     }
     if (st === "pending") {
       return {
         style: {
-          backgroundColor: "#fef9c3",
-          borderColor: "#fde047",
+          backgroundColor: pale ?? "#fef9c3",
+          borderColor: empColor ?? "#fde047",
           color: "#713f12",
-          borderWidth: 1,
+          borderWidth: empColor ? 0 : 1,
           borderStyle: "solid",
+          borderLeft: empColor ? `6px solid ${empColor}` : undefined,
         },
       };
     }
     return {
       style: {
-        backgroundColor: "#e5e7eb",
-        borderColor: "#9ca3af",
+        backgroundColor: pale ?? "#e5e7eb",
+        borderColor: empColor ?? "#9ca3af",
         color: "#374151",
-        borderWidth: 1,
+        borderWidth: empColor ? 0 : 1,
         borderStyle: "solid",
+        borderLeft: empColor ? `6px solid ${empColor}` : undefined,
         textDecoration: "line-through",
       },
     };
-  }, []);
+  }, [state.employees]);
 
   const slotPropGetter = useCallback(
     (d: Date) => ({
@@ -317,6 +338,23 @@ export default function CalendrierPage() {
         </div>
 
         <div className="grid gap-4 border-t border-neutral-100 pt-4 md:grid-cols-3">
+          {showEmployeeFilter ? (
+            <div>
+              <label className={labelClass}>Prestataire</label>
+              <select
+                className={`${inputClass} mt-2`}
+                value={filterEmployeeId}
+                onChange={(e) => setFilterEmployeeId(e.target.value)}
+              >
+                <option value="">Tous les prestataires</option>
+                {activeEmployees.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
           <div>
             <label className={labelClass}>Service</label>
             <select
@@ -345,7 +383,7 @@ export default function CalendrierPage() {
               <option value="cancelled">Annulé</option>
             </select>
           </div>
-          <div className="relative">
+          <div className="relative md:col-span-1">
             <label className={labelClass}>Client</label>
             <input
               className={`${inputClass} mt-2`}
@@ -445,6 +483,8 @@ export default function CalendrierPage() {
           setClientId={setClientId}
           serviceId={serviceId}
           setServiceId={setServiceId}
+          employeeId={employeeId}
+          setEmployeeId={setEmployeeId}
           dateYmd={dateYmd}
           setDateYmd={setDateYmd}
           time={time}
@@ -529,6 +569,8 @@ function ReservationFields({
   setClientId,
   serviceId,
   setServiceId,
+  employeeId,
+  setEmployeeId,
   dateYmd,
   setDateYmd,
   time,
@@ -544,6 +586,8 @@ function ReservationFields({
   setClientId: (v: string) => void;
   serviceId: string;
   setServiceId: (v: string) => void;
+  employeeId: string;
+  setEmployeeId: (v: string) => void;
   dateYmd: string;
   setDateYmd: (v: string) => void;
   time: string;
@@ -552,6 +596,16 @@ function ReservationFields({
   notes: string;
   setNotes: (v: string) => void;
 }) {
+  const employees = state.employees ?? [];
+  const activeEmployees = employees.filter((e) => e.isActive);
+  const svc = state.services.find((s) => s.id === serviceId) ?? null;
+  const eligibleEmployees = useMemo(() => {
+    if (!svc) return activeEmployees;
+    const ids = svc.employeeIds ?? [];
+    if (ids.length === 0) return activeEmployees;
+    return activeEmployees.filter((e) => ids.includes(e.id));
+  }, [activeEmployees, svc]);
+
   return (
     <div className="grid gap-5">
       <div>
@@ -588,7 +642,20 @@ function ReservationFields({
         <select
           className={`${inputClass} mt-2 max-w-full min-w-0`}
           value={serviceId}
-          onChange={(e) => setServiceId(e.target.value)}
+          onChange={(e) => {
+            const next = e.target.value;
+            setServiceId(next);
+            // Reset prestataire si plus éligible
+            const s = state.services.find((x) => x.id === next) ?? null;
+            if (!s) return;
+            const ids = s.employeeIds ?? [];
+            const current = employeeId || "";
+            if (ids.length === 0) return;
+            if (!ids.includes(current)) {
+              const first = eligibleEmployees[0]?.id ?? "";
+              setEmployeeId(first);
+            }
+          }}
         >
           {state.services.map((s) => (
             <option key={s.id} value={s.id} title={`${s.name} (${s.durationMin} min)`}>
@@ -597,6 +664,23 @@ function ReservationFields({
           ))}
         </select>
       </div>
+
+      {eligibleEmployees.length > 1 ? (
+        <div>
+          <label className={labelClass}>Prestataire</label>
+          <select
+            className={`${inputClass} mt-2`}
+            value={employeeId}
+            onChange={(e) => setEmployeeId(e.target.value)}
+          >
+            {eligibleEmployees.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={labelClass}>Date</label>
