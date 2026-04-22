@@ -8,7 +8,7 @@ alter table public.wavon_services
 
 -- Reservations: assignation d'un prestataire (nullable pour compat)
 alter table public.wavon_reservations
-  add column if not exists employee_id uuid references public.wavon_employees(id) on delete set null;
+  add column if not exists employee_id uuid references public.wavon_employees(id) on delete restrict;
 
 create index if not exists wavon_reservations_employee_id_idx
   on public.wavon_reservations(employee_id, start_at asc);
