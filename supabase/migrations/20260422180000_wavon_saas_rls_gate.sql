@@ -45,6 +45,10 @@ create policy "Wavon businesses public read by slug"
 
 -- settings
 drop policy if exists "Wavon settings owner CRUD" on public.wavon_settings;
+drop policy if exists "Wavon settings owner select" on public.wavon_settings;
+drop policy if exists "Wavon settings owner insert" on public.wavon_settings;
+drop policy if exists "Wavon settings owner update" on public.wavon_settings;
+drop policy if exists "Wavon settings owner delete" on public.wavon_settings;
 create policy "Wavon settings owner select"
   on public.wavon_settings
   for select
@@ -90,6 +94,10 @@ create policy "Wavon settings public read for published business"
 
 -- services
 drop policy if exists "Wavon services owner CRUD" on public.wavon_services;
+drop policy if exists "Wavon services owner select" on public.wavon_services;
+drop policy if exists "Wavon services owner insert" on public.wavon_services;
+drop policy if exists "Wavon services owner update" on public.wavon_services;
+drop policy if exists "Wavon services owner delete" on public.wavon_services;
 create policy "Wavon services owner select"
   on public.wavon_services
   for select
@@ -137,6 +145,10 @@ create policy "Wavon services public read for published business"
 
 -- clients (owner)
 drop policy if exists "Wavon clients owner CRUD" on public.wavon_clients;
+drop policy if exists "Wavon clients owner select" on public.wavon_clients;
+drop policy if exists "Wavon clients owner insert" on public.wavon_clients;
+drop policy if exists "Wavon clients owner update" on public.wavon_clients;
+drop policy if exists "Wavon clients owner delete" on public.wavon_clients;
 create policy "Wavon clients owner select"
   on public.wavon_clients
   for select
@@ -182,6 +194,10 @@ create policy "Wavon clients public insert for published business"
 
 -- reservations (owner)
 drop policy if exists "Wavon reservations owner CRUD" on public.wavon_reservations;
+drop policy if exists "Wavon reservations owner select" on public.wavon_reservations;
+drop policy if exists "Wavon reservations owner insert" on public.wavon_reservations;
+drop policy if exists "Wavon reservations owner update" on public.wavon_reservations;
+drop policy if exists "Wavon reservations owner delete" on public.wavon_reservations;
 create policy "Wavon reservations owner select"
   on public.wavon_reservations
   for select
@@ -240,6 +256,10 @@ create policy "Wavon reservations public read for published business"
 
 -- availability rules
 drop policy if exists "Wavon availability rules owner CRUD" on public.wavon_availability_rules;
+drop policy if exists "Wavon availability rules owner select" on public.wavon_availability_rules;
+drop policy if exists "Wavon availability rules owner insert" on public.wavon_availability_rules;
+drop policy if exists "Wavon availability rules owner update" on public.wavon_availability_rules;
+drop policy if exists "Wavon availability rules owner delete" on public.wavon_availability_rules;
 create policy "Wavon availability rules owner select"
   on public.wavon_availability_rules
   for select
@@ -285,6 +305,10 @@ create policy "Wavon availability public read for published business"
 
 -- custom days
 drop policy if exists "Wavon custom days owner CRUD" on public.wavon_custom_days;
+drop policy if exists "Wavon custom days owner select" on public.wavon_custom_days;
+drop policy if exists "Wavon custom days owner insert" on public.wavon_custom_days;
+drop policy if exists "Wavon custom days owner update" on public.wavon_custom_days;
+drop policy if exists "Wavon custom days owner delete" on public.wavon_custom_days;
 create policy "Wavon custom days owner select"
   on public.wavon_custom_days
   for select
@@ -317,6 +341,10 @@ create policy "Wavon custom days owner delete"
 
 -- blocked dates
 drop policy if exists "Wavon blocked dates owner CRUD" on public.wavon_blocked_dates;
+drop policy if exists "Wavon blocked dates owner select" on public.wavon_blocked_dates;
+drop policy if exists "Wavon blocked dates owner insert" on public.wavon_blocked_dates;
+drop policy if exists "Wavon blocked dates owner update" on public.wavon_blocked_dates;
+drop policy if exists "Wavon blocked dates owner delete" on public.wavon_blocked_dates;
 create policy "Wavon blocked dates owner select"
   on public.wavon_blocked_dates
   for select
@@ -362,6 +390,10 @@ create policy "Wavon blocked dates public read for published business"
 
 -- email templates
 drop policy if exists "Wavon email templates owner CRUD" on public.wavon_email_templates;
+drop policy if exists "Wavon email templates owner select" on public.wavon_email_templates;
+drop policy if exists "Wavon email templates owner insert" on public.wavon_email_templates;
+drop policy if exists "Wavon email templates owner update" on public.wavon_email_templates;
+drop policy if exists "Wavon email templates owner delete" on public.wavon_email_templates;
 create policy "Wavon email templates owner select"
   on public.wavon_email_templates
   for select
@@ -407,6 +439,10 @@ create policy "Wavon email templates public read for published business"
 
 -- email settings (scheduled emails)
 drop policy if exists "Wavon email settings owner CRUD" on public.wavon_email_settings;
+drop policy if exists "Wavon email settings owner select" on public.wavon_email_settings;
+drop policy if exists "Wavon email settings owner insert" on public.wavon_email_settings;
+drop policy if exists "Wavon email settings owner update" on public.wavon_email_settings;
+drop policy if exists "Wavon email settings owner delete" on public.wavon_email_settings;
 create policy "Wavon email settings owner select"
   on public.wavon_email_settings
   for select
@@ -439,6 +475,10 @@ create policy "Wavon email settings owner delete"
 
 -- employees
 drop policy if exists "Wavon employees owner CRUD" on public.wavon_employees;
+drop policy if exists "Wavon employees owner select" on public.wavon_employees;
+drop policy if exists "Wavon employees owner insert" on public.wavon_employees;
+drop policy if exists "Wavon employees owner update" on public.wavon_employees;
+drop policy if exists "Wavon employees owner delete" on public.wavon_employees;
 create policy "Wavon employees owner select"
   on public.wavon_employees
   for select
@@ -471,6 +511,10 @@ create policy "Wavon employees owner delete"
 
 -- blocked_slots
 drop policy if exists "Blocked slots owner CRUD" on public.blocked_slots;
+drop policy if exists "Blocked slots owner select" on public.blocked_slots;
+drop policy if exists "Blocked slots owner insert" on public.blocked_slots;
+drop policy if exists "Blocked slots owner update" on public.blocked_slots;
+drop policy if exists "Blocked slots owner delete" on public.blocked_slots;
 create policy "Blocked slots owner select"
   on public.blocked_slots
   for select
