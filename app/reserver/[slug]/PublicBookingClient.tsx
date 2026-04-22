@@ -7,9 +7,11 @@ import {
   combineYmdTime,
   dayKeyFromDate,
   getAvailableSlots,
+  pickFirstAvailableEmployeeForSlot,
   parseYmd,
   timeToMinutes,
   toYmd,
+  unionAvailableSlotsByEmployee,
   validateBooking,
   validateReservationWindow,
   weeklyDefault,
@@ -18,7 +20,7 @@ import { formatPrice, normalizeBusinessCurrency } from "@/lib/utils/formatPrice"
 import { landingSection } from "@/components/landing/landing-tokens";
 import { btnPrimaryClass, inputClass, labelClass, userTextBreakClass } from "@/lib/wavon/tokens";
 import { supabase } from "@/lib/supabase/client";
-import type { DayKey, Service, WavonState } from "@/lib/wavon/types";
+import type { DayKey, Employee, Service, WavonState } from "@/lib/wavon/types";
 import { getBrandingPublicUrl } from "@/lib/wavon/storage";
 
 type DbBusiness = {
@@ -59,6 +61,7 @@ type DbService = {
   is_active?: boolean;
   is_public?: boolean;
   color?: string | null;
+  employee_ids?: string[] | null;
   buffer_before_minutes?: number;
   buffer_after_minutes?: number;
   booking_notice_hours?: number | null;
@@ -81,6 +84,7 @@ type DbReservation = {
   client_name: string;
   client_id: string | null;
   service_id: string;
+  employee_id?: string | null;
   start_at: string;
   end_at: string;
   duration_minutes?: number;
@@ -104,6 +108,20 @@ type DbCustomDay = {
 
 type DbBlockedDate = {
   blocked_date: string;
+};
+
+type DbEmployee = {
+  id: string;
+  business_id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  photo_url: string | null;
+  color: string;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
 };
 
 function dayKeyFromDow(dow: number): DayKey {
@@ -138,6 +156,13 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
   const [state, setState] = useState<WavonState | null>(null);
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [publishedName, setPublishedName] = useState<string>("");
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [planningByEmployeeId, setPlanningByEmployeeId] = useState<
+    Record<
+      string,
+      { weekly: WavonState["weekly"]; customDays: WavonState["customDays"]; blockedDates: string[] }
+    >
+  >({});
 
   useEffect(() => {
     let cancelled = false;
@@ -161,7 +186,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
         const b = business as DbBusiness;
         const id = b.id;
 
-        const [settingsRes, servicesRes, weeklyRes, customDaysRes, blockedRes, reservationsRes] =
+        const [settingsRes, servicesRes, reservationsRes, employeesRes] =
           await Promise.all([
             supabase
               .from("wavon_settings")
@@ -173,7 +198,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
             supabase
               .from("wavon_services")
               .select(
-                "id,name,duration_minutes,price,description,is_active,is_public,color,buffer_before_minutes,buffer_after_minutes,booking_notice_hours,sort_order"
+                "id,name,duration_minutes,price,description,is_active,is_public,color,employee_ids,buffer_before_minutes,buffer_after_minutes,booking_notice_hours,sort_order"
               )
               .eq("business_id", id)
               .eq("is_active", true)
@@ -181,53 +206,57 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
               .order("sort_order", { ascending: true })
               .order("created_at", { ascending: true }),
             supabase
-              .from("wavon_availability_rules")
-              .select("day_of_week,is_open,segments")
-              .eq("business_id", id),
-            supabase
-              .from("wavon_custom_days")
-              .select("day,segments")
-              .eq("business_id", id),
-            supabase
-              .from("wavon_blocked_dates")
-              .select("blocked_date")
-              .eq("business_id", id),
-            supabase
               .from("wavon_reservations")
               .select(
-                "id,client_name,client_id,service_id,start_at,end_at,duration_minutes,buffer_before_minutes,buffer_after_minutes,status,created_at,notes"
+                "id,client_name,client_id,service_id,employee_id,start_at,end_at,duration_minutes,buffer_before_minutes,buffer_after_minutes,status,created_at,notes"
               )
               .eq("business_id", id)
               .order("start_at", { ascending: true }),
+            supabase
+              .from("wavon_employees")
+              .select("id,business_id,name,email,phone,photo_url,color,is_active,display_order,created_at,updated_at")
+              .eq("business_id", id)
+              .eq("is_active", true)
+              .order("display_order", { ascending: true })
+              .order("created_at", { ascending: true }),
           ]);
 
         if (
           settingsRes.error ||
           servicesRes.error ||
-          weeklyRes.error ||
-          customDaysRes.error ||
-          blockedRes.error ||
-          reservationsRes.error
+          reservationsRes.error ||
+          employeesRes.error
         ) {
           throw (
             settingsRes.error ||
             servicesRes.error ||
-            weeklyRes.error ||
-            customDaysRes.error ||
-            blockedRes.error ||
-            reservationsRes.error
+            reservationsRes.error ||
+            employeesRes.error
           );
         }
 
         const dbSettings = (settingsRes.data as DbSettings | null) ?? null;
         const dbServices = (servicesRes.data as DbService[]) ?? [];
-        const dbWeekly = (weeklyRes.data as DbWeeklyAvailability[]) ?? [];
-        const dbCustomDays = (customDaysRes.data as DbCustomDay[]) ?? [];
-        const dbBlocked = (blockedRes.data as DbBlockedDate[]) ?? [];
         const dbReservations = (reservationsRes.data as DbReservation[]) ?? [];
+        const dbEmployees = (employeesRes.data as DbEmployee[]) ?? [];
+
+        const emp: Employee[] = dbEmployees.map((e) => ({
+          id: e.id,
+          businessId: e.business_id,
+          name: e.name,
+          email: e.email,
+          phone: e.phone,
+          photoUrl: e.photo_url,
+          color: e.color,
+          isActive: Boolean(e.is_active),
+          displayOrder: e.display_order ?? 0,
+          createdAt: e.created_at,
+          updatedAt: e.updated_at,
+        }));
+        const employeeIdsInOrder = emp.map((e) => e.id);
 
         const baseWeekly = weeklyDefault();
-        const weekly: WavonState["weekly"] = {
+        const emptyWeekly: WavonState["weekly"] = {
           mon: { ...baseWeekly.mon, enabled: false, segments: [] },
           tue: { ...baseWeekly.tue, enabled: false, segments: [] },
           wed: { ...baseWeekly.wed, enabled: false, segments: [] },
@@ -237,24 +266,13 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
           sun: { ...baseWeekly.sun, enabled: false, segments: [] },
         };
 
-        for (const row of dbWeekly) {
-          const k = dayKeyFromDow(row.day_of_week);
-          const segs = segmentsFromJson(row.segments);
-          // Preserve segments even when closed (useful when toggling days)
-          weekly[k] = { enabled: Boolean(row.is_open), segments: segs };
-        }
-
-        const customDays = (dbCustomDays ?? []).map((r) => ({
-          date: String(r.day),
-          segments: segmentsFromJson(r.segments),
-        }));
-
         const next: WavonState = {
           version: 1,
-          weekly,
+          employees: emp,
+          weekly: emptyWeekly,
           availabilityMode: dbSettings?.availability_mode ?? "fixed",
-          customDays,
-          blockedDates: dbBlocked.map((x) => String(x.blocked_date)).sort(),
+          customDays: [],
+          blockedDates: [],
           services: dbServices.map(
             (s): Service => ({
               id: s.id,
@@ -265,6 +283,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
               isActive: Boolean(s.is_active ?? true),
               isPublic: Boolean(s.is_public ?? true),
               color: s.color ?? null,
+              employeeIds: Array.isArray(s.employee_ids) ? (s.employee_ids ?? []) : [],
               bufferBeforeMin: Math.max(0, s.buffer_before_minutes ?? 0),
               bufferAfterMin: Math.max(0, s.buffer_after_minutes ?? 0),
               bookingNoticeHours: s.booking_notice_hours ?? null,
@@ -277,6 +296,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
             clientId: r.client_id,
             clientName: r.client_name || "Client",
             serviceId: r.service_id,
+            employeeId: r.employee_id ?? null,
             start: r.start_at,
             end: r.end_at,
             durationMin: r.duration_minutes ?? 0,
@@ -323,8 +343,59 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
         if (cancelled) return;
         setBusinessId(id);
         setPublishedName(b.business_name ?? "");
+        setEmployees(emp);
         setState(next);
         setLoadingInit(false);
+
+        // Prefetch planning for all employees (needed for "Sans préférence")
+        const toLoad = employeeIdsInOrder;
+        if (toLoad.length) {
+          const results = await Promise.all(
+            toLoad.map(async (employeeId) => {
+              const [weeklyRes, customRes, blockedRes] = await Promise.all([
+                supabase
+                  .from("wavon_availability_rules")
+                  .select("day_of_week,is_open,segments")
+                  .eq("business_id", id)
+                  .eq("employee_id", employeeId),
+                supabase
+                  .from("wavon_custom_days")
+                  .select("day,segments")
+                  .eq("business_id", id)
+                  .eq("employee_id", employeeId),
+                supabase
+                  .from("wavon_blocked_dates")
+                  .select("blocked_date")
+                  .eq("business_id", id)
+                  .eq("employee_id", employeeId),
+              ]);
+              if (weeklyRes.error || customRes.error || blockedRes.error) {
+                return null;
+              }
+              const weekly = { ...emptyWeekly };
+              for (const row of ((weeklyRes.data as DbWeeklyAvailability[]) ?? [])) {
+                const k = dayKeyFromDow(row.day_of_week);
+                weekly[k] = { enabled: Boolean(row.is_open), segments: segmentsFromJson(row.segments) };
+              }
+              const customDays = (((customRes.data as DbCustomDay[]) ?? [])).map((r) => ({
+                date: String(r.day),
+                segments: segmentsFromJson(r.segments),
+              }));
+              const blockedDates = (((blockedRes.data as DbBlockedDate[]) ?? [])).map((x) => String(x.blocked_date)).sort();
+              return { employeeId, weekly, customDays, blockedDates };
+            })
+          );
+          if (!cancelled) {
+            setPlanningByEmployeeId((prev) => {
+              const next = { ...prev };
+              for (const r of results) {
+                if (!r) continue;
+                next[r.employeeId] = { weekly: r.weekly, customDays: r.customDays, blockedDates: r.blockedDates };
+              }
+              return next;
+            });
+          }
+        }
       } catch (e) {
         if (process.env.NODE_ENV !== "production") {
           console.error("[public booking] load error:", e);
@@ -341,6 +412,8 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
   }, [slug]);
 
   const [serviceId, setServiceId] = useState<string | null>(null);
+  const [step, setStep] = useState<"service" | "employee" | "slot" | "client" | "confirm">("service");
+  const [employeeChoice, setEmployeeChoice] = useState<string>(""); // "" = sans préférence, otherwise employeeId
   const [dateYmd, setDateYmd] = useState(() => toYmd(new Date()));
   const [time, setTime] = useState("10:00");
   const [clientName, setClientName] = useState("");
@@ -356,11 +429,61 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
       : (state?.services[0]?.id ?? null);
   const svc = state?.services.find((s) => s.id === resolvedServiceId) ?? null;
 
+  const eligibleEmployees = useMemo(() => {
+    const all = employees;
+    if (!svc) return all;
+    const ids = svc.employeeIds ?? [];
+    if (ids.length === 0) return all;
+    return all.filter((e) => ids.includes(e.id));
+  }, [employees, svc]);
+
+  const showEmployeeStep = eligibleEmployees.length > 1;
+
+  useEffect(() => {
+    if (!svc) return;
+    setStep("service");
+    setEmployeeChoice("");
+  }, [svc?.id]);
+
+  const statesByEmployeeId = useMemo(() => {
+    if (!state) return {};
+    const out: Record<string, WavonState> = {};
+    for (const e of eligibleEmployees) {
+      const p = planningByEmployeeId[e.id];
+      if (!p) continue;
+      out[e.id] = {
+        ...state,
+        weekly: p.weekly,
+        customDays: p.customDays,
+        blockedDates: p.blockedDates,
+      };
+    }
+    return out;
+  }, [state, eligibleEmployees, planningByEmployeeId]);
+
+  const employeeIdsInOrder = useMemo(
+    () => eligibleEmployees.slice().sort((a, b) => a.displayOrder - b.displayOrder).map((e) => e.id),
+    [eligibleEmployees]
+  );
+
   const slots = useMemo(() => {
     if (!state || !svc || !dateYmd) return [];
-    const out = getAvailableSlots(dateYmd, svc, state);
-    return out;
-  }, [state, svc, dateYmd]);
+    if (!showEmployeeStep) {
+      const only = eligibleEmployees[0]?.id ?? null;
+      const st = only ? statesByEmployeeId[only] ?? state : state;
+      return getAvailableSlots(dateYmd, svc, st, only);
+    }
+    if (employeeChoice && statesByEmployeeId[employeeChoice]) {
+      return getAvailableSlots(dateYmd, svc, statesByEmployeeId[employeeChoice], employeeChoice);
+    }
+    const by = unionAvailableSlotsByEmployee({
+      ymd: dateYmd,
+      service: svc,
+      statesByEmployeeId,
+      employeeIdsInOrder,
+    });
+    return Object.keys(by).sort();
+  }, [state, svc, dateYmd, showEmployeeStep, employeeChoice, statesByEmployeeId, employeeIdsInOrder, eligibleEmployees]);
 
   const noSlotsHint = useMemo(() => {
     if (!state || !svc || !dateYmd) return null;
@@ -488,6 +611,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
           clientId: r.client_id,
           clientName: r.client_name || "Client",
           serviceId: r.service_id,
+          employeeId: r.employee_id ?? null,
           start: r.start_at,
           end: r.end_at,
           durationMin: r.duration_minutes ?? 0,
@@ -499,11 +623,55 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
         })),
       };
 
+      // Choix du prestataire final
+      let finalEmployeeId: string | null = null;
+      if (!showEmployeeStep) {
+        finalEmployeeId = eligibleEmployees[0]?.id ?? null;
+      } else if (employeeChoice) {
+        finalEmployeeId = employeeChoice;
+      } else {
+        const by = unionAvailableSlotsByEmployee({
+          ymd: dateYmd,
+          service: effectiveSvc,
+          statesByEmployeeId: Object.fromEntries(
+            employeeIdsInOrder
+              .map((id) => {
+                const p = planningByEmployeeId[id];
+                if (!p) return null;
+                const st: WavonState = { ...nextState, weekly: p.weekly, customDays: p.customDays, blockedDates: p.blockedDates };
+                return [id, st] as const;
+              })
+              .filter(Boolean) as Array<readonly [string, WavonState]>
+          ),
+          employeeIdsInOrder,
+        });
+        finalEmployeeId = pickFirstAvailableEmployeeForSlot({
+          time,
+          slotsByEmployee: by,
+          employeeIdsInOrder,
+        });
+      }
+
+      if (!finalEmployeeId) {
+        setErr("Aucun prestataire disponible pour ce créneau.");
+        return;
+      }
+
       const validationErr = validateBooking({
-        state: nextState,
+        state: {
+          ...nextState,
+          ...(planningByEmployeeId[finalEmployeeId]
+            ? {
+                weekly: planningByEmployeeId[finalEmployeeId]!.weekly,
+                customDays: planningByEmployeeId[finalEmployeeId]!.customDays,
+                blockedDates: planningByEmployeeId[finalEmployeeId]!.blockedDates,
+              }
+            : {}),
+        },
         service: effectiveSvc,
         start,
         end,
+        employeeId: finalEmployeeId,
       });
       if (validationErr) {
         setErr(validationErr);
@@ -557,6 +725,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
           client_id: clientId,
           client_name: displayName,
           service_id: effectiveSvc.id,
+          employee_id: finalEmployeeId,
           start_at: start.toISOString(),
           end_at: end.toISOString(),
           duration_minutes: effectiveSvc.durationMin,
@@ -586,6 +755,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
               clientId,
               clientName: displayName,
               serviceId: effectiveSvc.id,
+              employeeId: finalEmployeeId,
               start: start.toISOString(),
               end: end.toISOString(),
               durationMin: effectiveSvc.durationMin,
@@ -748,6 +918,67 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
                   </p>
                 ) : null}
               </div>
+
+              {showEmployeeStep ? (
+                <div className="rounded-3xl border border-neutral-200/90 bg-white p-4">
+                  <p className="text-sm font-semibold text-neutral-950">Prestataire</p>
+                  <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+                    Choisis avec qui tu souhaites prendre rendez-vous.
+                  </p>
+                  <div className="mt-4 space-y-3">
+                    <button
+                      type="button"
+                      className={`w-full rounded-2xl border px-4 py-3 text-left text-sm transition ${
+                        employeeChoice === ""
+                          ? "border-neutral-900 bg-neutral-950 text-white"
+                          : "border-neutral-200/90 bg-white text-neutral-800 hover:bg-neutral-50"
+                      }`}
+                      onClick={() => setEmployeeChoice("")}
+                    >
+                      Sans préférence
+                    </button>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {eligibleEmployees.map((e) => {
+                        const selected = employeeChoice === e.id;
+                        const photo = e.photoUrl?.trim()
+                          ? (getBrandingPublicUrl(e.photoUrl) || e.photoUrl)
+                          : null;
+                        const initials = (e.name.trim().slice(0, 2) || "?").toUpperCase();
+                        return (
+                          <button
+                            key={e.id}
+                            type="button"
+                            className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm transition ${
+                              selected
+                                ? "border-neutral-900 bg-neutral-950 text-white"
+                                : "border-neutral-200/90 bg-white text-neutral-800 hover:bg-neutral-50"
+                            }`}
+                            onClick={() => setEmployeeChoice(e.id)}
+                          >
+                            <span className="relative size-10 shrink-0 overflow-hidden rounded-full border border-neutral-200/90 bg-white">
+                              {photo ? (
+                                <Image src={photo} alt="" fill className="object-cover" />
+                              ) : (
+                                <span
+                                  className="flex size-10 items-center justify-center text-xs font-semibold text-white"
+                                  style={{ backgroundColor: e.color }}
+                                >
+                                  {initials}
+                                </span>
+                              )}
+                            </span>
+                            <span className="min-w-0">
+                              <span className={`block font-semibold ${selected ? "text-white" : "text-neutral-950"} ${userTextBreakClass}`}>
+                                {e.name}
+                              </span>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
