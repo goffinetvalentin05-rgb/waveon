@@ -1087,6 +1087,7 @@ export function WavonProvider({
         clientId: string | null;
         clientName: string;
         serviceId: string;
+        employeeId: string | null;
         start: Date;
         status: ReservationStatus;
         notes: string;
