@@ -50,11 +50,11 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       try {
         const live = await getBusinessSubscriptionStatus(businessId);
         if (!hasActiveSubscription({ status: live.status, plan: live.plan })) {
-          redirect("/pricing");
+          redirect("/dashboard/facturation?trial_expired=1");
         }
       } catch (e) {
-        console.error("[dashboard/layout] abonnement Stripe", e);
-        redirect("/pricing");
+        console.error("[dashboard/layout] accès facturation / essai", e);
+        redirect("/dashboard/facturation?trial_expired=1");
       }
     }
   }

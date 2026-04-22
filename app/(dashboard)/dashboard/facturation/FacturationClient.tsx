@@ -1,15 +1,23 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
-import { format, parseISO } from "date-fns";
+import { differenceInCalendarDays, format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
+import { loadStripe } from "@stripe/stripe-js";
 import { useWavon } from "@/components/wavon/WavonProvider";
-import { PLAN_LABELS, PLAN_MONTHLY_PRICE_CHF } from "@/lib/stripe/config";
+import {
+  PLAN_LABELS,
+  PLAN_MONTHLY_PRICE_CHF,
+  WAEVON_TRIAL_DAYS,
+  type BillingPlanId,
+} from "@/lib/stripe/config";
 import { hasActiveSubscription } from "@/lib/subscription/access";
 import { wavonPage } from "@/lib/wavon/tokens";
 
 const SUPPORT_EMAIL = "contact@waevon.com";
+const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() ?? "";
 
 function formatDateFr(iso: string | null | undefined): string | null {
   if (!iso) return null;
@@ -20,15 +28,46 @@ function formatDateFr(iso: string | null | undefined): string | null {
   }
 }
 
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+      <path
+        d="M4.5 9.5 7.5 12.5 14 5"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export default function FacturationClient() {
   const { ready, state } = useWavon();
+  const searchParams = useSearchParams();
+  const trialExpiredParam = searchParams.get("trial_expired") === "1";
+  const canceledParam = searchParams.get("canceled") === "true";
   const [portalLoading, setPortalLoading] = useState(false);
+  const [loadingPlan, setLoadingPlan] = useState<BillingPlanId | null>(null);
 
   const sub = state.subscription;
   const access = { status: sub.status, plan: sub.plan };
   const active = hasActiveSubscription(access);
   const planLabel = sub.plan ? PLAN_LABELS[sub.plan] : null;
   const monthlyChf = sub.plan ? PLAN_MONTHLY_PRICE_CHF[sub.plan] : null;
+
+  const isWaevonTrial = sub.accessSource === "waevon" && sub.status === "trialing";
+  const isTrialExpired = sub.status === "trial_expired";
+  const isStripe = sub.accessSource === "stripe";
+
+  let waevonDaysLeft: number | null = null;
+  if (isWaevonTrial && sub.trialEndsAt) {
+    try {
+      waevonDaysLeft = differenceInCalendarDays(parseISO(sub.trialEndsAt), new Date());
+    } catch {
+      waevonDaysLeft = null;
+    }
+  }
 
   const openPortal = useCallback(async () => {
     setPortalLoading(true);
@@ -46,6 +85,42 @@ export default function FacturationClient() {
     }
   }, []);
 
+  const startCheckout = useCallback(async (plan: BillingPlanId) => {
+    if (!publishableKey) {
+      alert("Configuration Stripe incomplète (NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY).");
+      return;
+    }
+    setLoadingPlan(plan);
+    try {
+      await loadStripe(publishableKey);
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+        credentials: "same-origin",
+      });
+      const raw = await res.text();
+      let body: { url?: string; error?: string } = {};
+      if (raw.trim()) {
+        try {
+          body = JSON.parse(raw) as { url?: string; error?: string };
+        } catch {
+          throw new Error(`Réponse serveur invalide (${res.status}).`);
+        }
+      }
+      if (!res.ok) {
+        throw new Error(body.error ?? `Erreur serveur (${res.status}).`);
+      }
+      if (!body.url) throw new Error(body.error ?? "URL de paiement manquante.");
+      window.location.href = body.url;
+    } catch (e) {
+      console.error("[facturation] checkout", e);
+      alert(e instanceof Error ? e.message : "Erreur lors du paiement.");
+    } finally {
+      setLoadingPlan(null);
+    }
+  }, []);
+
   if (!ready) {
     return (
       <div className={`${wavonPage} py-10 text-sm text-neutral-500`}>Chargement…</div>
@@ -56,6 +131,25 @@ export default function FacturationClient() {
   const trialEnd = formatDateFr(sub.trialEndsAt);
   const periodEnd = formatDateFr(sub.currentPeriodEnd);
 
+  const showPortal =
+    isStripe &&
+    sub.status !== "none" &&
+    sub.status !== "trial_expired" &&
+    (status === "active" ||
+      status === "trialing" ||
+      status === "past_due" ||
+      status === "canceled" ||
+      status === "unpaid" ||
+      status === "incomplete");
+
+  const pricingBulletsStarter = [
+    "Réservations en ligne",
+    "Agenda et calendrier",
+    "Page publique de réservation",
+    "Emails transactionnels",
+  ];
+  const pricingBulletsPro = ["Tout le plan Starter", "Factures PDF automatiques (bientôt)"];
+
   return (
     <div className={`${wavonPage} space-y-8 py-6`}>
       <div>
@@ -65,24 +159,80 @@ export default function FacturationClient() {
         </p>
       </div>
 
+      {trialExpiredParam ? (
+        <div className="rounded-xl border border-amber-200/90 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          Ta période d&apos;essai de {WAEVON_TRIAL_DAYS} jours est terminée. Choisis un abonnement pour
+          continuer à utiliser Waevon.
+        </div>
+      ) : null}
+
+      {canceledParam ? (
+        <div className="rounded-xl border border-neutral-200/90 bg-neutral-50 px-4 py-3 text-sm text-neutral-800">
+          Paiement annulé. Tu peux réessayer quand tu veux.
+        </div>
+      ) : null}
+
       <section className="rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-neutral-950">Mon abonnement</h2>
 
-        {status === "trialing" ? (
+        {isWaevonTrial ? (
           <div className="mt-4 space-y-3 text-sm text-neutral-700">
             <span className="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-900">
-              Période d&apos;essai
+              Essai gratuit
+            </span>
+            <p>
+              Tu es en période d&apos;essai ({WAEVON_TRIAL_DAYS} jours sans carte).{" "}
+              {waevonDaysLeft != null && waevonDaysLeft >= 0 ? (
+                <>
+                  Il te reste{" "}
+                  <strong>
+                    {waevonDaysLeft === 0
+                      ? "moins d’un jour"
+                      : waevonDaysLeft === 1
+                        ? "1 jour"
+                        : `${waevonDaysLeft} jours`}
+                  </strong>
+                  .
+                </>
+              ) : trialEnd ? (
+                <>
+                  Fin prévue le <strong>{trialEnd}</strong>.
+                </>
+              ) : null}
+            </p>
+            <p className="text-neutral-600">
+              Pour continuer après l&apos;essai, choisis un plan ci-dessous : paiement dès la souscription
+              (sans nouvelle période d&apos;essai Stripe).
+            </p>
+          </div>
+        ) : null}
+
+        {isTrialExpired ? (
+          <div className="mt-4 space-y-3 text-sm text-neutral-700">
+            <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-900">
+              Essai terminé
+            </span>
+            <p className="font-medium text-neutral-950">
+              Ton essai est terminé. Choisis un plan pour continuer à utiliser Waevon.
+            </p>
+          </div>
+        ) : null}
+
+        {isStripe && status === "trialing" ? (
+          <div className="mt-4 space-y-3 text-sm text-neutral-700">
+            <span className="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-900">
+              Période d&apos;essai (Stripe)
             </span>
             <p>
               Plan actuel : <strong>{planLabel ?? "—"}</strong>
             </p>
             {trialEnd && monthlyChf != null ? (
               <p>
-                Ton essai gratuit se termine le <strong>{trialEnd}</strong>. Après cette date, tu seras
-                facturé <strong>{monthlyChf} CHF</strong> / mois.
+                Prochaine facturation prévue après l&apos;essai le <strong>{trialEnd}</strong> (
+                <strong>{monthlyChf} CHF</strong> / mois).
               </p>
             ) : (
-              <p>Ta période d&apos;essai est en cours.</p>
+              <p>Ta période d&apos;essai liée à l&apos;abonnement est en cours.</p>
             )}
           </div>
         ) : null}
@@ -122,51 +272,90 @@ export default function FacturationClient() {
           </div>
         ) : null}
 
-        {(status === "none" ||
-          status === "canceled" ||
-          status === "unpaid" ||
-          status === "incomplete") &&
+        {(status === "none" || status === "canceled" || status === "unpaid" || status === "incomplete") &&
+        isStripe &&
         !active ? (
           <div className="mt-4 space-y-3 text-sm text-neutral-700">
             <span className="inline-flex rounded-full bg-neutral-200 px-3 py-1 text-xs font-medium text-neutral-800">
               Inactif
             </span>
-            <p>Tu n&apos;as pas d&apos;abonnement actif pour le moment.</p>
-            <Link
-              href="/pricing"
-              className="inline-flex rounded-full bg-neutral-950 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
-            >
-              Choisir un plan
-            </Link>
+            <p>Pas d&apos;abonnement Stripe actif.</p>
           </div>
         ) : null}
 
-        {active && sub.status !== "past_due" ? (
+        {showPortal ? (
           <div className="mt-6">
             <button
               type="button"
               onClick={() => void openPortal()}
               disabled={portalLoading}
-              className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-950 shadow-sm hover:bg-neutral-50 disabled:opacity-60"
+              className={
+                status === "past_due"
+                  ? "rounded-full bg-neutral-950 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-60"
+                  : "rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-950 shadow-sm hover:bg-neutral-50 disabled:opacity-60"
+              }
             >
-              {portalLoading ? "Ouverture…" : "Gérer mon abonnement"}
-            </button>
-          </div>
-        ) : null}
-
-        {status === "past_due" ? (
-          <div className="mt-6">
-            <button
-              type="button"
-              onClick={() => void openPortal()}
-              disabled={portalLoading}
-              className="rounded-full bg-neutral-950 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-60"
-            >
-              {portalLoading ? "Ouverture…" : "Mettre à jour mon moyen de paiement"}
+              {portalLoading
+                ? "Ouverture…"
+                : status === "past_due"
+                  ? "Mettre à jour mon moyen de paiement"
+                  : "Gérer mon abonnement"}
             </button>
           </div>
         ) : null}
       </section>
+
+      {(isWaevonTrial || isTrialExpired) && (
+        <section className="space-y-4">
+          <h2 className="text-lg font-semibold text-neutral-950">Choisir un abonnement</h2>
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-sm">
+              <h3 className="font-display text-xl text-neutral-950">{PLAN_LABELS.starter}</h3>
+              <p className="mt-2 text-lg text-neutral-600">
+                {PLAN_MONTHLY_PRICE_CHF.starter} CHF / mois
+              </p>
+              <ul className="mt-4 space-y-2 text-sm text-neutral-600">
+                {pricingBulletsStarter.map((line) => (
+                  <li key={line} className="flex gap-2">
+                    <CheckIcon className="mt-0.5 shrink-0 text-neutral-950" />
+                    {line}
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                disabled={loadingPlan !== null}
+                onClick={() => void startCheckout("starter")}
+                className="mt-6 w-full rounded-full border-2 border-neutral-950 bg-white py-2.5 text-sm font-semibold text-neutral-950 hover:bg-neutral-950 hover:text-white disabled:opacity-60"
+              >
+                {loadingPlan === "starter" ? "Redirection…" : "Choisir Starter"}
+              </button>
+            </div>
+            <div className="rounded-2xl border border-neutral-950 bg-neutral-950 p-6 text-white shadow-lg">
+              <h3 className="font-display text-xl">{PLAN_LABELS.pro}</h3>
+              <p className="mt-2 text-lg text-neutral-300">
+                {PLAN_MONTHLY_PRICE_CHF.pro} CHF / mois
+              </p>
+              <ul className="mt-4 space-y-2 text-sm text-neutral-200">
+                {pricingBulletsPro.map((line) => (
+                  <li key={line} className="flex gap-2">
+                    <CheckIcon className="mt-0.5 shrink-0 text-neutral-400" />
+                    {line}
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                disabled={loadingPlan !== null}
+                onClick={() => void startCheckout("pro")}
+                className="mt-6 w-full rounded-full bg-white py-2.5 text-sm font-semibold text-neutral-950 hover:bg-neutral-100 disabled:opacity-60"
+              >
+                {loadingPlan === "pro" ? "Redirection…" : "Choisir Pro"}
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="rounded-2xl border border-neutral-200/80 bg-neutral-50/80 p-6 text-sm text-neutral-700">
         <h2 className="font-semibold text-neutral-950">Besoin d&apos;aide ?</h2>
@@ -178,9 +367,9 @@ export default function FacturationClient() {
           .
         </p>
         <p className="mt-3 text-xs text-neutral-500">
-          Les fonctionnalités « factures PDF automatiques » sont réservées au plan Pro — voir{" "}
+          Les fonctionnalités « factures PDF automatiques » sont réservées au plan Pro — voir aussi{" "}
           <Link href="/pricing" className="font-medium text-neutral-800 underline">
-            les formules
+            la page tarifs
           </Link>
           .
         </p>

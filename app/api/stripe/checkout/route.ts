@@ -2,12 +2,7 @@ import { NextResponse } from "next/server";
 import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { getWavonDbTablePrefix, WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { requireStripe } from "@/lib/stripe/client";
-import {
-  getStripePriceIdForPlan,
-  isBillingPlanId,
-  TRIAL_PERIOD_DAYS,
-  type BillingPlanId,
-} from "@/lib/stripe/config";
+import { getStripePriceIdForPlan, isBillingPlanId, type BillingPlanId } from "@/lib/stripe/config";
 import { ensureBusinessForUser } from "@/lib/wavon/ensure-business-for-user";
 
 export const runtime = "nodejs";
@@ -133,7 +128,6 @@ export async function POST(req: Request) {
         plan,
       },
       subscription_data: {
-        trial_period_days: TRIAL_PERIOD_DAYS,
         metadata: {
           business_id: business.id,
           user_id: user.id,
@@ -144,7 +138,7 @@ export async function POST(req: Request) {
       allow_promotion_codes: true,
       locale: "fr",
       success_url: `${origin}/dashboard/facturation?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/pricing?canceled=true`,
+      cancel_url: `${origin}/dashboard/facturation?canceled=true`,
     });
 
     if (!session.url) {

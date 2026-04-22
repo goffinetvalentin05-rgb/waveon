@@ -46,12 +46,33 @@ function snapshotFromStripe(sub: Stripe.Subscription): SubscriptionSnapshot {
     trialEndsAt: tsToIso(sub.trial_end),
     currentPeriodEnd: tsToIso(subscriptionCurrentPeriodEndUnix(sub)),
     cancelAtPeriodEnd: Boolean(sub.cancel_at_period_end),
+    accessSource: "stripe",
+  };
+}
+
+function waevonTrialSnapshot(trialEndsAtIso: string, expired: boolean): SubscriptionSnapshot {
+  if (expired) {
+    return {
+      status: "trial_expired",
+      plan: null,
+      trialEndsAt: trialEndsAtIso,
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+      accessSource: "waevon",
+    };
+  }
+  return {
+    status: "trialing",
+    plan: null,
+    trialEndsAt: trialEndsAtIso,
+    currentPeriodEnd: null,
+    cancelAtPeriodEnd: false,
+    accessSource: "waevon",
   };
 }
 
 /**
- * État d’abonnement lu sur Stripe (cache mémoire 60 s par business).
- * Sans `stripe_subscription_id` en base → statut synthétique `none`.
+ * Accès facturation : abonnement Stripe (API live + cache 60 s) ou essai Waevon (`trial_ends_at`).
  */
 export async function getBusinessSubscriptionStatus(businessId: string): Promise<SubscriptionSnapshot> {
   const now = Date.now();
@@ -63,40 +84,57 @@ export async function getBusinessSubscriptionStatus(businessId: string): Promise
   const admin = createAdminSupabaseClient();
   const { data, error } = await admin
     .from(WavonDbTable.businesses)
-    .select("stripe_subscription_id")
+    .select("stripe_subscription_id, trial_ends_at")
     .eq("id", businessId)
     .maybeSingle();
   if (error) throw error;
 
-  const subId = (data as { stripe_subscription_id: string | null } | null)?.stripe_subscription_id?.trim();
-  if (!subId) {
-    const none: SubscriptionSnapshot = {
-      ...EMPTY_SUBSCRIPTION_SNAPSHOT,
-      status: "none",
-    };
-    cache.set(businessId, { expiresAt: now + TTL_MS, value: none });
-    return none;
-  }
+  const row = data as { stripe_subscription_id: string | null; trial_ends_at: string | null } | null;
+  const subId = row?.stripe_subscription_id?.trim() ?? "";
 
-  const stripe = requireStripe();
   let snapshot: SubscriptionSnapshot;
-  try {
-    const sub = await stripe.subscriptions.retrieve(subId, {
-      expand: ["items.data.price"],
-    });
-    snapshot = snapshotFromStripe(sub);
-  } catch (e) {
-    const err = e as { code?: string; statusCode?: number };
-    if (err.code === "resource_missing" || err.statusCode === 404) {
-      snapshot = {
-        status: "canceled",
-        plan: null,
-        trialEndsAt: null,
-        currentPeriodEnd: null,
-        cancelAtPeriodEnd: false,
-      };
+
+  if (subId) {
+    const stripe = requireStripe();
+    try {
+      const sub = await stripe.subscriptions.retrieve(subId, {
+        expand: ["items.data.price"],
+      });
+      snapshot = snapshotFromStripe(sub);
+    } catch (e) {
+      const err = e as { code?: string; statusCode?: number };
+      if (err.code === "resource_missing" || err.statusCode === 404) {
+        snapshot = {
+          status: "canceled",
+          plan: null,
+          trialEndsAt: null,
+          currentPeriodEnd: null,
+          cancelAtPeriodEnd: false,
+          accessSource: "stripe",
+        };
+      } else {
+        throw e;
+      }
+    }
+  } else {
+    const trialRaw = row?.trial_ends_at ?? null;
+    if (trialRaw) {
+      const endMs = new Date(trialRaw).getTime();
+      if (!Number.isFinite(endMs)) {
+        snapshot = {
+          ...EMPTY_SUBSCRIPTION_SNAPSHOT,
+          status: "trial_expired",
+          accessSource: "waevon",
+        };
+      } else {
+        snapshot = waevonTrialSnapshot(trialRaw, endMs <= now);
+      }
     } else {
-      throw e;
+      snapshot = {
+        ...EMPTY_SUBSCRIPTION_SNAPSHOT,
+        status: "trial_expired",
+        accessSource: "waevon",
+      };
     }
   }
 

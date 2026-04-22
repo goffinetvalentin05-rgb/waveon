@@ -6,18 +6,16 @@ import { useCallback, useEffect, useState } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import { BrandLogoLink } from "@/components/landing/BrandLogoLink";
 import { landingContent } from "@/lib/landing/config";
-import {
-  hasActiveSubscription,
-  parseSubscriptionPlan,
-} from "@/lib/subscription/access";
+import { parseSubscriptionPlan } from "@/lib/subscription/access";
 import type { BillingPlanId } from "@/lib/stripe/config";
-import { PLAN_LABELS, PLAN_MONTHLY_PRICE_CHF } from "@/lib/stripe/config";
+import { PLAN_LABELS, PLAN_MONTHLY_PRICE_CHF, WAEVON_TRIAL_DAYS } from "@/lib/stripe/config";
 import { supabase } from "@/lib/supabase/client";
 const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() ?? "";
 
 type BizSubRow = {
   status: string;
   plan: string | null;
+  accessSource: string;
 };
 
 function CheckIcon({ className }: { className?: string }) {
@@ -55,12 +53,14 @@ export default function PricingPageClient() {
       const liveRes = await fetch("/api/subscription/live", { credentials: "same-origin" });
       if (liveRes.ok) {
         const body = (await liveRes.json()) as Record<string, unknown>;
+        const src = body.accessSource;
         setBizSub({
           status: typeof body.status === "string" ? body.status : "none",
           plan: typeof body.plan === "string" || body.plan === null ? (body.plan as string | null) : null,
+          accessSource: src === "stripe" || src === "waevon" || src === "none" ? src : "none",
         });
       } else {
-        setBizSub({ status: "none", plan: null });
+        setBizSub({ status: "none", plan: null, accessSource: "none" });
       }
       setSessionReady(true);
     })();
@@ -112,7 +112,11 @@ export default function PricingPageClient() {
   );
 
   const currentPlan = parseSubscriptionPlan(bizSub?.plan ?? null);
-  const subscribed = bizSub ? hasActiveSubscription(bizSub) : false;
+  const stripeSubscribed = Boolean(
+    bizSub &&
+      (bizSub.status === "active" ||
+        (bizSub.status === "trialing" && bizSub.accessSource === "stripe"))
+  );
 
   const starterBullets = [
     "Réservations en ligne",
@@ -167,8 +171,9 @@ export default function PricingPageClient() {
           Choisis ton abonnement Waevon
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-center text-neutral-600">
-          7 jours d&apos;essai gratuit sur chaque formule. Sans engagement, résiliable à tout moment depuis
-          l&apos;espace facturation.
+          L&apos;inscription ouvre <strong>{WAEVON_TRIAL_DAYS} jours d&apos;essai sans carte</strong> sur tout
+          Waevon. Les abonnements payants sont souscrits depuis l&apos;espace facturation (paiement dès
+          souscription, sans essai Stripe).
         </p>
 
         {canceled ? (
@@ -192,7 +197,7 @@ export default function PricingPageClient() {
               onSubscribe={() => void startCheckout("starter")}
               userLoggedIn={Boolean(userId)}
               currentPlan={currentPlan}
-              subscribed={subscribed}
+              stripeSubscribed={stripeSubscribed}
             />
             <PlanCard
               badge="Le plus populaire"
@@ -205,14 +210,15 @@ export default function PricingPageClient() {
               onSubscribe={() => void startCheckout("pro")}
               userLoggedIn={Boolean(userId)}
               currentPlan={currentPlan}
-              subscribed={subscribed}
+              stripeSubscribed={stripeSubscribed}
               highlight
             />
           </div>
         )}
 
         <p className="mt-12 text-center text-sm text-neutral-500">
-          7 jours d&apos;essai gratuit, sans engagement, résiliable à tout moment.
+          Essai Waevon : {WAEVON_TRIAL_DAYS} jours sans carte à l&apos;inscription. Abonnements sans engagement,
+          résiliables depuis la facturation.
         </p>
       </main>
     </div>
@@ -230,7 +236,7 @@ function PlanCard({
   onSubscribe,
   userLoggedIn,
   currentPlan,
-  subscribed,
+  stripeSubscribed,
   highlight,
 }: {
   badge: string;
@@ -243,15 +249,22 @@ function PlanCard({
   onSubscribe: () => void;
   userLoggedIn: boolean;
   currentPlan: BillingPlanId | null;
-  subscribed: boolean;
+  stripeSubscribed: boolean;
   highlight?: boolean;
 }) {
-  const isCurrent = subscribed && currentPlan === plan;
-  const isOtherSubscribed = subscribed && currentPlan !== null && currentPlan !== plan;
+  const isCurrent = stripeSubscribed && currentPlan === plan;
+  const isOtherSubscribed = stripeSubscribed && currentPlan !== null && currentPlan !== plan;
 
-  let ctaLabel = "Commencer l'essai gratuit";
-  if (isCurrent) ctaLabel = "Plan actuel";
-  else if (isOtherSubscribed) ctaLabel = plan === "pro" ? "Passer au plan Pro" : "Passer au plan Starter";
+  let ctaLabel: string;
+  if (!userLoggedIn) {
+    ctaLabel = `Créer un compte — ${WAEVON_TRIAL_DAYS} j. sans carte`;
+  } else if (isCurrent) {
+    ctaLabel = "Plan actuel";
+  } else if (isOtherSubscribed) {
+    ctaLabel = plan === "pro" ? "Passer au plan Pro" : "Passer au plan Starter";
+  } else {
+    ctaLabel = plan === "starter" ? "Choisir Starter" : "Choisir Pro";
+  }
 
   const shell = highlight
     ? "relative flex h-full flex-col overflow-hidden rounded-[1.65rem] border border-white/10 bg-neutral-950 p-8 text-white shadow-xl ring-1 ring-white/[0.06] sm:p-9"

@@ -22,10 +22,12 @@ import {
   type Reservation,
   type ReservationStatus,
   type Service,
+  type SubscriptionAccessSource,
   type SubscriptionSnapshot,
   type WeeklyDaySchedule,
   type WavonState,
 } from "@/lib/wavon/types";
+import { WAEVON_TRIAL_DAYS } from "@/lib/stripe/config";
 import { parseSubscriptionPlan } from "@/lib/subscription/access";
 import { supabase } from "@/lib/supabase/client";
 import { normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
@@ -397,7 +399,13 @@ export function WavonProvider({
           const provisionalSlug = `c-${crypto.randomUUID().replace(/-/g, "").slice(0, 11)}`;
           const { data: created, error } = await supabase
             .from(WavonDbTable.businesses)
-            .insert({ user_id: userId, public_slug: provisionalSlug })
+            .insert({
+              user_id: userId,
+              public_slug: provisionalSlug,
+              trial_ends_at: new Date(
+                Date.now() + WAEVON_TRIAL_DAYS * 86_400_000
+              ).toISOString(),
+            })
             .select(
               "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description,currency,notify_owner_on_new_reservation,notify_owner_on_cancellation,stripe_customer_id,stripe_subscription_id"
             )
@@ -543,6 +551,9 @@ export function WavonProvider({
         if (subRes.ok) {
           const body = (await subRes.json()) as Record<string, unknown>;
           if (typeof body.status === "string") {
+            const src = body.accessSource;
+            const accessSource: SubscriptionAccessSource =
+              src === "stripe" || src === "waevon" || src === "none" ? src : "none";
             subscription = {
               status: body.status,
               plan: parseSubscriptionPlan(
@@ -552,6 +563,7 @@ export function WavonProvider({
               currentPeriodEnd:
                 typeof body.currentPeriodEnd === "string" ? body.currentPeriodEnd : null,
               cancelAtPeriodEnd: Boolean(body.cancelAtPeriodEnd),
+              accessSource,
             };
           }
         }

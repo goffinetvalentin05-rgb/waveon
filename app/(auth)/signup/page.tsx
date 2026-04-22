@@ -82,7 +82,7 @@ export default function SignupPage() {
         }
       }
 
-      router.replace("/pricing");
+      router.replace("/dashboard");
     } catch (err) {
       console.log("[signup] unexpected error:", err);
       setMessage(

@@ -192,15 +192,18 @@ export type EmailSetting = {
 };
 
 /**
- * État d’abonnement Stripe (lu en direct via l’API + cache court côté serveur).
- * `none` = pas d’ID d’abonnement en base.
+ * État d’accès facturation : essai Waevon (`accessSource: waevon`) et/ou abonnement Stripe (`stripe`).
+ * `trial_expired` = essai Waevon terminé, pas d’abonnement Stripe actif.
  */
+export type SubscriptionAccessSource = "waevon" | "stripe" | "none";
+
 export type SubscriptionSnapshot = {
   status: string;
   plan: "starter" | "pro" | null;
   trialEndsAt: string | null;
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
+  accessSource: SubscriptionAccessSource;
 };
 
 export const EMPTY_SUBSCRIPTION_SNAPSHOT: SubscriptionSnapshot = {
@@ -209,6 +212,7 @@ export const EMPTY_SUBSCRIPTION_SNAPSHOT: SubscriptionSnapshot = {
   trialEndsAt: null,
   currentPeriodEnd: null,
   cancelAtPeriodEnd: false,
+  accessSource: "none",
 };
 
 export type WavonState = {
