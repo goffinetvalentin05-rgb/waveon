@@ -191,9 +191,12 @@ export type EmailSetting = {
   customLinks: EmailCustomLinks;
 };
 
-/** État d’abonnement Stripe — table = `WavonDbTable.businesses` (préfixe `NEXT_PUBLIC_WAEVON_DB_TABLE_PREFIX`). */
+/**
+ * État d’abonnement Stripe (lu en direct via l’API + cache court côté serveur).
+ * `none` = pas d’ID d’abonnement en base.
+ */
 export type SubscriptionSnapshot = {
-  status: string | null;
+  status: string;
   plan: "starter" | "pro" | null;
   trialEndsAt: string | null;
   currentPeriodEnd: string | null;
@@ -201,7 +204,7 @@ export type SubscriptionSnapshot = {
 };
 
 export const EMPTY_SUBSCRIPTION_SNAPSHOT: SubscriptionSnapshot = {
-  status: null,
+  status: "none",
   plan: null,
   trialEndsAt: null,
   currentPeriodEnd: null,

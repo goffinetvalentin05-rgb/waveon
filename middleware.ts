@@ -1,7 +1,5 @@
 import { createServerClient } from "@supabase/auth-helpers-nextjs";
 import { type NextRequest, NextResponse } from "next/server";
-import { hasActiveSubscription } from "@/lib/subscription/access";
-import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
@@ -52,8 +50,7 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isProtected =
-    path.startsWith("/dashboard");
+  const isProtected = path.startsWith("/dashboard");
 
   if (isProtected && !user) {
     const login = new URL("/login", request.url);
@@ -61,29 +58,22 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(login);
   }
 
-  if (isProtected && user) {
-    const isBilling =
-      path === "/dashboard/facturation" || path.startsWith("/dashboard/facturation/");
-    if (!isBilling) {
-      const { data: biz } = await supabase
-        .from(WavonDbTable.businesses)
-        .select("subscription_status, subscription_plan")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      const row = biz as { subscription_status?: string | null; subscription_plan?: string | null } | null;
-      if (
-        !hasActiveSubscription({
-          subscription_status: row?.subscription_status ?? null,
-          subscription_plan: row?.subscription_plan ?? null,
-        })
-      ) {
-        return NextResponse.redirect(new URL("/pricing", request.url));
-      }
-    }
-  }
-
   if ((path === "/login" || path === "/signup") && user) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  if (path.startsWith("/dashboard")) {
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-pathname", path);
+    const nextRes = NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
+    response.cookies.getAll().forEach((cookie) => {
+      nextRes.cookies.set(cookie.name, cookie.value);
+    });
+    response = nextRes;
   }
 
   return response;

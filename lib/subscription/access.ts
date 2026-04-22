@@ -5,12 +5,12 @@
  * - `invoices` : génération automatique de factures PDF (non implémentée pour l'instant).
  *
  * Exemple futur :
- *   if (!canAccessFeature(business, "invoices")) { … CTA Passer au Pro … }
+ *   if (!canAccessFeature({ status, plan }, "invoices")) { … CTA Passer au Pro … }
  */
 
 import type { BillingPlanId } from "@/lib/stripe/config";
 
-/** Statuts Stripe alignés avec la colonne `subscription_status` sur `WavonDbTable.businesses`. */
+/** Statuts Stripe courants (hors `none`, renvoyé quand il n’y a pas d’abonnement en base). */
 export type SubscriptionStatusDb =
   | "trialing"
   | "active"
@@ -24,13 +24,12 @@ export type GatedFeatureName = "invoices";
 const PRO_ONLY_FEATURES = new Set<GatedFeatureName>(["invoices"]);
 
 export type BusinessSubscriptionAccess = {
-  subscription_status: string | null;
-  subscription_plan: string | null;
+  status: string;
+  plan: string | null;
 };
 
 export function hasActiveSubscription(business: BusinessSubscriptionAccess): boolean {
-  const s = business.subscription_status;
-  return s === "trialing" || s === "active";
+  return business.status === "trialing" || business.status === "active";
 }
 
 /**
@@ -43,7 +42,7 @@ export function canAccessFeature(
 ): boolean {
   if (!hasActiveSubscription(business)) return false;
   if (!PRO_ONLY_FEATURES.has(featureName)) return true;
-  return business.subscription_plan === "pro";
+  return business.plan === "pro";
 }
 
 export function parseSubscriptionPlan(raw: string | null): BillingPlanId | null {

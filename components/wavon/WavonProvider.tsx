@@ -22,6 +22,7 @@ import {
   type Reservation,
   type ReservationStatus,
   type Service,
+  type SubscriptionSnapshot,
   type WeeklyDaySchedule,
   type WavonState,
 } from "@/lib/wavon/types";
@@ -66,11 +67,6 @@ type DbBusiness = {
   notify_owner_on_cancellation: boolean | null;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
-  subscription_status: string | null;
-  subscription_plan: string | null;
-  trial_ends_at: string | null;
-  current_period_end: string | null;
-  cancel_at_period_end: boolean | null;
 };
 
 type DbSettings = {
@@ -389,7 +385,7 @@ export function WavonProvider({
       const { data: business, error: businessErr } = await supabase
         .from(WavonDbTable.businesses)
         .select(
-          "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description,currency,notify_owner_on_new_reservation,notify_owner_on_cancellation,stripe_customer_id,stripe_subscription_id,subscription_status,subscription_plan,trial_ends_at,current_period_end,cancel_at_period_end"
+          "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description,currency,notify_owner_on_new_reservation,notify_owner_on_cancellation,stripe_customer_id,stripe_subscription_id"
         )
         .eq("user_id", userId)
         .maybeSingle();
@@ -403,7 +399,7 @@ export function WavonProvider({
             .from(WavonDbTable.businesses)
             .insert({ user_id: userId, public_slug: provisionalSlug })
             .select(
-              "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description,currency,notify_owner_on_new_reservation,notify_owner_on_cancellation,stripe_customer_id,stripe_subscription_id,subscription_status,subscription_plan,trial_ends_at,current_period_end,cancel_at_period_end"
+              "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description,currency,notify_owner_on_new_reservation,notify_owner_on_cancellation,stripe_customer_id,stripe_subscription_id"
             )
             .single();
           if (error) throw error;
@@ -541,15 +537,31 @@ export function WavonProvider({
 
       const blockedSlots: BlockedSlot[] = dbBlockedSlots.map((s) => blockedSlotFromDbRow(s));
 
+      let subscription: SubscriptionSnapshot = { ...EMPTY_SUBSCRIPTION_SNAPSHOT };
+      try {
+        const subRes = await fetch("/api/subscription/live", { credentials: "same-origin" });
+        if (subRes.ok) {
+          const body = (await subRes.json()) as Record<string, unknown>;
+          if (typeof body.status === "string") {
+            subscription = {
+              status: body.status,
+              plan: parseSubscriptionPlan(
+                typeof body.plan === "string" || body.plan === null ? (body.plan as string | null) : null
+              ),
+              trialEndsAt: typeof body.trialEndsAt === "string" ? body.trialEndsAt : null,
+              currentPeriodEnd:
+                typeof body.currentPeriodEnd === "string" ? body.currentPeriodEnd : null,
+              cancelAtPeriodEnd: Boolean(body.cancelAtPeriodEnd),
+            };
+          }
+        }
+      } catch {
+        /* garde EMPTY_SUBSCRIPTION_SNAPSHOT */
+      }
+
       const next: WavonState = {
         version: 1,
-        subscription: {
-          status: ensuredBusiness.subscription_status ?? null,
-          plan: parseSubscriptionPlan(ensuredBusiness.subscription_plan),
-          trialEndsAt: ensuredBusiness.trial_ends_at ?? null,
-          currentPeriodEnd: ensuredBusiness.current_period_end ?? null,
-          cancelAtPeriodEnd: Boolean(ensuredBusiness.cancel_at_period_end),
-        },
+        subscription,
         employees: dbEmployees.map(
           (e): Employee => ({
             id: e.id,

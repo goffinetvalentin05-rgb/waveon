@@ -40,7 +40,7 @@ export async function POST() {
   const origin = baseUrl();
   const portal = await stripe.billingPortal.sessions.create({
     customer: customerId,
-    return_url: `${origin}/dashboard/facturation`,
+    return_url: `${origin}/dashboard/facturation?portal=return`,
   });
 
   if (!portal.url) {

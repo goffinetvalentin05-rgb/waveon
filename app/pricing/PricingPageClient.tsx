@@ -13,13 +13,11 @@ import {
 import type { BillingPlanId } from "@/lib/stripe/config";
 import { PLAN_LABELS, PLAN_MONTHLY_PRICE_CHF } from "@/lib/stripe/config";
 import { supabase } from "@/lib/supabase/client";
-import { WavonDbTable } from "@/lib/supabase/wavon-tables";
-
 const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() ?? "";
 
 type BizSubRow = {
-  subscription_status: string | null;
-  subscription_plan: string | null;
+  status: string;
+  plan: string | null;
 };
 
 function CheckIcon({ className }: { className?: string }) {
@@ -54,12 +52,16 @@ export default function PricingPageClient() {
         setSessionReady(true);
         return;
       }
-      const { data: row } = await supabase
-        .from(WavonDbTable.businesses)
-        .select("subscription_status, subscription_plan")
-        .eq("user_id", uid)
-        .maybeSingle();
-      setBizSub((row as BizSubRow | null) ?? { subscription_status: null, subscription_plan: null });
+      const liveRes = await fetch("/api/subscription/live", { credentials: "same-origin" });
+      if (liveRes.ok) {
+        const body = (await liveRes.json()) as Record<string, unknown>;
+        setBizSub({
+          status: typeof body.status === "string" ? body.status : "none",
+          plan: typeof body.plan === "string" || body.plan === null ? (body.plan as string | null) : null,
+        });
+      } else {
+        setBizSub({ status: "none", plan: null });
+      }
       setSessionReady(true);
     })();
   }, []);
@@ -109,7 +111,7 @@ export default function PricingPageClient() {
     []
   );
 
-  const currentPlan = parseSubscriptionPlan(bizSub?.subscription_plan ?? null);
+  const currentPlan = parseSubscriptionPlan(bizSub?.plan ?? null);
   const subscribed = bizSub ? hasActiveSubscription(bizSub) : false;
 
   const starterBullets = [

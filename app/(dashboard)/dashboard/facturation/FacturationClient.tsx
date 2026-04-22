@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -23,12 +22,10 @@ function formatDateFr(iso: string | null | undefined): string | null {
 
 export default function FacturationClient() {
   const { ready, state } = useWavon();
-  const searchParams = useSearchParams();
-  const showSuccess = searchParams.get("success") === "true";
   const [portalLoading, setPortalLoading] = useState(false);
 
   const sub = state.subscription;
-  const access = { subscription_status: sub.status, subscription_plan: sub.plan };
+  const access = { status: sub.status, plan: sub.plan };
   const active = hasActiveSubscription(access);
   const planLabel = sub.plan ? PLAN_LABELS[sub.plan] : null;
   const monthlyChf = sub.plan ? PLAN_MONTHLY_PRICE_CHF[sub.plan] : null;
@@ -67,13 +64,6 @@ export default function FacturationClient() {
           Abonnement Waevon et moyens de paiement (via Stripe).
         </p>
       </div>
-
-      {showSuccess ? (
-        <div className="rounded-xl border border-emerald-200/90 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
-          Bienvenue ! Ton abonnement est pris en compte. Tu peux gérer ta carte et ton plan depuis ce
-          page ou le portail Stripe.
-        </div>
-      ) : null}
 
       <section className="rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-neutral-950">Mon abonnement</h2>
@@ -132,7 +122,10 @@ export default function FacturationClient() {
           </div>
         ) : null}
 
-        {(status === "canceled" || status === "unpaid" || status === "incomplete" || !status) &&
+        {(status === "none" ||
+          status === "canceled" ||
+          status === "unpaid" ||
+          status === "incomplete") &&
         !active ? (
           <div className="mt-4 space-y-3 text-sm text-neutral-700">
             <span className="inline-flex rounded-full bg-neutral-200 px-3 py-1 text-xs font-medium text-neutral-800">
