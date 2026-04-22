@@ -266,6 +266,40 @@ export function getAvailableSlots(
   return slots;
 }
 
+export type SlotsByEmployee = Record<string, string[]>; // time -> employeeIds
+
+export function unionAvailableSlotsByEmployee(input: {
+  ymd: string;
+  service: Service;
+  statesByEmployeeId: Record<string, WavonState>;
+  employeeIdsInOrder: string[];
+}): SlotsByEmployee {
+  const { ymd, service, statesByEmployeeId, employeeIdsInOrder } = input;
+  const out: SlotsByEmployee = {};
+  for (const employeeId of employeeIdsInOrder) {
+    const st = statesByEmployeeId[employeeId];
+    if (!st) continue;
+    const slots = getAvailableSlots(ymd, service, st, employeeId);
+    for (const t of slots) {
+      out[t] = out[t] ? [...out[t]!, employeeId] : [employeeId];
+    }
+  }
+  return out;
+}
+
+export function pickFirstAvailableEmployeeForSlot(input: {
+  time: string;
+  slotsByEmployee: SlotsByEmployee;
+  employeeIdsInOrder: string[];
+}): string | null {
+  const { time, slotsByEmployee, employeeIdsInOrder } = input;
+  const eligible = new Set(slotsByEmployee[time] ?? []);
+  for (const id of employeeIdsInOrder) {
+    if (eligible.has(id)) return id;
+  }
+  return null;
+}
+
 /** Segments valides : pas de chevauchement interne, fin > début */
 export function validateSegments(segments: TimeSegment[]): string | null {
   const norm = segments
