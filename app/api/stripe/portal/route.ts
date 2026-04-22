@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
+import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { requireStripe } from "@/lib/stripe/client";
 
 export const runtime = "nodejs";
@@ -20,7 +21,7 @@ export async function POST() {
   }
 
   const { data: business, error: bizErr } = await supabase
-    .from("wavon_businesses")
+    .from(WavonDbTable.businesses)
     .select("id, stripe_customer_id")
     .eq("user_id", user.id)
     .maybeSingle();

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
+import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { planFromStripePriceId } from "@/lib/stripe/config";
 import type { SubscriptionStatusDb } from "@/lib/subscription/access";
 
@@ -46,7 +47,7 @@ export async function syncBusinessFromStripeSubscription(
 ): Promise<void> {
   const plan = resolvePlan(sub);
   const { error } = await admin
-    .from("wavon_businesses")
+    .from(WavonDbTable.businesses)
     .update({
       stripe_subscription_id: sub.id,
       subscription_status: normalizeSubscriptionStatus(sub.status),
@@ -64,7 +65,7 @@ export async function findBusinessIdByStripeSubscription(
   subscriptionId: string
 ): Promise<string | null> {
   const { data, error } = await admin
-    .from("wavon_businesses")
+    .from(WavonDbTable.businesses)
     .select("id")
     .eq("stripe_subscription_id", subscriptionId)
     .maybeSingle();
@@ -77,7 +78,7 @@ export async function findBusinessIdByStripeCustomer(
   customerId: string
 ): Promise<string | null> {
   const { data, error } = await admin
-    .from("wavon_businesses")
+    .from(WavonDbTable.businesses)
     .select("id")
     .eq("stripe_customer_id", customerId)
     .maybeSingle();
@@ -90,7 +91,7 @@ export async function clearSubscriptionCanceled(
   subscriptionId: string
 ): Promise<void> {
   const { error } = await admin
-    .from("wavon_businesses")
+    .from(WavonDbTable.businesses)
     .update({
       stripe_subscription_id: null,
       subscription_status: "canceled",
@@ -104,7 +105,7 @@ export async function markPastDueByCustomerId(
   customerId: string
 ): Promise<void> {
   const { error } = await admin
-    .from("wavon_businesses")
+    .from(WavonDbTable.businesses)
     .update({ subscription_status: "past_due" })
     .eq("stripe_customer_id", customerId);
   if (error) throw error;

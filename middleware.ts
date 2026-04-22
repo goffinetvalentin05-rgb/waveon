@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/auth-helpers-nextjs";
 import { type NextRequest, NextResponse } from "next/server";
 import { hasActiveSubscription } from "@/lib/subscription/access";
+import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
@@ -65,7 +66,7 @@ export async function middleware(request: NextRequest) {
       path === "/dashboard/facturation" || path.startsWith("/dashboard/facturation/");
     if (!isBilling) {
       const { data: biz } = await supabase
-        .from("wavon_businesses")
+        .from(WavonDbTable.businesses)
         .select("subscription_status, subscription_plan")
         .eq("user_id", user.id)
         .maybeSingle();

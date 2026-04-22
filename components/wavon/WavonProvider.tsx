@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { addMinutes, validateBooking, weeklyDefault } from "@/lib/wavon/booking-logic";
+import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import {
   EMPTY_SUBSCRIPTION_SNAPSHOT,
   type BlockedSlot,
@@ -386,7 +387,7 @@ export function WavonProvider({
 
       // Business row should exist thanks to DB trigger; keep a safe fallback.
       const { data: business, error: businessErr } = await supabase
-        .from("wavon_businesses")
+        .from(WavonDbTable.businesses)
         .select(
           "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description,currency,notify_owner_on_new_reservation,notify_owner_on_cancellation,stripe_customer_id,stripe_subscription_id,subscription_status,subscription_plan,trial_ends_at,current_period_end,cancel_at_period_end"
         )
@@ -399,7 +400,7 @@ export function WavonProvider({
         (await (async () => {
           const provisionalSlug = `c-${crypto.randomUUID().replace(/-/g, "").slice(0, 11)}`;
           const { data: created, error } = await supabase
-            .from("wavon_businesses")
+            .from(WavonDbTable.businesses)
             .insert({ user_id: userId, public_slug: provisionalSlug })
             .select(
               "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description,currency,notify_owner_on_new_reservation,notify_owner_on_cancellation,stripe_customer_id,stripe_subscription_id,subscription_status,subscription_plan,trial_ends_at,current_period_end,cancel_at_period_end"
@@ -1661,7 +1662,7 @@ export function WavonProvider({
         if (v.ok) businessPatch.public_slug = v.slug;
       }
       if (Object.keys(businessPatch).length > 0) {
-        await supabase.from("wavon_businesses").update(businessPatch).eq("id", businessId);
+        await supabase.from(WavonDbTable.businesses).update(businessPatch).eq("id", businessId);
       }
 
       const settingsPatch: Record<string, unknown> = {};

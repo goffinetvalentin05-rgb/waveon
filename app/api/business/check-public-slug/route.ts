@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { normalizePublicSlugInput, validatePublicSlugFormat } from "@/lib/wavon/public-slug";
 
 /**
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
     const slug = formatted.slug;
 
     const { data: myBiz, error: bizErr } = await supabase
-      .from("wavon_businesses")
+      .from(WavonDbTable.businesses)
       .select("id")
       .eq("user_id", user.id)
       .maybeSingle();
@@ -42,7 +43,7 @@ export async function GET(req: NextRequest) {
 
     const admin = createAdminSupabaseClient();
     const { data: taken, error: qErr } = await admin
-      .from("wavon_businesses")
+      .from(WavonDbTable.businesses)
       .select("id")
       .eq("public_slug", slug)
       .neq("id", myId)

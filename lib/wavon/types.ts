@@ -191,7 +191,7 @@ export type EmailSetting = {
   customLinks: EmailCustomLinks;
 };
 
-/** État d’abonnement Stripe (wavon_businesses) — utilisé pour l’UI et le gating. */
+/** État d’abonnement Stripe (table SQL `wavon_businesses`, constante `WavonDbTable.businesses`). */
 export type SubscriptionSnapshot = {
   status: string | null;
   plan: "starter" | "pro" | null;

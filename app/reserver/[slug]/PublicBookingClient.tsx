@@ -21,6 +21,7 @@ import { landingSection } from "@/components/landing/landing-tokens";
 import { btnPrimaryClass, inputClass, labelClass, userTextBreakClass } from "@/lib/wavon/tokens";
 import { supabase } from "@/lib/supabase/client";
 import type { BlockedSlot, DayKey, Employee, Service, WavonState } from "@/lib/wavon/types";
+import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { EMPTY_SUBSCRIPTION_SNAPSHOT } from "@/lib/wavon/types";
 import { getBrandingPublicUrl } from "@/lib/wavon/storage";
 
@@ -184,7 +185,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
       setBusinessId(null);
       try {
         const { data: business, error: businessErr } = await supabase
-          .from("wavon_businesses")
+          .from(WavonDbTable.businesses)
           .select(
             "id,business_name,currency,public_slug,public_welcome_message,public_description,public_display_name,public_logo_url,public_cover_url,public_show_phone,public_show_address,public_show_description,phone,address"
           )

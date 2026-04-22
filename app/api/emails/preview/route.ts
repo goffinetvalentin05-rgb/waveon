@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { render } from "@react-email/render";
 import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
+import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { formatPrice, normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
 import { renderTemplateText, sanitizeUrl } from "@/lib/emails/configurable";
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { data: bizRow, error: bizErr } = await supabase
-      .from("wavon_businesses")
+      .from(WavonDbTable.businesses)
       .select("id,user_id")
       .eq("id", businessId)
       .maybeSingle();
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest) {
 
     const admin = createAdminSupabaseClient();
     const { data: biz } = await admin
-      .from("wavon_businesses")
+      .from(WavonDbTable.businesses)
       .select(
         "business_name,public_display_name,phone,address,city,postal_code,currency,public_logo_url,public_slug"
       )

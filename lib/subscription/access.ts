@@ -10,7 +10,7 @@
 
 import type { BillingPlanId } from "@/lib/stripe/config";
 
-/** Statuts Stripe alignés avec la colonne `subscription_status` (wavon_businesses). */
+/** Statuts Stripe alignés avec la colonne `subscription_status` sur `WavonDbTable.businesses`. */
 export type SubscriptionStatusDb =
   | "trialing"
   | "active"

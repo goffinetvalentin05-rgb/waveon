@@ -10,6 +10,7 @@ import {
   syncBusinessFromStripeSubscription,
 } from "@/lib/stripe/db-sync";
 import { subscriptionIdFromInvoice } from "@/lib/stripe/invoice-helpers";
+import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 
 export const runtime = "nodejs";
 
@@ -119,7 +120,7 @@ export async function POST(req: Request) {
             await syncBusinessFromStripeSubscription(admin, businessId, sub);
             if (inv.period_end) {
               await admin
-                .from("wavon_businesses")
+                .from(WavonDbTable.businesses)
                 .update({ current_period_end: new Date(inv.period_end * 1000).toISOString() })
                 .eq("id", businessId);
             }

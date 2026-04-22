@@ -1,6 +1,7 @@
 import { render } from "@react-email/render";
 import { getResend, getResendApiKey, EMAIL_FROM, EMAIL_REPLY_TO_FALLBACK } from "@/lib/resend";
 import { createAdminSupabaseClient, getSupabaseServiceRoleKey } from "@/lib/supabase/admin";
+import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { formatPrice, normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
 import ReservationReminder from "@/lib/emails/templates/ReservationReminder";
 import ReservationPostService from "@/lib/emails/templates/ReservationPostService";
@@ -225,7 +226,7 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
   const windowMs = 15 * 60 * 1000;
 
   const { data: bizRows, error: bErr } = await admin
-    .from("wavon_businesses")
+    .from(WavonDbTable.businesses)
     .select("id")
     .order("created_at", { ascending: true })
     .limit(options?.limitBusinesses ?? 500);
@@ -254,7 +255,7 @@ export async function runScheduledEmails(options?: { now?: Date; limitBusinesses
 
     // Fetch business details once
     const { data: biz } = await admin
-      .from("wavon_businesses")
+      .from(WavonDbTable.businesses)
       .select("business_name,public_display_name,email,phone,address,city,postal_code,currency,public_logo_url")
       .eq("id", businessId)
       .maybeSingle();

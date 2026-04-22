@@ -8,6 +8,7 @@ import {
   EMAIL_FROM,
 } from "@/lib/resend";
 import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
+import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import {
   createAdminSupabaseClient,
   getSupabaseServiceRoleKey,
@@ -111,7 +112,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { data: bizRow, error: bizErr } = await supabase
-      .from("wavon_businesses")
+      .from(WavonDbTable.businesses)
       .select("id,user_id")
       .eq("id", businessId)
       .maybeSingle();
@@ -121,7 +122,7 @@ export async function POST(req: NextRequest) {
 
     const admin = createAdminSupabaseClient();
     const { data: biz } = await admin
-      .from("wavon_businesses")
+      .from(WavonDbTable.businesses)
       .select(
         "business_name,public_display_name,phone,address,city,postal_code,email,currency,public_logo_url,public_slug"
       )

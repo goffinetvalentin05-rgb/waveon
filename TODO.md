@@ -1,5 +1,6 @@
 # Stripe / facturation — notes techniques
 
+- **Nom de table `wavon_businesses` vs marque « Waevon »** : en base PostgreSQL, la table s’appelle `public.wavon_businesses` (préfixe historique `wavon_`, **sans** « e »). Il n’y a **pas** de table `waevon_businesses` dans les migrations du dépôt. Une erreur Supabase **400** sur le checkout est souvent due à des **colonnes manquantes** (ex. `stripe_customer_id` si la migration `20260422140000_wavon_stripe_subscription.sql` n’a pas été appliquée sur le projet distant), pas à un « mauvais nom » de table. Voir les logs `[stripe/checkout]` et `[ensureBusinessForUser]` sur Vercel.
 - **API Stripe récente (SDK 22 / `2026-03-25.dahlia`)** : `current_period_end` n’est plus sur l’objet `Subscription` racine ; la fin de période est lue sur `subscription.items.data[0].current_period_end`. Les factures d’abonnement exposent l’ID d’abonnement sous `invoice.parent.subscription_details.subscription`, pas un champ `subscription` racine sur `Invoice`.
 - **Webhooks** : après vérification de la signature, les erreurs de traitement sont loguées mais la route répond **200** pour éviter des boucles de retry Stripe sur erreurs métier (choix explicite du cahier des charges).
 - **Statut `paused` (Stripe)** : mappé en base sur `active` faute de valeur dans la contrainte CHECK SQL — à affiner si tu veux un statut dédié.

@@ -2,6 +2,7 @@ import { render } from "@react-email/render";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getResend, getResendApiKey, EMAIL_FROM, EMAIL_REPLY_TO_FALLBACK } from "@/lib/resend";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { formatPrice, normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
 import type { EmailTemplateType } from "@/lib/wavon/types";
 import { renderTemplateText } from "@/lib/emails/configurable";
@@ -132,7 +133,7 @@ async function fetchReservationData(
       .eq("id", reservation.service_id)
       .maybeSingle(),
     admin
-      .from("wavon_businesses")
+      .from(WavonDbTable.businesses)
       .select(
         "business_name,public_display_name,email,phone,address,city,postal_code,currency,public_logo_url,public_slug,notify_owner_on_new_reservation,notify_owner_on_cancellation"
       )

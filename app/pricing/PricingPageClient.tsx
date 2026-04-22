@@ -13,6 +13,7 @@ import {
 import type { BillingPlanId } from "@/lib/stripe/config";
 import { PLAN_LABELS, PLAN_MONTHLY_PRICE_CHF } from "@/lib/stripe/config";
 import { supabase } from "@/lib/supabase/client";
+import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 
 const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() ?? "";
 
@@ -54,7 +55,7 @@ export default function PricingPageClient() {
         return;
       }
       const { data: row } = await supabase
-        .from("wavon_businesses")
+        .from(WavonDbTable.businesses)
         .select("subscription_status, subscription_plan")
         .eq("user_id", uid)
         .maybeSingle();
