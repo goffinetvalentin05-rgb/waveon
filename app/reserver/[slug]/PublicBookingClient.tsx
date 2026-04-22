@@ -20,7 +20,7 @@ import { formatPrice, normalizeBusinessCurrency } from "@/lib/utils/formatPrice"
 import { landingSection } from "@/components/landing/landing-tokens";
 import { btnPrimaryClass, inputClass, labelClass, userTextBreakClass } from "@/lib/wavon/tokens";
 import { supabase } from "@/lib/supabase/client";
-import type { DayKey, Employee, Service, WavonState } from "@/lib/wavon/types";
+import type { BlockedSlot, DayKey, Employee, Service, WavonState } from "@/lib/wavon/types";
 import { getBrandingPublicUrl } from "@/lib/wavon/storage";
 
 type DbBusiness = {
@@ -93,6 +93,17 @@ type DbReservation = {
   status: "confirmed" | "cancelled" | "pending";
   created_at: string;
   notes?: string | null;
+};
+
+type DbBlockedSlot = {
+  id: string;
+  business_id: string;
+  employee_id: string | null;
+  start_at: string;
+  end_at: string;
+  reason: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 type DbWeeklyAvailability = {
@@ -186,7 +197,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
         const b = business as DbBusiness;
         const id = b.id;
 
-        const [settingsRes, servicesRes, reservationsRes, employeesRes] =
+        const [settingsRes, servicesRes, reservationsRes, blockedSlotsRes, employeesRes] =
           await Promise.all([
             supabase
               .from("wavon_settings")
@@ -213,6 +224,11 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
               .eq("business_id", id)
               .order("start_at", { ascending: true }),
             supabase
+              .from("blocked_slots")
+              .select("id,business_id,employee_id,start_at,end_at,reason,created_at,updated_at")
+              .eq("business_id", id)
+              .order("start_at", { ascending: true }),
+            supabase
               .from("wavon_employees")
               .select("id,business_id,name,email,phone,photo_url,color,is_active,display_order,created_at,updated_at")
               .eq("business_id", id)
@@ -225,12 +241,14 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
           settingsRes.error ||
           servicesRes.error ||
           reservationsRes.error ||
+          blockedSlotsRes.error ||
           employeesRes.error
         ) {
           throw (
             settingsRes.error ||
             servicesRes.error ||
             reservationsRes.error ||
+            blockedSlotsRes.error ||
             employeesRes.error
           );
         }
@@ -238,7 +256,19 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
         const dbSettings = (settingsRes.data as DbSettings | null) ?? null;
         const dbServices = (servicesRes.data as DbService[]) ?? [];
         const dbReservations = (reservationsRes.data as DbReservation[]) ?? [];
+        const dbBlockedSlots = (blockedSlotsRes.data as DbBlockedSlot[]) ?? [];
         const dbEmployees = (employeesRes.data as DbEmployee[]) ?? [];
+
+        const blockedSlots: BlockedSlot[] = dbBlockedSlots.map((s) => ({
+          id: s.id,
+          businessId: s.business_id,
+          employeeId: s.employee_id ?? null,
+          start: s.start_at,
+          end: s.end_at,
+          reason: s.reason ?? null,
+          createdAt: s.created_at,
+          updatedAt: s.updated_at,
+        }));
 
         const emp: Employee[] = dbEmployees.map((e) => ({
           id: e.id,
@@ -273,6 +303,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
           availabilityMode: dbSettings?.availability_mode ?? "fixed",
           customDays: [],
           blockedDates: [],
+          blockedSlots,
           services: dbServices.map(
             (s): Service => ({
               id: s.id,
@@ -533,6 +564,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
         weekly: p.weekly,
         customDays: p.customDays,
         blockedDates: p.blockedDates,
+        blockedSlots: state.blockedSlots ?? [],
       };
     }
     return out;
@@ -712,6 +744,15 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
         .order("start_at", { ascending: true });
       if (fresErr) throw fresErr;
 
+      const { data: freshBlocked, error: fbErr } = await supabase
+        .from("blocked_slots")
+        .select("id,business_id,employee_id,start_at,end_at,reason,created_at,updated_at")
+        .eq("business_id", businessId)
+        .lt("start_at", dayEnd.toISOString())
+        .gt("end_at", dayStart.toISOString())
+        .order("start_at", { ascending: true });
+      if (fbErr) throw fbErr;
+
       const nextState: WavonState = {
         ...state,
         reservations: ((freshRes ?? []) as DbReservation[]).map((r) => ({
@@ -728,6 +769,16 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
           status: r.status,
           createdAt: r.created_at,
           notes: r.notes ?? "",
+        })),
+        blockedSlots: ((freshBlocked ?? []) as DbBlockedSlot[]).map((s) => ({
+          id: s.id,
+          businessId: s.business_id,
+          employeeId: s.employee_id ?? null,
+          start: s.start_at,
+          end: s.end_at,
+          reason: s.reason ?? null,
+          createdAt: s.created_at,
+          updatedAt: s.updated_at,
         })),
       };
 
@@ -773,6 +824,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
                 weekly: planningByEmployeeId[finalEmployeeId]!.weekly,
                 customDays: planningByEmployeeId[finalEmployeeId]!.customDays,
                 blockedDates: planningByEmployeeId[finalEmployeeId]!.blockedDates,
+                blockedSlots: nextState.blockedSlots ?? [],
               }
             : {}),
         },

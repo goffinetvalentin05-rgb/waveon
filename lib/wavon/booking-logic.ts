@@ -1,5 +1,6 @@
 import {
   type AvailabilityMode,
+  type BlockedSlot,
   type CustomDaySlot,
   type DayKey,
   type Reservation,
@@ -88,6 +89,23 @@ export function overlapsAnyReservation(
       Math.max(0, (r.bufferAfterMin || 0) + gap)
     );
     return rangesOverlap(start, end, rs, re);
+  });
+}
+
+export function overlapsAnyBlockedSlot(input: {
+  start: Date;
+  end: Date;
+  blockedSlots: BlockedSlot[];
+  employeeId?: string | null;
+}): boolean {
+  const { start, end, blockedSlots, employeeId } = input;
+  return blockedSlots.some((b) => {
+    const applies =
+      employeeId === undefined
+        ? true
+        : (b.employeeId === null || b.employeeId === employeeId);
+    if (!applies) return false;
+    return rangesOverlap(start, end, new Date(b.start), new Date(b.end));
   });
 }
 
@@ -218,6 +236,19 @@ export function validateBooking(ctx: BookingValidationContext): string | null {
     )
   ) {
     return "Chevauchement avec une autre réservation.";
+  }
+
+  const blockedSlots = state.blockedSlots ?? [];
+  if (
+    blockedSlots.length > 0 &&
+    overlapsAnyBlockedSlot({
+      start: busyStart,
+      end: busyEnd,
+      blockedSlots,
+      employeeId,
+    })
+  ) {
+    return "Créneau bloqué.";
   }
   return null;
 }
