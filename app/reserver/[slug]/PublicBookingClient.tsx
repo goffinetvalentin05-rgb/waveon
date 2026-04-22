@@ -439,10 +439,63 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
 
   const showEmployeeStep = eligibleEmployees.length > 1;
 
+  const totalSteps = showEmployeeStep ? 5 : 4;
+  const currentStepNumber = useMemo(() => {
+    if (step === "service") return 1;
+    if (step === "employee") return 2;
+    if (step === "slot") return showEmployeeStep ? 3 : 2;
+    if (step === "client") return showEmployeeStep ? 4 : 3;
+    return showEmployeeStep ? 5 : 4;
+  }, [step, showEmployeeStep]);
+
+  const goBack = () => {
+    setErr(null);
+    if (step === "confirm") return setStep("client");
+    if (step === "client") return setStep("slot");
+    if (step === "slot") return setStep(showEmployeeStep ? "employee" : "service");
+    if (step === "employee") return setStep("service");
+    return setStep("service");
+  };
+
+  const goNext = () => {
+    setErr(null);
+    if (step === "service") {
+      if (!svc) return;
+      if (showEmployeeStep) {
+        setStep("employee");
+      } else {
+        setEmployeeChoice(eligibleEmployees[0]?.id ?? "");
+        setStep("slot");
+      }
+      return;
+    }
+    if (step === "employee") {
+      setStep("slot");
+      return;
+    }
+    if (step === "slot") {
+      if (slots.length === 0) {
+        setErr("Aucun créneau disponible pour ce jour.");
+        return;
+      }
+      setStep("client");
+      return;
+    }
+    if (step === "client") {
+      if (!clientName.trim()) {
+        setErr("Indique ton nom.");
+        return;
+      }
+      setStep("confirm");
+    }
+  };
+
   useEffect(() => {
     if (!svc) return;
     setStep("service");
     setEmployeeChoice("");
+    setErr(null);
+    setMsg(null);
   }, [svc?.id]);
 
   const statesByEmployeeId = useMemo(() => {
@@ -466,6 +519,17 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
     [eligibleEmployees]
   );
 
+  const slotsByEmployee = useMemo(() => {
+    if (!state || !svc || !dateYmd) return null;
+    if (!showEmployeeStep) return null;
+    return unionAvailableSlotsByEmployee({
+      ymd: dateYmd,
+      service: svc,
+      statesByEmployeeId,
+      employeeIdsInOrder,
+    });
+  }, [state, svc, dateYmd, showEmployeeStep, statesByEmployeeId, employeeIdsInOrder]);
+
   const slots = useMemo(() => {
     if (!state || !svc || !dateYmd) return [];
     if (!showEmployeeStep) {
@@ -476,26 +540,46 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
     if (employeeChoice && statesByEmployeeId[employeeChoice]) {
       return getAvailableSlots(dateYmd, svc, statesByEmployeeId[employeeChoice], employeeChoice);
     }
-    const by = unionAvailableSlotsByEmployee({
-      ymd: dateYmd,
-      service: svc,
-      statesByEmployeeId,
+    return Object.keys(slotsByEmployee ?? {}).sort();
+  }, [state, svc, dateYmd, showEmployeeStep, employeeChoice, statesByEmployeeId, eligibleEmployees, slotsByEmployee]);
+
+  const assignedEmployeeIdPreview = useMemo(() => {
+    if (!svc) return null;
+    if (!showEmployeeStep) return eligibleEmployees[0]?.id ?? null;
+    if (employeeChoice) return employeeChoice;
+    if (!slotsByEmployee) return null;
+    return pickFirstAvailableEmployeeForSlot({
+      time,
+      slotsByEmployee,
       employeeIdsInOrder,
     });
-    return Object.keys(by).sort();
-  }, [state, svc, dateYmd, showEmployeeStep, employeeChoice, statesByEmployeeId, employeeIdsInOrder, eligibleEmployees]);
+  }, [svc, showEmployeeStep, eligibleEmployees, employeeChoice, slotsByEmployee, time, employeeIdsInOrder]);
+
+  const assignedEmployeeNamePreview = useMemo(() => {
+    const id = assignedEmployeeIdPreview;
+    if (!id) return null;
+    return employees.find((e) => e.id === id)?.name ?? null;
+  }, [assignedEmployeeIdPreview, employees]);
 
   const noSlotsHint = useMemo(() => {
     if (!state || !svc || !dateYmd) return null;
     if (slots.length > 0) return null;
-    if (state.blockedDates.includes(dateYmd)) return "Cette date est bloquée.";
+    const hintEmployeeId =
+      !showEmployeeStep
+        ? (eligibleEmployees[0]?.id ?? null)
+        : (employeeChoice ? employeeChoice : (eligibleEmployees[0]?.id ?? null));
+    const hintState =
+      hintEmployeeId && statesByEmployeeId[hintEmployeeId]
+        ? statesByEmployeeId[hintEmployeeId]
+        : state;
+    if (hintState.blockedDates.includes(dateYmd)) return "Cette date est bloquée.";
 
     const dk = dayKeyFromDate(parseYmd(dateYmd)) as DayKey;
-    const custom = state.customDays.find((d) => d.date === dateYmd) ?? null;
+    const custom = hintState.customDays.find((d) => d.date === dateYmd) ?? null;
     const segs =
-      state.availabilityMode === "custom"
-        ? (custom?.segments?.length ? custom.segments : state.weekly[dk]?.enabled ? state.weekly[dk].segments : [])
-        : (state.weekly[dk]?.enabled ? state.weekly[dk].segments : []);
+      hintState.availabilityMode === "custom"
+        ? (custom?.segments?.length ? custom.segments : hintState.weekly[dk]?.enabled ? hintState.weekly[dk].segments : [])
+        : (hintState.weekly[dk]?.enabled ? hintState.weekly[dk].segments : []);
 
     const normalized = (segs ?? []).filter((s) => timeToMinutes(s.end) > timeToMinutes(s.start));
     if (normalized.length === 0) {
@@ -513,11 +597,11 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
 
     // Check booking window constraints (notice / max advance / same-day)
     const firstStart = combineYmdTime(dateYmd, normalized[0]!.start);
-    const win = validateReservationWindow(firstStart, svc, state.settings);
+    const win = validateReservationWindow(firstStart, svc, hintState.settings);
     if (win) return win;
 
     return "Tous les créneaux sont déjà pris pour ce jour.";
-  }, [state, svc, dateYmd, slots.length]);
+  }, [state, svc, dateYmd, slots.length, showEmployeeStep, employeeChoice, eligibleEmployees, statesByEmployeeId]);
 
   if (!state) {
     return (
@@ -596,7 +680,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
       const { data: freshRes, error: fresErr } = await supabase
         .from("wavon_reservations")
         .select(
-          "id,client_name,client_id,service_id,start_at,end_at,duration_minutes,buffer_before_minutes,buffer_after_minutes,status,created_at,notes"
+          "id,client_name,client_id,service_id,employee_id,start_at,end_at,duration_minutes,buffer_before_minutes,buffer_after_minutes,status,created_at,notes"
         )
         .eq("business_id", businessId)
         .gte("start_at", dayStart.toISOString())
@@ -897,183 +981,270 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
                 {/* Form section (integrated) */}
                 <div className="border-t border-neutral-100 px-6 py-6 sm:px-8 sm:py-8">
                   <div className="space-y-6">
-              <div className="min-w-0 overflow-hidden">
-                <label className={labelClass}>Prestation</label>
-                <select
-                  className={`${inputClass} mt-2 max-w-full`}
-                  value={resolvedServiceId ?? ""}
-                  onChange={(e) => setServiceId(e.target.value)}
-                >
-                  {state.services.map((s) => (
-                    <option key={s.id} value={s.id} title={`${s.name} — ${s.durationMin} min`}>
-                      {s.name} — {s.durationMin} min — {formatPrice(s.price, state.settings.currency)}
-                    </option>
-                  ))}
-                </select>
-                {svc?.description ? (
-                  <p
-                    className={`mt-2 text-xs leading-relaxed text-neutral-500 ${userTextBreakClass} line-clamp-3`}
-                  >
-                    {svc.description}
-                  </p>
-                ) : null}
-              </div>
-
-              {showEmployeeStep ? (
-                <div className="rounded-3xl border border-neutral-200/90 bg-white p-4">
-                  <p className="text-sm font-semibold text-neutral-950">Prestataire</p>
-                  <p className="mt-1 text-xs leading-relaxed text-neutral-500">
-                    Choisis avec qui tu souhaites prendre rendez-vous.
-                  </p>
-                  <div className="mt-4 space-y-3">
-                    <button
-                      type="button"
-                      className={`w-full rounded-2xl border px-4 py-3 text-left text-sm transition ${
-                        employeeChoice === ""
-                          ? "border-neutral-900 bg-neutral-950 text-white"
-                          : "border-neutral-200/90 bg-white text-neutral-800 hover:bg-neutral-50"
-                      }`}
-                      onClick={() => setEmployeeChoice("")}
-                    >
-                      Sans préférence
-                    </button>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {eligibleEmployees.map((e) => {
-                        const selected = employeeChoice === e.id;
-                        const photo = e.photoUrl?.trim()
-                          ? (getBrandingPublicUrl(e.photoUrl) || e.photoUrl)
-                          : null;
-                        const initials = (e.name.trim().slice(0, 2) || "?").toUpperCase();
-                        return (
-                          <button
-                            key={e.id}
-                            type="button"
-                            className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm transition ${
-                              selected
-                                ? "border-neutral-900 bg-neutral-950 text-white"
-                                : "border-neutral-200/90 bg-white text-neutral-800 hover:bg-neutral-50"
-                            }`}
-                            onClick={() => setEmployeeChoice(e.id)}
-                          >
-                            <span className="relative size-10 shrink-0 overflow-hidden rounded-full border border-neutral-200/90 bg-white">
-                              {photo ? (
-                                <Image src={photo} alt="" fill className="object-cover" />
-                              ) : (
-                                <span
-                                  className="flex size-10 items-center justify-center text-xs font-semibold text-white"
-                                  style={{ backgroundColor: e.color }}
-                                >
-                                  {initials}
-                                </span>
-                              )}
-                            </span>
-                            <span className="min-w-0">
-                              <span className={`block font-semibold ${selected ? "text-white" : "text-neutral-950"} ${userTextBreakClass}`}>
-                                {e.name}
-                              </span>
-                            </span>
-                          </button>
-                        );
-                      })}
+                    <div className="flex items-center justify-between">
+                      {step !== "service" ? (
+                        <button
+                          type="button"
+                          className="text-sm font-medium text-neutral-600 underline-offset-4 hover:underline"
+                          onClick={goBack}
+                        >
+                          ← Retour
+                        </button>
+                      ) : (
+                        <span />
+                      )}
+                      <span className="text-xs font-medium text-neutral-400">
+                        Étape {currentStepNumber}/{totalSteps}
+                      </span>
                     </div>
-                  </div>
-                </div>
-              ) : null}
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className={labelClass}>Jour</label>
-                  <input
-                    type="date"
-                    className={`${inputClass} mt-2`}
-                    value={dateYmd}
-                    onChange={(e) => setDateYmd(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Heure</label>
-                  <select
-                    className={`${inputClass} mt-2`}
-                    value={time}
-                    onChange={(e) => setTime(e.target.value)}
-                  >
-                    {slots.length === 0 ? (
-                      <option value={time}>Aucun créneau</option>
-                    ) : (
-                      slots.map((t) => (
-                        <option key={t} value={t}>
-                          {t}
-                        </option>
-                      ))
-                    )}
-                  </select>
-                  {noSlotsHint ? (
-                    <p className={`mt-2 text-xs leading-relaxed text-neutral-500 ${userTextBreakClass}`}>
-                      {noSlotsHint}
-                    </p>
-                  ) : null}
-                </div>
-              </div>
+                    {step === "service" ? (
+                      <div className="space-y-5">
+                        <div className="min-w-0 overflow-hidden">
+                          <label className={labelClass}>Prestation</label>
+                          <select
+                            className={`${inputClass} mt-2 max-w-full`}
+                            value={resolvedServiceId ?? ""}
+                            onChange={(e) => setServiceId(e.target.value)}
+                          >
+                            {state.services.map((s) => (
+                              <option key={s.id} value={s.id} title={`${s.name} — ${s.durationMin} min`}>
+                                {s.name} — {s.durationMin} min — {formatPrice(s.price, state.settings.currency)}
+                              </option>
+                            ))}
+                          </select>
+                          {svc?.description ? (
+                            <p className={`mt-2 text-xs leading-relaxed text-neutral-500 ${userTextBreakClass} line-clamp-3`}>
+                              {svc.description}
+                            </p>
+                          ) : null}
+                        </div>
+                        <button
+                          type="button"
+                          disabled={!svc}
+                          onClick={goNext}
+                          className={btnPrimaryClass + " min-h-[48px] w-full text-base"}
+                        >
+                          Continuer
+                        </button>
+                      </div>
+                    ) : null}
 
-              <div className="border-t border-neutral-100 pt-6">
-                <p className={labelClass}>Tes coordonnées</p>
-                <div className="mt-3 grid gap-3">
-                  <input
-                    className={inputClass}
-                    placeholder="Nom complet"
-                    value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
-                  />
-                  <input
-                    className={inputClass}
-                    placeholder="Téléphone"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    inputMode="tel"
-                  />
-                  <input
-                    className={inputClass}
-                    placeholder="Email (optionnel)"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    type="email"
-                  />
-                </div>
-              </div>
+                    {step === "employee" ? (
+                      <div className="rounded-3xl border border-neutral-200/90 bg-white p-4">
+                        <p className="text-base font-semibold text-neutral-950">
+                          Avec qui souhaitez-vous prendre rendez-vous ?
+                        </p>
+                        <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+                          Choisissez votre prestataire préféré ou laissez-nous vous attribuer le premier disponible pour votre créneau.
+                        </p>
 
-              {err ? (
-                <div
-                  className={`rounded-2xl border border-red-200/90 bg-red-50/80 px-4 py-3 text-sm text-red-900 ${userTextBreakClass}`}
-                >
-                  {err}
-                </div>
-              ) : null}
-              {msg ? (
-                <div
-                  className={`rounded-2xl border border-neutral-200/90 bg-neutral-50 px-4 py-3 text-sm text-neutral-800 ${userTextBreakClass}`}
-                >
-                  {msg}
-                </div>
-              ) : null}
+                        <div className="mt-4 space-y-3">
+                          <button
+                            type="button"
+                            className="w-full rounded-2xl border border-neutral-200/90 bg-white px-4 py-3 text-left text-sm transition hover:bg-neutral-50"
+                            onClick={() => {
+                              setEmployeeChoice("");
+                              setStep("slot");
+                            }}
+                          >
+                            <div className="flex items-start gap-3">
+                              <span className="mt-0.5 inline-flex size-9 items-center justify-center rounded-full border border-neutral-200/90 bg-white text-neutral-700">
+                                👥
+                              </span>
+                              <div className="min-w-0">
+                                <p className="font-semibold text-neutral-950">Sans préférence</p>
+                                <p className="mt-1 text-xs text-neutral-500">
+                                  On vous attribue le premier prestataire disponible pour votre créneau.
+                                </p>
+                              </div>
+                            </div>
+                          </button>
 
-              <button
-                type="button"
-                disabled={loading || state.services.length === 0}
-                onClick={submit}
-                className={btnPrimaryClass + " min-h-[48px] w-full text-base"}
-              >
-                {loading ? (
-                  <span className="inline-flex items-center gap-2">
-                    <span
-                      className="size-5 rounded-full border-2 border-neutral-200 border-t-neutral-950 motion-safe:animate-spin"
-                      aria-hidden
-                    />
-                    Envoi…
-                  </span>
-                ) : (
-                  "Confirmer la réservation"
-                )}
-              </button>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            {eligibleEmployees.map((e) => {
+                              const photo = e.photoUrl?.trim()
+                                ? (getBrandingPublicUrl(e.photoUrl) || e.photoUrl)
+                                : null;
+                              const initials = (e.name.trim().slice(0, 2) || "?").toUpperCase();
+                              return (
+                                <button
+                                  key={e.id}
+                                  type="button"
+                                  className="flex items-center gap-3 rounded-2xl border border-neutral-200/90 bg-white px-4 py-3 text-left text-sm transition hover:bg-neutral-50"
+                                  onClick={() => {
+                                    setEmployeeChoice(e.id);
+                                    setStep("slot");
+                                  }}
+                                >
+                                  <span className="relative size-10 shrink-0 overflow-hidden rounded-full border border-neutral-200/90 bg-white">
+                                    {photo ? (
+                                      <Image src={photo} alt="" fill className="object-cover" />
+                                    ) : (
+                                      <span
+                                        className="flex size-10 items-center justify-center text-xs font-semibold text-white"
+                                        style={{ backgroundColor: e.color }}
+                                      >
+                                        {initials}
+                                      </span>
+                                    )}
+                                  </span>
+                                  <span className="min-w-0">
+                                    <span className={`block font-semibold text-neutral-950 ${userTextBreakClass}`}>
+                                      {e.name}
+                                    </span>
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {step === "slot" ? (
+                      <div className="space-y-5">
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <div>
+                            <label className={labelClass}>Jour</label>
+                            <input
+                              type="date"
+                              className={`${inputClass} mt-2`}
+                              value={dateYmd}
+                              onChange={(e) => setDateYmd(e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <label className={labelClass}>Heure</label>
+                            <select
+                              className={`${inputClass} mt-2`}
+                              value={time}
+                              onChange={(e) => setTime(e.target.value)}
+                            >
+                              {slots.length === 0 ? (
+                                <option value={time}>Aucun créneau</option>
+                              ) : (
+                                slots.map((t) => (
+                                  <option key={t} value={t}>
+                                    {t}
+                                  </option>
+                                ))
+                              )}
+                            </select>
+                            {noSlotsHint ? (
+                              <p className={`mt-2 text-xs leading-relaxed text-neutral-500 ${userTextBreakClass}`}>
+                                {noSlotsHint}
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={slots.length === 0}
+                          onClick={goNext}
+                          className={btnPrimaryClass + " min-h-[48px] w-full text-base"}
+                        >
+                          Continuer
+                        </button>
+                      </div>
+                    ) : null}
+
+                    {step === "client" ? (
+                      <div className="space-y-5">
+                        <div>
+                          <p className={labelClass}>Tes coordonnées</p>
+                          <div className="mt-3 grid gap-3">
+                            <input
+                              className={inputClass}
+                              placeholder="Nom complet"
+                              value={clientName}
+                              onChange={(e) => setClientName(e.target.value)}
+                            />
+                            <input
+                              className={inputClass}
+                              placeholder="Téléphone"
+                              value={phone}
+                              onChange={(e) => setPhone(e.target.value)}
+                              inputMode="tel"
+                            />
+                            <input
+                              className={inputClass}
+                              placeholder="Email (optionnel)"
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                              type="email"
+                            />
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={!clientName.trim()}
+                          onClick={goNext}
+                          className={btnPrimaryClass + " min-h-[48px] w-full text-base"}
+                        >
+                          Continuer
+                        </button>
+                      </div>
+                    ) : null}
+
+                    {step === "confirm" ? (
+                      <div className="space-y-5">
+                        <div className="rounded-3xl border border-neutral-200/90 bg-neutral-50/60 p-4">
+                          <p className="text-sm font-semibold text-neutral-950">Récapitulatif</p>
+                          <div className="mt-3 space-y-2 text-sm text-neutral-700">
+                            <p>
+                              <span className="font-medium text-neutral-950">Prestation:</span> {svc?.name ?? "—"}
+                            </p>
+                            <p>
+                              <span className="font-medium text-neutral-950">Prestataire:</span>{" "}
+                              {assignedEmployeeNamePreview ?? (showEmployeeStep ? "Premier disponible" : "—")}
+                            </p>
+                            <p>
+                              <span className="font-medium text-neutral-950">Date:</span> {dateYmd}
+                            </p>
+                            <p>
+                              <span className="font-medium text-neutral-950">Heure:</span> {time}
+                            </p>
+                          </div>
+                        </div>
+
+                        {err ? (
+                          <div className={`rounded-2xl border border-red-200/90 bg-red-50/80 px-4 py-3 text-sm text-red-900 ${userTextBreakClass}`}>
+                            {err}
+                          </div>
+                        ) : null}
+                        {msg ? (
+                          <div className={`rounded-2xl border border-neutral-200/90 bg-neutral-50 px-4 py-3 text-sm text-neutral-800 ${userTextBreakClass}`}>
+                            {msg}
+                          </div>
+                        ) : null}
+
+                        <button
+                          type="button"
+                          disabled={loading || state.services.length === 0}
+                          onClick={submit}
+                          className={btnPrimaryClass + " min-h-[48px] w-full text-base"}
+                        >
+                          {loading ? (
+                            <span className="inline-flex items-center gap-2">
+                              <span
+                                className="size-5 rounded-full border-2 border-neutral-200 border-t-neutral-950 motion-safe:animate-spin"
+                                aria-hidden
+                              />
+                              Envoi…
+                            </span>
+                          ) : (
+                            "Confirmer la réservation"
+                          )}
+                        </button>
+                      </div>
+                    ) : null}
+
+                    {step !== "confirm" && err ? (
+                      <div className={`rounded-2xl border border-red-200/90 bg-red-50/80 px-4 py-3 text-sm text-red-900 ${userTextBreakClass}`}>
+                        {err}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </div>
