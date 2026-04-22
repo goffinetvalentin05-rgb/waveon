@@ -14,6 +14,7 @@ export interface ReservationNotificationProps {
   clientEmail?: string;
   clientPhone?: string;
   serviceName: string;
+  employeeName?: string;
   date: string;
   time: string;
   durationMin: number;
@@ -26,6 +27,7 @@ export default function ReservationNotification({
   clientEmail,
   clientPhone,
   serviceName,
+  employeeName,
   date,
   time,
   durationMin,
@@ -90,6 +92,9 @@ export default function ReservationNotification({
       <InfoTable
         rows={[
           { label: "Prestation", value: serviceName },
+          ...(employeeName?.trim()
+            ? [{ label: "Prestataire", value: employeeName.trim() }]
+            : []),
           { label: "Date", value: date, valueNoDetect: true },
           { label: "Heure", value: time, valueNoDetect: true },
           { label: "Durée", value: `${durationMin} min`, valueNoDetect: true },

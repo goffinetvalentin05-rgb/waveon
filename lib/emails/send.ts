@@ -44,6 +44,7 @@ type ReservationData = {
   startAt: string;
   status: string;
   cancelToken: string | null;
+  employeeName: string | null;
   businessName: string;
   businessDisplayName: string | null;
   merchantEmail: string | null;
@@ -61,6 +62,7 @@ type DbReservationRow = {
   client_id: string | null;
   client_name: string | null;
   service_id: string;
+  employee_id: string | null;
   start_at: string;
   duration_minutes: number | null;
   status: "confirmed" | "cancelled" | "pending" | string;
@@ -94,6 +96,10 @@ type DbClientRow = {
   phone: string | null;
 };
 
+type DbEmployeeRow = {
+  name: string | null;
+};
+
 function formatBusinessAddress(biz: DbBusinessRow | null): string {
   if (!biz) return "";
   const line2 = [biz.postal_code?.trim(), biz.city?.trim()].filter(Boolean).join(" ");
@@ -107,7 +113,7 @@ async function fetchReservationData(
 ): Promise<ReservationData | null> {
   const { data: res, error: resErr } = await admin
     .from("wavon_reservations")
-    .select("id,client_id,client_name,service_id,start_at,duration_minutes,status,cancel_token")
+    .select("id,client_id,client_name,service_id,employee_id,start_at,duration_minutes,status,cancel_token")
     .eq("id", reservationId)
     .eq("business_id", businessId)
     .maybeSingle();
@@ -119,7 +125,7 @@ async function fetchReservationData(
     return null;
   }
 
-  const [svcRes, bizRes, clientRes] = await Promise.all([
+  const [svcRes, bizRes, clientRes, empRes] = await Promise.all([
     admin
       .from("wavon_services")
       .select("name,price,duration_minutes")
@@ -139,6 +145,14 @@ async function fetchReservationData(
           .eq("id", reservation.client_id)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
+    reservation.employee_id
+      ? admin
+          .from("wavon_employees")
+          .select("name")
+          .eq("id", reservation.employee_id)
+          .eq("business_id", businessId)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
   ]);
 
   if (svcRes.error || bizRes.error) {
@@ -149,6 +163,7 @@ async function fetchReservationData(
   const svc = (svcRes.data as DbServiceRow | null) ?? null;
   const biz = (bizRes.data as DbBusinessRow | null) ?? null;
   const client = (clientRes.data as DbClientRow | null) ?? null;
+  const employee = (empRes.data as DbEmployeeRow | null) ?? null;
 
   return {
     id: reservation.id,
@@ -161,6 +176,7 @@ async function fetchReservationData(
     startAt: reservation.start_at,
     status: reservation.status,
     cancelToken: reservation.cancel_token ?? null,
+    employeeName: employee?.name?.trim() || null,
     businessName: biz?.business_name ?? "Commerce",
     businessDisplayName: biz?.public_display_name ?? null,
     merchantEmail: biz?.email ?? null,
@@ -187,6 +203,7 @@ function buildTemplateVars(data: ReservationData, displayName: string) {
     business_phone: data.businessPhone ?? "",
     business_address: data.businessAddress,
     service_price: price,
+    employee_name: data.employeeName ?? "",
   };
 }
 
@@ -332,6 +349,7 @@ export async function sendNewBookingEmails(
           businessName: displayName,
           clientName: data.clientName,
           serviceName: data.serviceName,
+          employeeName: data.employeeName ?? undefined,
           date,
           time,
           durationMin: data.durationMin,
@@ -368,6 +386,7 @@ export async function sendNewBookingEmails(
           businessName: displayName,
           clientName: data.clientName,
           serviceName: data.serviceName,
+          employeeName: data.employeeName ?? undefined,
           date,
           time,
           durationMin: data.durationMin,
@@ -400,6 +419,7 @@ export async function sendNewBookingEmails(
           clientEmail: data.clientEmail ?? undefined,
           clientPhone: data.clientPhone ?? undefined,
           serviceName: data.serviceName,
+          employeeName: data.employeeName ?? undefined,
           date,
           time,
           durationMin: data.durationMin,
