@@ -16,6 +16,7 @@ import {
   linkClass,
   spinnerClass,
   textareaClass,
+  userTextBreakClass,
 } from "@/lib/wavon/tokens";
 
 const SERVICE_NAME_MAX = 60;
