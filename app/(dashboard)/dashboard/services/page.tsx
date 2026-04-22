@@ -52,6 +52,9 @@ export default function ServicesPage() {
   const { ready, state, addService, updateService, deleteService } = useWavon();
   const toast = useToast();
   const currency = state.settings.currency;
+  const employees = state.employees ?? [];
+  const activeEmployees = employees.filter((e) => e.isActive);
+  const showEmployeeField = activeEmployees.length > 1;
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Service | null>(null);
   const [name, setName] = useState("");
@@ -63,6 +66,8 @@ export default function ServicesPage() {
   const [bufferBeforeMin, setBufferBeforeMin] = useState(0);
   const [bufferAfterMin, setBufferAfterMin] = useState(0);
   const [bookingNoticeHours, setBookingNoticeHours] = useState<string>("");
+  const [allEmployees, setAllEmployees] = useState(true);
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
 
   const openCreate = () => {
     setEditing(null);
@@ -75,6 +80,8 @@ export default function ServicesPage() {
     setBufferBeforeMin(0);
     setBufferAfterMin(0);
     setBookingNoticeHours("");
+    setAllEmployees(true);
+    setSelectedEmployeeIds([]);
     setOpen(true);
   };
 
@@ -91,6 +98,9 @@ export default function ServicesPage() {
     setBookingNoticeHours(
       s.bookingNoticeHours === null || s.bookingNoticeHours === undefined ? "" : String(s.bookingNoticeHours)
     );
+    const ids = s.employeeIds ?? [];
+    setAllEmployees(ids.length === 0);
+    setSelectedEmployeeIds(ids);
     setOpen(true);
   };
 
@@ -115,6 +125,9 @@ export default function ServicesPage() {
         description: description.trim().slice(0, SERVICE_DESCRIPTION_MAX),
         isActive,
         isPublic,
+        ...(showEmployeeField
+          ? { employeeIds: allEmployees ? [] : selectedEmployeeIds }
+          : { employeeIds: [] }),
         bufferBeforeMin,
         bufferAfterMin,
         bookingNoticeHours: bookingNoticeHours.trim() === "" ? null : Math.max(0, Number(bookingNoticeHours) || 0),
@@ -130,6 +143,9 @@ export default function ServicesPage() {
         description: description.trim().slice(0, SERVICE_DESCRIPTION_MAX),
         isActive,
         isPublic,
+        ...(showEmployeeField
+          ? { employeeIds: allEmployees ? [] : selectedEmployeeIds }
+          : { employeeIds: [] }),
         bufferBeforeMin,
         bufferAfterMin,
         bookingNoticeHours: bookingNoticeHours.trim() === "" ? null : Math.max(0, Number(bookingNoticeHours) || 0),
@@ -349,6 +365,47 @@ export default function ServicesPage() {
               </div>
             </div>
           </div>
+
+          {showEmployeeField ? (
+            <div className="rounded-2xl border border-neutral-200/90 bg-neutral-50/60 p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+                Prestataires qui peuvent effectuer ce service
+              </p>
+              <label className="mt-3 flex cursor-pointer items-center gap-3 text-sm text-neutral-700">
+                <input
+                  type="checkbox"
+                  checked={allEmployees}
+                  onChange={(e) => {
+                    const v = e.target.checked;
+                    setAllEmployees(v);
+                    if (v) setSelectedEmployeeIds([]);
+                  }}
+                  className="size-4 rounded border-neutral-300 text-neutral-950"
+                />
+                <span className="font-medium text-neutral-950">Tous les prestataires</span>
+              </label>
+              {!allEmployees ? (
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  {activeEmployees.map((e) => (
+                    <label key={e.id} className={`flex cursor-pointer items-center gap-3 text-sm ${userTextBreakClass}`}>
+                      <input
+                        type="checkbox"
+                        checked={selectedEmployeeIds.includes(e.id)}
+                        onChange={(ev) => {
+                          const checked = ev.target.checked;
+                          setSelectedEmployeeIds((prev) =>
+                            checked ? [...prev, e.id] : prev.filter((x) => x !== e.id)
+                          );
+                        }}
+                        className="size-4 rounded border-neutral-300 text-neutral-950"
+                      />
+                      <span className="font-medium text-neutral-950">{e.name}</span>
+                    </label>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="flex cursor-pointer items-center gap-3 text-sm text-neutral-700">
               <input
