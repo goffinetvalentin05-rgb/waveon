@@ -76,12 +76,27 @@ export default function PricingPageClient() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ plan }),
+          credentials: "same-origin",
         });
-        const body = (await res.json()) as { url?: string; error?: string };
-        if (!res.ok) {
-          throw new Error(body.error ?? "Impossible de démarrer le paiement.");
+        const raw = await res.text();
+        let body: { url?: string; error?: string } = {};
+        if (raw.trim()) {
+          try {
+            body = JSON.parse(raw) as { url?: string; error?: string };
+          } catch {
+            throw new Error(
+              `Réponse serveur invalide (${res.status}). Si le problème persiste, vérifie les logs Vercel.`
+            );
+          }
         }
-        if (!body.url) throw new Error("URL de paiement manquante.");
+        if (!res.ok) {
+          throw new Error(
+            body.error ?? `Erreur serveur (${res.status}). Réponse vide ou non JSON.`
+          );
+        }
+        if (!body.url) {
+          throw new Error(body.error ?? "URL de paiement manquante.");
+        }
         window.location.href = body.url;
       } catch (e) {
         console.error("[pricing] checkout", e);
