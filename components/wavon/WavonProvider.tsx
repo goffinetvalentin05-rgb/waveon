@@ -271,6 +271,7 @@ type Ctx = {
   setBlockedDates: (dates: string[]) => void;
   addService: (s: Omit<Service, "id">) => void;
   updateService: (id: string, patch: Partial<Service>) => void;
+  updateServiceChecked: (id: string, patch: Partial<Service>) => Promise<{ ok: true } | { ok: false; error: string }>;
   deleteService: (id: string) => void;
   addClient: (c: Omit<Client, "id">) => void;
   updateClient: (id: string, patch: Partial<Client>) => void;
@@ -864,6 +865,60 @@ export function WavonProvider({
     }));
   }, [businessId]);
 
+  const updateServiceChecked = useCallback(
+    async (id: string, patch: Partial<Service>): Promise<{ ok: true } | { ok: false; error: string }> => {
+      if (!businessId) return { ok: false, error: "Compte non initialisé." };
+
+      const nextPatch =
+        patch.description !== undefined
+          ? { ...patch, description: clipServiceDescription(patch.description) }
+          : patch;
+
+      // Optimistic update
+      setState((prev) => ({
+        ...prev,
+        services: prev.services.map((x) => (x.id === id ? { ...x, ...nextPatch } : x)),
+      }));
+
+      const { error } = await supabase
+        .from("wavon_services")
+        .update({
+          ...(nextPatch.name !== undefined ? { name: nextPatch.name } : {}),
+          ...(nextPatch.durationMin !== undefined ? { duration_minutes: nextPatch.durationMin } : {}),
+          ...(nextPatch.price !== undefined ? { price: nextPatch.price } : {}),
+          ...(nextPatch.description !== undefined ? { description: nextPatch.description } : {}),
+          ...(nextPatch.isActive !== undefined ? { is_active: nextPatch.isActive } : {}),
+          ...(nextPatch.isPublic !== undefined ? { is_public: nextPatch.isPublic } : {}),
+          ...(nextPatch.color !== undefined ? { color: nextPatch.color } : {}),
+          ...(nextPatch.employeeIds !== undefined
+            ? { employee_ids: nextPatch.employeeIds.length ? nextPatch.employeeIds : [] }
+            : {}),
+          ...(nextPatch.bufferBeforeMin !== undefined ? { buffer_before_minutes: nextPatch.bufferBeforeMin } : {}),
+          ...(nextPatch.bufferAfterMin !== undefined ? { buffer_after_minutes: nextPatch.bufferAfterMin } : {}),
+          ...(nextPatch.bookingNoticeHours !== undefined ? { booking_notice_hours: nextPatch.bookingNoticeHours } : {}),
+          ...(nextPatch.sortOrder !== undefined ? { sort_order: nextPatch.sortOrder } : {}),
+        })
+        .eq("id", id)
+        .eq("business_id", businessId);
+
+      if (error) {
+        if (process.env.NODE_ENV !== "production") {
+          console.error("[WavonProvider] updateServiceChecked failed", {
+            businessId,
+            id,
+            error: error.message,
+          });
+        }
+        // Resync local state with DB to avoid divergence
+        await refreshServices();
+        return { ok: false, error: error.message };
+      }
+
+      return { ok: true };
+    },
+    [businessId, refreshServices]
+  );
+
   const updateService = useCallback((id: string, patch: Partial<Service>) => {
     const nextPatch =
       patch.description !== undefined
@@ -874,26 +929,7 @@ export function WavonProvider({
       services: prev.services.map((x) => (x.id === id ? { ...x, ...nextPatch } : x)),
     }));
     if (!businessId) return;
-    void supabase
-      .from("wavon_services")
-      .update({
-        ...(nextPatch.name !== undefined ? { name: nextPatch.name } : {}),
-        ...(nextPatch.durationMin !== undefined ? { duration_minutes: nextPatch.durationMin } : {}),
-        ...(nextPatch.price !== undefined ? { price: nextPatch.price } : {}),
-        ...(nextPatch.description !== undefined ? { description: nextPatch.description } : {}),
-        ...(nextPatch.isActive !== undefined ? { is_active: nextPatch.isActive } : {}),
-        ...(nextPatch.isPublic !== undefined ? { is_public: nextPatch.isPublic } : {}),
-        ...(nextPatch.color !== undefined ? { color: nextPatch.color } : {}),
-        ...(nextPatch.employeeIds !== undefined
-          ? { employee_ids: nextPatch.employeeIds.length ? nextPatch.employeeIds : [] }
-          : {}),
-        ...(nextPatch.bufferBeforeMin !== undefined ? { buffer_before_minutes: nextPatch.bufferBeforeMin } : {}),
-        ...(nextPatch.bufferAfterMin !== undefined ? { buffer_after_minutes: nextPatch.bufferAfterMin } : {}),
-        ...(nextPatch.bookingNoticeHours !== undefined ? { booking_notice_hours: nextPatch.bookingNoticeHours } : {}),
-        ...(nextPatch.sortOrder !== undefined ? { sort_order: nextPatch.sortOrder } : {}),
-      })
-      .eq("id", id)
-      .eq("business_id", businessId);
+    void updateServiceChecked(id, nextPatch);
   }, [businessId]);
 
   const deleteService = useCallback((id: string) => {
@@ -1524,6 +1560,7 @@ export function WavonProvider({
       setBlockedDates,
       addService,
       updateService,
+      updateServiceChecked,
       deleteService,
       addClient,
       updateClient,
@@ -1550,6 +1587,7 @@ export function WavonProvider({
       setBlockedDates,
       addService,
       updateService,
+      updateServiceChecked,
       deleteService,
       addClient,
       updateClient,

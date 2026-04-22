@@ -40,7 +40,7 @@ function initialsFromName(name: string): string {
 }
 
 export function EquipeTab() {
-  const { state, businessId, upsertEmployee, deleteEmployee, updateService } = useWavon();
+  const { state, businessId, upsertEmployee, deleteEmployee, updateServiceChecked } = useWavon();
   const toast = useToast();
   const employees = (state.employees ?? []).slice().sort((a, b) => (a.displayOrder - b.displayOrder) || a.createdAt.localeCompare(b.createdAt));
   const services = state.services;
@@ -137,6 +137,7 @@ export function EquipeTab() {
     const desiredAssigned = allServices ? new Set<string>() : new Set(selectedServiceIds);
 
     // On met à jour les services via le provider (qui persiste en DB).
+    const writes: Array<Promise<{ ok: true } | { ok: false; error: string }>> = [];
     for (const s of activeServices) {
       const cur = new Set((s.employeeIds ?? []).filter(Boolean));
       const next = new Set(cur);
@@ -152,7 +153,19 @@ export function EquipeTab() {
         nextArr.length === (s.employeeIds ?? []).length &&
         nextArr.every((id) => (s.employeeIds ?? []).includes(id));
       if (same) continue;
-      updateService(s.id, { employeeIds: nextArr });
+      writes.push(updateServiceChecked(s.id, { employeeIds: nextArr }));
+    }
+
+    if (writes.length > 0) {
+      const results = await Promise.all(writes);
+      const firstErr = results.find((r) => !r.ok) as { ok: false; error: string } | undefined;
+      if (firstErr) {
+        toast.push({
+          kind: "error",
+          message: `Échec d’enregistrement des services attitrés : ${firstErr.error}`,
+        });
+        return;
+      }
     }
 
     toast.push({ message: editing ? "Membre mis à jour." : "Membre ajouté." });

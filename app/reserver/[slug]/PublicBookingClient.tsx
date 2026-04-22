@@ -437,6 +437,16 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
     return all.filter((e) => ids.includes(e.id));
   }, [employees, svc]);
 
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+    if (!svc) return;
+    const names = eligibleEmployees.map((e) => e.name);
+    const show = eligibleEmployees.length > 1 ? "OUI" : "NON";
+    console.debug("[public booking] Service choisi:", svc.name);
+    console.debug("[public booking] Prestataires éligibles:", names);
+    console.debug(`[public booking] Nombre: ${names.length} — étape affichée: ${show}`);
+  }, [svc, eligibleEmployees]);
+
   const employeesLoaded = employees.length > 0;
   // IMPORTANT:
   // - employeeIds=[] signifie "tous les prestataires actifs".
