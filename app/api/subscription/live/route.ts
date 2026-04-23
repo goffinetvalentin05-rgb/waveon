@@ -3,7 +3,8 @@ import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { getBusinessSubscriptionStatus } from "@/lib/stripe/subscription";
 import { getBillingStatus } from "@/lib/subscription/billing-status";
-import { EMPTY_SUBSCRIPTION_SNAPSHOT } from "@/lib/wavon/types";
+import { ensureBusinessForUser } from "@/lib/wavon/ensure-business-for-user";
+import { SYNC_ERROR_SUBSCRIPTION_SNAPSHOT } from "@/lib/wavon/types";
 
 export const runtime = "nodejs";
 
@@ -28,20 +29,19 @@ export async function GET() {
     return NextResponse.json({ error: "Impossible de charger le commerce." }, { status: 500 });
   }
 
-  const businessId = (biz as { id: string } | null)?.id ?? null;
+  let businessId = (biz as { id: string } | null)?.id ?? null;
   if (!businessId) {
-    return NextResponse.json({
-      ...EMPTY_SUBSCRIPTION_SNAPSHOT,
-      status: "none",
-    });
+    try {
+      const ensured = await ensureBusinessForUser(supabase, user.id);
+      businessId = ensured.id;
+    } catch (e) {
+      console.error("[subscription/live] ensure business", e);
+      const snap = SYNC_ERROR_SUBSCRIPTION_SNAPSHOT;
+      return NextResponse.json({ ...snap, billing: getBillingStatus(snap) });
+    }
   }
 
-  try {
-    const snapshot = await getBusinessSubscriptionStatus(businessId);
-    const billing = getBillingStatus(snapshot);
-    return NextResponse.json({ ...snapshot, billing });
-  } catch (e) {
-    console.error("[subscription/live] Stripe", e);
-    return NextResponse.json({ error: "Erreur lors de la lecture de l’abonnement." }, { status: 500 });
-  }
+  const snapshot = await getBusinessSubscriptionStatus(businessId);
+  const billing = getBillingStatus(snapshot);
+  return NextResponse.json({ ...snapshot, billing });
 }

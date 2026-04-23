@@ -1,3 +1,4 @@
+import { addDays, parseISO } from "date-fns";
 import { WAEVON_TRIAL_DAYS } from "@/lib/stripe/config";
 
 export type SubscriptionState =
@@ -13,6 +14,7 @@ type SnapshotLike = {
   status?: string | null;
   plan?: "starter" | "pro" | null;
   trialEndsAt?: string | null;
+  trialStartedAt?: string | null;
 };
 
 const MS_PER_DAY = 86_400_000;
@@ -39,13 +41,25 @@ export function getSubscriptionState(org: SnapshotLike | null | undefined): Subs
   const accessSource = org?.accessSource ?? "none";
   const status = org?.status ?? "none";
 
+  if (status === "sync_error" || (status === "none" && accessSource === "none")) {
+    return { kind: "canceled" };
+  }
+
   if (accessSource === "waevon") {
     if (status === "trialing") {
-      if (!org?.trialEndsAt) {
+      let endIso = org?.trialEndsAt ?? null;
+      if (!endIso && org?.trialStartedAt) {
+        try {
+          endIso = addDays(parseISO(org.trialStartedAt), WAEVON_TRIAL_DAYS).toISOString();
+        } catch {
+          endIso = null;
+        }
+      }
+      if (!endIso) {
         return { kind: "trialing", daysLeft: 0, currentDay: WAEVON_TRIAL_DAYS };
       }
       const nowMs = Date.now();
-      const daysLeftRaw = daysLeftFromTrialEnd(org.trialEndsAt, nowMs);
+      const daysLeftRaw = daysLeftFromTrialEnd(endIso, nowMs);
       const daysLeft = daysLeftRaw ?? 0;
       const currentDay = clamp(WAEVON_TRIAL_DAYS - daysLeft + 1, 1, WAEVON_TRIAL_DAYS);
       return { kind: "trialing", daysLeft, currentDay };

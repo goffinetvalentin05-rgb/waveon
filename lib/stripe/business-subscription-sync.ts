@@ -1,14 +1,9 @@
 import type Stripe from "stripe";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
+import { snapshotStatusFromStripeApi } from "@/lib/subscription/stripe-wavon-status";
 import { planFromStripePriceId } from "./config";
 import { invalidateBusinessSubscriptionCache } from "./subscription";
-
-function normalizeStripeStatus(status: Stripe.Subscription.Status): string {
-  if (status === "incomplete_expired") return "canceled";
-  if (status === "paused") return "active";
-  return status;
-}
 
 function subscriptionCurrentPeriodEndUnix(sub: Stripe.Subscription): number | null {
   const first = sub.items?.data?.[0];
@@ -41,7 +36,7 @@ export async function syncStripeSubscriptionToBusinessRow(
   sub: Stripe.Subscription
 ): Promise<void> {
   const admin = createAdminSupabaseClient();
-  const status = normalizeStripeStatus(sub.status);
+  const status = snapshotStatusFromStripeApi(sub.status);
   const plan = resolvePlanFromStripeSub(sub);
   const periodEndIso = tsToIso(subscriptionCurrentPeriodEndUnix(sub));
 

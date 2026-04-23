@@ -22,13 +22,12 @@ import {
   type Reservation,
   type ReservationStatus,
   type Service,
-  type SubscriptionAccessSource,
   type SubscriptionSnapshot,
   type WeeklyDaySchedule,
   type WavonState,
 } from "@/lib/wavon/types";
 import { WAEVON_TRIAL_DAYS } from "@/lib/stripe/config";
-import { parseSubscriptionPlan } from "@/lib/subscription/access";
+import { parseSubscriptionFromLiveResponse } from "@/lib/subscription/parse-live-subscription";
 import { supabase } from "@/lib/supabase/client";
 import { normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
 import { normalizePublicSlugInput, validatePublicSlugFormat } from "@/lib/wavon/public-slug";
@@ -549,27 +548,8 @@ export function WavonProvider({
       try {
         const subRes = await fetch("/api/subscription/live", { credentials: "same-origin" });
         if (subRes.ok) {
-          const body = (await subRes.json()) as Record<string, unknown>;
-          if (typeof body.status === "string") {
-            const src = body.accessSource;
-            const accessSource: SubscriptionAccessSource =
-              src === "stripe" || src === "waevon" || src === "none" ? src : "none";
-            subscription = {
-              status: body.status,
-              plan: parseSubscriptionPlan(
-                typeof body.plan === "string" || body.plan === null ? (body.plan as string | null) : null
-              ),
-              trialEndsAt: typeof body.trialEndsAt === "string" ? body.trialEndsAt : null,
-              currentPeriodEnd:
-                typeof body.currentPeriodEnd === "string" ? body.currentPeriodEnd : null,
-              cancelAtPeriodEnd: Boolean(body.cancelAtPeriodEnd),
-              accessSource,
-              ...(typeof body.trialStartedAt === "string" ? { trialStartedAt: body.trialStartedAt } : {}),
-              ...(typeof body.stripeCustomerId === "string"
-                ? { stripeCustomerId: body.stripeCustomerId }
-                : {}),
-            };
-          }
+          const body: unknown = await subRes.json();
+          subscription = parseSubscriptionFromLiveResponse(body);
         }
       } catch {
         /* garde EMPTY_SUBSCRIPTION_SNAPSHOT */

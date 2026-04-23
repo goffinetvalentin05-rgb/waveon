@@ -9,6 +9,9 @@ export type BillingAccessState = "TRIAL_ACTIVE" | "SUBSCRIBED" | "BLOCKED";
  * - BLOCKED : tout le reste (essai expiré, sans abonnement valide, Stripe canceled/unpaid/incomplete, etc.)
  */
 export function billingAccessStateFromSnapshot(s: SubscriptionSnapshot): BillingAccessState {
+  if (s.status === "sync_error") {
+    return "BLOCKED";
+  }
   if (s.accessSource === "waevon" && s.status === "trialing") {
     return "TRIAL_ACTIVE";
   }

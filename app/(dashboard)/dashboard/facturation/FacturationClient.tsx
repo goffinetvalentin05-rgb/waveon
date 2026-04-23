@@ -15,7 +15,7 @@ import {
   type BillingPlanId,
 } from "@/lib/stripe/config";
 import { hasActiveSubscription } from "@/lib/subscription/access";
-import { getBillingStatus } from "@/lib/subscription/billing-status";
+import { getBillingStatus, trialDaysRemainingPhrase } from "@/lib/subscription/billing-status";
 import { getSubscriptionState } from "@/lib/subscription/state";
 import { supabase } from "@/lib/supabase/client";
 import { wavonPage } from "@/lib/wavon/tokens";
@@ -32,24 +32,22 @@ function formatDateFr(iso: string | null | undefined): string {
   }
 }
 
-function statusBadgeLabel(billing: ReturnType<typeof getBillingStatus>): string {
-  if (billing.isExpired) return "Accès expiré";
-  if (billing.isTrial) return "Essai gratuit actif";
-  if (billing.status === "past_due") return "Paiement en retard";
-  if (billing.isActive && billing.accessSource === "stripe") return "Abonnement actif";
-  if (billing.accessSource === "stripe" && billing.status === "canceled") return "Abonnement résilié";
-  if (billing.accessSource === "stripe" && (billing.status === "unpaid" || billing.status === "incomplete"))
-    return "Abonnement inactif";
-  return "Statut indéterminé";
-}
-
-function planDisplayName(billing: ReturnType<typeof getBillingStatus>): string {
+function planSummaryName(billing: ReturnType<typeof getBillingStatus>): string {
   if (billing.plan === "trial") return TRIAL_PLAN_LABEL;
   if (billing.plan === "starter" || billing.plan === "pro") return PLAN_LABELS[billing.plan];
   if (billing.accessSource === "stripe" && billing.isTrial) {
     return billing.plan ? PLAN_LABELS[billing.plan] : "Formule en cours de configuration";
   }
-  return "—";
+  if (billing.publicStatus === "active" && billing.accessSource === "stripe") {
+    return "Formule synchronisée";
+  }
+  if (billing.publicStatus === "expired") return "Aucune formule active";
+  if (billing.publicStatus === "canceled") return "Aucune formule active";
+  if (billing.publicStatus === "past_due") {
+    return billing.plan === "starter" || billing.plan === "pro" ? PLAN_LABELS[billing.plan] : "Votre formule";
+  }
+  if (billing.publicStatus === "sync_error") return "—";
+  return "Essai ou offre gratuite";
 }
 
 function CheckIcon({ className }: { className?: string }) {
@@ -148,19 +146,23 @@ export default function FacturationClient() {
     );
   }
 
-  const badgeClass = billing.isExpired
-    ? "bg-amber-100 text-amber-950"
-    : billing.status === "past_due"
-      ? "bg-red-100 text-red-950"
-      : billing.isTrial
-        ? "bg-sky-100 text-sky-950"
-        : billing.isActive
-          ? "bg-emerald-100 text-emerald-950"
-          : "bg-neutral-200 text-neutral-900";
+  const badgeClass =
+    billing.publicStatus === "sync_error"
+      ? "bg-violet-100 text-violet-950"
+      : billing.isExpired
+        ? "bg-amber-100 text-amber-950"
+        : billing.status === "past_due"
+          ? "bg-red-100 text-red-950"
+          : billing.isTrial
+            ? "bg-sky-100 text-sky-950"
+            : billing.isActive
+              ? "bg-emerald-100 text-emerald-950"
+              : "bg-neutral-200 text-neutral-900";
 
   const showPortal =
     isStripe &&
     sub.status !== "none" &&
+    sub.status !== "sync_error" &&
     sub.status !== "trial_expired" &&
     (sub.status === "active" ||
       sub.status === "trialing" ||
@@ -169,9 +171,15 @@ export default function FacturationClient() {
       sub.status === "unpaid" ||
       sub.status === "incomplete");
 
-  const renewalOrTrialEnd = billing.isTrial
-    ? formatDateFr(billing.trialEndsAt)
-    : formatDateFr(billing.currentPeriodEnd);
+  const renewalOrTrialEndDisplay = billing.isTrial
+    ? formatDateFr(billing.effectiveTrialEndsAt ?? billing.trialEndsAt)
+    : billing.currentPeriodEnd
+      ? formatDateFr(billing.currentPeriodEnd)
+      : billing.publicStatus === "expired" || billing.publicStatus === "canceled"
+        ? "Aucune échéance prévue"
+        : billing.publicStatus === "active"
+          ? "Prochaine facturation : synchronisation Stripe"
+          : "—";
 
   const pricingBulletsStarter = [
     "Réservations en ligne",
@@ -198,6 +206,23 @@ export default function FacturationClient() {
         </p>
       </div>
 
+      {billing.publicStatus === "sync_error" ? (
+        <div className="rounded-xl border border-violet-200/95 bg-violet-50 px-4 py-4 text-sm text-violet-950 shadow-sm">
+          <p className="text-base font-semibold tracking-tight">{billing.label}</p>
+          <p className="mt-2 leading-relaxed text-violet-900/95">
+            Nous n’avons pas pu relire votre abonnement. Vérifiez votre connexion, puis actualisez la page. Si le
+            problème continue, contactez {SUPPORT_EMAIL}.
+          </p>
+          <button
+            type="button"
+            className="mt-3 rounded-full border border-violet-300 bg-white px-4 py-2 text-sm font-medium text-violet-950 hover:bg-violet-100"
+            onClick={() => window.location.reload()}
+          >
+            Actualiser la page
+          </button>
+        </div>
+      ) : null}
+
       {showExpiredWall ? (
         <div className="rounded-xl border border-amber-200/95 bg-amber-50 px-4 py-4 text-sm text-amber-950 shadow-sm">
           <p className="text-base font-semibold tracking-tight">Votre essai gratuit est terminé</p>
@@ -212,15 +237,10 @@ export default function FacturationClient() {
         <div className="rounded-xl border border-emerald-200/90 bg-emerald-50 px-4 py-4 text-sm text-emerald-950 shadow-sm">
           <p className="text-base font-semibold tracking-tight">Essai gratuit en cours</p>
           <p className="mt-2 leading-relaxed text-emerald-950/95">
+            <strong>{trialDaysRemainingPhrase(billing.daysLeft)}</strong>
             {billing.daysLeft <= 0 ? (
-              <>Il vous reste <strong>moins d’un jour</strong> pour profiter de toutes les fonctionnalités.</>
-            ) : billing.daysLeft === 1 ? (
-              <>Il vous reste <strong>1 jour</strong> d’essai.</>
-            ) : (
-              <>
-                Votre essai gratuit se termine dans <strong>{billing.daysLeft} jours</strong>.
-              </>
-            )}
+              <span> — profitez encore de Waevon aujourd’hui.</span>
+            ) : null}
           </p>
           {ss.kind === "trialing" ? (
             <p className="mt-1 text-emerald-950/85">
@@ -257,7 +277,7 @@ export default function FacturationClient() {
         <h2 className="text-lg font-semibold text-neutral-950">Mon abonnement</h2>
         <div className="mt-4 space-y-4 text-sm text-neutral-700">
           <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${badgeClass}`}>
-            {statusBadgeLabel(billing)}
+            {billing.label}
           </span>
 
           {billing.isExpired || showExpiredWall ? (
@@ -282,14 +302,16 @@ export default function FacturationClient() {
           {billing.isTrial && billing.accessSource === "waevon" && !showExpiredWall ? (
             <div className="space-y-3">
               <p>
-                Votre essai se termine le <strong>{formatDateFr(billing.trialEndsAt)}</strong>
+                Votre essai se termine le{" "}
+                <strong>{formatDateFr(billing.effectiveTrialEndsAt ?? billing.trialEndsAt)}</strong>
                 {billing.daysLeft > 0 ? (
                   <>
                     {" "}
-                    — il vous reste <strong>{billing.daysLeft}</strong> jour
-                    {billing.daysLeft > 1 ? "s" : ""}.
+                    — <strong>{trialDaysRemainingPhrase(billing.daysLeft).toLowerCase()}</strong>.
                   </>
-                ) : null}
+                ) : (
+                  <> — <strong>dernier jour d’essai</strong>.</>
+                )}
               </p>
               <p className="text-neutral-600">
                 Passez à une formule payante pour continuer à utiliser Waevon sans interruption.
@@ -310,7 +332,7 @@ export default function FacturationClient() {
           {billing.isActive && !billing.isTrial ? (
             <div className="space-y-3">
               <p>
-                Formule : <strong>{planDisplayName(billing)}</strong>
+                Formule : <strong>{planSummaryName(billing)}</strong>
                 {billing.plan === "starter" || billing.plan === "pro" ? (
                   <>
                     {" "}
@@ -367,7 +389,7 @@ export default function FacturationClient() {
           {isStripe && billing.isTrial && sub.status === "trialing" ? (
             <div className="space-y-2">
               <p>
-                Plan : <strong>{planDisplayName(billing)}</strong>
+                Plan : <strong>{planSummaryName(billing)}</strong>
               </p>
               {billing.trialEndsAt ? (
                 <p>
@@ -405,12 +427,6 @@ export default function FacturationClient() {
             </div>
           ) : null}
 
-          {sub.status === "none" && sub.accessSource === "none" ? (
-            <p className="text-neutral-600">
-              Impossible de déterminer votre statut. Rechargez la page ou contactez le support si le
-              problème persiste.
-            </p>
-          ) : null}
         </div>
       </section>
 
@@ -419,23 +435,23 @@ export default function FacturationClient() {
         <h2 className="text-lg font-semibold text-neutral-950">Résumé</h2>
         <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-neutral-500">Statut affiché</dt>
-            <dd className="mt-0.5 font-medium text-neutral-950">{statusBadgeLabel(billing)}</dd>
+            <dt className="text-neutral-500">Statut</dt>
+            <dd className="mt-0.5 font-medium text-neutral-950">{billing.label}</dd>
           </div>
           <div>
             <dt className="text-neutral-500">Formule</dt>
-            <dd className="mt-0.5 font-medium text-neutral-950">{planDisplayName(billing)}</dd>
+            <dd className="mt-0.5 font-medium text-neutral-950">{planSummaryName(billing)}</dd>
           </div>
           <div>
             <dt className="text-neutral-500">
               {billing.isTrial ? "Fin de l’essai" : "Prochaine échéance"}
             </dt>
-            <dd className="mt-0.5 font-medium text-neutral-950">{renewalOrTrialEnd}</dd>
+            <dd className="mt-0.5 font-medium text-neutral-950">{renewalOrTrialEndDisplay}</dd>
           </div>
           <div>
             <dt className="text-neutral-500">Jours restants (essai)</dt>
             <dd className="mt-0.5 font-medium text-neutral-950">
-              {billing.isTrial ? (billing.daysLeft <= 0 ? "Moins d’un jour" : String(billing.daysLeft)) : "—"}
+              {billing.isTrial ? trialDaysRemainingPhrase(billing.daysLeft) : "Non applicable"}
             </dd>
           </div>
           <div className="sm:col-span-2">

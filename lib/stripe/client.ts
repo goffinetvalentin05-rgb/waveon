@@ -20,3 +20,8 @@ export function requireStripe(): Stripe {
   }
   return stripe;
 }
+
+/** Permet d’éviter d’appeler Stripe quand la clé est absente et de se replier sur la base. */
+export function isStripeSecretConfigured(): boolean {
+  return Boolean(process.env.STRIPE_SECRET_KEY?.trim());
+}

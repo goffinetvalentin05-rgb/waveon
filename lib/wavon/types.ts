@@ -218,6 +218,16 @@ export const EMPTY_SUBSCRIPTION_SNAPSHOT: SubscriptionSnapshot = {
   accessSource: "none",
 };
 
+/** Échec lecture Supabase / données — réservé au repli technique (affichage « erreur sync »). */
+export const SYNC_ERROR_SUBSCRIPTION_SNAPSHOT: SubscriptionSnapshot = {
+  status: "sync_error",
+  plan: null,
+  trialEndsAt: null,
+  currentPeriodEnd: null,
+  cancelAtPeriodEnd: false,
+  accessSource: "none",
+};
+
 export type WavonState = {
   version: 1;
   subscription: SubscriptionSnapshot;
