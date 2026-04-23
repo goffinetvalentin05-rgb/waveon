@@ -67,41 +67,58 @@ export default function SignupPage() {
       const normalizedEmail = email.trim().toLowerCase();
       const emailRedirectTo =
         typeof window !== "undefined" ? `${window.location.origin}/dashboard` : undefined;
-      console.log("[signup] step=signUp_call email=", normalizedEmail, "emailRedirectTo=", emailRedirectTo);
+      console.log(
+        "[signup] step=signUp_call (via API serveur) email=",
+        normalizedEmail,
+        "emailRedirectTo=",
+        emailRedirectTo
+      );
 
-      const { data, error } = await supabase.auth.signUp({
-        email: normalizedEmail,
-        password,
-        options: emailRedirectTo
-          ? {
-              emailRedirectTo,
-            }
-          : undefined,
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: normalizedEmail,
+          password,
+          emailRedirectTo,
+        }),
       });
 
-      if (error) {
-        console.log("[signup] step=signUp_error", error.message, error);
-        setMessage(error.message);
+      const payload = (await res.json().catch(() => null)) as
+        | { user?: { id?: string } | null; session?: unknown | null; message?: string }
+        | null;
+
+      if (!res.ok) {
+        console.log("[signup] step=signUp_error (server)", payload);
+        setMessage(
+          payload?.message ??
+            "Une erreur technique est survenue lors de la création du compte. Merci de réessayer dans quelques instants."
+        );
         return;
       }
 
-      console.log("[signup] step=signUp_ok session=", Boolean(data.session), "user_id=", data.user?.id);
+      console.log(
+        "[signup] step=signUp_ok",
+        "has_session=",
+        Boolean(payload?.session),
+        "user_id=",
+        payload?.user?.id
+      );
 
-      if (!data.session) {
-        console.log("[signup] step=no_session trying signInWithPassword");
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: normalizedEmail,
-          password,
-        });
-        if (signInError) {
-          console.log("[signup] step=signIn_fallback_error", signInError.message);
-          setMessage(
-            "Compte créé, mais la session n'a pas pu être ouverte. Vérifie la confirmation email dans Supabase, puis reconnecte-toi."
-          );
-          return;
-        }
-        console.log("[signup] step=signIn_fallback_ok");
+      // Ouvrir une session cookie côté navigateur (utile si la conf Supabase renvoie no-session à l'inscription)
+      console.log("[signup] step=signInWithPassword_after_signup");
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      });
+      if (signInError) {
+        console.log("[signup] step=signIn_after_signup_error", signInError.message);
+        setMessage(
+          "Compte créé, mais la session n'a pas pu être ouverte. Vérifie la confirmation email, puis reconnecte-toi."
+        );
+        return;
       }
+      console.log("[signup] step=signIn_after_signup_ok");
 
       console.log("[signup] step=redirect /dashboard?welcome=1 (pas de /pricing, pas de checkout Stripe)");
       router.replace("/dashboard?welcome=1");
