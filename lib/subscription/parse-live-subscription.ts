@@ -3,6 +3,7 @@ import {
   EMPTY_SUBSCRIPTION_SNAPSHOT,
   type SubscriptionAccessSource,
   type SubscriptionSnapshot,
+  type WorkspaceAccessSummary,
 } from "@/lib/wavon/types";
 
 /**
@@ -32,5 +33,22 @@ export function parseSubscriptionFromLiveResponse(body: unknown): SubscriptionSn
     cancelAtPeriodEnd: Boolean(b.cancelAtPeriodEnd),
     accessSource,
     ...(typeof b.stripeCustomerId === "string" ? { stripeCustomerId: b.stripeCustomerId } : {}),
+  };
+}
+
+export function parseWorkspaceAccessFromLive(body: unknown): WorkspaceAccessSummary | null {
+  if (!body || typeof body !== "object") return null;
+  const b = body as Record<string, unknown>;
+  const w = b.workspaceAccess;
+  if (!w || typeof w !== "object") return null;
+  const x = w as Record<string, unknown>;
+  if (typeof x.hasAccess !== "boolean") return null;
+  return {
+    trialEndsAt: typeof x.trialEndsAt === "string" ? x.trialEndsAt : null,
+    isTrialActive: Boolean(x.isTrialActive),
+    isTrialExpired: Boolean(x.isTrialExpired),
+    hasActiveSubscription: Boolean(x.hasActiveSubscription),
+    hasAccess: x.hasAccess,
+    daysLeft: typeof x.daysLeft === "number" && Number.isFinite(x.daysLeft) ? Math.max(0, x.daysLeft) : 0,
   };
 }

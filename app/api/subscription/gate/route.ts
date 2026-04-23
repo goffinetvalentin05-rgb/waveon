@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
-import { getBusinessSubscriptionStatus } from "@/lib/stripe/subscription";
-import { getBillingStatus } from "@/lib/subscription/billing-status";
+import { getBillingStatusFromAccess } from "@/lib/subscription/billing-status";
+import { getWorkspaceAccessState } from "@/lib/subscription/workspace-access";
 
 export const runtime = "nodejs";
 
@@ -33,9 +33,24 @@ export async function GET(req: NextRequest) {
     if (!biz) {
       return NextResponse.json(BLOCKED_PAYLOAD);
     }
-    const snapshot = await getBusinessSubscriptionStatus((biz as { id: string }).id);
-    const billing = getBillingStatus(snapshot);
-    return NextResponse.json({ canUseApp: billing.canUseApp, billing });
+    const access = await getWorkspaceAccessState((biz as { id: string }).id);
+    const billing = getBillingStatusFromAccess(access);
+    return NextResponse.json({
+      canUseApp: access.hasAccess,
+      billing,
+      workspaceAccess: {
+        workspaceId: access.workspaceId,
+        trialEndsAt: access.trialEndsAt,
+        isTrialActive: access.isTrialActive,
+        isTrialExpired: access.isTrialExpired,
+        hasActiveSubscription: access.hasActiveSubscription,
+        hasAccess: access.hasAccess,
+        daysLeft: access.daysLeft,
+        subscriptionStatus: access.subscriptionStatus,
+        planName: access.planName,
+        stripeCustomerId: access.stripeCustomerId,
+      },
+    });
   }
 
   const supabase = await createRouteHandlerSupabase();
@@ -55,11 +70,23 @@ export async function GET(req: NextRequest) {
   if (!biz) {
     return NextResponse.json(BLOCKED_PAYLOAD);
   }
-  const snapshot = await getBusinessSubscriptionStatus((biz as { id: string }).id);
-  const billing = getBillingStatus(snapshot);
+  const access = await getWorkspaceAccessState((biz as { id: string }).id);
+  const billing = getBillingStatusFromAccess(access);
   return NextResponse.json({
-    canUseApp: billing.canUseApp,
+    canUseApp: access.hasAccess,
     billing,
-    state: { kind: billing.canUseApp ? ("active" as const) : ("subscription_required" as const) },
+    workspaceAccess: {
+      workspaceId: access.workspaceId,
+      trialEndsAt: access.trialEndsAt,
+      isTrialActive: access.isTrialActive,
+      isTrialExpired: access.isTrialExpired,
+      hasActiveSubscription: access.hasActiveSubscription,
+      hasAccess: access.hasAccess,
+      daysLeft: access.daysLeft,
+      subscriptionStatus: access.subscriptionStatus,
+      planName: access.planName,
+      stripeCustomerId: access.stripeCustomerId,
+    },
+    state: { kind: access.hasAccess ? ("active" as const) : ("subscription_required" as const) },
   });
 }

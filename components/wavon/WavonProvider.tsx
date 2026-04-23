@@ -26,7 +26,10 @@ import {
   type WeeklyDaySchedule,
   type WavonState,
 } from "@/lib/wavon/types";
-import { parseSubscriptionFromLiveResponse } from "@/lib/subscription/parse-live-subscription";
+import {
+  parseSubscriptionFromLiveResponse,
+  parseWorkspaceAccessFromLive,
+} from "@/lib/subscription/parse-live-subscription";
 import { supabase } from "@/lib/supabase/client";
 import { normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
 import { normalizePublicSlugInput, validatePublicSlugFormat } from "@/lib/wavon/public-slug";
@@ -214,6 +217,7 @@ function createEmptyState(): WavonState {
   return {
     version: 1,
     subscription: { ...EMPTY_SUBSCRIPTION_SNAPSHOT },
+    workspaceAccess: null,
     weekly: emptyWeekly(),
     availabilityMode: "fixed",
     customDays: [],
@@ -395,11 +399,16 @@ export function WavonProvider({
         (business as DbBusiness | null) ??
         (await (async () => {
           const provisionalSlug = `c-${crypto.randomUUID().replace(/-/g, "").slice(0, 11)}`;
+          const trialEnd = new Date(Date.now() + 3 * 86_400_000).toISOString();
           const { data: created, error } = await supabase
             .from(WavonDbTable.businesses)
             .insert({
               user_id: userId,
               public_slug: provisionalSlug,
+              trial_started_at: new Date().toISOString(),
+              trial_ends_at: trialEnd,
+              subscription_status: "inactive",
+              subscription_plan: null,
             })
             .select(
               "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description,currency,notify_owner_on_new_reservation,notify_owner_on_cancellation,stripe_customer_id,stripe_subscription_id"
@@ -541,11 +550,13 @@ export function WavonProvider({
       const blockedSlots: BlockedSlot[] = dbBlockedSlots.map((s) => blockedSlotFromDbRow(s));
 
       let subscription: SubscriptionSnapshot = { ...EMPTY_SUBSCRIPTION_SNAPSHOT };
+      let workspaceAccess: WavonState["workspaceAccess"] = null;
       try {
         const subRes = await fetch("/api/subscription/live", { credentials: "same-origin" });
         if (subRes.ok) {
           const body: unknown = await subRes.json();
           subscription = parseSubscriptionFromLiveResponse(body);
+          workspaceAccess = parseWorkspaceAccessFromLive(body);
         }
       } catch {
         /* garde EMPTY_SUBSCRIPTION_SNAPSHOT */
@@ -554,6 +565,7 @@ export function WavonProvider({
       const next: WavonState = {
         version: 1,
         subscription,
+        workspaceAccess,
         employees: dbEmployees.map(
           (e): Employee => ({
             id: e.id,

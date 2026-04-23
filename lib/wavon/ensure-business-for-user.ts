@@ -38,10 +38,18 @@ export async function ensureBusinessForUser(
   }
 
   const provisionalSlug = `c-${crypto.randomUUID().replace(/-/g, "").slice(0, 11)}`;
+  const trialEnd = new Date(Date.now() + 3 * 86_400_000).toISOString();
   console.log("[ensureBusinessForUser] insert new business slug=", provisionalSlug);
   const { data: created, error: insErr } = await supabase
     .from(WavonDbTable.businesses)
-    .insert({ user_id: userId, public_slug: provisionalSlug })
+    .insert({
+      user_id: userId,
+      public_slug: provisionalSlug,
+      trial_started_at: new Date().toISOString(),
+      trial_ends_at: trialEnd,
+      subscription_status: "inactive",
+      subscription_plan: null,
+    })
     .select(selectCols)
     .single();
   if (insErr) {

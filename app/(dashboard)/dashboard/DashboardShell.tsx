@@ -6,9 +6,54 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { ToastProvider } from "@/components/wavon/Toast";
-import { WavonProvider } from "@/components/wavon/WavonProvider";
+import { useWavon, WavonProvider } from "@/components/wavon/WavonProvider";
+import { trialRemainingPhrase } from "@/lib/subscription/workspace-access";
 import { spinnerClass, wavonMainBg, wavonPage } from "@/lib/wavon/tokens";
 import Sidebar from "./components/Sidebar";
+
+function DashboardTrialBanner() {
+  const { ready, state } = useWavon();
+  if (!ready) return null;
+  const a = state.workspaceAccess;
+  if (!a?.hasAccess) return null;
+  if (a.hasActiveSubscription) return null;
+  if (!a.isTrialActive) return null;
+
+  const urgent = a.daysLeft <= 1;
+  const headline =
+    a.daysLeft >= 2
+      ? `Essai gratuit : ${a.daysLeft} jours restants`
+      : a.daysLeft === 1
+        ? "Essai gratuit : 1 jour restant"
+        : "Essai gratuit : dernier jour";
+
+  return (
+    <div
+      className={`mb-4 rounded-xl border px-4 py-3 text-sm shadow-sm ${
+        urgent
+          ? "border-amber-300/90 bg-amber-50 text-amber-950"
+          : "border-sky-200/90 bg-sky-50 text-sky-950"
+      }`}
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="font-semibold tracking-tight">{headline}</p>
+          <p className="mt-1 text-xs opacity-90">{trialRemainingPhrase(a.daysLeft)}</p>
+        </div>
+        <Link
+          href="/dashboard/facturation#waevon-pricing"
+          className={`inline-flex shrink-0 justify-center rounded-full px-4 py-2 text-xs font-semibold ${
+            urgent
+              ? "bg-amber-950 text-white hover:bg-amber-900"
+              : "bg-sky-950 text-white hover:bg-sky-900"
+          }`}
+        >
+          Voir les offres
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardShell({
   children,
@@ -89,7 +134,10 @@ export default function DashboardShell({
           <Sidebar />
           <div className="flex min-w-0 flex-1 flex-col">
             <main className="min-w-0 flex-1 pb-12 pt-2 sm:pb-16 sm:pt-4 lg:pt-8">
-              <div className={wavonPage}>{children}</div>
+              <div className={wavonPage}>
+                <DashboardTrialBanner />
+                {children}
+              </div>
             </main>
           </div>
         </div>

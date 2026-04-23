@@ -12,8 +12,8 @@ import {
   PLAN_MONTHLY_PRICE_CHF,
   type BillingPlanId,
 } from "@/lib/stripe/config";
-import { hasActiveSubscription } from "@/lib/subscription/access";
-import { getBillingStatus } from "@/lib/subscription/billing-status";
+import { buildWorkspaceAccessState } from "@/lib/subscription/workspace-access";
+import { getBillingStatusFromAccess } from "@/lib/subscription/billing-status";
 import { supabase } from "@/lib/supabase/client";
 import { wavonPage } from "@/lib/wavon/tokens";
 
@@ -49,24 +49,36 @@ function CheckIcon({ className }: { className?: string }) {
 }
 
 export default function FacturationClient() {
-  const { ready, state } = useWavon();
+  const { ready, state, businessId } = useWavon();
   const searchParams = useSearchParams();
   const blockedParam = searchParams.get("subscription_required") === "1";
   const canceledParam = searchParams.get("canceled") === "true";
   const [portalLoading, setPortalLoading] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<BillingPlanId | null>(null);
 
+  const billing = useMemo(() => {
+    if (!ready || !businessId) return null;
+    const summary = state.workspaceAccess ?? {
+      trialEndsAt: null,
+      isTrialActive: false,
+      isTrialExpired: false,
+      hasActiveSubscription: false,
+      hasAccess: false,
+      daysLeft: 0,
+    };
+    return getBillingStatusFromAccess(
+      buildWorkspaceAccessState(businessId, state.subscription, summary)
+    );
+  }, [ready, businessId, state.subscription, state.workspaceAccess]);
+
   const sub = state.subscription;
-  const billing = useMemo(() => getBillingStatus(sub), [sub]);
-  const access = { status: sub.status, plan: sub.plan };
-  const activePaying = hasActiveSubscription(access);
+  const activePaying =
+    billing?.publicStatus === "active" || billing?.publicStatus === "past_due";
   const isStripe = sub.accessSource === "stripe";
   const showPortal =
     isStripe &&
     sub.status !== "sync_error" &&
-    (sub.status === "active" ||
-      sub.status === "past_due" ||
-      sub.status === "canceled");
+    (sub.status === "active" || sub.status === "past_due" || sub.status === "canceled");
 
   const openPortal = useCallback(async () => {
     setPortalLoading(true);
@@ -120,7 +132,7 @@ export default function FacturationClient() {
     }
   }, []);
 
-  if (!ready) {
+  if (!ready || !billing) {
     return (
       <div className={`${wavonPage} py-10 text-sm text-neutral-500`}>Chargement…</div>
     );
@@ -135,7 +147,11 @@ export default function FacturationClient() {
           ? "bg-red-100 text-red-950"
           : billing.publicStatus === "canceled"
             ? "bg-neutral-200 text-neutral-900"
-            : "bg-amber-100 text-amber-950";
+            : billing.publicStatus === "trial_active"
+              ? "bg-sky-100 text-sky-950"
+              : billing.publicStatus === "trial_expired"
+                ? "bg-amber-100 text-amber-950"
+                : "bg-amber-100 text-amber-950";
 
   const pricingBulletsStarter = [
     "Réservations en ligne",
@@ -145,7 +161,9 @@ export default function FacturationClient() {
   ];
   const pricingBulletsPro = ["Tout le plan Starter", "Factures PDF automatiques (bientôt)"];
 
-  const needsPricing = !activePaying || billing.publicStatus === "inactive" || billing.publicStatus === "canceled";
+  const needsPricing = !activePaying;
+
+  const trialEndsLabel = formatDateFr(state.workspaceAccess?.trialEndsAt ?? null);
 
   return (
     <div className={`${wavonPage} space-y-8 py-6`}>
@@ -172,9 +190,11 @@ export default function FacturationClient() {
 
       {(blockedParam && !activePaying) || (!activePaying && billing.publicStatus === "inactive") ? (
         <div className="rounded-xl border border-amber-200/95 bg-amber-50 px-4 py-4 text-sm text-amber-950 shadow-sm">
-          <p className="text-base font-semibold tracking-tight">Activez votre abonnement</p>
+          <p className="text-base font-semibold tracking-tight">Accès au tableau de bord</p>
           <p className="mt-2 leading-relaxed text-amber-950/95">
-            Pour utiliser Waevon, vous devez choisir une offre et activer votre abonnement.
+            {billing.publicStatus === "trial_expired"
+              ? "Votre essai est terminé. Souscrivez une offre pour retrouver l’agenda et les fonctionnalités métier."
+              : "Pour continuer après votre essai, choisissez une offre et activez votre abonnement."}
           </p>
         </div>
       ) : null}
@@ -185,32 +205,13 @@ export default function FacturationClient() {
         </div>
       ) : null}
 
-      {/* État principal */}
       <section className="rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-sm">
-        {!activePaying ? (
-          <>
-            <h2 className="text-lg font-semibold text-neutral-950">Activez votre abonnement</h2>
-            <p className="mt-2 text-sm text-neutral-600">{billing.billingMessage}</p>
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${badgeClass}`}>
-                {billing.label}
-              </span>
-            </div>
-            <button
-              type="button"
-              disabled={loadingPlan !== null}
-              onClick={() => document.getElementById("waevon-pricing")?.scrollIntoView({ behavior: "smooth" })}
-              className="mt-6 rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60"
-            >
-              Voir les offres
-            </button>
-          </>
-        ) : (
+        {activePaying ? (
           <>
             <h2 className="text-lg font-semibold text-neutral-950">Mon abonnement</h2>
             <div className="mt-4 space-y-4 text-sm text-neutral-700">
               <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${badgeClass}`}>
-                {billing.label}
+                Abonnement actif
               </span>
 
               {billing.publicStatus === "active" ? (
@@ -230,7 +231,7 @@ export default function FacturationClient() {
                       <strong>{formatDateFr(billing.currentPeriodEnd)}</strong>.
                     </p>
                   ) : (
-                    <p className="text-neutral-600">Prochaine échéance : synchronisation en cours.</p>
+                    <p className="text-neutral-600">Prochaine échéance : en cours de synchronisation.</p>
                   )}
                   {sub.cancelAtPeriodEnd && billing.currentPeriodEnd ? (
                     <p className="rounded-lg bg-amber-50 px-3 py-2 text-amber-950">
@@ -267,28 +268,81 @@ export default function FacturationClient() {
                   ) : null}
                 </div>
               ) : null}
-
-              {billing.publicStatus === "canceled" ? (
-                <div className="space-y-3">
-                  <p>{billing.billingMessage}</p>
-                  <button
-                    type="button"
-                    disabled={loadingPlan !== null}
-                    onClick={() =>
-                      document.getElementById("waevon-pricing")?.scrollIntoView({ behavior: "smooth" })
-                    }
-                    className="rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60"
-                  >
-                    Réactiver un abonnement
-                  </button>
-                </div>
-              ) : null}
             </div>
+          </>
+        ) : billing.publicStatus === "trial_active" ? (
+          <>
+            <h2 className="text-lg font-semibold text-neutral-950">Essai gratuit</h2>
+            <p className="mt-2 text-sm text-neutral-600">{billing.billingMessage}</p>
+            <p className="mt-2 text-sm text-neutral-700">
+              Date de fin : <strong>{trialEndsLabel}</strong>
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${badgeClass}`}>
+                Essai gratuit actif
+              </span>
+            </div>
+            <button
+              type="button"
+              disabled={loadingPlan !== null}
+              onClick={() => document.getElementById("waevon-pricing")?.scrollIntoView({ behavior: "smooth" })}
+              className="mt-6 rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60"
+            >
+              Choisir une offre
+            </button>
+          </>
+        ) : billing.publicStatus === "trial_expired" ? (
+          <>
+            <h2 className="text-lg font-semibold text-neutral-950">Continuer avec Waevon</h2>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${badgeClass}`}>
+                Essai expiré
+              </span>
+            </div>
+            <p className="mt-3 text-sm text-neutral-600">
+              Votre essai gratuit est terminé. Choisissez une offre pour continuer à utiliser Waevon.
+            </p>
+            <button
+              type="button"
+              disabled={loadingPlan !== null}
+              onClick={() => document.getElementById("waevon-pricing")?.scrollIntoView({ behavior: "smooth" })}
+              className="mt-6 rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60"
+            >
+              S’abonner
+            </button>
+          </>
+        ) : (
+          <>
+            <h2 className="text-lg font-semibold text-neutral-950">Abonnement</h2>
+            <p className="mt-2 text-sm text-neutral-600">{billing.billingMessage}</p>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${badgeClass}`}>
+                {billing.label}
+              </span>
+            </div>
+            {billing.publicStatus === "canceled" ? (
+              <button
+                type="button"
+                disabled={loadingPlan !== null}
+                onClick={() => document.getElementById("waevon-pricing")?.scrollIntoView({ behavior: "smooth" })}
+                className="mt-6 rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60"
+              >
+                S’abonner
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={loadingPlan !== null}
+                onClick={() => document.getElementById("waevon-pricing")?.scrollIntoView({ behavior: "smooth" })}
+                className="mt-6 rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60"
+              >
+                Voir les offres
+              </button>
+            )}
           </>
         )}
       </section>
 
-      {/* Offres — visible si pas d’accès payant ou annulé */}
       {needsPricing || billing.publicStatus === "canceled" ? (
         <section id="waevon-pricing" className="space-y-4 scroll-mt-8">
           <h2 className="text-lg font-semibold text-neutral-950">Choisir un abonnement</h2>
@@ -349,8 +403,8 @@ export default function FacturationClient() {
           .
         </p>
         <p className="mt-3 text-xs text-neutral-500">
-          Sans abonnement actif, l’accès au tableau de bord (agenda, services, réservations) est suspendu. La
-          facturation et vos paramètres de compte restent accessibles pour vous abonner. Détails sur{" "}
+          Sans abonnement actif après la fin de l’essai, l’accès au tableau de bord (agenda, services,
+          réservations) est suspendu. La facturation et vos paramètres restent disponibles. Détails sur{" "}
           <Link href="/pricing" className="font-medium text-neutral-800 underline">
             la page tarifs
           </Link>

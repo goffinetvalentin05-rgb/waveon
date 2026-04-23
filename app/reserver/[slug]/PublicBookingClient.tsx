@@ -301,6 +301,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
         const next: WavonState = {
           version: 1,
           subscription: { ...EMPTY_SUBSCRIPTION_SNAPSHOT },
+          workspaceAccess: null,
           employees: emp,
           weekly: emptyWeekly,
           availabilityMode: dbSettings?.availability_mode ?? "fixed",

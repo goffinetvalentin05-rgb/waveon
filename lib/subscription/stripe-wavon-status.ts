@@ -1,6 +1,6 @@
 /**
  * Mapping Stripe → statuts internes (`SubscriptionSnapshot.status`).
- * Pas d’essai gratuit Waevon : `trialing` (Stripe) est traité comme `active` pour l’accès produit.
+ * `trialing` (Stripe) est traité comme `active` pour l’accès payant ; l’essai Waevon reste `trial_ends_at`.
  */
 
 /** Normalise le statut renvoyé par l’objet Subscription Stripe. */

@@ -53,8 +53,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
     if (businessId) {
       try {
-        const { billing } = await getWorkspaceSubscriptionStatus(businessId);
-        billingLocked = !billing.canUseApp;
+        const { access } = await getWorkspaceSubscriptionStatus(businessId);
+        billingLocked = !access.hasAccess;
 
         if (billingLocked && !isExemptWhenBlocked) {
           redirect("/dashboard/facturation?subscription_required=1");

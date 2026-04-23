@@ -26,6 +26,7 @@ async function fetchBillingState(request: NextRequest): Promise<BillingAccessSta
       headers: { cookie: request.headers.get("cookie") ?? "" },
       cache: "no-store",
     });
+    if (res.status >= 500) return "ALLOWED";
     if (!res.ok) return "BLOCKED";
     const j = (await res.json()) as { canUseApp?: boolean };
     if (typeof j.canUseApp === "boolean") {
@@ -33,7 +34,7 @@ async function fetchBillingState(request: NextRequest): Promise<BillingAccessSta
     }
     return "BLOCKED";
   } catch {
-    return "BLOCKED";
+    return "ALLOWED";
   }
 }
 

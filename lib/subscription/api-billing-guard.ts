@@ -26,8 +26,8 @@ export async function merchantBillingGateResponse(): Promise<NextResponse | null
   if (bizErr || !biz) {
     return NextResponse.json({ error: "Commerce introuvable." }, { status: 400 });
   }
-  const { billing } = await getWorkspaceSubscriptionStatus((biz as { id: string }).id);
-  if (!billing.canUseApp) {
+  const { access } = await getWorkspaceSubscriptionStatus((biz as { id: string }).id);
+  if (!access.hasAccess) {
     return NextResponse.json(SUBSCRIPTION_REQUIRED, { status: 402 });
   }
   return null;
@@ -39,8 +39,8 @@ export async function billingGateResponseForBusinessId(businessId: string): Prom
   if (!id) {
     return NextResponse.json({ error: "businessId requis." }, { status: 400 });
   }
-  const { billing } = await getWorkspaceSubscriptionStatus(id);
-  if (!billing.canUseApp) {
+  const { access } = await getWorkspaceSubscriptionStatus(id);
+  if (!access.hasAccess) {
     return NextResponse.json(SUBSCRIPTION_REQUIRED, { status: 402 });
   }
   return null;
