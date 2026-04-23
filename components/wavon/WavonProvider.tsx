@@ -564,6 +564,10 @@ export function WavonProvider({
                 typeof body.currentPeriodEnd === "string" ? body.currentPeriodEnd : null,
               cancelAtPeriodEnd: Boolean(body.cancelAtPeriodEnd),
               accessSource,
+              ...(typeof body.trialStartedAt === "string" ? { trialStartedAt: body.trialStartedAt } : {}),
+              ...(typeof body.stripeCustomerId === "string"
+                ? { stripeCustomerId: body.stripeCustomerId }
+                : {}),
             };
           }
         }

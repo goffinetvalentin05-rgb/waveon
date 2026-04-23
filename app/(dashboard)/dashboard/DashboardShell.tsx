@@ -1,8 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { ToastProvider } from "@/components/wavon/Toast";
 import { WavonProvider } from "@/components/wavon/WavonProvider";
@@ -19,6 +20,7 @@ export default function DashboardShell({
   billingLocked?: boolean;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [userId, setUserId] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
 
@@ -46,10 +48,32 @@ export default function DashboardShell({
   }
 
   if (billingLocked) {
+    const navCls = (href: string) =>
+      pathname === href || pathname?.startsWith(`${href}/`)
+        ? "font-semibold text-neutral-950"
+        : "text-neutral-600 hover:text-neutral-950";
+
     return (
       <ToastProvider>
         <WavonProvider key={userId} userId={userId}>
           <div className={`flex min-h-screen flex-col ${wavonMainBg}`}>
+            <header className="border-b border-neutral-200/90 bg-white/90 px-4 py-3 backdrop-blur-sm">
+              <nav
+                className={`${wavonPage} flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm`}
+                aria-label="Accès limité"
+              >
+                <Link href="/dashboard/facturation" className={navCls("/dashboard/facturation")}>
+                  Facturation
+                </Link>
+                <Link href="/dashboard/parametres" className={navCls("/dashboard/parametres")}>
+                  Paramètres
+                </Link>
+              </nav>
+              <p className={`${wavonPage} mt-2 text-center text-xs text-neutral-500`}>
+                L’accès à l’agenda et aux fonctionnalités métier est suspendu jusqu’à la souscription d’un
+                abonnement.
+              </p>
+            </header>
             <main className="min-w-0 flex-1 pb-12 pt-2 sm:pb-16 sm:pt-4">
               <div className={wavonPage}>{children}</div>
             </main>

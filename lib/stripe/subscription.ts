@@ -5,9 +5,9 @@ import { EMPTY_SUBSCRIPTION_SNAPSHOT, type SubscriptionSnapshot } from "@/lib/wa
 import { getEffectiveTrialEnd } from "@/lib/subscription/trial-window";
 import { planFromStripePriceId } from "./config";
 import { requireStripe } from "./client";
+import { syncStripeSubscriptionToBusinessRow } from "./business-subscription-sync";
 
 type CacheEntry = { expiresAt: number; value: SubscriptionSnapshot };
-
 const cache = new Map<string, CacheEntry>();
 const TTL_MS = 60_000;
 
@@ -17,7 +17,6 @@ export function invalidateBusinessSubscriptionCache(businessId: string): void {
 
 function normalizeSubscriptionStatus(status: Stripe.Subscription.Status): string {
   if (status === "incomplete_expired") return "canceled";
-  /** @see TODO.md — statut `paused` Stripe non modélisé à ce jour */
   if (status === "paused") return "active";
   return status;
 }
@@ -72,8 +71,61 @@ function waevonTrialSnapshot(trialEndsAtIso: string, expired: boolean): Subscrip
   };
 }
 
+type BusinessBillingRow = {
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  trial_started_at: string | null;
+  trial_ends_at: string | null;
+  subscription_status: string | null;
+  created_at: string | null;
+};
+
+const EMPTY_ROW: BusinessBillingRow = {
+  stripe_customer_id: null,
+  stripe_subscription_id: null,
+  trial_started_at: null,
+  trial_ends_at: null,
+  subscription_status: null,
+  created_at: null,
+};
+
+async function persistWaevonExpired(businessId: string): Promise<void> {
+  const admin = createAdminSupabaseClient();
+  const { error } = await admin
+    .from(WavonDbTable.businesses)
+    .update({ subscription_status: "expired" })
+    .eq("id", businessId);
+  if (error) console.error("[subscription] persistWaevonExpired", error);
+}
+
+async function clearStaleStripeSubscription(
+  businessId: string,
+  trialRow: BusinessBillingRow
+): Promise<SubscriptionSnapshot> {
+  const admin = createAdminSupabaseClient();
+  await admin
+    .from(WavonDbTable.businesses)
+    .update({ stripe_subscription_id: null })
+    .eq("id", businessId);
+  invalidateBusinessSubscriptionCache(businessId);
+
+  const eff = getEffectiveTrialEnd(trialRow);
+  const now = Date.now();
+  if (eff) {
+    const expired = eff.endMs <= now;
+    if (expired) await persistWaevonExpired(businessId);
+    return waevonTrialSnapshot(eff.iso, expired);
+  }
+  await persistWaevonExpired(businessId);
+  return {
+    ...EMPTY_SUBSCRIPTION_SNAPSHOT,
+    status: "trial_expired",
+    accessSource: "waevon",
+  };
+}
+
 /**
- * Accès facturation : abonnement Stripe (API live + cache 60 s) ou essai Waevon (`trial_ends_at` / repli sur `created_at`).
+ * Accès facturation : abonnement Stripe (API live + synchro DB) ou essai Waevon (`trial_ends_at` / repli sur `created_at`).
  */
 export async function getBusinessSubscriptionStatus(businessId: string): Promise<SubscriptionSnapshot> {
   const now = Date.now();
@@ -85,16 +137,14 @@ export async function getBusinessSubscriptionStatus(businessId: string): Promise
   const admin = createAdminSupabaseClient();
   const { data, error } = await admin
     .from(WavonDbTable.businesses)
-    .select("stripe_subscription_id, trial_ends_at, created_at")
+    .select(
+      "stripe_customer_id, stripe_subscription_id, trial_started_at, trial_ends_at, subscription_status, created_at"
+    )
     .eq("id", businessId)
     .maybeSingle();
   if (error) throw error;
 
-  const row = data as {
-    stripe_subscription_id: string | null;
-    trial_ends_at: string | null;
-    created_at: string | null;
-  } | null;
+  const row = data as BusinessBillingRow | null;
   const subId = row?.stripe_subscription_id?.trim() ?? "";
 
   let snapshot: SubscriptionSnapshot;
@@ -105,35 +155,54 @@ export async function getBusinessSubscriptionStatus(businessId: string): Promise
       const sub = await stripe.subscriptions.retrieve(subId, {
         expand: ["items.data.price"],
       });
+      await syncStripeSubscriptionToBusinessRow(businessId, sub);
       snapshot = snapshotFromStripe(sub);
     } catch (e) {
       const err = e as { code?: string; statusCode?: number };
       if (err.code === "resource_missing" || err.statusCode === 404) {
-        snapshot = {
-          status: "canceled",
-          plan: null,
-          trialEndsAt: null,
-          currentPeriodEnd: null,
-          cancelAtPeriodEnd: false,
-          accessSource: "stripe",
-        };
+        snapshot = await clearStaleStripeSubscription(businessId, row ?? EMPTY_ROW);
       } else {
         throw e;
       }
     }
   } else {
-    const eff = row ? getEffectiveTrialEnd(row) : null;
-    if (eff) {
-      snapshot = waevonTrialSnapshot(eff.iso, eff.endMs <= now);
+    if (!row) {
+      snapshot = { ...EMPTY_SUBSCRIPTION_SNAPSHOT, status: "trial_expired", accessSource: "waevon" };
     } else {
-      snapshot = {
-        ...EMPTY_SUBSCRIPTION_SNAPSHOT,
-        status: "trial_expired",
-        accessSource: "waevon",
-      };
+      if (row.subscription_status === "expired") {
+        const eff = getEffectiveTrialEnd(row);
+        snapshot = waevonTrialSnapshot(
+          eff?.iso ?? row.trial_ends_at ?? new Date().toISOString(),
+          true
+        );
+      } else {
+        const eff = getEffectiveTrialEnd(row);
+        if (eff) {
+          const expired = eff.endMs <= now;
+          if (expired) {
+            await persistWaevonExpired(businessId);
+            snapshot = waevonTrialSnapshot(eff.iso, true);
+          } else {
+            snapshot = waevonTrialSnapshot(eff.iso, false);
+          }
+        } else {
+          await persistWaevonExpired(businessId);
+          snapshot = {
+            ...EMPTY_SUBSCRIPTION_SNAPSHOT,
+            status: "trial_expired",
+            accessSource: "waevon",
+          };
+        }
+      }
     }
   }
 
-  cache.set(businessId, { expiresAt: now + TTL_MS, value: snapshot });
-  return snapshot;
+  const enriched: SubscriptionSnapshot = {
+    ...snapshot,
+    trialStartedAt: row?.trial_started_at ?? undefined,
+    stripeCustomerId: row?.stripe_customer_id ?? undefined,
+  };
+
+  cache.set(businessId, { expiresAt: now + TTL_MS, value: enriched });
+  return enriched;
 }

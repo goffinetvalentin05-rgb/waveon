@@ -28,9 +28,13 @@ export type BusinessSubscriptionAccess = {
   plan: string | null;
 };
 
-/** Inclut l’essai Waevon (`trialing` + `accessSource: waevon` côté API). Exclut `trial_expired`. */
+/** Inclut l’essai Waevon (`trialing` + `accessSource: waevon` côté API). Exclut `trial_expired` / `expired`. */
 export function hasActiveSubscription(business: BusinessSubscriptionAccess): boolean {
-  return business.status === "trialing" || business.status === "active";
+  return (
+    business.status === "trialing" ||
+    business.status === "active" ||
+    business.status === "past_due"
+  );
 }
 
 /**

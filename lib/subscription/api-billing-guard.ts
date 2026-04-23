@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { getBusinessSubscriptionStatus } from "@/lib/stripe/subscription";
-import { billingAccessStateFromSnapshot } from "./billing-access";
+import { getBillingStatus } from "./billing-status";
 
 const SUBSCRIPTION_REQUIRED = {
   error: "subscription_required",
-  message: "Ton essai est terminé, abonne-toi pour continuer.",
+  message: "Votre essai est terminé ou votre abonnement est inactif. Souscrivez un abonnement pour continuer.",
 } as const;
 
 /** Route handler : commerce authentifié = celui du user ; 402 si BLOCKED. */
@@ -28,7 +28,7 @@ export async function merchantBillingGateResponse(): Promise<NextResponse | null
     return NextResponse.json({ error: "Commerce introuvable." }, { status: 400 });
   }
   const snapshot = await getBusinessSubscriptionStatus((biz as { id: string }).id);
-  if (billingAccessStateFromSnapshot(snapshot) === "BLOCKED") {
+  if (!getBillingStatus(snapshot).canUseApp) {
     return NextResponse.json(SUBSCRIPTION_REQUIRED, { status: 402 });
   }
   return null;
@@ -41,7 +41,7 @@ export async function billingGateResponseForBusinessId(businessId: string): Prom
     return NextResponse.json({ error: "businessId requis." }, { status: 400 });
   }
   const snapshot = await getBusinessSubscriptionStatus(id);
-  if (billingAccessStateFromSnapshot(snapshot) === "BLOCKED") {
+  if (!getBillingStatus(snapshot).canUseApp) {
     return NextResponse.json(SUBSCRIPTION_REQUIRED, { status: 402 });
   }
   return null;

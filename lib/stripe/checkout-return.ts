@@ -1,10 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
-import { invalidateBusinessSubscriptionCache } from "./subscription";
 import { requireStripe } from "./client";
+import { syncStripeSubscriptionToBusinessRow } from "./business-subscription-sync";
 
 /**
- * Après Checkout (`success_url` avec `session_id`), enregistre `stripe_subscription_id` (et le customer si besoin).
+ * Après Checkout (`success_url` avec `session_id`), synchronise l’abonnement Stripe en base (statut, période, plan).
  */
 export async function persistCheckoutSessionSubscription(
   supabase: SupabaseClient,
@@ -47,17 +47,8 @@ export async function persistCheckoutSessionSubscription(
     return;
   }
 
-  const customerId =
-    typeof session.customer === "string" ? session.customer : session.customer?.id ?? null;
-
-  const { error: upErr } = await supabase
-    .from(WavonDbTable.businesses)
-    .update({
-      stripe_subscription_id: subscriptionId,
-      ...(customerId ? { stripe_customer_id: customerId } : {}),
-    })
-    .eq("id", businessId);
-  if (upErr) throw upErr;
-
-  invalidateBusinessSubscriptionCache(businessId);
+  const sub = await stripe.subscriptions.retrieve(subscriptionId, {
+    expand: ["items.data.price"],
+  });
+  await syncStripeSubscriptionToBusinessRow(businessId, sub);
 }

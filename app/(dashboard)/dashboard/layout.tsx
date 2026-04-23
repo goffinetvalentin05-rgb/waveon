@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/auth-helpers-nextjs";
 import { redirect } from "next/navigation";
 import DashboardShell from "./DashboardShell";
 import { getBusinessSubscriptionStatus } from "@/lib/stripe/subscription";
-import { getSubscriptionState } from "@/lib/subscription/state";
+import { getBillingStatus } from "@/lib/subscription/billing-status";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
@@ -46,15 +46,18 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       .maybeSingle();
     const businessId = (biz as { id: string } | null)?.id ?? null;
 
-    const isFacturation =
-      pathname === "/dashboard/facturation" || pathname.startsWith("/dashboard/facturation/");
+    const isExemptWhenBlocked =
+      pathname === "/dashboard/facturation" ||
+      pathname.startsWith("/dashboard/facturation/") ||
+      pathname === "/dashboard/parametres" ||
+      pathname.startsWith("/dashboard/parametres/");
 
     if (businessId) {
       try {
         const live = await getBusinessSubscriptionStatus(businessId);
-        billingLocked = getSubscriptionState(live).kind === "trial_expired";
+        billingLocked = !getBillingStatus(live).canUseApp;
 
-        if (billingLocked && !isFacturation) {
+        if (billingLocked && !isExemptWhenBlocked) {
           redirect("/dashboard/facturation?trial_expired=1");
         }
       } catch {

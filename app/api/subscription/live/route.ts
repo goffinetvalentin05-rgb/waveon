@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { getBusinessSubscriptionStatus } from "@/lib/stripe/subscription";
+import { getBillingStatus } from "@/lib/subscription/billing-status";
 import { EMPTY_SUBSCRIPTION_SNAPSHOT } from "@/lib/wavon/types";
 
 export const runtime = "nodejs";
@@ -37,7 +38,8 @@ export async function GET() {
 
   try {
     const snapshot = await getBusinessSubscriptionStatus(businessId);
-    return NextResponse.json(snapshot);
+    const billing = getBillingStatus(snapshot);
+    return NextResponse.json({ ...snapshot, billing });
   } catch (e) {
     console.error("[subscription/live] Stripe", e);
     return NextResponse.json({ error: "Erreur lors de la lecture de l’abonnement." }, { status: 500 });

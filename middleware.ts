@@ -15,7 +15,9 @@ function isBillingApiExempt(pathname: string): boolean {
 }
 
 function isDashboardExemptWhenBlocked(pathname: string): boolean {
-  return pathname === "/dashboard/facturation" || pathname.startsWith("/dashboard/facturation/");
+  if (pathname === "/dashboard/facturation" || pathname.startsWith("/dashboard/facturation/")) return true;
+  if (pathname === "/dashboard/parametres" || pathname.startsWith("/dashboard/parametres/")) return true;
+  return false;
 }
 
 async function fetchBillingState(request: NextRequest): Promise<BillingAccessState> {
@@ -25,7 +27,10 @@ async function fetchBillingState(request: NextRequest): Promise<BillingAccessSta
       cache: "no-store",
     });
     if (!res.ok) return "BLOCKED";
-    const j = (await res.json()) as { kind?: string };
+    const j = (await res.json()) as { canUseApp?: boolean; kind?: string };
+    if (typeof j.canUseApp === "boolean") {
+      return j.canUseApp ? "ALLOWED" : "BLOCKED";
+    }
     return j.kind === "trial_expired" ? "BLOCKED" : "ALLOWED";
   } catch {
     return "BLOCKED";
@@ -116,7 +121,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.json(
           {
             error: "subscription_required",
-            message: "Ton essai est terminé, abonne-toi pour continuer.",
+            message: "Votre essai est terminé ou votre abonnement est inactif. Souscrivez depuis Facturation.",
           },
           { status: 402 }
         );

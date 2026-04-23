@@ -204,6 +204,9 @@ export type SubscriptionSnapshot = {
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
   accessSource: SubscriptionAccessSource;
+  /** Renseigné côté serveur quand la ligne `wavon_businesses` est lue. */
+  trialStartedAt?: string | null;
+  stripeCustomerId?: string | null;
 };
 
 export const EMPTY_SUBSCRIPTION_SNAPSHOT: SubscriptionSnapshot = {

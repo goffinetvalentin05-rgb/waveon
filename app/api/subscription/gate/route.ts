@@ -3,12 +3,13 @@ import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { getBusinessSubscriptionStatus } from "@/lib/stripe/subscription";
+import { getBillingStatus } from "@/lib/subscription/billing-status";
 import { getSubscriptionState } from "@/lib/subscription/state";
 
 export const runtime = "nodejs";
 
 /**
- * État d’accès facturation (middleware + pages publiques).
+ * État d’accès (middleware + réservation publique).
  * - `?slug=` : sans cookie, pour page réservation publique
  * - sans slug : cookie session requise
  */
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
 
   if (slug) {
     if (slug.length > 80) {
-      return NextResponse.json({ state: "BLOCKED", blocked: true });
+      return NextResponse.json({ canUseApp: false, blocked: true });
     }
     const admin = createAdminSupabaseClient();
     const { data: biz } = await admin
@@ -26,11 +27,12 @@ export async function GET(req: NextRequest) {
       .eq("public_slug", slug)
       .maybeSingle();
     if (!biz) {
-      return NextResponse.json({ kind: "trial_expired" });
+      return NextResponse.json({ canUseApp: false, state: { kind: "trial_expired" } });
     }
     const snapshot = await getBusinessSubscriptionStatus((biz as { id: string }).id);
+    const billing = getBillingStatus(snapshot);
     const state = getSubscriptionState(snapshot);
-    return NextResponse.json(state);
+    return NextResponse.json({ canUseApp: billing.canUseApp, billing, state });
   }
 
   const supabase = await createRouteHandlerSupabase();
@@ -48,9 +50,15 @@ export async function GET(req: NextRequest) {
     .eq("user_id", user.id)
     .maybeSingle();
   if (!biz) {
-    return NextResponse.json({ kind: "trial_expired" });
+    return NextResponse.json({ canUseApp: false, state: { kind: "trial_expired" } });
   }
   const snapshot = await getBusinessSubscriptionStatus((biz as { id: string }).id);
+  const billing = getBillingStatus(snapshot);
   const state = getSubscriptionState(snapshot);
-  return NextResponse.json(state);
+  return NextResponse.json({
+    canUseApp: billing.canUseApp,
+    billing,
+    state,
+    kind: state.kind,
+  });
 }
