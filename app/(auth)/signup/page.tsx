@@ -105,7 +105,18 @@ export default function SignupPage() {
         payload?.user?.id
       );
 
-      // Ouvrir une session cookie côté navigateur (utile si la conf Supabase renvoie no-session à l'inscription)
+      // Si la confirmation email est activée dans Supabase, `signUp` ne renvoie pas de session.
+      // Dans ce cas, on demande à l'utilisateur de confirmer son email plutôt que d'essayer un sign-in immédiat.
+      if (!payload?.session) {
+        console.log("[signup] step=no_session_after_signup email_confirmation_required=1");
+        setMessage(
+          "Compte créé. Un email de confirmation vient d’être envoyé. " +
+            "Clique sur le lien reçu, puis reviens te connecter."
+        );
+        return;
+      }
+
+      // Si une session est disponible (confirmation désactivée), on ouvre la session cookie côté navigateur.
       console.log("[signup] step=signInWithPassword_after_signup");
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: normalizedEmail,
@@ -114,7 +125,7 @@ export default function SignupPage() {
       if (signInError) {
         console.log("[signup] step=signIn_after_signup_error", signInError.message);
         setMessage(
-          "Compte créé, mais la session n'a pas pu être ouverte. Vérifie la confirmation email, puis reconnecte-toi."
+          "Compte créé, mais la session n'a pas pu être ouverte. Merci de réessayer dans quelques instants."
         );
         return;
       }
