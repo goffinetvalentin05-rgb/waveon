@@ -4,7 +4,7 @@ export type BillingAccessState = "SUBSCRIBED" | "BLOCKED";
 
 /**
  * Accès réservé à la vérification Stripe seule (sans essai).
- * Pour le produit complet, utiliser {@link getWorkspaceAccessState}.
+ * Pour le produit complet, utiliser {@link getWorkspaceSubscriptionAccess}.
  */
 export function billingAccessStateFromSnapshot(s: SubscriptionSnapshot): BillingAccessState {
   if (s.status === "sync_error") {

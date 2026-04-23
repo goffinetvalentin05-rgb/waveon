@@ -220,14 +220,10 @@ export const SYNC_ERROR_SUBSCRIPTION_SNAPSHOT: SubscriptionSnapshot = {
   accessSource: "none",
 };
 
-/** Résumé essai + accès (synchro avec /api/subscription/live, sans snapshot Stripe dupliqué). */
+/** Résumé accès (synchro avec /api/subscription/live). */
 export type WorkspaceAccessSummary = {
-  trialEndsAt: string | null;
-  isTrialActive: boolean;
-  isTrialExpired: boolean;
   hasActiveSubscription: boolean;
-  hasAccess: boolean;
-  daysLeft: number;
+  canUsePremiumFeatures: boolean;
 };
 
 export type WavonState = {

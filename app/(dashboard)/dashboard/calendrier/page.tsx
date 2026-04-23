@@ -31,11 +31,14 @@ import {
   cardClass,
   inputClass,
   labelClass,
+  linkClass,
   selectCompactClass,
   spinnerClass,
   textareaClass,
   userTextBreakClass,
 } from "@/lib/wavon/tokens";
+import { canUsePremiumFeatures } from "@/lib/wavon/premium-access";
+import Link from "next/link";
 
 const locales = { fr };
 const localizer = dateFnsLocalizer({
@@ -111,6 +114,7 @@ export default function CalendrierPage() {
     deleteBlockedSlot,
   } = useWavon();
   const toast = useToast();
+  const premium = canUsePremiumFeatures(state.workspaceAccess);
   const [view, setView] = useState<View>("week");
   const [date, setDate] = useState(() => new Date());
 
@@ -226,6 +230,13 @@ export default function CalendrierPage() {
   }, [state, serviceId, dateYmd, employeeId]);
 
   const openCreate = () => {
+    if (!premium) {
+      toast.push({
+        kind: "error",
+        message: "Choisissez une offre pour créer des réservations.",
+      });
+      return;
+    }
     setModalMode("create");
     setEditing(null);
     setClientName("");
@@ -239,6 +250,10 @@ export default function CalendrierPage() {
   };
 
   const openEdit = (r: Reservation) => {
+    if (!premium) {
+      toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+      return;
+    }
     setModalMode("edit");
     setEditing(r);
     setClientName(r.clientName);
@@ -262,36 +277,53 @@ export default function CalendrierPage() {
     return out;
   }, []);
 
-  const openBlockedCreate = (prefill?: { start: Date; end: Date }) => {
-    setBlockedModalMode("create");
-    setEditingBlocked(null);
-    const s = prefill?.start ?? new Date();
-    const e = prefill?.end ?? new Date(s.getTime() + 60 * 60_000);
-    setBlockedStartDate(toYmd(s));
-    setBlockedEndDate(toYmd(e));
-    setBlockedStartTime(`${String(s.getHours()).padStart(2, "0")}:${String(s.getMinutes()).padStart(2, "0")}`);
-    setBlockedEndTime(`${String(e.getHours()).padStart(2, "0")}:${String(e.getMinutes()).padStart(2, "0")}`);
-    setBlockedReason("");
-    // Par défaut: tous les prestataires (sauf si un seul, voir render)
-    setBlockedEmployeeId("");
-    setBlockedModalOpen(true);
-  };
+  const openBlockedCreate = useCallback(
+    (prefill?: { start: Date; end: Date }) => {
+      if (!premium) {
+        toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+        return;
+      }
+      setBlockedModalMode("create");
+      setEditingBlocked(null);
+      const s = prefill?.start ?? new Date();
+      const e = prefill?.end ?? new Date(s.getTime() + 60 * 60_000);
+      setBlockedStartDate(toYmd(s));
+      setBlockedEndDate(toYmd(e));
+      setBlockedStartTime(`${String(s.getHours()).padStart(2, "0")}:${String(s.getMinutes()).padStart(2, "0")}`);
+      setBlockedEndTime(`${String(e.getHours()).padStart(2, "0")}:${String(e.getMinutes()).padStart(2, "0")}`);
+      setBlockedReason("");
+      setBlockedEmployeeId("");
+      setBlockedModalOpen(true);
+    },
+    [premium, toast]
+  );
 
-  const openBlockedEdit = (b: BlockedSlot) => {
-    setBlockedModalMode("edit");
-    setEditingBlocked(b);
-    const s = new Date(b.start);
-    const e = new Date(b.end);
-    setBlockedStartDate(toYmd(s));
-    setBlockedEndDate(toYmd(e));
-    setBlockedStartTime(`${String(s.getHours()).padStart(2, "0")}:${String(s.getMinutes()).padStart(2, "0")}`);
-    setBlockedEndTime(`${String(e.getHours()).padStart(2, "0")}:${String(e.getMinutes()).padStart(2, "0")}`);
-    setBlockedReason(b.reason ?? "");
-    setBlockedEmployeeId(b.employeeId ?? "");
-    setBlockedModalOpen(true);
-  };
+  const openBlockedEdit = useCallback(
+    (b: BlockedSlot) => {
+      if (!premium) {
+        toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+        return;
+      }
+      setBlockedModalMode("edit");
+      setEditingBlocked(b);
+      const s = new Date(b.start);
+      const e = new Date(b.end);
+      setBlockedStartDate(toYmd(s));
+      setBlockedEndDate(toYmd(e));
+      setBlockedStartTime(`${String(s.getHours()).padStart(2, "0")}:${String(s.getMinutes()).padStart(2, "0")}`);
+      setBlockedEndTime(`${String(e.getHours()).padStart(2, "0")}:${String(e.getMinutes()).padStart(2, "0")}`);
+      setBlockedReason(b.reason ?? "");
+      setBlockedEmployeeId(b.employeeId ?? "");
+      setBlockedModalOpen(true);
+    },
+    [premium, toast]
+  );
 
   const submitForm = () => {
+    if (!premium) {
+      toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+      return;
+    }
     const svc = state.services.find((s) => s.id === serviceId);
     if (!svc) {
       toast.push({ kind: "error", message: "Choisis un service." });
@@ -349,9 +381,13 @@ export default function CalendrierPage() {
         openDetail(ev.resource.reservation);
         return;
       }
+      if (!premium) {
+        toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+        return;
+      }
       openBlockedEdit(ev.resource.blockedSlot);
     },
-    [openDetail]
+    [openDetail, openBlockedEdit, premium, toast]
   );
 
   const eventPropGetter = useCallback((event: CalEvent) => {
@@ -439,16 +475,31 @@ export default function CalendrierPage() {
             <button
               type="button"
               onClick={() => openBlockedCreate()}
-              className={btnGhostClass}
+              className={`${btnGhostClass} ${!premium ? "opacity-50" : ""}`}
+              disabled={!premium}
             >
               Bloquer un créneau
             </button>
-            <button type="button" onClick={openCreate} className={btnPrimaryClass}>
+            <button
+              type="button"
+              onClick={() => openCreate()}
+              className={`${btnPrimaryClass} ${!premium ? "opacity-50" : ""}`}
+              disabled={!premium}
+            >
               Nouvelle réservation
             </button>
           </div>
         }
       />
+
+      {!premium ? (
+        <p className="text-sm text-neutral-600">
+          Mode découverte : consultation de l’agenda.{" "}
+          <Link href="/dashboard/facturation#waevon-pricing" className={`${linkClass} font-medium`}>
+            Voir les offres
+          </Link>
+        </p>
+      ) : null}
 
       <div className={`${cardClass} flex flex-col gap-4`}>
         <div className="flex flex-wrap items-center gap-2">
@@ -620,7 +671,12 @@ export default function CalendrierPage() {
             <button type="button" className={btnGhostClass} onClick={() => setModalOpen(false)}>
               Annuler
             </button>
-            <button type="button" className={btnPrimaryClass} onClick={submitForm}>
+            <button
+              type="button"
+              className={btnPrimaryClass}
+              onClick={submitForm}
+              disabled={!premium}
+            >
               {modalMode === "create" ? "Créer" : "Enregistrer"}
             </button>
           </>
@@ -666,6 +722,10 @@ export default function CalendrierPage() {
         onChangeEmployeeId={setBlockedEmployeeId}
         onClose={() => setBlockedModalOpen(false)}
         onSubmit={async () => {
+          if (!premium) {
+            toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+            return;
+          }
           const onlyOne = activeEmployees.length === 1;
           const effectiveEmployeeId = onlyOne ? (activeEmployees[0]?.id ?? null) : (blockedEmployeeId ? blockedEmployeeId : null);
           const start = combineYmdTime(blockedStartDate, blockedStartTime);
@@ -698,6 +758,10 @@ export default function CalendrierPage() {
           setBlockedModalOpen(false);
         }}
         onDelete={async () => {
+          if (!premium) {
+            toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+            return;
+          }
           if (!editingBlocked) return;
           if (!confirm("Supprimer ce blocage ?")) return;
           const res = await deleteBlockedSlot(editingBlocked.id);
@@ -724,6 +788,7 @@ export default function CalendrierPage() {
                 <button
                   type="button"
                   className={btnGhostClass}
+                  disabled={!premium}
                   onClick={() => {
                     if (!detailRes) return;
                     setDetailOpen(false);
@@ -734,8 +799,10 @@ export default function CalendrierPage() {
                 </button>
                 <button
                   type="button"
-                  className="text-sm font-medium text-red-600/90 underline-offset-4 hover:underline"
+                  className="text-sm font-medium text-red-600/90 underline-offset-4 hover:underline disabled:opacity-45"
+                  disabled={!premium}
                   onClick={async () => {
+                    if (!premium) return;
                     if (!detailRes || !confirm(`Supprimer la réservation de ${detailRes.clientName} ?`)) return;
                     await deleteReservation(detailRes.id);
                     setDetailOpen(false);
@@ -757,6 +824,10 @@ export default function CalendrierPage() {
             currency={state.settings.currency}
             client={clientRow}
             onStatusChange={(status) => {
+              if (!premium) {
+                toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+                return;
+              }
               const res = updateReservation(detailRes.id, { status });
               if (!res.ok) {
                 toast.push({ kind: "error", message: res.error });
@@ -766,6 +837,7 @@ export default function CalendrierPage() {
               toast.push({ message: "Statut mis à jour." });
             }}
             onNotesBlur={(n) => {
+              if (!premium) return;
               updateReservation(detailRes.id, { notes: n });
               setDetailRes({ ...detailRes, notes: n });
             }}

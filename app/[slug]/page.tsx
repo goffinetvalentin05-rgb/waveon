@@ -3,7 +3,7 @@ import PublicBookingClient from "../reserver/[slug]/PublicBookingClient";
 import ProfessionalUnavailable from "./ProfessionalUnavailable";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
-import { getWorkspaceAccessState } from "@/lib/subscription/workspace-access";
+import { getWorkspaceSubscriptionAccess } from "@/lib/subscription/workspace-access";
 import { isReservedPublicSlug } from "@/lib/wavon/public-slug";
 
 type PageProps = { params: Promise<{ slug: string }> };
@@ -27,8 +27,8 @@ export default async function PublicBookingBySlugPage({ params }: PageProps) {
     notFound();
   }
 
-  const access = await getWorkspaceAccessState((biz as { id: string }).id);
-  if (!access.hasAccess) {
+  const access = await getWorkspaceSubscriptionAccess((biz as { id: string }).id);
+  if (!access.hasActiveSubscription) {
     return <ProfessionalUnavailable />;
   }
 

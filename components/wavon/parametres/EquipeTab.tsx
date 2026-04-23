@@ -15,10 +15,13 @@ import {
   cardClass,
   inputClass,
   labelClass,
+  linkClass,
   sectionDescClass,
   sectionTitleClass,
   userTextBreakClass,
 } from "@/lib/wavon/tokens";
+import { canUsePremiumFeatures } from "@/lib/wavon/premium-access";
+import Link from "next/link";
 
 const EMPLOYEE_NAME_MAX = 60;
 
@@ -43,6 +46,7 @@ function initialsFromName(name: string): string {
 export function EquipeTab() {
   const { state, businessId, upsertEmployee, deleteEmployee, updateServiceChecked } = useWavon();
   const toast = useToast();
+  const premium = canUsePremiumFeatures(state.workspaceAccess);
   const employees = (state.employees ?? []).slice().sort((a, b) => (a.displayOrder - b.displayOrder) || a.createdAt.localeCompare(b.createdAt));
   const services = state.services;
 
@@ -76,6 +80,13 @@ export function EquipeTab() {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   const openCreate = () => {
+    if (!premium) {
+      toast.push({
+        kind: "error",
+        message: "Choisissez une offre pour gérer votre équipe.",
+      });
+      return;
+    }
     setEditing(null);
     setName("");
     setEmail("");
@@ -89,6 +100,10 @@ export function EquipeTab() {
   };
 
   const openEdit = (e: Employee) => {
+    if (!premium) {
+      toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+      return;
+    }
     setEditing(e);
     setName(e.name);
     setEmail(e.email ?? "");
@@ -106,6 +121,10 @@ export function EquipeTab() {
   };
 
   const save = async () => {
+    if (!premium) {
+      toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+      return;
+    }
     const trimmed = name.trim().slice(0, EMPLOYEE_NAME_MAX);
     if (!trimmed) {
       toast.push({ kind: "error", message: "Le nom est requis." });
@@ -174,6 +193,10 @@ export function EquipeTab() {
   };
 
   const toggleActive = async (e: Employee) => {
+    if (!premium) {
+      toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+      return;
+    }
     const res = await upsertEmployee({
       id: e.id,
       name: e.name,
@@ -188,6 +211,10 @@ export function EquipeTab() {
   };
 
   const remove = async (e: Employee) => {
+    if (!premium) {
+      toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+      return;
+    }
     if (!businessId) {
       toast.push({ kind: "error", message: "Compte non initialisé." });
       return;
@@ -226,6 +253,14 @@ export function EquipeTab() {
 
   return (
     <div className="space-y-8">
+      {!premium ? (
+        <p className="text-sm text-neutral-600">
+          Mode découverte : consultation de l’équipe.{" "}
+          <Link href="/dashboard/facturation#waevon-pricing" className={`${linkClass} font-medium`}>
+            Voir les offres
+          </Link>
+        </p>
+      ) : null}
       <div className={`${cardClass} flex flex-wrap items-start justify-between gap-4`}>
         <div>
           <h2 className={sectionTitleClass}>Ton équipe</h2>
@@ -233,7 +268,12 @@ export function EquipeTab() {
             Gère les prestataires de ton établissement. Chaque membre a ses propres horaires, ses services attitrés et son agenda.
           </p>
         </div>
-        <button type="button" className={btnPrimaryClass} onClick={openCreate}>
+        <button
+          type="button"
+          className={`${btnPrimaryClass} ${!premium ? "pointer-events-none opacity-50" : ""}`}
+          onClick={openCreate}
+          disabled={!premium}
+        >
           Ajouter un membre
         </button>
       </div>
@@ -272,16 +312,27 @@ export function EquipeTab() {
                     {n} service{n > 1 ? "s" : ""}
                   </p>
                   <div className="mt-4 flex flex-wrap gap-3">
-                    <button type="button" className={btnGhostClass + " min-h-9 px-3 text-xs"} onClick={() => openEdit(e)}>
+                    <button
+                      type="button"
+                      className={btnGhostClass + " min-h-9 px-3 text-xs disabled:opacity-45"}
+                      onClick={() => openEdit(e)}
+                      disabled={!premium}
+                    >
                       Modifier
                     </button>
-                    <button type="button" className={btnGhostClass + " min-h-9 px-3 text-xs"} onClick={() => void toggleActive(e)}>
+                    <button
+                      type="button"
+                      className={btnGhostClass + " min-h-9 px-3 text-xs disabled:opacity-45"}
+                      onClick={() => void toggleActive(e)}
+                      disabled={!premium}
+                    >
                       {e.isActive ? "Désactiver" : "Activer"}
                     </button>
                     <button
                       type="button"
-                      className="min-h-9 text-xs font-medium text-red-600/90 underline-offset-4 hover:underline"
+                      className="min-h-9 text-xs font-medium text-red-600/90 underline-offset-4 hover:underline disabled:opacity-45"
                       onClick={() => void remove(e)}
+                      disabled={!premium}
                     >
                       Supprimer
                     </button>

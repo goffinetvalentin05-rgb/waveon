@@ -18,6 +18,8 @@ import {
   textareaClass,
   userTextBreakClass,
 } from "@/lib/wavon/tokens";
+import { canUsePremiumFeatures } from "@/lib/wavon/premium-access";
+import Link from "next/link";
 
 const SERVICE_NAME_MAX = 60;
 const SERVICE_DESCRIPTION_MAX = 300;
@@ -52,6 +54,7 @@ function FieldLabelWithHint({ children, hint }: { children: ReactNode; hint: str
 export default function ServicesPage() {
   const { ready, state, addService, updateService, deleteService } = useWavon();
   const toast = useToast();
+  const premium = canUsePremiumFeatures(state.workspaceAccess);
   const currency = state.settings.currency;
   const employees = state.employees ?? [];
   const activeEmployees = employees.filter((e) => e.isActive);
@@ -71,6 +74,13 @@ export default function ServicesPage() {
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
 
   const openCreate = () => {
+    if (!premium) {
+      toast.push({
+        kind: "error",
+        message: "Choisissez une offre pour ajouter vos services.",
+      });
+      return;
+    }
     setEditing(null);
     setName("");
     setDurationMin(30);
@@ -87,6 +97,10 @@ export default function ServicesPage() {
   };
 
   const openEdit = (s: Service) => {
+    if (!premium) {
+      toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+      return;
+    }
     setEditing(s);
     setName(s.name);
     setDurationMin(s.durationMin);
@@ -106,6 +120,10 @@ export default function ServicesPage() {
   };
 
   const save = () => {
+    if (!premium) {
+      toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+      return;
+    }
     const trimmedName = name.trim().slice(0, SERVICE_NAME_MAX);
     if (!trimmedName) {
       toast.push({ kind: "error", message: "Le nom est requis." });
@@ -159,6 +177,10 @@ export default function ServicesPage() {
   };
 
   const remove = (s: Service) => {
+    if (!premium) {
+      toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+      return;
+    }
     if (!confirm(`Supprimer « ${s.name} » ?`)) return;
     deleteService(s.id);
     toast.push({ message: "Service supprimé." });
@@ -178,17 +200,36 @@ export default function ServicesPage() {
         title="Services"
         description="Chaque prestation définit la durée des créneaux sur ton agenda."
         actions={
-          <button type="button" className={btnPrimaryClass} onClick={openCreate}>
+          <button
+            type="button"
+            className={`${btnPrimaryClass} ${!premium ? "pointer-events-none opacity-50" : ""}`}
+            onClick={openCreate}
+            disabled={!premium}
+          >
             Ajouter un service
           </button>
         }
       />
 
+      {!premium ? (
+        <p className="text-sm text-neutral-600">
+          Mode découverte : consultation seule.{" "}
+          <Link href="/dashboard/facturation#waevon-pricing" className={`${linkClass} font-medium`}>
+            Voir les offres
+          </Link>
+        </p>
+      ) : null}
+
       <div className="grid gap-5 md:grid-cols-2">
         {state.services.length === 0 ? (
           <div className={`${cardClass} md:col-span-2 text-center`}>
             <p className="text-sm text-neutral-600">Aucun service pour l’instant.</p>
-            <button type="button" className={`${btnPrimaryClass} mt-5`} onClick={openCreate}>
+            <button
+              type="button"
+              className={`${btnPrimaryClass} mt-5 ${!premium ? "pointer-events-none opacity-50" : ""}`}
+              onClick={openCreate}
+              disabled={!premium}
+            >
               Créer un service
             </button>
           </div>
@@ -293,13 +334,19 @@ export default function ServicesPage() {
                 </div>
               </dl>
               <div className="mt-6 flex flex-wrap gap-4">
-                <button type="button" onClick={() => openEdit(s)} className={linkClass}>
+                <button
+                  type="button"
+                  onClick={() => openEdit(s)}
+                  className={`${linkClass} ${!premium ? "pointer-events-none opacity-45" : ""}`}
+                  disabled={!premium}
+                >
                   Modifier
                 </button>
                 <button
                   type="button"
                   onClick={() => remove(s)}
-                  className="text-sm font-medium text-red-600/90 underline-offset-4 hover:underline"
+                  disabled={!premium}
+                  className={`text-sm font-medium text-red-600/90 underline-offset-4 hover:underline ${!premium ? "pointer-events-none opacity-45" : ""}`}
                 >
                   Supprimer
                 </button>

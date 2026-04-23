@@ -42,13 +42,20 @@ export function parseWorkspaceAccessFromLive(body: unknown): WorkspaceAccessSumm
   const w = b.workspaceAccess;
   if (!w || typeof w !== "object") return null;
   const x = w as Record<string, unknown>;
-  if (typeof x.hasAccess !== "boolean") return null;
+
+  const hasActive =
+    typeof x.hasActiveSubscription === "boolean"
+      ? x.hasActiveSubscription
+      : typeof x.hasAccess === "boolean"
+        ? x.hasAccess
+        : null;
+  if (hasActive === null) return null;
+
+  const canUse =
+    typeof x.canUsePremiumFeatures === "boolean" ? x.canUsePremiumFeatures : hasActive;
+
   return {
-    trialEndsAt: typeof x.trialEndsAt === "string" ? x.trialEndsAt : null,
-    isTrialActive: Boolean(x.isTrialActive),
-    isTrialExpired: Boolean(x.isTrialExpired),
-    hasActiveSubscription: Boolean(x.hasActiveSubscription),
-    hasAccess: x.hasAccess,
-    daysLeft: typeof x.daysLeft === "number" && Number.isFinite(x.daysLeft) ? Math.max(0, x.daysLeft) : 0,
+    hasActiveSubscription: hasActive,
+    canUsePremiumFeatures: canUse,
   };
 }

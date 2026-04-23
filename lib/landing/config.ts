@@ -77,7 +77,7 @@ export const landingContent = {
 
   pricing: {
     title: "Choisis comment tu veux fonctionner.",
-    trialNote: "Abonnement mensuel — paiement sécurisé via Stripe.",
+    billingNote: "Abonnement mensuel — paiement sécurisé via Stripe.",
     starter: {
       name: "Starter",
       price: "20.- / mois",

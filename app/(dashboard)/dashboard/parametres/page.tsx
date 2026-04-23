@@ -22,6 +22,7 @@ import {
 import { deleteBrandingAsset, getBrandingPublicUrl, uploadBrandingAsset } from "@/lib/wavon/storage";
 import { BUSINESS_CURRENCY_OPTIONS, normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
 import { publicBookingPath } from "@/lib/wavon/public-page-url";
+import { canUsePremiumFeatures } from "@/lib/wavon/premium-access";
 
 type SettingsTab = "business" | "equipe" | "reservation" | "public" | "mon-lien" | "emails";
 
@@ -44,6 +45,7 @@ function ParametresPageContent() {
   const searchParams = useSearchParams();
   const { ready, state, patchSettings, businessId } = useWavon();
   const toast = useToast();
+  const premium = canUsePremiumFeatures(state.workspaceAccess);
   const [saving, setSaving] = useState(false);
   const [brandingLoading, setBrandingLoading] = useState<null | "logo" | "cover">(null);
   const [pubDisplayName, setPubDisplayName] = useState("");
@@ -95,6 +97,13 @@ function ParametresPageContent() {
 
   const onSubmitBooking = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!premium) {
+      toast.push({
+        kind: "error",
+        message: "Choisissez une offre pour modifier les règles de réservation.",
+      });
+      return;
+    }
     setSaving(true);
     const fd = new FormData(e.currentTarget);
     patchSettings({
@@ -134,6 +143,13 @@ function ParametresPageContent() {
   };
 
   const uploadAsset = async (kind: "logo" | "cover", file: File | null) => {
+    if (!premium) {
+      toast.push({
+        kind: "error",
+        message: "Choisissez une offre pour personnaliser votre image de marque.",
+      });
+      return;
+    }
     if (!businessId) {
       toast.push({ kind: "error", message: "Compte non initialisé." });
       return;
@@ -165,6 +181,10 @@ function ParametresPageContent() {
   };
 
   const removeAsset = async (kind: "logo" | "cover") => {
+    if (!premium) {
+      toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+      return;
+    }
     setBrandingLoading(kind);
     try {
       const path = kind === "logo" ? state.settings.publicLogoPath : state.settings.publicCoverPath;

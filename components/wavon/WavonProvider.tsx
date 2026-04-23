@@ -30,6 +30,9 @@ import {
   parseSubscriptionFromLiveResponse,
   parseWorkspaceAccessFromLive,
 } from "@/lib/subscription/parse-live-subscription";
+import {
+  workspaceAccessSummaryFromSnapshot,
+} from "@/lib/subscription/workspace-access";
 import { supabase } from "@/lib/supabase/client";
 import { normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
 import { normalizePublicSlugInput, validatePublicSlugFormat } from "@/lib/wavon/public-slug";
@@ -399,14 +402,11 @@ export function WavonProvider({
         (business as DbBusiness | null) ??
         (await (async () => {
           const provisionalSlug = `c-${crypto.randomUUID().replace(/-/g, "").slice(0, 11)}`;
-          const trialEnd = new Date(Date.now() + 3 * 86_400_000).toISOString();
           const { data: created, error } = await supabase
             .from(WavonDbTable.businesses)
             .insert({
               user_id: userId,
               public_slug: provisionalSlug,
-              trial_started_at: new Date().toISOString(),
-              trial_ends_at: trialEnd,
               subscription_status: "inactive",
               subscription_plan: null,
             })
@@ -550,17 +550,20 @@ export function WavonProvider({
       const blockedSlots: BlockedSlot[] = dbBlockedSlots.map((s) => blockedSlotFromDbRow(s));
 
       let subscription: SubscriptionSnapshot = { ...EMPTY_SUBSCRIPTION_SNAPSHOT };
-      let workspaceAccess: WavonState["workspaceAccess"] = null;
+      let liveBody: unknown = null;
       try {
         const subRes = await fetch("/api/subscription/live", { credentials: "same-origin" });
         if (subRes.ok) {
-          const body: unknown = await subRes.json();
-          subscription = parseSubscriptionFromLiveResponse(body);
-          workspaceAccess = parseWorkspaceAccessFromLive(body);
+          liveBody = await subRes.json();
+          subscription = parseSubscriptionFromLiveResponse(liveBody);
         }
       } catch {
         /* garde EMPTY_SUBSCRIPTION_SNAPSHOT */
       }
+
+      const fromSnapshot = workspaceAccessSummaryFromSnapshot(subscription);
+      const fromApi = liveBody ? parseWorkspaceAccessFromLive(liveBody) : null;
+      const workspaceAccess = fromApi ?? fromSnapshot;
 
       const next: WavonState = {
         version: 1,

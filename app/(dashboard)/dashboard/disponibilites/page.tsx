@@ -13,10 +13,13 @@ import {
   cardClass,
   inputClass,
   labelClass,
+  linkClass,
   sectionDescClass,
   sectionTitleClass,
   spinnerClass,
 } from "@/lib/wavon/tokens";
+import { canUsePremiumFeatures } from "@/lib/wavon/premium-access";
+import Link from "next/link";
 
 export default function DisponibilitesPage() {
   const {
@@ -30,6 +33,7 @@ export default function DisponibilitesPage() {
     setBlockedDates,
   } = useWavon();
   const toast = useToast();
+  const premium = canUsePremiumFeatures(state.workspaceAccess);
   const [blockInput, setBlockInput] = useState("");
   const employees = state.employees ?? [];
   const activeEmployees = employees.filter((e) => e.isActive);
@@ -41,6 +45,13 @@ export default function DisponibilitesPage() {
   );
 
   const updateDay = async (day: DayKey, patch: WeeklyDaySchedule) => {
+    if (!premium) {
+      toast.push({
+        kind: "error",
+        message: "Débloquez Waevon pour enregistrer vos disponibilités.",
+      });
+      return;
+    }
     const err = validateSegments(patch.segments);
     if (err) {
       toast.push({ kind: "error", message: err });
@@ -55,6 +66,10 @@ export default function DisponibilitesPage() {
   };
 
   const addBlocked = () => {
+    if (!premium) {
+      toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+      return;
+    }
     const v = blockInput.trim();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) {
       toast.push({ kind: "error", message: "Format date : AAAA-MM-JJ" });
@@ -70,6 +85,10 @@ export default function DisponibilitesPage() {
   };
 
   const removeBlocked = (d: string) => {
+    if (!premium) {
+      toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+      return;
+    }
     setBlockedDates(state.blockedDates.filter((x) => x !== d));
     toast.push({ message: "Blocage retiré." });
   };
@@ -88,6 +107,16 @@ export default function DisponibilitesPage() {
         title="Disponibilités"
         description="Horaires d’ouverture, pauses et exceptions. Les plages ne peuvent pas se chevaucher."
       />
+
+      {!premium ? (
+        <p className="text-sm text-neutral-600">
+          Mode découverte : vous pouvez consulter vos horaires. Pour les modifier,{" "}
+          <Link href="/dashboard/facturation#waevon-pricing" className={`${linkClass} font-medium`}>
+            choisissez une offre
+          </Link>
+          .
+        </p>
+      ) : null}
 
       {showEmployeeSelect ? (
         <section className={cardClass}>
@@ -126,6 +155,10 @@ export default function DisponibilitesPage() {
           <ModeButton
             active={state.availabilityMode === "fixed"}
             onClick={() => {
+              if (!premium) {
+                toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+                return;
+              }
               setAvailabilityMode("fixed");
               toast.push({ message: "Mode : horaires fixes." });
             }}
@@ -135,6 +168,10 @@ export default function DisponibilitesPage() {
           <ModeButton
             active={state.availabilityMode === "custom"}
             onClick={() => {
+              if (!premium) {
+                toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+                return;
+              }
               setAvailabilityMode("custom");
               toast.push({ message: "Mode : exceptions jour par jour." });
             }}
@@ -160,6 +197,13 @@ export default function DisponibilitesPage() {
           key={JSON.stringify(state.customDays)}
           days={state.customDays}
           onSave={(next) => {
+            if (!premium) {
+              toast.push({
+                kind: "error",
+                message: "Débloquez Waevon pour enregistrer vos créneaux personnalisés.",
+              });
+              return;
+            }
             for (const row of next) {
               const err = validateSegments(row.segments);
               if (err) {
@@ -186,7 +230,12 @@ export default function DisponibilitesPage() {
               onChange={(e) => setBlockInput(e.target.value)}
             />
           </div>
-          <button type="button" className={btnPrimaryClass} onClick={addBlocked}>
+          <button
+            type="button"
+            className={`${btnPrimaryClass} ${!premium ? "pointer-events-none opacity-50" : ""}`}
+            onClick={addBlocked}
+            disabled={!premium}
+          >
             Bloquer
           </button>
         </div>

@@ -21,10 +21,13 @@ import {
   textareaClass,
   userTextBreakClass,
 } from "@/lib/wavon/tokens";
+import { canUsePremiumFeatures } from "@/lib/wavon/premium-access";
+import Link from "next/link";
 
 export default function ClientsPage() {
   const { ready, state, addClient, updateClient, deleteClient } = useWavon();
   const toast = useToast();
+  const premium = canUsePremiumFeatures(state.workspaceAccess);
   const currency = state.settings.currency;
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Client | null>(null);
@@ -94,6 +97,13 @@ export default function ClientsPage() {
   const totalSpent = useMemo(() => history.reduce((a, b) => a + b.price, 0), [history]);
 
   const openCreate = () => {
+    if (!premium) {
+      toast.push({
+        kind: "error",
+        message: "Choisissez une offre pour gérer votre base clients.",
+      });
+      return;
+    }
     setEditing(null);
     setName("");
     setPhone("");
@@ -102,6 +112,10 @@ export default function ClientsPage() {
   };
 
   const openEdit = (c: Client) => {
+    if (!premium) {
+      toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+      return;
+    }
     setEditing(c);
     setName(c.name);
     setPhone(c.phone);
@@ -110,6 +124,10 @@ export default function ClientsPage() {
   };
 
   const save = () => {
+    if (!premium) {
+      toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+      return;
+    }
     if (!name.trim()) {
       toast.push({ kind: "error", message: "Le nom est requis." });
       return;
@@ -134,6 +152,10 @@ export default function ClientsPage() {
   };
 
   const remove = (c: Client) => {
+    if (!premium) {
+      toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+      return;
+    }
     if (!confirm(`Supprimer ${c.name} ?`)) return;
     deleteClient(c.id);
     if (drawerClient?.id === c.id) closeDrawer();
@@ -154,11 +176,25 @@ export default function ClientsPage() {
         title="Clients"
         description="Fiches clients liées aux réservations enregistrées."
         actions={
-          <button type="button" className={btnPrimaryClass} onClick={openCreate}>
+          <button
+            type="button"
+            className={`${btnPrimaryClass} ${!premium ? "pointer-events-none opacity-50" : ""}`}
+            onClick={openCreate}
+            disabled={!premium}
+          >
             Ajouter un client
           </button>
         }
       />
+
+      {!premium ? (
+        <p className="text-sm text-neutral-600">
+          Mode découverte : consultation seule.{" "}
+          <Link href="/dashboard/facturation#waevon-pricing" className={`${linkClass} font-medium`}>
+            Voir les offres
+          </Link>
+        </p>
+      ) : null}
 
       <div className="max-w-md">
         <label className={labelClass}>Recherche</label>
@@ -174,7 +210,12 @@ export default function ClientsPage() {
         {state.clients.length === 0 ? (
           <div className="py-14 text-center">
             <p className="text-sm text-neutral-600">Aucun client enregistré.</p>
-            <button type="button" className={`${btnPrimaryClass} mt-5`} onClick={openCreate}>
+            <button
+              type="button"
+              className={`${btnPrimaryClass} mt-5 ${!premium ? "pointer-events-none opacity-50" : ""}`}
+              onClick={openCreate}
+              disabled={!premium}
+            >
               Ajouter
             </button>
           </div>
@@ -208,14 +249,20 @@ export default function ClientsPage() {
                       {lastByClient.get(c.id) ? formatDateShort(lastByClient.get(c.id)!) : "—"}
                     </td>
                     <td className="px-3 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
-                      <button type="button" onClick={() => openEdit(c)} className={`${linkClass} text-xs`}>
+                      <button
+                        type="button"
+                        onClick={() => openEdit(c)}
+                        disabled={!premium}
+                        className={`${linkClass} text-xs ${!premium ? "pointer-events-none opacity-45" : ""}`}
+                      >
                         Modifier
                       </button>
                       <span className="mx-2 text-neutral-200">|</span>
                       <button
                         type="button"
                         onClick={() => remove(c)}
-                        className="text-xs font-medium text-red-600/90 underline-offset-4 hover:underline"
+                        disabled={!premium}
+                        className={`text-xs font-medium text-red-600/90 underline-offset-4 hover:underline ${!premium ? "pointer-events-none opacity-45" : ""}`}
                       >
                         Supprimer
                       </button>
@@ -347,7 +394,9 @@ export default function ClientsPage() {
                   className={`${textareaClass} mt-2 min-h-[120px] ${userTextBreakClass}`}
                   value={privateNote}
                   onChange={(e) => setPrivateNote(e.target.value)}
+                  readOnly={!premium}
                   onBlur={() => {
+                    if (!premium) return;
                     updateClient(drawerClient.id, { privateNote: privateNote.trim() });
                     setDrawerClient({ ...drawerClient, privateNote: privateNote.trim() });
                   }}

@@ -1,6 +1,6 @@
 /**
  * Mapping Stripe → statuts internes (`SubscriptionSnapshot.status`).
- * `trialing` (Stripe) est traité comme `active` pour l’accès payant ; l’essai Waevon reste `trial_ends_at`.
+ * `trialing` (Stripe) est traité comme `active` pour l’accès payant.
  */
 
 /** Normalise le statut renvoyé par l’objet Subscription Stripe. */
@@ -20,7 +20,7 @@ export function snapshotStatusFromDatabaseColumn(raw: string | null | undefined)
   if (raw == null || !String(raw).trim()) return null;
   const s = String(raw).trim().toLowerCase();
   if (s === "unpaid" || s === "incomplete") return "canceled";
-  if (s === "expired" || s === "trial_expired") return "inactive";
+  if (s === "expired") return "inactive";
   if (s === "trialing") return "active";
   if (s === "active" || s === "past_due" || s === "canceled" || s === "inactive") return s;
   return null;

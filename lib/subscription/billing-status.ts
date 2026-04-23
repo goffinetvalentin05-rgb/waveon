@@ -1,30 +1,24 @@
 import type { WorkspaceAccessState } from "./workspace-access";
-import {
-  computeTrialDayNumberForDisplay,
-  trialDaysLeftShortLabel,
-  WAEVON_TRIAL_DURATION_DAYS,
-} from "./workspace-access";
 import type { SubscriptionSnapshot } from "@/lib/wavon/types";
 
 export type BillingPlanDisplay = "starter" | "pro" | null;
 
-/** Statuts affichables côté produit. */
+/** Statuts affichables côté produit (plus d’essai gratuit Waevon). */
 export type WaevonPublicBillingStatus =
   | "active"
   | "inactive"
   | "past_due"
   | "canceled"
-  | "sync_error"
-  | "trial_active"
-  | "trial_expired";
+  | "sync_error";
 
 export type BillingStatus = {
   status: string;
   publicStatus: WaevonPublicBillingStatus;
   label: string;
-  /** Message long pour blocs facturation / onboarding. */
   billingMessage: string;
+  /** Toujours true : le tableau de bord reste accessible en mode découverte. */
   canUseApp: boolean;
+  canUsePremiumFeatures: boolean;
   plan: BillingPlanDisplay;
   currentPeriodEnd: string | null;
   canManageBilling: boolean;
@@ -44,10 +38,6 @@ function derivePublicStatus(snapshot: SubscriptionSnapshot): WaevonPublicBilling
 
 function deriveLabel(publicStatus: WaevonPublicBillingStatus): string {
   switch (publicStatus) {
-    case "trial_active":
-      return "Essai gratuit actif";
-    case "trial_expired":
-      return "Essai expiré";
     case "active":
       return "Abonnement actif";
     case "past_due":
@@ -55,30 +45,31 @@ function deriveLabel(publicStatus: WaevonPublicBillingStatus): string {
     case "canceled":
       return "Abonnement résilié ou inactif";
     case "sync_error":
-      return "Erreur technique";
+      return "Vérification en cours";
     case "inactive":
     default:
-      return "Abonnement inactif";
+      return "Pas d’abonnement actif";
   }
 }
 
-function deriveBillingMessage(publicStatus: WaevonPublicBillingStatus): string {
+function deriveBillingMessage(
+  publicStatus: WaevonPublicBillingStatus,
+  hasActiveSubscription: boolean
+): string {
   switch (publicStatus) {
-    case "trial_active":
-      return "Votre essai gratuit est en cours.";
-    case "trial_expired":
-      return "Votre essai gratuit est terminé. Choisissez une offre pour continuer à utiliser Waevon.";
     case "active":
-      return "Votre abonnement est actif. Vous avez accès à toutes les fonctionnalités Waevon.";
+      return "Votre abonnement est actif. Vous pouvez utiliser toutes les fonctionnalités Waevon.";
     case "past_due":
-      return "Votre dernier paiement n’a pas abouti. Mettez à jour votre moyen de paiement pour conserver l’accès.";
+      return "Votre dernier paiement n’a pas abouti. Mettez à jour votre moyen de paiement pour conserver l’accès complet.";
     case "canceled":
-      return "Votre abonnement n’est plus actif. Réabonnez-vous pour retrouver l’accès au tableau de bord.";
+      return "Votre abonnement n’est plus actif. Réabonnez-vous pour débloquer l’usage complet de Waevon.";
     case "sync_error":
-      return "Une erreur technique empêche de vérifier votre abonnement. Réessayez dans un instant ou contactez le support.";
+      return hasActiveSubscription
+        ? "Nous finalisons la synchronisation avec Stripe. Si le message persiste, actualisez la page dans un instant."
+        : "Nous ne pouvons pas confirmer votre abonnement pour le moment. Actualisez la page ou réessayez plus tard.";
     case "inactive":
     default:
-      return "Pour utiliser Waevon, choisissez une offre et activez votre abonnement.";
+      return "Choisissez une offre pour débloquer toutes les fonctionnalités de Waevon (agenda, services, clients, réservations).";
   }
 }
 
@@ -87,78 +78,28 @@ function planDisplayFromSnapshot(s: SubscriptionSnapshot): BillingPlanDisplay {
   return null;
 }
 
-function formatTrialEndDateFr(iso: string | null): string {
-  if (!iso) return "";
-  try {
-    return new Date(iso).toLocaleDateString("fr-CH", { day: "numeric", month: "long", year: "numeric" });
-  } catch {
-    return "";
-  }
-}
-
 /**
- * Interprète l’état d’accès (essai + Stripe) pour l’UI et les garde-fous.
- * À utiliser partout à la place de l’ancienne logique snapshot seul.
+ * Interprète l’état d’abonnement Stripe pour l’UI et les garde-fous métier.
  */
 export function getBillingStatusFromAccess(access: WorkspaceAccessState): BillingStatus {
   const snapshot = access.snapshot;
   const stripeCustomerId = access.stripeCustomerId ?? snapshot.stripeCustomerId ?? null;
+  const hasActiveSubscription = access.hasActiveSubscription;
 
-  if (access.hasActiveSubscription) {
+  if (hasActiveSubscription) {
     const publicStatus = derivePublicStatus(snapshot);
     return {
       status: snapshot.status,
       publicStatus,
       label: deriveLabel(publicStatus),
-      billingMessage: deriveBillingMessage(publicStatus),
-      canUseApp: access.hasAccess,
+      billingMessage: deriveBillingMessage(publicStatus, true),
+      canUseApp: true,
+      canUsePremiumFeatures: true,
       plan: planDisplayFromSnapshot(snapshot),
       currentPeriodEnd: snapshot.currentPeriodEnd,
-      canManageBilling: true,
+      canManageBilling: access.canManageBilling,
       accessSource: snapshot.accessSource,
       cancelAtPeriodEnd: snapshot.cancelAtPeriodEnd,
-      stripeCustomerId,
-    };
-  }
-
-  if (access.isTrialActive) {
-    const endFmt = formatTrialEndDateFr(access.trialEndsAt);
-    const daysLine = trialDaysLeftShortLabel(access.daysLeft);
-    const dayNum = computeTrialDayNumberForDisplay(access.daysLeft, access.isTrialActive);
-    const parts: string[] = ["Essai gratuit en cours.", `${daysLine}.`];
-    if (dayNum != null) {
-      if (access.daysLeft <= 0) parts.push("Dernier jour d’essai.");
-      else parts.push(`Jour ${dayNum} sur ${WAEVON_TRIAL_DURATION_DAYS}.`);
-    }
-    if (endFmt) parts.push(`Votre essai se termine le ${endFmt}.`);
-    const billingMessage = parts.join(" ");
-    return {
-      status: "trial_waevon",
-      publicStatus: "trial_active",
-      label: "Essai gratuit actif",
-      billingMessage,
-      canUseApp: true,
-      plan: null,
-      currentPeriodEnd: null,
-      canManageBilling: true,
-      accessSource: "none",
-      cancelAtPeriodEnd: false,
-      stripeCustomerId,
-    };
-  }
-
-  if (access.isTrialExpired) {
-    return {
-      status: "inactive",
-      publicStatus: "trial_expired",
-      label: "Essai expiré",
-      billingMessage: deriveBillingMessage("trial_expired"),
-      canUseApp: false,
-      plan: null,
-      currentPeriodEnd: null,
-      canManageBilling: true,
-      accessSource: "none",
-      cancelAtPeriodEnd: false,
       stripeCustomerId,
     };
   }
@@ -168,11 +109,12 @@ export function getBillingStatusFromAccess(access: WorkspaceAccessState): Billin
       status: "sync_error",
       publicStatus: "sync_error",
       label: deriveLabel("sync_error"),
-      billingMessage: deriveBillingMessage("sync_error"),
-      canUseApp: false,
+      billingMessage: deriveBillingMessage("sync_error", false),
+      canUseApp: true,
+      canUsePremiumFeatures: false,
       plan: null,
       currentPeriodEnd: null,
-      canManageBilling: true,
+      canManageBilling: access.canManageBilling,
       accessSource: "none",
       cancelAtPeriodEnd: false,
       stripeCustomerId,
@@ -180,15 +122,17 @@ export function getBillingStatusFromAccess(access: WorkspaceAccessState): Billin
   }
 
   const publicStatus = derivePublicStatus(snapshot);
+  const safePublic = publicStatus === "sync_error" ? "inactive" : publicStatus;
   return {
     status: snapshot.status,
-    publicStatus: publicStatus === "sync_error" ? "inactive" : publicStatus,
-    label: deriveLabel(publicStatus === "sync_error" ? "inactive" : publicStatus),
-    billingMessage: deriveBillingMessage(publicStatus === "sync_error" ? "inactive" : publicStatus),
-    canUseApp: access.hasAccess,
+    publicStatus: safePublic,
+    label: deriveLabel(safePublic),
+    billingMessage: deriveBillingMessage(safePublic, false),
+    canUseApp: true,
+    canUsePremiumFeatures: false,
     plan: planDisplayFromSnapshot(snapshot),
     currentPeriodEnd: snapshot.currentPeriodEnd,
-    canManageBilling: true,
+    canManageBilling: access.canManageBilling,
     accessSource: snapshot.accessSource,
     cancelAtPeriodEnd: snapshot.cancelAtPeriodEnd,
     stripeCustomerId,

@@ -3,19 +3,19 @@ import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { getBillingStatusFromAccess } from "@/lib/subscription/billing-status";
-import { getWorkspaceAccessState } from "@/lib/subscription/workspace-access";
-
+import { getWorkspaceSubscriptionAccess } from "@/lib/subscription/workspace-access";
 export const runtime = "nodejs";
 
 const BLOCKED_PAYLOAD = {
   canUseApp: false,
+  canUsePremiumFeatures: false,
   state: { kind: "subscription_required" as const },
 };
 
 /**
  * État d’accès (middleware + réservation publique).
  * - `?slug=` : sans cookie, pour page réservation publique
- * - sans slug : cookie session requise
+ * - sans slug : cookie session requise — navigation dashboard toujours autorisée si connecté
  */
 export async function GET(req: NextRequest) {
   const slug = req.nextUrl.searchParams.get("slug")?.trim() ?? "";
@@ -33,22 +33,21 @@ export async function GET(req: NextRequest) {
     if (!biz) {
       return NextResponse.json(BLOCKED_PAYLOAD);
     }
-    const access = await getWorkspaceAccessState((biz as { id: string }).id);
+    const access = await getWorkspaceSubscriptionAccess((biz as { id: string }).id);
     const billing = getBillingStatusFromAccess(access);
+    const canBook = access.hasActiveSubscription;
     return NextResponse.json({
-      canUseApp: access.hasAccess,
+      canUseApp: canBook,
+      canUsePremiumFeatures: canBook,
       billing,
       workspaceAccess: {
         workspaceId: access.workspaceId,
-        trialEndsAt: access.trialEndsAt,
-        isTrialActive: access.isTrialActive,
-        isTrialExpired: access.isTrialExpired,
         hasActiveSubscription: access.hasActiveSubscription,
-        hasAccess: access.hasAccess,
-        daysLeft: access.daysLeft,
+        canUsePremiumFeatures: access.canUsePremiumFeatures,
         subscriptionStatus: access.subscriptionStatus,
         planName: access.planName,
         stripeCustomerId: access.stripeCustomerId,
+        currentPeriodEnd: access.currentPeriodEnd,
       },
     });
   }
@@ -68,25 +67,30 @@ export async function GET(req: NextRequest) {
     .eq("user_id", user.id)
     .maybeSingle();
   if (!biz) {
-    return NextResponse.json(BLOCKED_PAYLOAD);
+    return NextResponse.json({
+      canUseApp: true,
+      canUsePremiumFeatures: false,
+      error: "Commerce introuvable.",
+      state: { kind: "subscription_required" as const },
+    });
   }
-  const access = await getWorkspaceAccessState((biz as { id: string }).id);
+  const access = await getWorkspaceSubscriptionAccess((biz as { id: string }).id);
   const billing = getBillingStatusFromAccess(access);
   return NextResponse.json({
-    canUseApp: access.hasAccess,
+    canUseApp: true,
+    canUsePremiumFeatures: access.hasActiveSubscription,
     billing,
     workspaceAccess: {
       workspaceId: access.workspaceId,
-      trialEndsAt: access.trialEndsAt,
-      isTrialActive: access.isTrialActive,
-      isTrialExpired: access.isTrialExpired,
       hasActiveSubscription: access.hasActiveSubscription,
-      hasAccess: access.hasAccess,
-      daysLeft: access.daysLeft,
+      canUsePremiumFeatures: access.canUsePremiumFeatures,
       subscriptionStatus: access.subscriptionStatus,
       planName: access.planName,
       stripeCustomerId: access.stripeCustomerId,
+      currentPeriodEnd: access.currentPeriodEnd,
     },
-    state: { kind: access.hasAccess ? ("active" as const) : ("subscription_required" as const) },
+    state: {
+      kind: access.hasActiveSubscription ? ("active" as const) : ("subscription_required" as const),
+    },
   });
 }

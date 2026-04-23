@@ -16,6 +16,7 @@ import {
   textareaClass,
   userTextBreakClass,
 } from "@/lib/wavon/tokens";
+import { canUsePremiumFeatures } from "@/lib/wavon/premium-access";
 
 type ScheduledRow = {
   id: string;
@@ -113,6 +114,7 @@ async function postConfigurableEmailTest(body: unknown): Promise<{ ok: boolean; 
 export function EmailsSettingsTab() {
   const { ready, state, businessId, upsertEmailTemplate, patchSettings } = useWavon();
   const toast = useToast();
+  const premium = canUsePremiumFeatures(state.workspaceAccess);
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<Record<EmailSettingType, ScheduledRow | null>>({
     reminder_before: null,
@@ -150,6 +152,13 @@ export function EmailsSettingsTab() {
   }, [businessId, toast]);
 
   const saveScheduled = async (type: EmailSettingType, patch: Partial<ScheduledRow>) => {
+    if (!premium) {
+      toast.push({
+        kind: "error",
+        message: "Choisissez une offre pour configurer les e-mails automatisés.",
+      });
+      return;
+    }
     if (!businessId) return;
     const cur = rows[type];
     const next: ScheduledRow = {
@@ -183,6 +192,10 @@ export function EmailsSettingsTab() {
   };
 
   const sendTestScheduled = async (type: EmailSettingType) => {
+    if (!premium) {
+      toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+      return;
+    }
     if (!businessId) return;
     const to = effectiveTestTo;
     if (!to) {
@@ -203,6 +216,10 @@ export function EmailsSettingsTab() {
   };
 
   const sendTestTemplate = async (templateType: EmailTemplateType) => {
+    if (!premium) {
+      toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+      return;
+    }
     if (!businessId) return;
     const to = effectiveTestTo;
     if (!to) {
@@ -223,6 +240,10 @@ export function EmailsSettingsTab() {
   };
 
   const sendMerchantTest = async (merchantKind: "new_booking" | "cancellation") => {
+    if (!premium) {
+      toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
+      return;
+    }
     if (!businessId) return;
     const to = effectiveTestTo;
     if (!to) {
@@ -354,6 +375,13 @@ export function EmailsSettingsTab() {
           businessId={businessId}
           initial={state.emailTemplates.find((t) => t.type === "confirmation") ?? null}
           onSave={(next) => {
+            if (!premium) {
+              toast.push({
+                kind: "error",
+                message: "Choisissez une offre pour modifier les modèles d’e-mail.",
+              });
+              return;
+            }
             upsertEmailTemplate(next);
             toast.push({ message: "Template enregistré." });
           }}
@@ -387,6 +415,13 @@ export function EmailsSettingsTab() {
           businessId={businessId}
           initial={state.emailTemplates.find((t) => t.type === "cancellation") ?? null}
           onSave={(next) => {
+            if (!premium) {
+              toast.push({
+                kind: "error",
+                message: "Choisissez une offre pour modifier les modèles d’e-mail.",
+              });
+              return;
+            }
             upsertEmailTemplate(next);
             toast.push({ message: "Template enregistré." });
           }}

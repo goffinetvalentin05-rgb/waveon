@@ -1,13 +1,16 @@
 import type { BillingStatus } from "./billing-status";
 import { getBillingStatusFromAccess } from "./billing-status";
 import type { SubscriptionSnapshot } from "@/lib/wavon/types";
-import { getWorkspaceAccessState, type WorkspaceAccessState } from "./workspace-access";
+import { getWorkspaceSubscriptionAccess, type WorkspaceAccessState } from "./workspace-access";
 
 export type WorkspaceBillingResult = {
   workspaceId: string;
   access: WorkspaceAccessState;
   snapshot: SubscriptionSnapshot;
   billing: BillingStatus;
+  /** Abonnement Stripe utilisable (actions métier). */
+  hasActiveSubscription: boolean;
+  /** @deprecated Utiliser hasActiveSubscription */
   hasAccess: boolean;
   /** @deprecated Utiliser billing.publicStatus */
   status: BillingStatus["publicStatus"];
@@ -18,18 +21,19 @@ export type WorkspaceBillingResult = {
 };
 
 /**
- * Point d’entrée serveur : essai + abonnement Stripe → UI / garde-fous.
+ * Point d’entrée serveur : abonnement Stripe → UI / garde-fous.
  */
 export async function getWorkspaceSubscriptionStatus(workspaceId: string): Promise<WorkspaceBillingResult> {
   const id = workspaceId.trim();
-  const access = await getWorkspaceAccessState(id);
+  const access = await getWorkspaceSubscriptionAccess(id);
   const billing = getBillingStatusFromAccess(access);
   return {
     workspaceId: id,
     access,
     snapshot: access.snapshot,
     billing,
-    hasAccess: access.hasAccess,
+    hasActiveSubscription: access.hasActiveSubscription,
+    hasAccess: access.hasActiveSubscription,
     status: billing.publicStatus,
     planName: billing.plan,
     currentPeriodEnd: billing.currentPeriodEnd,

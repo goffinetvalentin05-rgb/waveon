@@ -3,7 +3,10 @@ import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { getBillingStatusFromAccess } from "@/lib/subscription/billing-status";
 import { ensureBusinessForUser } from "@/lib/wavon/ensure-business-for-user";
-import { getWorkspaceAccessState } from "@/lib/subscription/workspace-access";
+import {
+  getWorkspaceSubscriptionAccess,
+  workspaceAccessSummaryFromSnapshot,
+} from "@/lib/subscription/workspace-access";
 import { SYNC_ERROR_SUBSCRIPTION_SNAPSHOT } from "@/lib/wavon/types";
 
 export const runtime = "nodejs";
@@ -44,34 +47,27 @@ export async function GET() {
     } catch (e) {
       console.error("[subscription/live] ensure business", e);
       const snap = SYNC_ERROR_SUBSCRIPTION_SNAPSHOT;
+      const wa = workspaceAccessSummaryFromSnapshot(snap);
+      const access = {
+        workspaceId: "",
+        snapshot: snap,
+        hasActiveSubscription: false,
+        canUsePremiumFeatures: false,
+        canManageBilling: false,
+        currentPeriodEnd: null,
+        subscriptionStatus: snap.status,
+        planName: null,
+        stripeCustomerId: null,
+      };
       return NextResponse.json({
         ...snap,
-        billing: getBillingStatusFromAccess({
-          workspaceId: "",
-          trialEndsAt: null,
-          isTrialActive: false,
-          isTrialExpired: false,
-          hasActiveSubscription: false,
-          hasAccess: false,
-          daysLeft: 0,
-          subscriptionStatus: snap.status,
-          planName: null,
-          snapshot: snap,
-          stripeCustomerId: null,
-        }),
-        workspaceAccess: {
-          trialEndsAt: null,
-          isTrialActive: false,
-          isTrialExpired: false,
-          hasActiveSubscription: false,
-          hasAccess: false,
-          daysLeft: 0,
-        },
+        billing: getBillingStatusFromAccess(access),
+        workspaceAccess: wa,
       });
     }
   }
 
-  const access = await getWorkspaceAccessState(businessId);
+  const access = await getWorkspaceSubscriptionAccess(businessId);
   const snapshot = access.snapshot;
   const billing = getBillingStatusFromAccess(access);
 
@@ -79,10 +75,7 @@ export async function GET() {
     console.log("[billing] /api/subscription/live", {
       userId: user.id,
       businessId,
-      trialEndsAt: access.trialEndsAt,
       hasActiveSubscription: access.hasActiveSubscription,
-      hasAccess: access.hasAccess,
-      daysLeft: access.daysLeft,
       snapshot: {
         status: snapshot.status,
         accessSource: snapshot.accessSource,
@@ -93,7 +86,7 @@ export async function GET() {
       },
       billing: {
         publicStatus: billing.publicStatus,
-        canUseApp: billing.canUseApp,
+        canUsePremiumFeatures: billing.canUsePremiumFeatures,
       },
     });
   }
@@ -102,12 +95,8 @@ export async function GET() {
     ...snapshot,
     billing,
     workspaceAccess: {
-      trialEndsAt: access.trialEndsAt,
-      isTrialActive: access.isTrialActive,
-      isTrialExpired: access.isTrialExpired,
       hasActiveSubscription: access.hasActiveSubscription,
-      hasAccess: access.hasAccess,
-      daysLeft: access.daysLeft,
+      canUsePremiumFeatures: access.canUsePremiumFeatures,
     },
   });
 }
