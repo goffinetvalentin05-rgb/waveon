@@ -12,7 +12,13 @@ import {
   PLAN_MONTHLY_PRICE_CHF,
   type BillingPlanId,
 } from "@/lib/stripe/config";
-import { buildWorkspaceAccessState } from "@/lib/subscription/workspace-access";
+import {
+  buildWorkspaceAccessState,
+  computeTrialDayNumberForDisplay,
+  trialBadgeHeadline,
+  trialDaysLeftShortLabel,
+  WAEVON_TRIAL_DURATION_DAYS,
+} from "@/lib/subscription/workspace-access";
 import { getBillingStatusFromAccess } from "@/lib/subscription/billing-status";
 import { supabase } from "@/lib/supabase/client";
 import { wavonPage } from "@/lib/wavon/tokens";
@@ -163,7 +169,18 @@ export default function FacturationClient() {
 
   const needsPricing = !activePaying;
 
-  const trialEndsLabel = formatDateFr(state.workspaceAccess?.trialEndsAt ?? null);
+  const wa = state.workspaceAccess;
+  const trialDaysLeft = Math.max(0, wa?.daysLeft ?? 0);
+  const trialDayNumber =
+    wa?.isTrialActive === true
+      ? computeTrialDayNumberForDisplay(trialDaysLeft, true)
+      : null;
+  const trialEndsLabel = formatDateFr(wa?.trialEndsAt ?? null);
+  const trialHeadlineBadge = trialBadgeHeadline(trialDaysLeft, trialDayNumber);
+
+  const sectionClassTrial =
+    "rounded-2xl border-2 border-sky-400/75 bg-gradient-to-br from-sky-50 via-white to-sky-50/40 p-6 shadow-md";
+  const sectionClassDefault = "rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-sm";
 
   return (
     <div className={`${wavonPage} space-y-8 py-6`}>
@@ -188,12 +205,14 @@ export default function FacturationClient() {
         </div>
       ) : null}
 
-      {(blockedParam && !activePaying) || (!activePaying && billing.publicStatus === "inactive") ? (
+      {(blockedParam && !activePaying) ||
+      (!activePaying &&
+        (billing.publicStatus === "inactive" || billing.publicStatus === "trial_expired")) ? (
         <div className="rounded-xl border border-amber-200/95 bg-amber-50 px-4 py-4 text-sm text-amber-950 shadow-sm">
           <p className="text-base font-semibold tracking-tight">Accès au tableau de bord</p>
           <p className="mt-2 leading-relaxed text-amber-950/95">
             {billing.publicStatus === "trial_expired"
-              ? "Votre essai est terminé. Souscrivez une offre pour retrouver l’agenda et les fonctionnalités métier."
+              ? "Essai gratuit terminé. Choisissez une offre pour continuer à utiliser Waevon (agenda, services, clients, réservations)."
               : "Pour continuer après votre essai, choisissez une offre et activez votre abonnement."}
           </p>
         </div>
@@ -205,7 +224,11 @@ export default function FacturationClient() {
         </div>
       ) : null}
 
-      <section className="rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-sm">
+      <section
+        className={
+          billing.publicStatus === "trial_active" ? sectionClassTrial : sectionClassDefault
+        }
+      >
         {activePaying ? (
           <>
             <h2 className="text-lg font-semibold text-neutral-950">Mon abonnement</h2>
@@ -272,35 +295,41 @@ export default function FacturationClient() {
           </>
         ) : billing.publicStatus === "trial_active" ? (
           <>
-            <h2 className="text-lg font-semibold text-neutral-950">Essai gratuit</h2>
-            <p className="mt-2 text-sm text-neutral-600">{billing.billingMessage}</p>
-            <p className="mt-2 text-sm text-neutral-700">
-              Date de fin : <strong>{trialEndsLabel}</strong>
-            </p>
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${badgeClass}`}>
-                Essai gratuit actif
-              </span>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold tracking-tight text-sky-950">
+                  Essai gratuit en cours
+                </h2>
+                <span className="mt-3 inline-flex rounded-full bg-sky-950 px-3 py-1.5 text-xs font-semibold text-white shadow-sm">
+                  {trialHeadlineBadge}
+                </span>
+              </div>
+            </div>
+            <div className="mt-5 space-y-2 text-sm text-sky-950/95">
+              <p className="text-base font-medium text-sky-950">{trialDaysLeftShortLabel(trialDaysLeft)}</p>
+              {trialDayNumber != null ? (
+                <p>
+                  Jour <strong>{trialDayNumber}</strong> sur <strong>{WAEVON_TRIAL_DURATION_DAYS}</strong>
+                </p>
+              ) : null}
+              <p>
+                Votre essai se termine le <strong>{trialEndsLabel}</strong>.
+              </p>
             </div>
             <button
               type="button"
               disabled={loadingPlan !== null}
               onClick={() => document.getElementById("waevon-pricing")?.scrollIntoView({ behavior: "smooth" })}
-              className="mt-6 rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60"
+              className="mt-6 rounded-full bg-sky-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-sky-900 disabled:opacity-60"
             >
-              Choisir une offre
+              Voir les offres
             </button>
           </>
         ) : billing.publicStatus === "trial_expired" ? (
           <>
-            <h2 className="text-lg font-semibold text-neutral-950">Continuer avec Waevon</h2>
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${badgeClass}`}>
-                Essai expiré
-              </span>
-            </div>
+            <h2 className="text-lg font-semibold text-neutral-950">Essai gratuit terminé</h2>
             <p className="mt-3 text-sm text-neutral-600">
-              Votre essai gratuit est terminé. Choisissez une offre pour continuer à utiliser Waevon.
+              Choisissez une offre pour continuer à utiliser Waevon.
             </p>
             <button
               type="button"
@@ -308,7 +337,7 @@ export default function FacturationClient() {
               onClick={() => document.getElementById("waevon-pricing")?.scrollIntoView({ behavior: "smooth" })}
               className="mt-6 rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60"
             >
-              S’abonner
+              Choisir un abonnement
             </button>
           </>
         ) : (

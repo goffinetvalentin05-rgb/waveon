@@ -4,6 +4,9 @@ import { getBusinessSubscriptionStatus } from "@/lib/stripe/subscription";
 import type { SubscriptionSnapshot } from "@/lib/wavon/types";
 const MS_PER_DAY = 86_400_000;
 
+/** Durée produit affichée « Jour X sur 3 » (alignée sur l’inscription SQL + app). */
+export const WAEVON_TRIAL_DURATION_DAYS = 3;
+
 function billingDebugEnabled(): boolean {
   return (
     (process.env.BILLING_DEBUG ?? "").trim() === "1" ||
@@ -40,12 +43,42 @@ export function computeTrialDaysLeft(trialEndsAtIso: string | null, nowMs: numbe
   return Math.max(0, Math.ceil((end - nowMs) / MS_PER_DAY));
 }
 
-export function trialRemainingPhrase(daysLeft: number): string {
+/**
+ * Jour courant sur 3 (essai standard). Si l’essai côté base est plus long que 3 jours affichés,
+ * retourne null pour éviter un « Jour X sur 3 » trompeur.
+ */
+export function computeTrialDayNumberForDisplay(daysLeft: number, isTrialActive: boolean): number | null {
+  if (!isTrialActive) return null;
   const d = Math.max(0, daysLeft);
-  if (d >= 3) return `Il vous reste ${d} jours d’essai.`;
-  if (d === 2) return "Il vous reste 2 jours d’essai.";
-  if (d === 1) return "Il vous reste 1 jour d’essai.";
-  return "Dernier jour d’essai.";
+  if (d === 0) return WAEVON_TRIAL_DURATION_DAYS;
+  if (d > WAEVON_TRIAL_DURATION_DAYS) return null;
+  return WAEVON_TRIAL_DURATION_DAYS - d + 1;
+}
+
+/** Texte court « il reste X jours », jamais négatif ; dernier créneau avant expiration. */
+export function trialDaysLeftShortLabel(daysLeft: number): string {
+  const d = Math.max(0, daysLeft);
+  if (d <= 0) return "Dernier jour d’essai";
+  if (d === 1) return "Il vous reste 1 jour";
+  if (d === 2) return "Il vous reste 2 jours";
+  return `Il vous reste ${d} jours`;
+}
+
+/**
+ * Titre court pour badge / bandeau (ex. « Essai gratuit — Jour 2 sur 3 »).
+ */
+export function trialBadgeHeadline(daysLeft: number, dayNumber: number | null): string {
+  const d = Math.max(0, daysLeft);
+  if (dayNumber != null) {
+    return `Essai gratuit — Jour ${dayNumber} sur ${WAEVON_TRIAL_DURATION_DAYS}`;
+  }
+  if (d <= 0) return "Essai gratuit — Dernier jour";
+  return `Essai gratuit — ${d} jour${d > 1 ? "s" : ""} restant${d > 1 ? "s" : ""}`;
+}
+
+/** @deprecated Préférer {@link trialDaysLeftShortLabel} ; conservé pour imports existants. */
+export function trialRemainingPhrase(daysLeft: number): string {
+  return trialDaysLeftShortLabel(daysLeft);
 }
 
 /** Abonnement Stripe « payant / utilisable » : uniquement via snapshot (pas d’erreur sync, source Stripe). */

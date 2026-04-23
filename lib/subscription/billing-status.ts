@@ -1,5 +1,9 @@
 import type { WorkspaceAccessState } from "./workspace-access";
-import { trialRemainingPhrase } from "./workspace-access";
+import {
+  computeTrialDayNumberForDisplay,
+  trialDaysLeftShortLabel,
+  WAEVON_TRIAL_DURATION_DAYS,
+} from "./workspace-access";
 import type { SubscriptionSnapshot } from "@/lib/wavon/types";
 
 export type BillingPlanDisplay = "starter" | "pro" | null;
@@ -119,12 +123,20 @@ export function getBillingStatusFromAccess(access: WorkspaceAccessState): Billin
 
   if (access.isTrialActive) {
     const endFmt = formatTrialEndDateFr(access.trialEndsAt);
-    const daysLine = trialRemainingPhrase(access.daysLeft);
+    const daysLine = trialDaysLeftShortLabel(access.daysLeft);
+    const dayNum = computeTrialDayNumberForDisplay(access.daysLeft, access.isTrialActive);
+    const parts: string[] = ["Essai gratuit en cours.", `${daysLine}.`];
+    if (dayNum != null) {
+      if (access.daysLeft <= 0) parts.push("Dernier jour d’essai.");
+      else parts.push(`Jour ${dayNum} sur ${WAEVON_TRIAL_DURATION_DAYS}.`);
+    }
+    if (endFmt) parts.push(`Votre essai se termine le ${endFmt}.`);
+    const billingMessage = parts.join(" ");
     return {
       status: "trial_waevon",
       publicStatus: "trial_active",
       label: "Essai gratuit actif",
-      billingMessage: `Fin de l’essai le ${endFmt}. ${daysLine}`.trim(),
+      billingMessage,
       canUseApp: true,
       plan: null,
       currentPeriodEnd: null,

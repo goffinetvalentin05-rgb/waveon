@@ -7,7 +7,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { ToastProvider } from "@/components/wavon/Toast";
 import { useWavon, WavonProvider } from "@/components/wavon/WavonProvider";
-import { trialRemainingPhrase } from "@/lib/subscription/workspace-access";
+import {
+  computeTrialDayNumberForDisplay,
+  trialBadgeHeadline,
+  trialDaysLeftShortLabel,
+} from "@/lib/subscription/workspace-access";
 import { spinnerClass, wavonMainBg, wavonPage } from "@/lib/wavon/tokens";
 import Sidebar from "./components/Sidebar";
 
@@ -20,12 +24,16 @@ function DashboardTrialBanner() {
   if (!a.isTrialActive) return null;
 
   const urgent = a.daysLeft <= 1;
-  const headline =
-    a.daysLeft >= 2
-      ? `Essai gratuit : ${a.daysLeft} jours restants`
-      : a.daysLeft === 1
-        ? "Essai gratuit : 1 jour restant"
-        : "Essai gratuit : dernier jour";
+  const dLeft = Math.max(0, a.daysLeft);
+  const dayNum = computeTrialDayNumberForDisplay(dLeft, a.isTrialActive);
+  const headline = trialBadgeHeadline(dLeft, dayNum);
+  const endLabel = a.trialEndsAt
+    ? new Date(a.trialEndsAt).toLocaleDateString("fr-CH", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "";
 
   return (
     <div
@@ -37,8 +45,12 @@ function DashboardTrialBanner() {
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="font-semibold tracking-tight">{headline}</p>
-          <p className="mt-1 text-xs opacity-90">{trialRemainingPhrase(a.daysLeft)}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-600">Essai gratuit en cours</p>
+          <p className="mt-1 font-semibold tracking-tight">{headline}</p>
+          <p className="mt-1 text-xs opacity-90">{trialDaysLeftShortLabel(a.daysLeft)}</p>
+          {endLabel ? (
+            <p className="mt-1 text-xs opacity-90">Fin le {endLabel}</p>
+          ) : null}
         </div>
         <Link
           href="/dashboard/facturation#waevon-pricing"
