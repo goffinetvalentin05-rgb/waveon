@@ -8,6 +8,13 @@ import { SYNC_ERROR_SUBSCRIPTION_SNAPSHOT } from "@/lib/wavon/types";
 
 export const runtime = "nodejs";
 
+function billingDebugEnabled(): boolean {
+  return (
+    (process.env.BILLING_DEBUG ?? "").trim() === "1" ||
+    (process.env.NEXT_PUBLIC_BILLING_DEBUG ?? "").trim() === "1"
+  );
+}
+
 export async function GET() {
   const supabase = await createRouteHandlerSupabase();
   const {
@@ -43,5 +50,31 @@ export async function GET() {
 
   const snapshot = await getBusinessSubscriptionStatus(businessId);
   const billing = getBillingStatus(snapshot);
+  if (billingDebugEnabled()) {
+    console.log("[billing] /api/subscription/live", {
+      userId: user.id,
+      businessId,
+      snapshot: {
+        status: snapshot.status,
+        accessSource: snapshot.accessSource,
+        plan: snapshot.plan,
+        trialEndsAt: snapshot.trialEndsAt,
+        trialStartedAt: snapshot.trialStartedAt,
+        currentPeriodEnd: snapshot.currentPeriodEnd,
+        cancelAtPeriodEnd: snapshot.cancelAtPeriodEnd,
+        stripeCustomerId: snapshot.stripeCustomerId,
+      },
+      billing: {
+        publicStatus: billing.publicStatus,
+        status: billing.status,
+        canUseApp: billing.canUseApp,
+        isTrial: billing.isTrial,
+        isActive: billing.isActive,
+        isExpired: billing.isExpired,
+        daysLeft: billing.daysLeft,
+        effectiveTrialEndsAt: billing.effectiveTrialEndsAt,
+      },
+    });
+  }
   return NextResponse.json({ ...snapshot, billing });
 }

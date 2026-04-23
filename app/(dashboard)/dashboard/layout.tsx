@@ -3,8 +3,7 @@ import { cookies, headers } from "next/headers";
 import { createServerClient } from "@supabase/auth-helpers-nextjs";
 import { redirect } from "next/navigation";
 import DashboardShell from "./DashboardShell";
-import { getBusinessSubscriptionStatus } from "@/lib/stripe/subscription";
-import { getBillingStatus } from "@/lib/subscription/billing-status";
+import { getBillingStatusForWorkspace } from "@/lib/subscription/workspace-billing";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
@@ -54,8 +53,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
     if (businessId) {
       try {
-        const live = await getBusinessSubscriptionStatus(businessId);
-        billingLocked = !getBillingStatus(live).canUseApp;
+        const { billing } = await getBillingStatusForWorkspace(businessId);
+        billingLocked = !billing.canUseApp;
 
         if (billingLocked && !isExemptWhenBlocked) {
           redirect("/dashboard/facturation?trial_expired=1");

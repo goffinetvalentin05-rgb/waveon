@@ -1,4 +1,4 @@
-import { addDays, differenceInCalendarDays, parseISO, startOfDay } from "date-fns";
+import { addDays, parseISO } from "date-fns";
 import type { SubscriptionSnapshot } from "@/lib/wavon/types";
 import { WAEVON_TRIAL_DAYS } from "@/lib/stripe/config";
 import { billingAccessStateFromSnapshot } from "./billing-access";
@@ -41,14 +41,15 @@ export type BillingStatus = {
   paymentMethodLabel: string | null;
 };
 
-/** Jours restants calendaires jusqu’à la fin (minuit), jamais négatif. */
-export function calendarDaysLeftUntil(isoEnd: string | null | undefined, now: Date = new Date()): number {
+/** Jours restants (ceil), jamais négatif. */
+export function daysLeftUntil(isoEnd: string | null | undefined, now: Date = new Date()): number {
   if (!isoEnd) return 0;
   try {
-    const endDay = startOfDay(new Date(isoEnd));
-    const today = startOfDay(now);
-    const d = differenceInCalendarDays(endDay, today);
-    return Math.max(0, d);
+    const endMs = new Date(isoEnd).getTime();
+    const nowMs = now.getTime();
+    if (!Number.isFinite(endMs)) return 0;
+    const MS_PER_DAY = 86_400_000;
+    return Math.max(0, Math.ceil((endMs - nowMs) / MS_PER_DAY));
   } catch {
     return 0;
   }
@@ -137,7 +138,7 @@ export function getBillingStatus(
   if (isTrial) {
     const endIso = effectiveTrialEndsAt ?? trialEndsAt;
     if (endIso) {
-      daysLeft = calendarDaysLeftUntil(endIso);
+      daysLeft = daysLeftUntil(endIso);
     }
   }
 

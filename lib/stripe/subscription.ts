@@ -20,6 +20,13 @@ type CacheEntry = { expiresAt: number; value: SubscriptionSnapshot };
 const cache = new Map<string, CacheEntry>();
 const TTL_MS = 60_000;
 
+function billingDebugEnabled(): boolean {
+  return (
+    (process.env.BILLING_DEBUG ?? "").trim() === "1" ||
+    (process.env.NEXT_PUBLIC_BILLING_DEBUG ?? "").trim() === "1"
+  );
+}
+
 export function invalidateBusinessSubscriptionCache(businessId: string): void {
   cache.delete(businessId);
 }
@@ -97,6 +104,52 @@ const EMPTY_ROW: BusinessBillingRow = {
   cancel_at_period_end: null,
   created_at: null,
 };
+
+function isMissingColumnError(e: unknown): boolean {
+  const err = e as { code?: string; message?: string };
+  // Postgres: undefined_column = 42703 (via PostgREST)
+  if (err?.code === "42703") return true;
+  const msg = String(err?.message ?? "");
+  return msg.toLowerCase().includes("does not exist") && msg.toLowerCase().includes("column");
+}
+
+async function readBusinessBillingRowBestEffort(
+  businessId: string
+): Promise<{ row: BusinessBillingRow | null; mode: "full" | "compat" }> {
+  const admin = createAdminSupabaseClient();
+  try {
+    const { data, error } = await admin
+      .from(WavonDbTable.businesses)
+      .select(
+        "stripe_customer_id, stripe_subscription_id, subscription_plan, trial_started_at, trial_ends_at, subscription_status, current_period_end, cancel_at_period_end, created_at"
+      )
+      .eq("id", businessId)
+      .maybeSingle();
+    if (error) throw error;
+    return { row: (data as BusinessBillingRow | null) ?? null, mode: "full" };
+  } catch (e) {
+    if (!isMissingColumnError(e)) throw e;
+    // Compat : certains environnements ont un schéma incomplet (migrations non appliquées).
+    // On lit un sous-ensemble permettant de déduire un vrai statut métier sans tomber en sync_error.
+    const { data, error } = await admin
+      .from(WavonDbTable.businesses)
+      .select("stripe_customer_id, stripe_subscription_id, trial_ends_at, created_at")
+      .eq("id", businessId)
+      .maybeSingle();
+    if (error) throw error;
+    const r = (data as Partial<BusinessBillingRow> | null) ?? null;
+    const row: BusinessBillingRow | null = r
+      ? {
+          ...EMPTY_ROW,
+          stripe_customer_id: (r.stripe_customer_id as string | null) ?? null,
+          stripe_subscription_id: (r.stripe_subscription_id as string | null) ?? null,
+          trial_ends_at: (r.trial_ends_at as string | null) ?? null,
+          created_at: (r.created_at as string | null) ?? null,
+        }
+      : null;
+    return { row, mode: "compat" };
+  }
+}
 
 /**
  * Repli quand Stripe est indisponible (clé absente, timeout, etc.) : on lit uniquement `wavon_businesses`.
@@ -249,12 +302,34 @@ async function resolveStripeOrWaevonSnapshot(
     const sub = await stripe.subscriptions.retrieve(subId, {
       expand: ["items.data.price"],
     });
+    if (billingDebugEnabled()) {
+      console.log("[billing] Stripe subscription retrieved", {
+        businessId,
+        stripe_subscription_id: subId,
+        stripe_status_raw: sub.status,
+        trial_end: sub.trial_end,
+        cancel_at_period_end: sub.cancel_at_period_end,
+      });
+    }
     await syncStripeSubscriptionToBusinessRow(businessId, sub);
     return snapshotFromStripe(sub);
   } catch (e) {
     const err = e as { code?: string; statusCode?: number; message?: string };
     if (err.code === "resource_missing" || err.statusCode === 404) {
+      if (billingDebugEnabled()) {
+        console.warn("[billing] Stripe subscription missing -> clear stale id", {
+          businessId,
+          stripe_subscription_id: subId,
+        });
+      }
       return clearStaleStripeSubscription(businessId, row);
+    }
+    if (billingDebugEnabled()) {
+      console.error("[billing] Stripe error -> DB fallback", {
+        businessId,
+        stripe_subscription_id: subId,
+        message: err?.message ?? String(e),
+      });
     }
     console.error("[subscription] erreur Stripe — repli DB", err?.message ?? e);
     return snapshotFromBusinessRowDbOnly(businessId, row);
@@ -272,18 +347,8 @@ export async function getBusinessSubscriptionStatus(businessId: string): Promise
   }
 
   try {
-    const admin = createAdminSupabaseClient();
-    const { data, error } = await admin
-      .from(WavonDbTable.businesses)
-      .select(
-        "stripe_customer_id, stripe_subscription_id, subscription_plan, trial_started_at, trial_ends_at, subscription_status, current_period_end, cancel_at_period_end, created_at"
-      )
-      .eq("id", businessId)
-      .maybeSingle();
-
-    if (error) throw error;
-
-    const row = (data as BusinessBillingRow | null) ?? EMPTY_ROW;
+    const { row: readRow, mode } = await readBusinessBillingRowBestEffort(businessId);
+    const row = readRow ?? EMPTY_ROW;
     const snapshot = await resolveStripeOrWaevonSnapshot(businessId, row);
 
     const enriched: SubscriptionSnapshot = {
@@ -291,6 +356,27 @@ export async function getBusinessSubscriptionStatus(businessId: string): Promise
       trialStartedAt: row.trial_started_at ?? undefined,
       stripeCustomerId: row.stripe_customer_id ?? undefined,
     };
+
+    if (billingDebugEnabled()) {
+      console.log("[billing] getBusinessSubscriptionStatus", {
+        businessId,
+        readMode: mode,
+        dbRowFound: Boolean(readRow),
+        trial_started_at: row.trial_started_at,
+        trial_ends_at: row.trial_ends_at,
+        subscription_status: row.subscription_status,
+        stripe_customer_id: row.stripe_customer_id,
+        stripe_subscription_id: row.stripe_subscription_id,
+        snapshot: {
+          status: enriched.status,
+          accessSource: enriched.accessSource,
+          plan: enriched.plan,
+          trialEndsAt: enriched.trialEndsAt,
+          currentPeriodEnd: enriched.currentPeriodEnd,
+          cancelAtPeriodEnd: enriched.cancelAtPeriodEnd,
+        },
+      });
+    }
 
     cache.set(businessId, { expiresAt: now + TTL_MS, value: enriched });
     return enriched;

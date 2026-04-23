@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
-import { getBusinessSubscriptionStatus } from "@/lib/stripe/subscription";
-import { getBillingStatus } from "./billing-status";
+import { getBillingStatusForWorkspace } from "./workspace-billing";
 
 const SUBSCRIPTION_REQUIRED = {
   error: "subscription_required",
@@ -27,8 +26,8 @@ export async function merchantBillingGateResponse(): Promise<NextResponse | null
   if (bizErr || !biz) {
     return NextResponse.json({ error: "Commerce introuvable." }, { status: 400 });
   }
-  const snapshot = await getBusinessSubscriptionStatus((biz as { id: string }).id);
-  if (!getBillingStatus(snapshot).canUseApp) {
+  const { billing } = await getBillingStatusForWorkspace((biz as { id: string }).id);
+  if (!billing.canUseApp) {
     return NextResponse.json(SUBSCRIPTION_REQUIRED, { status: 402 });
   }
   return null;
@@ -40,8 +39,8 @@ export async function billingGateResponseForBusinessId(businessId: string): Prom
   if (!id) {
     return NextResponse.json({ error: "businessId requis." }, { status: 400 });
   }
-  const snapshot = await getBusinessSubscriptionStatus(id);
-  if (!getBillingStatus(snapshot).canUseApp) {
+  const { billing } = await getBillingStatusForWorkspace(id);
+  if (!billing.canUseApp) {
     return NextResponse.json(SUBSCRIPTION_REQUIRED, { status: 402 });
   }
   return null;
