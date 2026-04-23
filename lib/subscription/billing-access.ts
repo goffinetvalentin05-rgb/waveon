@@ -1,24 +1,17 @@
 import type { SubscriptionSnapshot } from "@/lib/wavon/types";
 
-export type BillingAccessState = "TRIAL_ACTIVE" | "SUBSCRIBED" | "BLOCKED";
+export type BillingAccessState = "SUBSCRIBED" | "BLOCKED";
 
 /**
- * Règle produit :
- * - TRIAL_ACTIVE : essai Waevon encore valide
- * - SUBSCRIBED : abonnement Stripe utilisable (actif, essai Stripe, ou past_due pour régulariser)
- * - BLOCKED : tout le reste (essai expiré, sans abonnement valide, Stripe canceled/unpaid/incomplete, etc.)
+ * Accès métier Waevon : uniquement abonnement Stripe en règle (`active` ou `past_due`).
+ * `sync_error` → bloqué (erreur technique à résoudre).
  */
 export function billingAccessStateFromSnapshot(s: SubscriptionSnapshot): BillingAccessState {
   if (s.status === "sync_error") {
     return "BLOCKED";
   }
-  if (s.accessSource === "waevon" && s.status === "trialing") {
-    return "TRIAL_ACTIVE";
-  }
-  if (s.accessSource === "stripe") {
-    if (s.status === "active" || s.status === "trialing" || s.status === "past_due") {
-      return "SUBSCRIBED";
-    }
+  if (s.accessSource === "stripe" && (s.status === "active" || s.status === "past_due")) {
+    return "SUBSCRIBED";
   }
   return "BLOCKED";
 }

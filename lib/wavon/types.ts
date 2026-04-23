@@ -191,38 +191,30 @@ export type EmailSetting = {
   customLinks: EmailCustomLinks;
 };
 
-/**
- * État d’accès facturation : essai Waevon (`accessSource: waevon`) et/ou abonnement Stripe (`stripe`).
- * `trial_expired` = essai Waevon terminé, pas d’abonnement Stripe actif.
- */
-export type SubscriptionAccessSource = "waevon" | "stripe" | "none";
+/** Abonnement Stripe enregistré (`stripe`) ou aucun abonnement (`none`). */
+export type SubscriptionAccessSource = "stripe" | "none";
 
 export type SubscriptionSnapshot = {
   status: string;
   plan: "starter" | "pro" | null;
-  trialEndsAt: string | null;
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
   accessSource: SubscriptionAccessSource;
-  /** Renseigné côté serveur quand la ligne `wavon_businesses` est lue. */
-  trialStartedAt?: string | null;
   stripeCustomerId?: string | null;
 };
 
 export const EMPTY_SUBSCRIPTION_SNAPSHOT: SubscriptionSnapshot = {
-  status: "none",
+  status: "inactive",
   plan: null,
-  trialEndsAt: null,
   currentPeriodEnd: null,
   cancelAtPeriodEnd: false,
   accessSource: "none",
 };
 
-/** Échec lecture Supabase / données — réservé au repli technique (affichage « erreur sync »). */
+/** Échec lecture Supabase — réservé au repli technique (affichage erreur sync). */
 export const SYNC_ERROR_SUBSCRIPTION_SNAPSHOT: SubscriptionSnapshot = {
   status: "sync_error",
   plan: null,
-  trialEndsAt: null,
   currentPeriodEnd: null,
   cancelAtPeriodEnd: false,
   accessSource: "none",

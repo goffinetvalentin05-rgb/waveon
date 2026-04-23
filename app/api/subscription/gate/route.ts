@@ -4,9 +4,13 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { getBusinessSubscriptionStatus } from "@/lib/stripe/subscription";
 import { getBillingStatus } from "@/lib/subscription/billing-status";
-import { getSubscriptionState } from "@/lib/subscription/state";
 
 export const runtime = "nodejs";
+
+const BLOCKED_PAYLOAD = {
+  canUseApp: false,
+  state: { kind: "subscription_required" as const },
+};
 
 /**
  * État d’accès (middleware + réservation publique).
@@ -27,12 +31,11 @@ export async function GET(req: NextRequest) {
       .eq("public_slug", slug)
       .maybeSingle();
     if (!biz) {
-      return NextResponse.json({ canUseApp: false, state: { kind: "trial_expired" } });
+      return NextResponse.json(BLOCKED_PAYLOAD);
     }
     const snapshot = await getBusinessSubscriptionStatus((biz as { id: string }).id);
     const billing = getBillingStatus(snapshot);
-    const state = getSubscriptionState(snapshot);
-    return NextResponse.json({ canUseApp: billing.canUseApp, billing, state });
+    return NextResponse.json({ canUseApp: billing.canUseApp, billing });
   }
 
   const supabase = await createRouteHandlerSupabase();
@@ -50,15 +53,13 @@ export async function GET(req: NextRequest) {
     .eq("user_id", user.id)
     .maybeSingle();
   if (!biz) {
-    return NextResponse.json({ canUseApp: false, state: { kind: "trial_expired" } });
+    return NextResponse.json(BLOCKED_PAYLOAD);
   }
   const snapshot = await getBusinessSubscriptionStatus((biz as { id: string }).id);
   const billing = getBillingStatus(snapshot);
-  const state = getSubscriptionState(snapshot);
   return NextResponse.json({
     canUseApp: billing.canUseApp,
     billing,
-    state,
-    kind: state.kind,
+    state: { kind: billing.canUseApp ? ("active" as const) : ("subscription_required" as const) },
   });
 }

@@ -10,13 +10,10 @@ import { useWavon } from "@/components/wavon/WavonProvider";
 import {
   PLAN_LABELS,
   PLAN_MONTHLY_PRICE_CHF,
-  TRIAL_PLAN_LABEL,
-  WAEVON_TRIAL_DAYS,
   type BillingPlanId,
 } from "@/lib/stripe/config";
 import { hasActiveSubscription } from "@/lib/subscription/access";
-import { getBillingStatus, trialDaysRemainingPhrase } from "@/lib/subscription/billing-status";
-import { getSubscriptionState } from "@/lib/subscription/state";
+import { getBillingStatus } from "@/lib/subscription/billing-status";
 import { supabase } from "@/lib/supabase/client";
 import { wavonPage } from "@/lib/wavon/tokens";
 
@@ -32,22 +29,9 @@ function formatDateFr(iso: string | null | undefined): string {
   }
 }
 
-function planSummaryName(billing: ReturnType<typeof getBillingStatus>): string {
-  if (billing.plan === "trial") return TRIAL_PLAN_LABEL;
-  if (billing.plan === "starter" || billing.plan === "pro") return PLAN_LABELS[billing.plan];
-  if (billing.accessSource === "stripe" && billing.isTrial) {
-    return billing.plan ? PLAN_LABELS[billing.plan] : "Formule en cours de configuration";
-  }
-  if (billing.publicStatus === "active" && billing.accessSource === "stripe") {
-    return "Formule synchronisée";
-  }
-  if (billing.publicStatus === "expired") return "Aucune formule active";
-  if (billing.publicStatus === "canceled") return "Aucune formule active";
-  if (billing.publicStatus === "past_due") {
-    return billing.plan === "starter" || billing.plan === "pro" ? PLAN_LABELS[billing.plan] : "Votre formule";
-  }
-  if (billing.publicStatus === "sync_error") return "—";
-  return "Essai ou offre gratuite";
+function planLabel(plan: "starter" | "pro" | null): string {
+  if (plan === "starter" || plan === "pro") return PLAN_LABELS[plan];
+  return "—";
 }
 
 function CheckIcon({ className }: { className?: string }) {
@@ -67,26 +51,22 @@ function CheckIcon({ className }: { className?: string }) {
 export default function FacturationClient() {
   const { ready, state } = useWavon();
   const searchParams = useSearchParams();
-  const trialExpiredParam = searchParams.get("trial_expired") === "1";
-  const expiredParam = searchParams.get("expired") === "true";
+  const blockedParam = searchParams.get("subscription_required") === "1";
   const canceledParam = searchParams.get("canceled") === "true";
   const [portalLoading, setPortalLoading] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<BillingPlanId | null>(null);
 
   const sub = state.subscription;
   const billing = useMemo(() => getBillingStatus(sub), [sub]);
-  const ss = getSubscriptionState(sub);
   const access = { status: sub.status, plan: sub.plan };
   const activePaying = hasActiveSubscription(access);
   const isStripe = sub.accessSource === "stripe";
-  const showExpiredWall = billing.isExpired || trialExpiredParam || expiredParam;
-  const showPricing =
-    billing.isExpired ||
-    billing.isTrial ||
-    (isStripe &&
-      !activePaying &&
-      (sub.status === "canceled" || sub.status === "unpaid" || sub.status === "incomplete")) ||
-    showExpiredWall;
+  const showPortal =
+    isStripe &&
+    sub.status !== "sync_error" &&
+    (sub.status === "active" ||
+      sub.status === "past_due" ||
+      sub.status === "canceled");
 
   const openPortal = useCallback(async () => {
     setPortalLoading(true);
@@ -149,37 +129,13 @@ export default function FacturationClient() {
   const badgeClass =
     billing.publicStatus === "sync_error"
       ? "bg-violet-100 text-violet-950"
-      : billing.isExpired
-        ? "bg-amber-100 text-amber-950"
-        : billing.status === "past_due"
+      : billing.publicStatus === "active"
+        ? "bg-emerald-100 text-emerald-950"
+        : billing.publicStatus === "past_due"
           ? "bg-red-100 text-red-950"
-          : billing.isTrial
-            ? "bg-sky-100 text-sky-950"
-            : billing.isActive
-              ? "bg-emerald-100 text-emerald-950"
-              : "bg-neutral-200 text-neutral-900";
-
-  const showPortal =
-    isStripe &&
-    sub.status !== "none" &&
-    sub.status !== "sync_error" &&
-    sub.status !== "trial_expired" &&
-    (sub.status === "active" ||
-      sub.status === "trialing" ||
-      sub.status === "past_due" ||
-      sub.status === "canceled" ||
-      sub.status === "unpaid" ||
-      sub.status === "incomplete");
-
-  const renewalOrTrialEndDisplay = billing.isTrial
-    ? formatDateFr(billing.effectiveTrialEndsAt ?? billing.trialEndsAt)
-    : billing.currentPeriodEnd
-      ? formatDateFr(billing.currentPeriodEnd)
-      : billing.publicStatus === "expired" || billing.publicStatus === "canceled"
-        ? "Aucune échéance prévue"
-        : billing.publicStatus === "active"
-          ? "Prochaine facturation : synchronisation Stripe"
-          : "—";
+          : billing.publicStatus === "canceled"
+            ? "bg-neutral-200 text-neutral-900"
+            : "bg-amber-100 text-amber-950";
 
   const pricingBulletsStarter = [
     "Réservations en ligne",
@@ -189,30 +145,21 @@ export default function FacturationClient() {
   ];
   const pricingBulletsPro = ["Tout le plan Starter", "Factures PDF automatiques (bientôt)"];
 
-  const paymentLine =
-    billing.paymentMethodLabel ??
-    (isStripe && billing.stripeCustomerId
-      ? "Gérable depuis le portail Stripe (carte et facturation)."
-      : isStripe
-        ? "Les informations de paiement sont gérées dans votre espace Stripe."
-        : "Aucun moyen de paiement enregistré tant que vous n’êtes pas abonné.");
+  const needsPricing = !activePaying || billing.publicStatus === "inactive" || billing.publicStatus === "canceled";
 
   return (
     <div className={`${wavonPage} space-y-8 py-6`}>
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-neutral-950">Facturation</h1>
         <p className="mt-1 text-sm text-neutral-600">
-          Votre abonnement Waevon et vos paiements sécurisés via Stripe.
+          Abonnement Waevon et paiements sécurisés via Stripe.
         </p>
       </div>
 
       {billing.publicStatus === "sync_error" ? (
         <div className="rounded-xl border border-violet-200/95 bg-violet-50 px-4 py-4 text-sm text-violet-950 shadow-sm">
           <p className="text-base font-semibold tracking-tight">{billing.label}</p>
-          <p className="mt-2 leading-relaxed text-violet-900/95">
-            Nous n’avons pas pu relire votre abonnement. Vérifiez votre connexion, puis actualisez la page. Si le
-            problème continue, contactez {SUPPORT_EMAIL}.
-          </p>
+          <p className="mt-2 leading-relaxed text-violet-900/95">{billing.billingMessage}</p>
           <button
             type="button"
             className="mt-3 rounded-full border border-violet-300 bg-white px-4 py-2 text-sm font-medium text-violet-950 hover:bg-violet-100"
@@ -223,45 +170,11 @@ export default function FacturationClient() {
         </div>
       ) : null}
 
-      {showExpiredWall ? (
+      {(blockedParam && !activePaying) || (!activePaying && billing.publicStatus === "inactive") ? (
         <div className="rounded-xl border border-amber-200/95 bg-amber-50 px-4 py-4 text-sm text-amber-950 shadow-sm">
-          <p className="text-base font-semibold tracking-tight">Votre essai gratuit est terminé</p>
+          <p className="text-base font-semibold tracking-tight">Activez votre abonnement</p>
           <p className="mt-2 leading-relaxed text-amber-950/95">
-            Choisissez un abonnement pour réactiver Waevon. Vos données (rendez-vous, clients, réglages)
-            sont conservées.
-          </p>
-        </div>
-      ) : null}
-
-      {!showExpiredWall && billing.isTrial && billing.accessSource === "waevon" ? (
-        <div className="rounded-xl border border-emerald-200/90 bg-emerald-50 px-4 py-4 text-sm text-emerald-950 shadow-sm">
-          <p className="text-base font-semibold tracking-tight">Essai gratuit en cours</p>
-          <p className="mt-2 leading-relaxed text-emerald-950/95">
-            <strong>{trialDaysRemainingPhrase(billing.daysLeft)}</strong>
-            {billing.daysLeft <= 0 ? (
-              <span> — profitez encore de Waevon aujourd’hui.</span>
-            ) : null}
-          </p>
-          {ss.kind === "trialing" ? (
-            <p className="mt-1 text-emerald-950/85">
-              Jour {ss.currentDay} sur {WAEVON_TRIAL_DAYS}.
-            </p>
-          ) : null}
-        </div>
-      ) : null}
-
-      {!showExpiredWall && ss.kind === "stripe_trialing" ? (
-        <div className="rounded-xl border border-sky-200/90 bg-sky-50 px-4 py-4 text-sm text-sky-950 shadow-sm">
-          <p className="text-base font-semibold tracking-tight">Période d’essai (offre payante)</p>
-          <p className="mt-2 leading-relaxed">
-            {billing.daysLeft <= 1 ? (
-              <>Votre essai inclus se termine très bientôt — vérifiez la prochaine facturation.</>
-            ) : (
-              <>
-                Il vous reste environ <strong>{billing.daysLeft}</strong> jour
-                {billing.daysLeft > 1 ? "s" : ""} avant la première facturation.
-              </>
-            )}
+            Pour utiliser Waevon, vous devez choisir une offre et activer votre abonnement.
           </p>
         </div>
       ) : null}
@@ -272,197 +185,111 @@ export default function FacturationClient() {
         </div>
       ) : null}
 
-      {/* A — Mon abonnement */}
+      {/* État principal */}
       <section className="rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-neutral-950">Mon abonnement</h2>
-        <div className="mt-4 space-y-4 text-sm text-neutral-700">
-          <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${badgeClass}`}>
-            {billing.label}
-          </span>
-
-          {billing.isExpired || showExpiredWall ? (
-            <div className="space-y-3">
-              <p className="font-medium text-neutral-950">
-                Votre essai gratuit est terminé. Pour continuer à utiliser Waevon, choisissez un
-                abonnement.
-              </p>
-              <button
-                type="button"
-                disabled={loadingPlan !== null}
-                onClick={() => {
-                  document.getElementById("waevon-pricing")?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60"
-              >
-                S’abonner maintenant
-              </button>
+        {!activePaying ? (
+          <>
+            <h2 className="text-lg font-semibold text-neutral-950">Activez votre abonnement</h2>
+            <p className="mt-2 text-sm text-neutral-600">{billing.billingMessage}</p>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${badgeClass}`}>
+                {billing.label}
+              </span>
             </div>
-          ) : null}
+            <button
+              type="button"
+              disabled={loadingPlan !== null}
+              onClick={() => document.getElementById("waevon-pricing")?.scrollIntoView({ behavior: "smooth" })}
+              className="mt-6 rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60"
+            >
+              Voir les offres
+            </button>
+          </>
+        ) : (
+          <>
+            <h2 className="text-lg font-semibold text-neutral-950">Mon abonnement</h2>
+            <div className="mt-4 space-y-4 text-sm text-neutral-700">
+              <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${badgeClass}`}>
+                {billing.label}
+              </span>
 
-          {billing.isTrial && billing.accessSource === "waevon" && !showExpiredWall ? (
-            <div className="space-y-3">
-              <p>
-                Votre essai se termine le{" "}
-                <strong>{formatDateFr(billing.effectiveTrialEndsAt ?? billing.trialEndsAt)}</strong>
-                {billing.daysLeft > 0 ? (
-                  <>
-                    {" "}
-                    — <strong>{trialDaysRemainingPhrase(billing.daysLeft).toLowerCase()}</strong>.
-                  </>
-                ) : (
-                  <> — <strong>dernier jour d’essai</strong>.</>
-                )}
-              </p>
-              <p className="text-neutral-600">
-                Passez à une formule payante pour continuer à utiliser Waevon sans interruption.
-              </p>
-              <button
-                type="button"
-                disabled={loadingPlan !== null}
-                onClick={() => {
-                  document.getElementById("waevon-pricing")?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60"
-              >
-                Choisir un abonnement
-              </button>
-            </div>
-          ) : null}
-
-          {billing.isActive && !billing.isTrial ? (
-            <div className="space-y-3">
-              <p>
-                Formule : <strong>{planSummaryName(billing)}</strong>
-                {billing.plan === "starter" || billing.plan === "pro" ? (
-                  <>
-                    {" "}
-                    ({PLAN_MONTHLY_PRICE_CHF[billing.plan]} CHF / mois)
-                  </>
-                ) : null}
-              </p>
-              {billing.currentPeriodEnd ? (
-                <p>
-                  Prochain renouvellement prévu le <strong>{formatDateFr(billing.currentPeriodEnd)}</strong>.
-                </p>
-              ) : (
-                <p className="text-neutral-600">Date de renouvellement : en attente de synchronisation.</p>
-              )}
-              {sub.cancelAtPeriodEnd && billing.currentPeriodEnd ? (
-                <p className="rounded-lg bg-amber-50 px-3 py-2 text-amber-950">
-                  Votre abonnement est configuré pour se terminer le{" "}
-                  <strong>{formatDateFr(billing.currentPeriodEnd)}</strong>. Vous pouvez annuler cette
-                  résiliation depuis le portail Stripe.
-                </p>
+              {billing.publicStatus === "active" ? (
+                <div className="space-y-3">
+                  <p>
+                    Formule : <strong>{planLabel(billing.plan)}</strong>
+                    {billing.plan === "starter" || billing.plan === "pro" ? (
+                      <>
+                        {" "}
+                        ({PLAN_MONTHLY_PRICE_CHF[billing.plan]} CHF / mois)
+                      </>
+                    ) : null}
+                  </p>
+                  {billing.currentPeriodEnd ? (
+                    <p>
+                      Prochain renouvellement prévu le{" "}
+                      <strong>{formatDateFr(billing.currentPeriodEnd)}</strong>.
+                    </p>
+                  ) : (
+                    <p className="text-neutral-600">Prochaine échéance : synchronisation en cours.</p>
+                  )}
+                  {sub.cancelAtPeriodEnd && billing.currentPeriodEnd ? (
+                    <p className="rounded-lg bg-amber-50 px-3 py-2 text-amber-950">
+                      Votre abonnement est configuré pour se terminer le{" "}
+                      <strong>{formatDateFr(billing.currentPeriodEnd)}</strong>. Vous pouvez annuler cette
+                      résiliation depuis le portail Stripe.
+                    </p>
+                  ) : null}
+                  {showPortal ? (
+                    <button
+                      type="button"
+                      onClick={() => void openPortal()}
+                      disabled={portalLoading}
+                      className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-950 shadow-sm hover:bg-neutral-50 disabled:opacity-60"
+                    >
+                      {portalLoading ? "Ouverture…" : "Gérer mon abonnement"}
+                    </button>
+                  ) : null}
+                </div>
               ) : null}
-              {showPortal ? (
-                <button
-                  type="button"
-                  onClick={() => void openPortal()}
-                  disabled={portalLoading}
-                  className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-950 shadow-sm hover:bg-neutral-50 disabled:opacity-60"
-                >
-                  {portalLoading ? "Ouverture…" : "Gérer mon abonnement"}
-                </button>
-              ) : null}
-            </div>
-          ) : null}
 
-          {billing.status === "past_due" ? (
-            <div className="space-y-3">
-              <p>
-                Votre dernier paiement n’a pas abouti. Mettez à jour votre moyen de paiement pour conserver
-                l’accès à Waevon.
-              </p>
-              {showPortal ? (
-                <button
-                  type="button"
-                  onClick={() => void openPortal()}
-                  disabled={portalLoading}
-                  className="rounded-full bg-neutral-950 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-60"
-                >
-                  {portalLoading ? "Ouverture…" : "Mettre à jour mon moyen de paiement"}
-                </button>
+              {billing.publicStatus === "past_due" ? (
+                <div className="space-y-3">
+                  <p>{billing.billingMessage}</p>
+                  {showPortal ? (
+                    <button
+                      type="button"
+                      onClick={() => void openPortal()}
+                      disabled={portalLoading}
+                      className="rounded-full bg-neutral-950 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-60"
+                    >
+                      {portalLoading ? "Ouverture…" : "Mettre à jour mon moyen de paiement"}
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {billing.publicStatus === "canceled" ? (
+                <div className="space-y-3">
+                  <p>{billing.billingMessage}</p>
+                  <button
+                    type="button"
+                    disabled={loadingPlan !== null}
+                    onClick={() =>
+                      document.getElementById("waevon-pricing")?.scrollIntoView({ behavior: "smooth" })
+                    }
+                    className="rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60"
+                  >
+                    Réactiver un abonnement
+                  </button>
+                </div>
               ) : null}
             </div>
-          ) : null}
-
-          {isStripe && billing.isTrial && sub.status === "trialing" ? (
-            <div className="space-y-2">
-              <p>
-                Plan : <strong>{planSummaryName(billing)}</strong>
-              </p>
-              {billing.trialEndsAt ? (
-                <p>
-                  Fin de l’essai inclus le <strong>{formatDateFr(billing.trialEndsAt)}</strong>.
-                </p>
-              ) : (
-                <p className="text-neutral-600">Période d’essai en cours (dates en synchronisation).</p>
-              )}
-              {showPortal ? (
-                <button
-                  type="button"
-                  onClick={() => void openPortal()}
-                  disabled={portalLoading}
-                  className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-950 shadow-sm hover:bg-neutral-50 disabled:opacity-60"
-                >
-                  {portalLoading ? "Ouverture…" : "Gérer mon abonnement"}
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-
-          {isStripe && !activePaying && !billing.isTrial && !billing.isExpired ? (
-            <div className="space-y-2">
-              <p>Aucun abonnement Stripe actif n’est détecté pour le moment.</p>
-              <button
-                type="button"
-                disabled={loadingPlan !== null}
-                onClick={() => {
-                  document.getElementById("waevon-pricing")?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60"
-              >
-                Choisir un abonnement
-              </button>
-            </div>
-          ) : null}
-
-        </div>
+          </>
+        )}
       </section>
 
-      {/* B — Résumé */}
-      <section className="rounded-2xl border border-neutral-200/90 bg-neutral-50/80 p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-neutral-950">Résumé</h2>
-        <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-          <div>
-            <dt className="text-neutral-500">Statut</dt>
-            <dd className="mt-0.5 font-medium text-neutral-950">{billing.label}</dd>
-          </div>
-          <div>
-            <dt className="text-neutral-500">Formule</dt>
-            <dd className="mt-0.5 font-medium text-neutral-950">{planSummaryName(billing)}</dd>
-          </div>
-          <div>
-            <dt className="text-neutral-500">
-              {billing.isTrial ? "Fin de l’essai" : "Prochaine échéance"}
-            </dt>
-            <dd className="mt-0.5 font-medium text-neutral-950">{renewalOrTrialEndDisplay}</dd>
-          </div>
-          <div>
-            <dt className="text-neutral-500">Jours restants (essai)</dt>
-            <dd className="mt-0.5 font-medium text-neutral-950">
-              {billing.isTrial ? trialDaysRemainingPhrase(billing.daysLeft) : "Non applicable"}
-            </dd>
-          </div>
-          <div className="sm:col-span-2">
-            <dt className="text-neutral-500">Paiement</dt>
-            <dd className="mt-0.5 font-medium text-neutral-950">{paymentLine}</dd>
-          </div>
-        </dl>
-      </section>
-
-      {/* Offres */}
-      {showPricing ? (
+      {/* Offres — visible si pas d’accès payant ou annulé */}
+      {needsPricing || billing.publicStatus === "canceled" ? (
         <section id="waevon-pricing" className="space-y-4 scroll-mt-8">
           <h2 className="text-lg font-semibold text-neutral-950">Choisir un abonnement</h2>
           <div className="grid gap-6 md:grid-cols-2">
@@ -485,7 +312,7 @@ export default function FacturationClient() {
                 onClick={() => void startCheckout("starter")}
                 className="mt-6 w-full rounded-full border-2 border-neutral-950 bg-white py-2.5 text-sm font-semibold text-neutral-950 hover:bg-neutral-950 hover:text-white disabled:opacity-60"
               >
-                {loadingPlan === "starter" ? "Redirection…" : "Choisir Starter"}
+                {loadingPlan === "starter" ? "Redirection…" : "Choisir cette offre"}
               </button>
             </div>
             <div className="rounded-2xl border border-neutral-950 bg-neutral-950 p-6 text-white shadow-lg">
@@ -505,14 +332,13 @@ export default function FacturationClient() {
                 onClick={() => void startCheckout("pro")}
                 className="mt-6 w-full rounded-full bg-white py-2.5 text-sm font-semibold text-neutral-950 hover:bg-neutral-100 disabled:opacity-60"
               >
-                {loadingPlan === "pro" ? "Redirection…" : "Choisir Pro"}
+                {loadingPlan === "pro" ? "Redirection…" : "Choisir cette offre"}
               </button>
             </div>
           </div>
         </section>
       ) : null}
 
-      {/* C — Aide */}
       <section className="rounded-2xl border border-neutral-200/80 bg-white p-6 text-sm text-neutral-700 shadow-sm">
         <h2 className="font-semibold text-neutral-950">Besoin d’aide ?</h2>
         <p className="mt-2">
@@ -520,12 +346,11 @@ export default function FacturationClient() {
           <a href={`mailto:${SUPPORT_EMAIL}`} className="font-medium text-neutral-950 underline">
             {SUPPORT_EMAIL}
           </a>
-          . Nous répondons sous 1 à 2 jours ouvrés.
+          .
         </p>
         <p className="mt-3 text-xs text-neutral-500">
-          Sans abonnement actif après la fin de l’essai, l’accès au tableau de bord (agenda, services,
-          réservations) est suspendu ; la facturation et vos paramètres de compte restent accessibles pour
-          vous réabonner. Détails des offres sur{" "}
+          Sans abonnement actif, l’accès au tableau de bord (agenda, services, réservations) est suspendu. La
+          facturation et vos paramètres de compte restent accessibles pour vous abonner. Détails sur{" "}
           <Link href="/pricing" className="font-medium text-neutral-800 underline">
             la page tarifs
           </Link>
@@ -533,7 +358,7 @@ export default function FacturationClient() {
         </p>
       </section>
 
-      {showExpiredWall || expiredParam ? (
+      {blockedParam && !activePaying ? (
         <div className="border-t border-neutral-200/90 pt-8 text-center">
           <button
             type="button"

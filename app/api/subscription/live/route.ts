@@ -58,8 +58,6 @@ export async function GET() {
         status: snapshot.status,
         accessSource: snapshot.accessSource,
         plan: snapshot.plan,
-        trialEndsAt: snapshot.trialEndsAt,
-        trialStartedAt: snapshot.trialStartedAt,
         currentPeriodEnd: snapshot.currentPeriodEnd,
         cancelAtPeriodEnd: snapshot.cancelAtPeriodEnd,
         stripeCustomerId: snapshot.stripeCustomerId,
@@ -68,11 +66,7 @@ export async function GET() {
         publicStatus: billing.publicStatus,
         status: billing.status,
         canUseApp: billing.canUseApp,
-        isTrial: billing.isTrial,
-        isActive: billing.isActive,
-        isExpired: billing.isExpired,
-        daysLeft: billing.daysLeft,
-        effectiveTrialEndsAt: billing.effectiveTrialEndsAt,
+        billingMessage: billing.billingMessage,
       },
     });
   }

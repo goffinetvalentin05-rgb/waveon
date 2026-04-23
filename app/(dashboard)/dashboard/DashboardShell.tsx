@@ -9,14 +9,13 @@ import { ToastProvider } from "@/components/wavon/Toast";
 import { WavonProvider } from "@/components/wavon/WavonProvider";
 import { spinnerClass, wavonMainBg, wavonPage } from "@/lib/wavon/tokens";
 import Sidebar from "./components/Sidebar";
-import TrialBanner from "./components/TrialBanner";
 
 export default function DashboardShell({
   children,
   billingLocked = false,
 }: {
   children: ReactNode;
-  /** Essai expiré / pas d’abonnement : pas de navigation SaaS (page facturation seule). */
+  /** Pas d’abonnement actif : navigation limitée (facturation / paramètres). */
   billingLocked?: boolean;
 }) {
   const router = useRouter();
@@ -89,7 +88,6 @@ export default function DashboardShell({
         <div className={`flex min-h-screen flex-col lg:flex-row ${wavonMainBg}`}>
           <Sidebar />
           <div className="flex min-w-0 flex-1 flex-col">
-            <TrialBanner />
             <main className="min-w-0 flex-1 pb-12 pt-2 sm:pb-16 sm:pt-4 lg:pt-8">
               <div className={wavonPage}>{children}</div>
             </main>

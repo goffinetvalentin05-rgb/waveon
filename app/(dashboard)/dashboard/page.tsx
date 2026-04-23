@@ -8,8 +8,6 @@ import { StatusBadge } from "@/components/wavon/ui/StatusBadge";
 import { activeReservations, fillRateWeekApprox, toYmd } from "@/lib/wavon/booking-logic";
 import { formatDateTime } from "@/lib/wavon/format";
 import { cardClass, kpiCardClass, linkClass, spinnerClass, userTextBreakClass } from "@/lib/wavon/tokens";
-import { WAEVON_TRIAL_DAYS } from "@/lib/stripe/config";
-
 export default function DashboardOverviewPage() {
   const { ready, state } = useWavon();
   const [showWelcome, setShowWelcome] = useState(false);
@@ -81,13 +79,12 @@ export default function DashboardOverviewPage() {
     <div className="space-y-12 pb-8">
       {showWelcome ? (
         <div className="rounded-xl border border-emerald-200/90 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
-          <span className="font-medium">Bienvenue !</span> Ton essai de {WAEVON_TRIAL_DAYS} jours sans carte
-          a commencé. Tu peux configurer Waevon tranquillement ; l&apos;abonnement payant est optionnel
+          <span className="font-medium">Bienvenue !</span> Configure ton activité, puis active ton abonnement
           depuis{" "}
           <Link href="/dashboard/facturation" className="font-semibold underline">
             Facturation
-          </Link>
-          .
+          </Link>{" "}
+          pour utiliser toutes les fonctionnalités.
           <button
             type="button"
             className="ml-3 text-xs font-medium text-emerald-800 underline"

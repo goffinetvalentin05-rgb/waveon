@@ -10,12 +10,12 @@
 
 import type { BillingPlanId } from "@/lib/stripe/config";
 
-/** Statuts Stripe courants (hors `none`, renvoyé quand il n’y a pas d’abonnement en base). */
+/** Statuts persistés / Stripe normalisés. */
 export type SubscriptionStatusDb =
-  | "trialing"
   | "active"
   | "past_due"
   | "canceled"
+  | "inactive"
   | "unpaid"
   | "incomplete";
 
@@ -28,17 +28,13 @@ export type BusinessSubscriptionAccess = {
   plan: string | null;
 };
 
-/** Inclut l’essai Waevon (`trialing` + `accessSource: waevon` côté API). Exclut `trial_expired` / `expired`. */
+/** Abonnement utilisable (paiement à jour ou en retard de paiement à régulariser). */
 export function hasActiveSubscription(business: BusinessSubscriptionAccess): boolean {
-  return (
-    business.status === "trialing" ||
-    business.status === "active" ||
-    business.status === "past_due"
-  );
+  return business.status === "active" || business.status === "past_due";
 }
 
 /**
- * @returns true si le business a un abonnement actif/essai ET le droit d'utiliser la feature.
+ * @returns true si le business a un abonnement Stripe utilisable (`active` ou `past_due`).
  * Les features non listées dans `PRO_ONLY_FEATURES` sont accessibles à tout plan actif.
  */
 export function canAccessFeature(

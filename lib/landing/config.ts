@@ -20,14 +20,14 @@ export const landingContent = {
       { label: "Tarifs", href: "#tarifs" },
     ],
     login: { label: "Connexion", href: "/login" },
-    cta: { label: "Commencer gratuitement", href: "/signup" },
+    cta: { label: "Créer un compte", href: "/signup" },
   },
 
   hero: {
     title: "Ton agenda se remplit tout seul.",
     subtitle:
       "Réservations en ligne, moins d'appels, tout est centralisé.\nTu gagnes du temps et ton activité tourne en continu.",
-    cta: { label: "Commencer gratuitement", href: "/signup" },
+    cta: { label: "Créer un compte", href: "/signup" },
   },
 
   intro: {
@@ -77,7 +77,7 @@ export const landingContent = {
 
   pricing: {
     title: "Choisis comment tu veux fonctionner.",
-    trialNote: "7 jours d'essai gratuit, sans engagement — sans carte à l'inscription.",
+    trialNote: "Abonnement mensuel — paiement sécurisé via Stripe.",
     starter: {
       name: "Starter",
       price: "20.- / mois",
@@ -100,7 +100,7 @@ export const landingContent = {
 
   finalCta: {
     title: "Passe à un système simple.",
-    cta: { label: "Essayer gratuitement", href: "/signup" },
+    cta: { label: "Créer un compte", href: "/signup" },
   },
 
   faq: {
@@ -156,9 +156,9 @@ Par exemple :
         answer: "Oui (plan Pro). Les factures peuvent être générées automatiquement selon les prestations choisies.",
       },
       {
-        question: "Est-ce que je peux tester gratuitement ?",
+        question: "Comment fonctionne l’abonnement ?",
         answer:
-          "Oui. 7 jours d'essai gratuit, sans engagement — sans carte à l'inscription. Tu explores Waevon et tu vois si ça correspond à ton activité.",
+          "Waevon est proposé en abonnement mensuel (Starter ou Pro). Après création de compte, tu actives ton abonnement depuis l’espace facturation ; le paiement est géré par Stripe.",
       },
     ],
   },
@@ -167,8 +167,8 @@ Par exemple :
     /** Conservé pour compat ; la grille du footer utilise `columns`. */
     links: [] as ReadonlyArray<{ label: string; href: string }>,
     intro: "Une réservation en ligne, pensée pour ton activité.",
-    secondaryIntro: "Crée ton compte gratuitement et mets ta page en ligne en quelques minutes.",
-    primaryCta: { label: "Commencer gratuitement", href: "/signup" },
+    secondaryIntro: "Crée ton compte et mets ta page en ligne en quelques minutes.",
+    primaryCta: { label: "Créer un compte", href: "/signup" },
     secondaryCta: { label: "Connexion", href: "/login" },
     columns: [
       {

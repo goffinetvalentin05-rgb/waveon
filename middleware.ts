@@ -27,11 +27,11 @@ async function fetchBillingState(request: NextRequest): Promise<BillingAccessSta
       cache: "no-store",
     });
     if (!res.ok) return "BLOCKED";
-    const j = (await res.json()) as { canUseApp?: boolean; kind?: string };
+    const j = (await res.json()) as { canUseApp?: boolean };
     if (typeof j.canUseApp === "boolean") {
       return j.canUseApp ? "ALLOWED" : "BLOCKED";
     }
-    return j.kind === "trial_expired" ? "BLOCKED" : "ALLOWED";
+    return "BLOCKED";
   } catch {
     return "BLOCKED";
   }
@@ -121,14 +121,14 @@ export async function middleware(request: NextRequest) {
         return NextResponse.json(
           {
             error: "subscription_required",
-            message: "Votre essai est terminé ou votre abonnement est inactif. Souscrivez depuis Facturation.",
+            message: "Abonnement requis. Souscrivez depuis Facturation pour utiliser Waevon.",
           },
           { status: 402 }
         );
       }
     } else if (isProtectedDashboard && !isDashboardExemptWhenBlocked(path)) {
       const u = new URL("/dashboard/facturation", request.url);
-      u.searchParams.set("trial_expired", "1");
+      u.searchParams.set("subscription_required", "1");
       return NextResponse.redirect(u, 302);
     }
   }

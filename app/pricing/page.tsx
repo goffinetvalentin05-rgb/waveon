@@ -5,7 +5,7 @@ import PricingPageClient from "./PricingPageClient";
 export const metadata: Metadata = {
   title: "Tarifs — Waevon",
   description:
-    "Abonnements Waevon : Starter 20 CHF/mois, Pro 35 CHF/mois. 7 jours d'essai gratuit, sans engagement.",
+    "Abonnements Waevon : Starter 20 CHF/mois, Pro 35 CHF/mois. Paiement sécurisé via Stripe.",
 };
 
 export default function PricingPage() {

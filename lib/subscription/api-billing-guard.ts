@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
-import { getBillingStatusForWorkspace } from "./workspace-billing";
+import { getWorkspaceSubscriptionStatus } from "./workspace-billing";
 
 const SUBSCRIPTION_REQUIRED = {
   error: "subscription_required",
-  message: "Votre essai est terminé ou votre abonnement est inactif. Souscrivez un abonnement pour continuer.",
+  message: "Abonnement actif requis. Souscrivez depuis Facturation pour continuer.",
 } as const;
 
 /** Route handler : commerce authentifié = celui du user ; 402 si BLOCKED. */
@@ -26,7 +26,7 @@ export async function merchantBillingGateResponse(): Promise<NextResponse | null
   if (bizErr || !biz) {
     return NextResponse.json({ error: "Commerce introuvable." }, { status: 400 });
   }
-  const { billing } = await getBillingStatusForWorkspace((biz as { id: string }).id);
+  const { billing } = await getWorkspaceSubscriptionStatus((biz as { id: string }).id);
   if (!billing.canUseApp) {
     return NextResponse.json(SUBSCRIPTION_REQUIRED, { status: 402 });
   }
@@ -39,7 +39,7 @@ export async function billingGateResponseForBusinessId(businessId: string): Prom
   if (!id) {
     return NextResponse.json({ error: "businessId requis." }, { status: 400 });
   }
-  const { billing } = await getBillingStatusForWorkspace(id);
+  const { billing } = await getWorkspaceSubscriptionStatus(id);
   if (!billing.canUseApp) {
     return NextResponse.json(SUBSCRIPTION_REQUIRED, { status: 402 });
   }

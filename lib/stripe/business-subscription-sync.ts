@@ -49,8 +49,6 @@ export async function syncStripeSubscriptionToBusinessRow(
   };
   if (customerId) patch.stripe_customer_id = customerId;
   if (plan) patch.subscription_plan = plan;
-  const trialIso = tsToIso(sub.trial_end);
-  if (trialIso) patch.trial_ends_at = trialIso;
 
   const { error } = await admin.from(WavonDbTable.businesses).update(patch).eq("id", businessId);
 
@@ -86,7 +84,6 @@ export async function resolveBusinessIdFromStripeSubscription(sub: Stripe.Subscr
 
 /**
  * Fin d’abonnement côté Stripe (`customer.subscription.deleted`).
- * L’essai Waevon est unique à l’inscription : on ne réactive pas un essai après une période payante.
  */
 export async function applyStripeSubscriptionDeleted(businessId: string): Promise<void> {
   const admin = createAdminSupabaseClient();
@@ -94,8 +91,8 @@ export async function applyStripeSubscriptionDeleted(businessId: string): Promis
     .from(WavonDbTable.businesses)
     .update({
       stripe_subscription_id: null,
-      subscription_status: "expired",
-      subscription_plan: "trial",
+      subscription_status: "inactive",
+      subscription_plan: null,
       cancel_at_period_end: false,
     })
     .eq("id", businessId);

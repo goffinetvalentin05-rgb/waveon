@@ -1,4 +1,4 @@
-/** Page publique : commerce sans abonnement / essai expiré — aucune donnée métier affichée. */
+/** Page publique : commerce sans abonnement actif — réservations désactivées. */
 export default function ProfessionalUnavailable() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-neutral-50 px-6 py-16 text-center">

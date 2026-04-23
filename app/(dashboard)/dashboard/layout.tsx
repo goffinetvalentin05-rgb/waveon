@@ -3,7 +3,7 @@ import { cookies, headers } from "next/headers";
 import { createServerClient } from "@supabase/auth-helpers-nextjs";
 import { redirect } from "next/navigation";
 import DashboardShell from "./DashboardShell";
-import { getBillingStatusForWorkspace } from "@/lib/subscription/workspace-billing";
+import { getWorkspaceSubscriptionStatus } from "@/lib/subscription/workspace-billing";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
@@ -53,11 +53,11 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
     if (businessId) {
       try {
-        const { billing } = await getBillingStatusForWorkspace(businessId);
+        const { billing } = await getWorkspaceSubscriptionStatus(businessId);
         billingLocked = !billing.canUseApp;
 
         if (billingLocked && !isExemptWhenBlocked) {
-          redirect("/dashboard/facturation?trial_expired=1");
+          redirect("/dashboard/facturation?subscription_required=1");
         }
       } catch {
         // En cas d’erreur transitoire (Stripe/Supabase), on ne bloque pas agressivement.

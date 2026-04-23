@@ -26,7 +26,6 @@ import {
   type WeeklyDaySchedule,
   type WavonState,
 } from "@/lib/wavon/types";
-import { WAEVON_TRIAL_DAYS } from "@/lib/stripe/config";
 import { parseSubscriptionFromLiveResponse } from "@/lib/subscription/parse-live-subscription";
 import { supabase } from "@/lib/supabase/client";
 import { normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
@@ -401,9 +400,6 @@ export function WavonProvider({
             .insert({
               user_id: userId,
               public_slug: provisionalSlug,
-              trial_ends_at: new Date(
-                Date.now() + WAEVON_TRIAL_DAYS * 86_400_000
-              ).toISOString(),
             })
             .select(
               "id,user_id,business_name,business_type,email,public_slug,website,phone,address,city,postal_code,public_description,public_welcome_message,public_display_name,public_logo_url,public_logo_path,public_cover_url,public_cover_path,public_show_phone,public_show_address,public_show_description,currency,notify_owner_on_new_reservation,notify_owner_on_cancellation,stripe_customer_id,stripe_subscription_id"

@@ -7,17 +7,36 @@ export type WorkspaceBillingResult = {
   workspaceId: string;
   snapshot: SubscriptionSnapshot;
   billing: BillingStatus;
+  /** Alias métier */
+  hasAccess: boolean;
+  status: BillingStatus["publicStatus"];
+  planName: BillingStatus["plan"];
+  currentPeriodEnd: string | null;
+  billingMessage: string;
+  canManageBilling: boolean;
 };
 
 /**
- * Source de vérité unique (serveur) pour calculer un statut métier de facturation.
- * - Lit d’abord la base (via `getBusinessSubscriptionStatus`), interroge Stripe si nécessaire
- * - Calcule un statut Waevon stable (trialing/active/expired/canceled/past_due)
+ * Point d’entrée serveur unique : statut d’abonnement Stripe + accès produit.
  */
-export async function getBillingStatusForWorkspace(workspaceId: string): Promise<WorkspaceBillingResult> {
+export async function getWorkspaceSubscriptionStatus(workspaceId: string): Promise<WorkspaceBillingResult> {
   const id = workspaceId.trim();
   const snapshot = await getBusinessSubscriptionStatus(id);
   const billing = getBillingStatus(snapshot);
-  return { workspaceId: id, snapshot, billing };
+  return {
+    workspaceId: id,
+    snapshot,
+    billing,
+    hasAccess: billing.canUseApp,
+    status: billing.publicStatus,
+    planName: billing.plan,
+    currentPeriodEnd: billing.currentPeriodEnd,
+    billingMessage: billing.billingMessage,
+    canManageBilling: billing.canManageBilling,
+  };
 }
 
+/** @deprecated Utiliser `getWorkspaceSubscriptionStatus`. */
+export async function getBillingStatusForWorkspace(workspaceId: string): Promise<WorkspaceBillingResult> {
+  return getWorkspaceSubscriptionStatus(workspaceId);
+}

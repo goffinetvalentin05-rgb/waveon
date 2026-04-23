@@ -5,12 +5,6 @@
 
 export type BillingPlanId = "starter" | "pro";
 
-/** Durée de l’essai gratuit Waevon (sans carte, géré en base : `trial_ends_at`). Pas de période d’essai Stripe Checkout. */
-export const WAEVON_TRIAL_DAYS = 7;
-
-/** Libellé affiché pour l’essai Waevon (sans plan payant). */
-export const TRIAL_PLAN_LABEL = "Essai gratuit";
-
 export const PLAN_LABELS: Record<BillingPlanId, string> = {
   starter: "Starter",
   pro: "Pro",

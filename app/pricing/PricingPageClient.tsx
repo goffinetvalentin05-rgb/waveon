@@ -8,7 +8,7 @@ import { BrandLogoLink } from "@/components/landing/BrandLogoLink";
 import { landingContent } from "@/lib/landing/config";
 import { parseSubscriptionPlan } from "@/lib/subscription/access";
 import type { BillingPlanId } from "@/lib/stripe/config";
-import { PLAN_LABELS, PLAN_MONTHLY_PRICE_CHF, WAEVON_TRIAL_DAYS } from "@/lib/stripe/config";
+import { PLAN_LABELS, PLAN_MONTHLY_PRICE_CHF } from "@/lib/stripe/config";
 import { supabase } from "@/lib/supabase/client";
 const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() ?? "";
 
@@ -57,7 +57,7 @@ export default function PricingPageClient() {
         setBizSub({
           status: typeof body.status === "string" ? body.status : "none",
           plan: typeof body.plan === "string" || body.plan === null ? (body.plan as string | null) : null,
-          accessSource: src === "stripe" || src === "waevon" || src === "none" ? src : "none",
+          accessSource: src === "stripe" || src === "none" ? src : "none",
         });
       } else {
         setBizSub({ status: "none", plan: null, accessSource: "none" });
@@ -114,8 +114,8 @@ export default function PricingPageClient() {
   const currentPlan = parseSubscriptionPlan(bizSub?.plan ?? null);
   const stripeSubscribed = Boolean(
     bizSub &&
-      (bizSub.status === "active" ||
-        (bizSub.status === "trialing" && bizSub.accessSource === "stripe"))
+      bizSub.accessSource === "stripe" &&
+      (bizSub.status === "active" || bizSub.status === "past_due")
   );
 
   const starterBullets = [
@@ -171,9 +171,9 @@ export default function PricingPageClient() {
           Choisis ton abonnement Waevon
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-center text-neutral-600">
-          L&apos;inscription ouvre <strong>{WAEVON_TRIAL_DAYS} jours d&apos;essai gratuit, sans engagement</strong>{" "}
-          (sans carte) sur tout Waevon. Les abonnements payants sont souscrits depuis l&apos;espace facturation
-          (paiement dès souscription, sans essai Stripe).
+          Waevon fonctionne par <strong>abonnement mensuel</strong> (paiement sécurisé via Stripe). Après
+          inscription, souscris une offre depuis ton espace facturation pour activer l&apos;agenda et les
+          réservations en ligne.
         </p>
 
         {canceled ? (
@@ -217,8 +217,7 @@ export default function PricingPageClient() {
         )}
 
         <p className="mt-12 text-center text-sm text-neutral-500">
-          {WAEVON_TRIAL_DAYS} jours d&apos;essai gratuit, sans engagement — sans carte à l&apos;inscription.
-          Abonnements résiliables depuis la facturation.
+          Abonnement sans engagement de durée : résiliation depuis la facturation ou le portail Stripe.
         </p>
       </main>
     </div>
@@ -257,7 +256,7 @@ function PlanCard({
 
   let ctaLabel: string;
   if (!userLoggedIn) {
-    ctaLabel = `Créer un compte — ${WAEVON_TRIAL_DAYS} j. sans carte`;
+    ctaLabel = "Créer un compte";
   } else if (isCurrent) {
     ctaLabel = "Plan actuel";
   } else if (isOtherSubscribed) {
