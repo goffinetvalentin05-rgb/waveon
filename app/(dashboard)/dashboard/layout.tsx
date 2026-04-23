@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/auth-helpers-nextjs";
 import { redirect } from "next/navigation";
 import DashboardShell from "./DashboardShell";
 import { getBusinessSubscriptionStatus } from "@/lib/stripe/subscription";
-import { billingAccessStateFromSnapshot, isBillingBlockedState } from "@/lib/subscription/billing-access";
+import { getSubscriptionState } from "@/lib/subscription/state";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
@@ -52,14 +52,14 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     if (businessId) {
       try {
         const live = await getBusinessSubscriptionStatus(businessId);
-        const accessState = billingAccessStateFromSnapshot(live);
-        billingLocked = isBillingBlockedState(accessState);
+        billingLocked = getSubscriptionState(live).kind === "trial_expired";
 
         if (billingLocked && !isFacturation) {
-          redirect("/dashboard/facturation?expired=true");
+          redirect("/dashboard/facturation?trial_expired=1");
         }
       } catch {
-        redirect("/dashboard/facturation?expired=true");
+        // En cas d’erreur transitoire (Stripe/Supabase), on ne bloque pas agressivement.
+        billingLocked = false;
       }
     }
   }

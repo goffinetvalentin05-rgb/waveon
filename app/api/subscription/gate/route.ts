@@ -3,7 +3,7 @@ import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { getBusinessSubscriptionStatus } from "@/lib/stripe/subscription";
-import { billingAccessStateFromSnapshot } from "@/lib/subscription/billing-access";
+import { getSubscriptionState } from "@/lib/subscription/state";
 
 export const runtime = "nodejs";
 
@@ -26,11 +26,11 @@ export async function GET(req: NextRequest) {
       .eq("public_slug", slug)
       .maybeSingle();
     if (!biz) {
-      return NextResponse.json({ state: "BLOCKED", blocked: true });
+      return NextResponse.json({ kind: "trial_expired" });
     }
     const snapshot = await getBusinessSubscriptionStatus((biz as { id: string }).id);
-    const state = billingAccessStateFromSnapshot(snapshot);
-    return NextResponse.json({ state, blocked: state === "BLOCKED" });
+    const state = getSubscriptionState(snapshot);
+    return NextResponse.json(state);
   }
 
   const supabase = await createRouteHandlerSupabase();
@@ -48,9 +48,9 @@ export async function GET(req: NextRequest) {
     .eq("user_id", user.id)
     .maybeSingle();
   if (!biz) {
-    return NextResponse.json({ state: "BLOCKED", blocked: true });
+    return NextResponse.json({ kind: "trial_expired" });
   }
   const snapshot = await getBusinessSubscriptionStatus((biz as { id: string }).id);
-  const state = billingAccessStateFromSnapshot(snapshot);
-  return NextResponse.json({ state, blocked: state === "BLOCKED" });
+  const state = getSubscriptionState(snapshot);
+  return NextResponse.json(state);
 }

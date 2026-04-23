@@ -14,7 +14,7 @@ import {
   type BillingPlanId,
 } from "@/lib/stripe/config";
 import { hasActiveSubscription } from "@/lib/subscription/access";
-import { billingAccessStateFromSnapshot, isBillingBlockedState } from "@/lib/subscription/billing-access";
+import { getSubscriptionState } from "@/lib/subscription/state";
 import { supabase } from "@/lib/supabase/client";
 import { wavonPage } from "@/lib/wavon/tokens";
 
@@ -56,11 +56,12 @@ export default function FacturationClient() {
   const sub = state.subscription;
   const access = { status: sub.status, plan: sub.plan };
   const active = hasActiveSubscription(access);
-  const isWaevonTrial = sub.accessSource === "waevon" && sub.status === "trialing";
-  const isTrialExpired = sub.status === "trial_expired";
+  const ss = getSubscriptionState(sub);
+  const isWaevonTrial = ss.kind === "trialing";
+  const isTrialExpired = ss.kind === "trial_expired";
   const isStripe = sub.accessSource === "stripe";
-  const hardLocked = isBillingBlockedState(billingAccessStateFromSnapshot(sub));
-  const showExpiredWall = hardLocked || trialExpiredParam;
+  const hardLocked = ss.kind === "trial_expired";
+  const showExpiredWall = hardLocked || trialExpiredParam || expiredParam;
   const showSubscriptionChoice =
     isWaevonTrial || isTrialExpired || hardLocked || trialExpiredParam || expiredParam;
   const planLabel = sub.plan ? PLAN_LABELS[sub.plan] : null;
@@ -171,6 +172,31 @@ export default function FacturationClient() {
           <p className="mt-2 leading-relaxed text-red-900/95">
             Choisis un abonnement pour réactiver Waevon et retrouver tous tes rendez-vous, clients et
             réglages. Rien n&apos;est perdu, ton compte est sauvegardé.
+          </p>
+        </div>
+      ) : null}
+
+      {ss.kind === "trialing" && !showExpiredWall ? (
+        <div className="rounded-xl border border-emerald-200/90 bg-emerald-50 px-4 py-4 text-sm text-emerald-950 shadow-sm">
+          <p className="text-base font-semibold tracking-tight">Essai gratuit en cours</p>
+          <p className="mt-2 leading-relaxed text-emerald-950/95">
+            Jour <strong>{ss.currentDay}</strong> sur <strong>{WAEVON_TRIAL_DAYS}</strong> —{" "}
+            {ss.daysLeft <= 0 ? (
+              <>
+                il te reste <strong>moins d’un jour</strong>.
+              </>
+            ) : ss.daysLeft === 1 ? (
+              <>
+                il te reste <strong>1 jour</strong>.
+              </>
+            ) : (
+              <>
+                il te reste <strong>{ss.daysLeft} jours</strong>.
+              </>
+            )}
+          </p>
+          <p className="mt-2 text-emerald-950/80">
+            Tu as accès complet à Waevon pendant l’essai. Tu peux souscrire quand tu veux pour continuer après.
           </p>
         </div>
       ) : null}

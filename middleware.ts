@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/auth-helpers-nextjs";
 import { type NextRequest, NextResponse } from "next/server";
 
-type BillingAccessState = "TRIAL_ACTIVE" | "SUBSCRIBED" | "BLOCKED";
+type BillingAccessState = "ALLOWED" | "BLOCKED";
 
 function isBillingApiExempt(pathname: string): boolean {
   if (pathname.startsWith("/api/stripe/")) return true;
@@ -25,8 +25,8 @@ async function fetchBillingState(request: NextRequest): Promise<BillingAccessSta
       cache: "no-store",
     });
     if (!res.ok) return "BLOCKED";
-    const j = (await res.json()) as { state?: BillingAccessState };
-    return j.state ?? "BLOCKED";
+    const j = (await res.json()) as { kind?: string };
+    return j.kind === "trial_expired" ? "BLOCKED" : "ALLOWED";
   } catch {
     return "BLOCKED";
   }
@@ -123,7 +123,7 @@ export async function middleware(request: NextRequest) {
       }
     } else if (isProtectedDashboard && !isDashboardExemptWhenBlocked(path)) {
       const u = new URL("/dashboard/facturation", request.url);
-      u.searchParams.set("expired", "true");
+      u.searchParams.set("trial_expired", "1");
       return NextResponse.redirect(u, 302);
     }
   }

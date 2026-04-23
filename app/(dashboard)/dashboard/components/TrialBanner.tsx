@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { differenceInCalendarDays, parseISO } from "date-fns";
 import { usePathname } from "next/navigation";
 import { useWavon } from "@/components/wavon/WavonProvider";
+import { getSubscriptionState } from "@/lib/subscription/state";
 
 /**
- * Bandeau J-3 → fin d’essai Waevon (sans carte), hors pages facturation.
+ * Bandeau persistent pendant l’essai Waevon (hors facturation).
  */
 export default function TrialBanner() {
   const pathname = usePathname();
@@ -16,40 +16,17 @@ export default function TrialBanner() {
     return null;
   }
 
-  const sub = state.subscription;
-  if (sub.accessSource !== "waevon" || sub.status !== "trialing" || !sub.trialEndsAt) {
-    return null;
-  }
+  const s = getSubscriptionState(state.subscription);
+  if (s.kind !== "trialing") return null;
 
-  let daysLeft = 0;
-  try {
-    daysLeft = differenceInCalendarDays(parseISO(sub.trialEndsAt), new Date());
-  } catch {
-    return null;
-  }
-
-  if (daysLeft < 0 || daysLeft > 3) {
-    return null;
-  }
-
-  const label =
-    daysLeft <= 0
-      ? "Ton essai se termine aujourd’hui."
-      : daysLeft === 1
-        ? "Il te reste 1 jour d’essai."
-        : `Il te reste ${daysLeft} jours d’essai.`;
-
-  const isLastDay = daysLeft <= 0;
+  const left =
+    s.daysLeft <= 0 ? "moins d’un jour" : s.daysLeft === 1 ? "1 jour" : `${s.daysLeft} jours`;
 
   return (
     <div
-      className={
-        isLastDay
-          ? "border-b border-orange-300/90 bg-orange-50 px-4 py-3 text-center text-sm font-medium text-orange-950"
-          : "border-b border-amber-200/90 bg-amber-50 px-4 py-2.5 text-center text-sm text-amber-950"
-      }
+      className="border-b border-emerald-200/90 bg-emerald-50 px-4 py-2.5 text-center text-sm text-emerald-950"
     >
-      {label}{" "}
+      Essai gratuit en cours — Jour {s.currentDay} sur 7 (il te reste {left}).{" "}
       <Link href="/dashboard/facturation" className="font-semibold underline underline-offset-2">
         Découvre les abonnements
       </Link>
