@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/wavon/ui/PageHeader";
 import { StatusBadge } from "@/components/wavon/ui/StatusBadge";
 import { activeReservations, fillRateWeekApprox, toYmd } from "@/lib/wavon/booking-logic";
 import { formatDateTime } from "@/lib/wavon/format";
+import { canUsePremiumFeatures } from "@/lib/wavon/premium-access";
 import { cardClass, kpiCardClass, linkClass, spinnerClass, userTextBreakClass } from "@/lib/wavon/tokens";
 export default function DashboardOverviewPage() {
   const { ready, state } = useWavon();
@@ -77,7 +78,7 @@ export default function DashboardOverviewPage() {
 
   return (
     <div className="space-y-12 pb-8">
-      {showWelcome ? (
+      {showWelcome && !canUsePremiumFeatures(state.workspaceAccess) ? (
         <div className="rounded-xl border border-emerald-200/90 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
           <span className="font-medium">Bienvenue !</span> Configure ton activité, puis active ton abonnement
           depuis{" "}

@@ -72,6 +72,7 @@ export default function FacturationClient() {
     billing?.publicStatus === "active" || billing?.publicStatus === "past_due";
   const isStripe = sub.accessSource === "stripe";
   const showPortal =
+    Boolean(billing?.canManageBilling) &&
     isStripe &&
     sub.status !== "sync_error" &&
     (sub.status === "active" || sub.status === "past_due" || sub.status === "canceled");

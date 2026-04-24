@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { canAccessFeature } from "@/lib/subscription/access";
+import { isAdminEmail } from "@/lib/auth/admin-emails";
 
 export const runtime = "nodejs";
 
@@ -13,6 +14,18 @@ async function requireProInvoicesAccess() {
   } = await supabase.auth.getUser();
   if (authErr || !user) {
     return { ok: false as const, res: NextResponse.json({ error: "Non authentifié." }, { status: 401 }) };
+  }
+
+  if (isAdminEmail(user.email)) {
+    const { data: business } = await supabase
+      .from(WavonDbTable.businesses)
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!business?.id) {
+      return { ok: false as const, res: NextResponse.json({ error: "Commerce introuvable." }, { status: 404 }) };
+    }
+    return { ok: true as const, supabase, businessId: business.id as string };
   }
 
   const { data: business } = await supabase

@@ -4,6 +4,8 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { getBillingStatusFromAccess } from "@/lib/subscription/billing-status";
 import { getWorkspaceSubscriptionAccess } from "@/lib/subscription/workspace-access";
+import { isAdminEmail } from "@/lib/auth/admin-emails";
+import { buildAdminWorkspaceAccessState } from "@/lib/subscription/admin-access";
 export const runtime = "nodejs";
 
 const BLOCKED_PAYLOAD = {
@@ -27,13 +29,42 @@ export async function GET(req: NextRequest) {
     const admin = createAdminSupabaseClient();
     const { data: biz } = await admin
       .from(WavonDbTable.businesses)
-      .select("id")
+      .select("id,user_id")
       .eq("public_slug", slug)
       .maybeSingle();
     if (!biz) {
       return NextResponse.json(BLOCKED_PAYLOAD);
     }
-    const access = await getWorkspaceSubscriptionAccess((biz as { id: string }).id);
+    const businessId = (biz as { id: string }).id;
+    const ownerUserId = (biz as { user_id?: string | null }).user_id ?? null;
+    if (ownerUserId) {
+      try {
+        const { data } = await admin.auth.admin.getUserById(ownerUserId);
+        const email = data?.user?.email ?? null;
+        if (isAdminEmail(email)) {
+          const adminAccess = buildAdminWorkspaceAccessState(businessId);
+          const billing = getBillingStatusFromAccess(adminAccess);
+          return NextResponse.json({
+            canUseApp: true,
+            canUsePremiumFeatures: true,
+            billing,
+            workspaceAccess: {
+              workspaceId: adminAccess.workspaceId,
+              hasActiveSubscription: true,
+              canUsePremiumFeatures: true,
+              subscriptionStatus: adminAccess.subscriptionStatus,
+              planName: adminAccess.planName,
+              stripeCustomerId: null,
+              currentPeriodEnd: null,
+            },
+          });
+        }
+      } catch {
+        // ignore: fallback Stripe/DB gating
+      }
+    }
+
+    const access = await getWorkspaceSubscriptionAccess(businessId);
     const billing = getBillingStatusFromAccess(access);
     const canBook = access.hasActiveSubscription;
     return NextResponse.json({
@@ -59,6 +90,32 @@ export async function GET(req: NextRequest) {
   } = await supabase.auth.getUser();
   if (authErr || !user) {
     return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
+  }
+
+  if (isAdminEmail(user.email)) {
+    const { data: biz } = await supabase
+      .from(WavonDbTable.businesses)
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const businessId = (biz as { id: string } | null)?.id ?? "";
+    const adminAccess = buildAdminWorkspaceAccessState(businessId);
+    const billing = getBillingStatusFromAccess(adminAccess);
+    return NextResponse.json({
+      canUseApp: true,
+      canUsePremiumFeatures: true,
+      billing,
+      workspaceAccess: {
+        workspaceId: adminAccess.workspaceId,
+        hasActiveSubscription: true,
+        canUsePremiumFeatures: true,
+        subscriptionStatus: adminAccess.subscriptionStatus,
+        planName: adminAccess.planName,
+        stripeCustomerId: null,
+        currentPeriodEnd: null,
+      },
+      state: { kind: "active" as const },
+    });
   }
 
   const { data: biz } = await supabase

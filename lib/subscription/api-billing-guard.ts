@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { getWorkspaceSubscriptionStatus } from "./workspace-billing";
+import { isAdminEmail } from "@/lib/auth/admin-emails";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
 const SUBSCRIPTION_REQUIRED = {
   error: "subscription_required",
@@ -17,6 +19,9 @@ export async function merchantBillingGateResponse(): Promise<NextResponse | null
   } = await supabase.auth.getUser();
   if (authErr || !user) {
     return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
+  }
+  if (isAdminEmail(user.email)) {
+    return null;
   }
   const { data: biz, error: bizErr } = await supabase
     .from(WavonDbTable.businesses)
@@ -39,6 +44,26 @@ export async function billingGateResponseForBusinessId(businessId: string): Prom
   if (!id) {
     return NextResponse.json({ error: "businessId requis." }, { status: 400 });
   }
+
+  try {
+    const admin = createAdminSupabaseClient();
+    const { data: biz } = await admin
+      .from(WavonDbTable.businesses)
+      .select("user_id")
+      .eq("id", id)
+      .maybeSingle();
+    const ownerUserId = (biz as { user_id?: string | null } | null)?.user_id ?? null;
+    if (ownerUserId) {
+      const { data } = await admin.auth.admin.getUserById(ownerUserId);
+      const email = data?.user?.email ?? null;
+      if (isAdminEmail(email)) {
+        return null;
+      }
+    }
+  } catch {
+    // ignore: fallback Stripe/DB gating
+  }
+
   const { access } = await getWorkspaceSubscriptionStatus(id);
   if (!access.hasActiveSubscription) {
     return NextResponse.json(SUBSCRIPTION_REQUIRED, { status: 402 });

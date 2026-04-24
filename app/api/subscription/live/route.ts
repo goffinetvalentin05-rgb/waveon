@@ -8,6 +8,8 @@ import {
   workspaceAccessSummaryFromSnapshot,
 } from "@/lib/subscription/workspace-access";
 import { SYNC_ERROR_SUBSCRIPTION_SNAPSHOT } from "@/lib/wavon/types";
+import { isAdminEmail } from "@/lib/auth/admin-emails";
+import { buildAdminWorkspaceAccessState } from "@/lib/subscription/admin-access";
 
 export const runtime = "nodejs";
 
@@ -26,6 +28,26 @@ export async function GET() {
   } = await supabase.auth.getUser();
   if (authErr || !user) {
     return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
+  }
+
+  if (isAdminEmail(user.email)) {
+    const { data: biz } = await supabase
+      .from(WavonDbTable.businesses)
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const businessId = (biz as { id: string } | null)?.id ?? "";
+    const adminAccess = buildAdminWorkspaceAccessState(businessId);
+    const snapshot = adminAccess.snapshot;
+    const billing = getBillingStatusFromAccess(adminAccess);
+    return NextResponse.json({
+      ...snapshot,
+      billing,
+      workspaceAccess: {
+        hasActiveSubscription: true,
+        canUsePremiumFeatures: true,
+      },
+    });
   }
 
   const { data: biz, error: bizErr } = await supabase
