@@ -10,7 +10,10 @@ export function billingAccessStateFromSnapshot(s: SubscriptionSnapshot): Billing
   if (s.status === "sync_error") {
     return "BLOCKED";
   }
-  if (s.accessSource === "stripe" && (s.status === "active" || s.status === "past_due" || s.status === "trialing")) {
+  if (
+    (s.accessSource === "stripe" || s.accessSource === "admin") &&
+    (s.status === "active" || s.status === "past_due" || s.status === "trialing")
+  ) {
     return "SUBSCRIBED";
   }
   return "BLOCKED";

@@ -22,7 +22,7 @@ export type BillingStatus = {
   plan: BillingPlanDisplay;
   currentPeriodEnd: string | null;
   canManageBilling: boolean;
-  accessSource: "stripe" | "none";
+  accessSource: "stripe" | "admin" | "none";
   cancelAtPeriodEnd: boolean;
   stripeCustomerId: string | null;
 };
