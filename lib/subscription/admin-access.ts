@@ -15,9 +15,7 @@ export function buildAdminWorkspaceAccessState(workspaceId: string): WorkspaceAc
       plan: "pro",
       currentPeriodEnd: null,
       cancelAtPeriodEnd: false,
-      // On force "stripe" pour que les parsers client basés sur snapshot
-      // (fallback si /api/subscription/live échoue) considèrent l’accès actif.
-      accessSource: "stripe",
+      accessSource: "admin",
       stripeCustomerId: null,
     },
     stripeCustomerId: null,

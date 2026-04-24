@@ -22,7 +22,8 @@ export function parseSubscriptionFromLiveResponse(body: unknown): SubscriptionSn
   }
 
   const src = b.accessSource;
-  const accessSource: SubscriptionAccessSource = src === "stripe" || src === "none" ? src : "none";
+  const accessSource: SubscriptionAccessSource =
+    src === "stripe" || src === "admin" || src === "none" ? src : "none";
 
   return {
     status: b.status,

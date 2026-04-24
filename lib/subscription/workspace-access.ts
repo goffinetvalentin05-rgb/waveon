@@ -11,7 +11,7 @@ function billingDebugEnabled(): boolean {
 /** Abonnement Stripe « utilisable » : snapshot Stripe fiable uniquement. */
 export function snapshotIndicatesActiveSubscription(snapshot: SubscriptionSnapshot): boolean {
   if (snapshot.status === "sync_error") return false;
-  if (snapshot.accessSource !== "stripe") return false;
+  if (snapshot.accessSource !== "stripe" && snapshot.accessSource !== "admin") return false;
   return (
     snapshot.status === "active" ||
     snapshot.status === "past_due" ||
@@ -90,7 +90,7 @@ export function buildWorkspaceAccessState(
     snapshot,
     hasActiveSubscription,
     canUsePremiumFeatures: summary.canUsePremiumFeatures,
-    canManageBilling: Boolean(snapshot.stripeCustomerId?.trim()),
+    canManageBilling: snapshot.accessSource === "stripe" && Boolean(snapshot.stripeCustomerId?.trim()),
     currentPeriodEnd: snapshot.currentPeriodEnd ?? null,
     subscriptionStatus: snapshot.status,
     planName: snapshot.plan ?? null,

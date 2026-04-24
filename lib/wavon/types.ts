@@ -191,8 +191,8 @@ export type EmailSetting = {
   customLinks: EmailCustomLinks;
 };
 
-/** Abonnement Stripe enregistré (`stripe`) ou aucun abonnement (`none`). */
-export type SubscriptionAccessSource = "stripe" | "none";
+/** Abonnement Stripe enregistré (`stripe`), accès admin interne (`admin`) ou aucun abonnement (`none`). */
+export type SubscriptionAccessSource = "stripe" | "admin" | "none";
 
 export type SubscriptionSnapshot = {
   status: string;

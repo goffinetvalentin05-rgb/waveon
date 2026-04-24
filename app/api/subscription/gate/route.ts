@@ -92,7 +92,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
   }
 
-  if (isAdminEmail(user.email)) {
+  const adminMatch = isAdminEmail(user.email);
+  if (process.env.NODE_ENV !== "production") {
+    console.log("[admin-access] /api/subscription/gate", {
+      userEmail: (user.email ?? "").toLowerCase(),
+      adminEmails: (process.env.ADMIN_EMAILS ?? "").toLowerCase(),
+      isAdmin: adminMatch,
+      plan: adminMatch ? "pro" : null,
+    });
+  }
+
+  if (adminMatch) {
     const { data: biz } = await supabase
       .from(WavonDbTable.businesses)
       .select("id")
@@ -115,6 +125,7 @@ export async function GET(req: NextRequest) {
         currentPeriodEnd: null,
       },
       state: { kind: "active" as const },
+      adminAccess: { isAdmin: true, label: "Plan Pro — accès admin interne" },
     });
   }
 
