@@ -3,9 +3,13 @@ import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { getBillingStatusFromAccess } from "@/lib/subscription/billing-status";
-import { getWorkspaceSubscriptionAccess } from "@/lib/subscription/workspace-access";
-import { adminAccessDebugEnabled, isAdminUser } from "@/lib/auth/admin-emails";
-import { buildAdminWorkspaceAccessState } from "@/lib/subscription/admin-access";
+import { getMerchantWorkspaceSubscriptionAccess } from "@/lib/subscription/workspace-access";
+import {
+  fetchProfileSubscriptionRow,
+  fetchProfileSubscriptionRowAdmin,
+  profileAccessForApi,
+} from "@/lib/subscription/profile-subscription-override";
+
 export const runtime = "nodejs";
 
 const BLOCKED_PAYLOAD = {
@@ -37,34 +41,14 @@ export async function GET(req: NextRequest) {
     }
     const businessId = (biz as { id: string }).id;
     const ownerUserId = (biz as { user_id?: string | null }).user_id ?? null;
-    if (ownerUserId) {
-      try {
-        const { data } = await admin.auth.admin.getUserById(ownerUserId);
-        const owner = data?.user ?? null;
-        if (owner && isAdminUser(owner)) {
-          const adminAccess = buildAdminWorkspaceAccessState(businessId);
-          const billing = getBillingStatusFromAccess(adminAccess);
-          return NextResponse.json({
-            canUseApp: true,
-            canUsePremiumFeatures: true,
-            billing,
-            workspaceAccess: {
-              workspaceId: adminAccess.workspaceId,
-              hasActiveSubscription: true,
-              canUsePremiumFeatures: true,
-              subscriptionStatus: adminAccess.subscriptionStatus,
-              planName: adminAccess.planName,
-              stripeCustomerId: null,
-              currentPeriodEnd: null,
-            },
-          });
-        }
-      } catch {
-        // ignore: fallback Stripe/DB gating
-      }
+    if (!ownerUserId) {
+      return NextResponse.json(BLOCKED_PAYLOAD);
     }
 
-    const access = await getWorkspaceSubscriptionAccess(businessId);
+    const profileRow = await fetchProfileSubscriptionRowAdmin(ownerUserId);
+    const profileAccess = profileAccessForApi(profileRow);
+
+    const access = await getMerchantWorkspaceSubscriptionAccess(businessId, { ownerUserId });
     const billing = getBillingStatusFromAccess(access);
     const canBook = access.hasActiveSubscription;
     return NextResponse.json({
@@ -79,6 +63,7 @@ export async function GET(req: NextRequest) {
         planName: access.planName,
         stripeCustomerId: access.stripeCustomerId,
         currentPeriodEnd: access.currentPeriodEnd,
+        ...(profileAccess ? { profileAccess } : {}),
       },
     });
   }
@@ -92,43 +77,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
   }
 
-  const adminMatch = isAdminUser(user);
-  if (adminAccessDebugEnabled() || process.env.NODE_ENV !== "production") {
-    console.log("[admin-access] /api/subscription/gate", {
-      userId: user.id,
-      userEmail: user.email ?? null,
-      adminEmailsConfigured: Boolean((process.env.ADMIN_EMAILS ?? "").trim()),
-      isAdmin: adminMatch,
-      plan: adminMatch ? "pro" : null,
-    });
-  }
-
-  if (adminMatch) {
-    const { data: biz } = await supabase
-      .from(WavonDbTable.businesses)
-      .select("id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    const businessId = (biz as { id: string } | null)?.id ?? "";
-    const adminAccess = buildAdminWorkspaceAccessState(businessId);
-    const billing = getBillingStatusFromAccess(adminAccess);
-    return NextResponse.json({
-      canUseApp: true,
-      canUsePremiumFeatures: true,
-      billing,
-      workspaceAccess: {
-        workspaceId: adminAccess.workspaceId,
-        hasActiveSubscription: true,
-        canUsePremiumFeatures: true,
-        subscriptionStatus: adminAccess.subscriptionStatus,
-        planName: adminAccess.planName,
-        stripeCustomerId: null,
-        currentPeriodEnd: null,
-      },
-      state: { kind: "active" as const },
-      adminAccess: { isAdmin: true, label: "Plan Pro — accès admin interne" },
-    });
-  }
+  const profileRow = await fetchProfileSubscriptionRow(supabase, user.id);
+  const profileAccess = profileAccessForApi(profileRow);
 
   const { data: biz } = await supabase
     .from(WavonDbTable.businesses)
@@ -141,9 +91,18 @@ export async function GET(req: NextRequest) {
       canUsePremiumFeatures: false,
       error: "Commerce introuvable.",
       state: { kind: "subscription_required" as const },
+      workspaceAccess: {
+        hasActiveSubscription: false,
+        canUsePremiumFeatures: false,
+        ...(profileAccess ? { profileAccess } : {}),
+      },
     });
   }
-  const access = await getWorkspaceSubscriptionAccess((biz as { id: string }).id);
+
+  const access = await getMerchantWorkspaceSubscriptionAccess((biz as { id: string }).id, {
+    userId: user.id,
+    supabase,
+  });
   const billing = getBillingStatusFromAccess(access);
   return NextResponse.json({
     canUseApp: true,
@@ -157,6 +116,7 @@ export async function GET(req: NextRequest) {
       planName: access.planName,
       stripeCustomerId: access.stripeCustomerId,
       currentPeriodEnd: access.currentPeriodEnd,
+      ...(profileAccess ? { profileAccess } : {}),
     },
     state: {
       kind: access.hasActiveSubscription ? ("active" as const) : ("subscription_required" as const),

@@ -155,6 +155,7 @@ export default function FacturationClient() {
   const pricingBulletsPro = ["Tout le plan Starter", "Factures PDF automatiques (bientôt)"];
 
   const needsPricing = !activePaying;
+  const profileAccess = state.workspaceAccess?.profileAccess ?? null;
 
   const sectionClassDefault = "rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-sm";
 
@@ -166,6 +167,15 @@ export default function FacturationClient() {
           Abonnement Waevon et paiements sécurisés via Stripe.
         </p>
       </div>
+
+      {profileAccess ? (
+        <div className="rounded-xl border border-emerald-200/95 bg-emerald-50 px-4 py-4 text-sm text-emerald-950 shadow-sm">
+          <p className="text-base font-semibold tracking-tight">{profileAccess.displayLabel}</p>
+          <p className="mt-2 leading-relaxed text-emerald-900/95">
+            Accès Pro complet via ton profil Supabase (usage interne). Aucun paiement Stripe requis pour ce compte.
+          </p>
+        </div>
+      ) : null}
 
       {billing.publicStatus === "sync_error" ? (
         <div className="rounded-xl border border-violet-200/95 bg-violet-50 px-4 py-4 text-sm text-violet-950 shadow-sm">
@@ -181,7 +191,8 @@ export default function FacturationClient() {
         </div>
       ) : null}
 
-      {(discoveryParam && !activePaying) || (!activePaying && billing.publicStatus === "inactive") ? (
+      {(discoveryParam && !activePaying && !profileAccess) ||
+      (!activePaying && !profileAccess && billing.publicStatus === "inactive") ? (
         <div className="rounded-xl border border-amber-200/95 bg-amber-50 px-4 py-4 text-sm text-amber-950 shadow-sm">
           <p className="text-base font-semibold tracking-tight">Débloquer Waevon</p>
           <p className="mt-2 leading-relaxed text-amber-950/95">
@@ -283,7 +294,7 @@ export default function FacturationClient() {
         )}
       </section>
 
-      {needsPricing || billing.publicStatus === "canceled" ? (
+      {(needsPricing || billing.publicStatus === "canceled") && !profileAccess ? (
         <section id="waevon-pricing" className="space-y-4 scroll-mt-8">
           <h2 className="text-lg font-semibold text-neutral-950">Choisir un abonnement</h2>
           <p className="text-sm text-neutral-600">
@@ -355,7 +366,7 @@ export default function FacturationClient() {
         </p>
       </section>
 
-      {discoveryParam && !activePaying ? (
+      {discoveryParam && !activePaying && !profileAccess ? (
         <div className="border-t border-neutral-200/90 pt-8 text-center">
           <button
             type="button"

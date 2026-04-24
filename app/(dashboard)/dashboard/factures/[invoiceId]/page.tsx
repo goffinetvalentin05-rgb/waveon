@@ -10,6 +10,7 @@ import { useWavon } from "@/components/wavon/WavonProvider";
 import { PageHeader } from "@/components/wavon/ui/PageHeader";
 import { formatPrice } from "@/lib/utils/formatPrice";
 import { btnGhostClass, btnPrimaryClass, cardClass, linkClass, spinnerClass } from "@/lib/wavon/tokens";
+import { canUseProInvoices } from "@/lib/wavon/premium-access";
 
 type InvoiceStatus = "draft" | "sent" | "paid" | "cancelled";
 
@@ -75,7 +76,7 @@ export default function FactureDetailPage() {
   const [invoice, setInvoice] = useState<InvoiceDetail | null>(null);
   const [settings, setSettings] = useState<InvoiceSettings | null>(null);
 
-  const proLikely = useMemo(() => state.subscription?.plan === "pro", [state.subscription?.plan]);
+  const invoiceEligible = useMemo(() => canUseProInvoices(state), [state]);
 
   useEffect(() => {
     if (!ready) return;
@@ -138,7 +139,7 @@ export default function FactureDetailPage() {
     );
   }
 
-  if (locked || !proLikely) {
+  if (locked || !invoiceEligible) {
     return (
       <div className="space-y-8 pb-8">
         <PageHeader

@@ -4,6 +4,7 @@ import {
   type SubscriptionAccessSource,
   type SubscriptionSnapshot,
   type WorkspaceAccessSummary,
+  type WorkspaceProfileAccess,
 } from "@/lib/wavon/types";
 
 /**
@@ -55,8 +56,26 @@ export function parseWorkspaceAccessFromLive(body: unknown): WorkspaceAccessSumm
   const canUse =
     typeof x.canUsePremiumFeatures === "boolean" ? x.canUsePremiumFeatures : hasActive;
 
+  let profileAccess: WorkspaceProfileAccess | null | undefined;
+  const pa = x.profileAccess;
+  if (pa && typeof pa === "object") {
+    const p = pa as Record<string, unknown>;
+    const displayLabel = typeof p.displayLabel === "string" ? p.displayLabel : null;
+    if (displayLabel) {
+      profileAccess = {
+        displayLabel,
+        isAdmin: Boolean(p.isAdmin),
+        role: typeof p.role === "string" ? p.role : null,
+        planOverride: typeof p.planOverride === "string" ? p.planOverride : null,
+        subscriptionStatusOverride:
+          typeof p.subscriptionStatusOverride === "string" ? p.subscriptionStatusOverride : null,
+      };
+    }
+  }
+
   return {
     hasActiveSubscription: hasActive,
     canUsePremiumFeatures: canUse,
+    ...(profileAccess ? { profileAccess } : {}),
   };
 }

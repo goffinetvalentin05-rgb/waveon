@@ -22,7 +22,7 @@ import {
 import { deleteBrandingAsset, getBrandingPublicUrl, uploadBrandingAsset } from "@/lib/wavon/storage";
 import { BUSINESS_CURRENCY_OPTIONS, normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
 import { publicBookingPath } from "@/lib/wavon/public-page-url";
-import { canUsePremiumFeatures } from "@/lib/wavon/premium-access";
+import { canUsePremiumFeatures, canUseProInvoices } from "@/lib/wavon/premium-access";
 
 type SettingsTab =
   | "business"
@@ -62,9 +62,7 @@ function ParametresPageContent() {
   const { ready, state, patchSettings, businessId } = useWavon();
   const toast = useToast();
   const premium = canUsePremiumFeatures(state.workspaceAccess);
-  const canInvoices =
-    state.subscription?.plan === "pro" &&
-    (state.subscription?.status === "active" || state.subscription?.status === "past_due");
+  const canInvoices = canUseProInvoices(state);
   const [saving, setSaving] = useState(false);
   const [brandingLoading, setBrandingLoading] = useState<null | "logo" | "cover">(null);
   const [pubDisplayName, setPubDisplayName] = useState("");

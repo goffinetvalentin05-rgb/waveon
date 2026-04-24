@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { canAccessFeature } from "@/lib/subscription/access";
-import { isAdminUser } from "@/lib/auth/admin-emails";
+import {
+  fetchProfileSubscriptionRow,
+  profileGrantsProOverride,
+} from "@/lib/subscription/profile-subscription-override";
 
 export const runtime = "nodejs";
 
@@ -43,7 +46,8 @@ export async function POST(
     .maybeSingle();
   if (!business?.id) return NextResponse.json({ error: "Commerce introuvable." }, { status: 404 });
 
-  if (!isAdminUser(user)) {
+  const profileRow = await fetchProfileSubscriptionRow(supabase, user.id);
+  if (!profileGrantsProOverride(profileRow)) {
     const status = String((business as { subscription_status?: unknown }).subscription_status ?? "");
     const plan = (business as { subscription_plan?: string | null }).subscription_plan ?? null;
     if (!canAccessFeature({ status, plan }, "invoices")) {

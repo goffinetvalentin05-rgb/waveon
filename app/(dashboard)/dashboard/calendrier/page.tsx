@@ -37,7 +37,7 @@ import {
   textareaClass,
   userTextBreakClass,
 } from "@/lib/wavon/tokens";
-import { canUsePremiumFeatures } from "@/lib/wavon/premium-access";
+import { canUsePremiumFeatures, canUseProInvoices } from "@/lib/wavon/premium-access";
 import Link from "next/link";
 
 const locales = { fr };
@@ -115,9 +115,7 @@ export default function CalendrierPage() {
   } = useWavon();
   const toast = useToast();
   const premium = canUsePremiumFeatures(state.workspaceAccess);
-  const canInvoices =
-    state.subscription?.plan === "pro" &&
-    (state.subscription?.status === "active" || state.subscription?.status === "past_due");
+  const canInvoices = canUseProInvoices(state);
   const [view, setView] = useState<View>("week");
   const [date, setDate] = useState(() => new Date());
 

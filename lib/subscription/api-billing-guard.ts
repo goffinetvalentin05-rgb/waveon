@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
-import { getWorkspaceSubscriptionStatus } from "./workspace-billing";
-import { isAdminUser } from "@/lib/auth/admin-emails";
-import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import {
+  getWorkspaceSubscriptionStatusForBusinessOwner,
+  getWorkspaceSubscriptionStatusForUserSession,
+} from "./workspace-billing";
 
 const SUBSCRIPTION_REQUIRED = {
   error: "subscription_required",
@@ -20,9 +21,6 @@ export async function merchantBillingGateResponse(): Promise<NextResponse | null
   if (authErr || !user) {
     return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
   }
-  if (isAdminUser(user)) {
-    return null;
-  }
   const { data: biz, error: bizErr } = await supabase
     .from(WavonDbTable.businesses)
     .select("id")
@@ -31,7 +29,11 @@ export async function merchantBillingGateResponse(): Promise<NextResponse | null
   if (bizErr || !biz) {
     return NextResponse.json({ error: "Commerce introuvable." }, { status: 400 });
   }
-  const { access } = await getWorkspaceSubscriptionStatus((biz as { id: string }).id);
+  const { access } = await getWorkspaceSubscriptionStatusForUserSession(
+    (biz as { id: string }).id,
+    user.id,
+    supabase
+  );
   if (!access.hasActiveSubscription) {
     return NextResponse.json(SUBSCRIPTION_REQUIRED, { status: 402 });
   }
@@ -44,27 +46,7 @@ export async function billingGateResponseForBusinessId(businessId: string): Prom
   if (!id) {
     return NextResponse.json({ error: "businessId requis." }, { status: 400 });
   }
-
-  try {
-    const admin = createAdminSupabaseClient();
-    const { data: biz } = await admin
-      .from(WavonDbTable.businesses)
-      .select("user_id")
-      .eq("id", id)
-      .maybeSingle();
-    const ownerUserId = (biz as { user_id?: string | null } | null)?.user_id ?? null;
-    if (ownerUserId) {
-      const { data } = await admin.auth.admin.getUserById(ownerUserId);
-      const owner = data?.user ?? null;
-      if (owner && isAdminUser(owner)) {
-        return null;
-      }
-    }
-  } catch {
-    // ignore: fallback Stripe/DB gating
-  }
-
-  const { access } = await getWorkspaceSubscriptionStatus(id);
+  const { access } = await getWorkspaceSubscriptionStatusForBusinessOwner(id);
   if (!access.hasActiveSubscription) {
     return NextResponse.json(SUBSCRIPTION_REQUIRED, { status: 402 });
   }

@@ -220,10 +220,20 @@ export const SYNC_ERROR_SUBSCRIPTION_SNAPSHOT: SubscriptionSnapshot = {
   accessSource: "none",
 };
 
+/** Métadonnées profil : accès Pro interne (profiles.plan_override / role). */
+export type WorkspaceProfileAccess = {
+  displayLabel: string;
+  isAdmin: boolean;
+  role: string | null;
+  planOverride: string | null;
+  subscriptionStatusOverride: string | null;
+};
+
 /** Résumé accès (synchro avec /api/subscription/live). */
 export type WorkspaceAccessSummary = {
   hasActiveSubscription: boolean;
   canUsePremiumFeatures: boolean;
+  profileAccess?: WorkspaceProfileAccess | null;
 };
 
 export type WavonState = {

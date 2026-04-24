@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/wavon/ui/PageHeader";
 import { useToast } from "@/components/wavon/Toast";
 import { formatPrice } from "@/lib/utils/formatPrice";
 import { btnGhostClass, btnPrimaryClass, cardClass, linkClass, spinnerClass, wavonPage } from "@/lib/wavon/tokens";
+import { canUseProInvoices } from "@/lib/wavon/premium-access";
 
 type InvoiceRow = {
   id: string;
@@ -78,7 +79,7 @@ export default function FacturesPage() {
     void refresh();
   }, [ready, refresh]);
 
-  const proLikely = useMemo(() => state.subscription?.plan === "pro", [state.subscription?.plan]);
+  const invoiceEligible = useMemo(() => canUseProInvoices(state), [state]);
 
   if (!ready) {
     return (
@@ -88,7 +89,7 @@ export default function FacturesPage() {
     );
   }
 
-  if (locked || !proLikely) {
+  if (locked || !invoiceEligible) {
     return (
       <div className={`${wavonPage} space-y-8 py-6`}>
         <PageHeader

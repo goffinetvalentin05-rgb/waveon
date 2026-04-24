@@ -1,5 +1,12 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getBusinessSubscriptionStatus } from "@/lib/stripe/subscription";
 import type { SubscriptionSnapshot, WorkspaceAccessSummary } from "@/lib/wavon/types";
+import { buildAdminWorkspaceAccessState } from "@/lib/subscription/admin-access";
+import {
+  fetchProfileSubscriptionRow,
+  fetchProfileSubscriptionRowAdmin,
+  profileGrantsProOverride,
+} from "@/lib/subscription/profile-subscription-override";
 
 function billingDebugEnabled(): boolean {
   return (
@@ -71,6 +78,24 @@ export async function getWorkspaceSubscriptionAccess(workspaceId: string): Promi
     snapshot,
     stripeCustomerId,
   };
+}
+
+/**
+ * Abonnement effectif pour un commerce : overrides `profiles` (admin / plan_override pro) puis Stripe.
+ */
+export async function getMerchantWorkspaceSubscriptionAccess(
+  workspaceId: string,
+  ctx: { userId: string; supabase: SupabaseClient } | { ownerUserId: string }
+): Promise<WorkspaceAccessState> {
+  const id = workspaceId.trim();
+  const row =
+    "userId" in ctx
+      ? await fetchProfileSubscriptionRow(ctx.supabase, ctx.userId)
+      : await fetchProfileSubscriptionRowAdmin(ctx.ownerUserId);
+  if (profileGrantsProOverride(row)) {
+    return buildAdminWorkspaceAccessState(id);
+  }
+  return getWorkspaceSubscriptionAccess(id);
 }
 
 /** @deprecated Utiliser {@link getWorkspaceSubscriptionAccess}. */

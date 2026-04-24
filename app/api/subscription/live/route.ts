@@ -4,12 +4,14 @@ import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { getBillingStatusFromAccess } from "@/lib/subscription/billing-status";
 import { ensureBusinessForUser } from "@/lib/wavon/ensure-business-for-user";
 import {
-  getWorkspaceSubscriptionAccess,
+  getMerchantWorkspaceSubscriptionAccess,
   workspaceAccessSummaryFromSnapshot,
 } from "@/lib/subscription/workspace-access";
+import {
+  fetchProfileSubscriptionRow,
+  profileAccessForApi,
+} from "@/lib/subscription/profile-subscription-override";
 import { SYNC_ERROR_SUBSCRIPTION_SNAPSHOT } from "@/lib/wavon/types";
-import { adminAccessDebugEnabled, isAdminUser } from "@/lib/auth/admin-emails";
-import { buildAdminWorkspaceAccessState } from "@/lib/subscription/admin-access";
 
 export const runtime = "nodejs";
 
@@ -28,38 +30,6 @@ export async function GET() {
   } = await supabase.auth.getUser();
   if (authErr || !user) {
     return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
-  }
-
-  const admin = isAdminUser(user);
-  if (adminAccessDebugEnabled() || process.env.NODE_ENV !== "production") {
-    console.log("[admin-access] /api/subscription/live", {
-      userId: user.id,
-      userEmail: user.email ?? null,
-      adminEmailsConfigured: Boolean((process.env.ADMIN_EMAILS ?? "").trim()),
-      isAdmin: admin,
-      plan: admin ? "pro" : null,
-    });
-  }
-
-  if (admin) {
-    const { data: biz } = await supabase
-      .from(WavonDbTable.businesses)
-      .select("id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    const businessId = (biz as { id: string } | null)?.id ?? "";
-    const adminAccess = buildAdminWorkspaceAccessState(businessId);
-    const snapshot = adminAccess.snapshot;
-    const billing = getBillingStatusFromAccess(adminAccess);
-    return NextResponse.json({
-      ...snapshot,
-      billing,
-      workspaceAccess: {
-        hasActiveSubscription: true,
-        canUsePremiumFeatures: true,
-      },
-      adminAccess: { isAdmin: true, label: "Plan Pro — accès admin interne" },
-    });
   }
 
   const { data: biz, error: bizErr } = await supabase
@@ -101,7 +71,13 @@ export async function GET() {
     }
   }
 
-  const access = await getWorkspaceSubscriptionAccess(businessId);
+  const profileRow = await fetchProfileSubscriptionRow(supabase, user.id);
+  const profileAccess = profileAccessForApi(profileRow);
+
+  const access = await getMerchantWorkspaceSubscriptionAccess(businessId, {
+    userId: user.id,
+    supabase,
+  });
   const snapshot = access.snapshot;
   const billing = getBillingStatusFromAccess(access);
 
@@ -109,6 +85,7 @@ export async function GET() {
     console.log("[billing] /api/subscription/live", {
       userId: user.id,
       businessId,
+      profileOverride: Boolean(profileAccess),
       hasActiveSubscription: access.hasActiveSubscription,
       snapshot: {
         status: snapshot.status,
@@ -131,6 +108,7 @@ export async function GET() {
     workspaceAccess: {
       hasActiveSubscription: access.hasActiveSubscription,
       canUsePremiumFeatures: access.canUsePremiumFeatures,
+      ...(profileAccess ? { profileAccess } : {}),
     },
   });
 }
