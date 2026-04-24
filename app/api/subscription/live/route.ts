@@ -3,14 +3,12 @@ import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { getBillingStatusFromAccess } from "@/lib/subscription/billing-status";
 import { ensureBusinessForUser } from "@/lib/wavon/ensure-business-for-user";
+import { resolveMerchantSubscription, workspaceAccessSummaryFromSnapshot } from "@/lib/subscription/workspace-access";
 import {
-  getMerchantWorkspaceSubscriptionAccess,
-  workspaceAccessSummaryFromSnapshot,
-} from "@/lib/subscription/workspace-access";
-import {
-  fetchProfileSubscriptionRow,
   profileAccessForApi,
+  workspaceProfileAccessFromInternalAdminEmail,
 } from "@/lib/subscription/profile-subscription-override";
+import { isInternalAdminAuthEmail } from "@/lib/subscription/effective-subscription";
 import { SYNC_ERROR_SUBSCRIPTION_SNAPSHOT } from "@/lib/wavon/types";
 
 export const runtime = "nodejs";
@@ -71,13 +69,14 @@ export async function GET() {
     }
   }
 
-  const profileRow = await fetchProfileSubscriptionRow(supabase, user.id);
-  const profileAccess = profileAccessForApi(profileRow);
-
-  const access = await getMerchantWorkspaceSubscriptionAccess(businessId, {
-    userId: user.id,
+  const { access, effective, profileRow } = await resolveMerchantSubscription(businessId, {
+    user: { id: user.id, email: user.email },
     supabase,
   });
+  const profileAccess =
+    profileAccessForApi(profileRow) ??
+    (isInternalAdminAuthEmail(user.email) ? workspaceProfileAccessFromInternalAdminEmail() : null);
+
   const snapshot = access.snapshot;
   const billing = getBillingStatusFromAccess(access);
 
@@ -108,6 +107,7 @@ export async function GET() {
     workspaceAccess: {
       hasActiveSubscription: access.hasActiveSubscription,
       canUsePremiumFeatures: access.canUsePremiumFeatures,
+      effective,
       ...(profileAccess ? { profileAccess } : {}),
     },
   });

@@ -156,8 +156,42 @@ export default function FacturationClient() {
 
   const needsPricing = !activePaying;
   const profileAccess = state.workspaceAccess?.profileAccess ?? null;
+  const effective = state.workspaceAccess?.effective;
+  const adminOrInternalBypass = Boolean(profileAccess || effective?.isAdmin);
+  const showAdminInternalFacturation = effective?.isAdmin === true;
 
   const sectionClassDefault = "rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-sm";
+
+  if (showAdminInternalFacturation) {
+    return (
+      <div className={`${wavonPage} space-y-8 py-6`}>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-neutral-950">Facturation</h1>
+          <p className="mt-1 text-sm text-neutral-600">
+            Abonnement Waevon et paiements sécurisés via Stripe.
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-emerald-200/95 bg-emerald-50 px-4 py-4 text-sm text-emerald-950 shadow-sm">
+          <p className="text-base font-semibold tracking-tight">Plan Pro actif — accès admin interne</p>
+          <p className="mt-2 leading-relaxed text-emerald-900/95">
+            Toutes les fonctionnalités sont débloquées pour ce compte.
+          </p>
+        </div>
+
+        <section className="rounded-2xl border border-neutral-200/80 bg-white p-6 text-sm text-neutral-700 shadow-sm">
+          <h2 className="font-semibold text-neutral-950">Besoin d’aide ?</h2>
+          <p className="mt-2">
+            Écrivez-nous à{" "}
+            <a href={`mailto:${SUPPORT_EMAIL}`} className="font-medium text-neutral-950 underline">
+              {SUPPORT_EMAIL}
+            </a>
+            .
+          </p>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className={`${wavonPage} space-y-8 py-6`}>
@@ -191,8 +225,8 @@ export default function FacturationClient() {
         </div>
       ) : null}
 
-      {(discoveryParam && !activePaying && !profileAccess) ||
-      (!activePaying && !profileAccess && billing.publicStatus === "inactive") ? (
+      {(discoveryParam && !activePaying && !adminOrInternalBypass) ||
+      (!activePaying && !adminOrInternalBypass && billing.publicStatus === "inactive") ? (
         <div className="rounded-xl border border-amber-200/95 bg-amber-50 px-4 py-4 text-sm text-amber-950 shadow-sm">
           <p className="text-base font-semibold tracking-tight">Débloquer Waevon</p>
           <p className="mt-2 leading-relaxed text-amber-950/95">
@@ -294,7 +328,7 @@ export default function FacturationClient() {
         )}
       </section>
 
-      {(needsPricing || billing.publicStatus === "canceled") && !profileAccess ? (
+      {(needsPricing || billing.publicStatus === "canceled") && !adminOrInternalBypass ? (
         <section id="waevon-pricing" className="space-y-4 scroll-mt-8">
           <h2 className="text-lg font-semibold text-neutral-950">Choisir un abonnement</h2>
           <p className="text-sm text-neutral-600">
@@ -366,7 +400,7 @@ export default function FacturationClient() {
         </p>
       </section>
 
-      {discoveryParam && !activePaying && !profileAccess ? (
+      {discoveryParam && !activePaying && !adminOrInternalBypass ? (
         <div className="border-t border-neutral-200/90 pt-8 text-center">
           <button
             type="button"

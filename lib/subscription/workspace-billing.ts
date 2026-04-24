@@ -52,11 +52,22 @@ export async function getWorkspaceSubscriptionStatus(workspaceId: string): Promi
 /** Session commerçant : prend en compte `profiles` (admin / plan_override) puis Stripe. */
 export async function getWorkspaceSubscriptionStatusForUserSession(
   workspaceId: string,
-  userId: string,
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
+  /** Si déjà lu (ex. route API), évite un second `getUser` et garantit le même email Auth. */
+  sessionUser?: { id: string; email?: string | null }
 ): Promise<WorkspaceBillingResult> {
   const id = workspaceId.trim();
-  const access = await getMerchantWorkspaceSubscriptionAccess(id, { userId, supabase });
+  const user =
+    sessionUser ??
+    (await supabase.auth.getUser()).data.user ??
+    null;
+  if (!user) {
+    throw new Error("Session utilisateur requise pour le statut d’abonnement.");
+  }
+  const access = await getMerchantWorkspaceSubscriptionAccess(id, {
+    user: { id: user.id, email: user.email },
+    supabase,
+  });
   const billing = getBillingStatusFromAccess(access);
   return {
     workspaceId: id,

@@ -1,3 +1,5 @@
+import type { EffectiveSubscription } from "@/lib/subscription/effective-subscription";
+
 export type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 
 export const DAY_ORDER: DayKey[] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
@@ -234,6 +236,8 @@ export type WorkspaceAccessSummary = {
   hasActiveSubscription: boolean;
   canUsePremiumFeatures: boolean;
   profileAccess?: WorkspaceProfileAccess | null;
+  /** Abonnement effectif (serveur) — préférer pour les garde-fous UI. */
+  effective?: EffectiveSubscription | null;
 };
 
 export type WavonState = {

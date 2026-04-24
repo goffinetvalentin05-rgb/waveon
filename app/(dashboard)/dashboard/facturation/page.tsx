@@ -5,6 +5,7 @@ import { persistCheckoutSessionSubscription } from "@/lib/stripe/checkout-return
 import { invalidateBusinessSubscriptionCache } from "@/lib/stripe/subscription";
 import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
+import { getEffectiveSubscription } from "@/lib/subscription/workspace-access";
 
 export default async function FacturationPage({
   searchParams,
@@ -39,6 +40,27 @@ export default async function FacturationPage({
       if (bid) invalidateBusinessSubscriptionCache(bid);
     }
     redirect("/dashboard/facturation");
+  }
+
+  const supabaseLog = await createRouteHandlerSupabase();
+  const {
+    data: { user: userLog },
+  } = await supabaseLog.auth.getUser();
+  if (userLog) {
+    const { data: bizLog } = await supabaseLog
+      .from(WavonDbTable.businesses)
+      .select("id")
+      .eq("user_id", userLog.id)
+      .maybeSingle();
+    const bidLog = (bizLog as { id: string } | null)?.id;
+    if (bidLog) {
+      const effectiveSubscription = await getEffectiveSubscription(
+        { id: userLog.id, email: userLog.email },
+        { workspaceId: bidLog, supabase: supabaseLog }
+      );
+      console.log("AUTH USER EMAIL:", userLog.email);
+      console.log("EFFECTIVE SUBSCRIPTION:", effectiveSubscription);
+    }
   }
 
   return (

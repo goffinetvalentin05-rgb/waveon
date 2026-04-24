@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
-import { canAccessFeature } from "@/lib/subscription/access";
-import {
-  fetchProfileSubscriptionRow,
-  profileGrantsProOverride,
-} from "@/lib/subscription/profile-subscription-override";
+import { requireProInvoicesAccess } from "@/lib/subscription/require-pro-invoices-access";
 
 export const runtime = "nodejs";
 
@@ -30,33 +25,9 @@ export async function POST(
     return NextResponse.json({ error: "Statut invalide." }, { status: 400 });
   }
 
-  const supabase = await createRouteHandlerSupabase();
-  const {
-    data: { user },
-    error: authErr,
-  } = await supabase.auth.getUser();
-  if (authErr || !user) {
-    return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
-  }
-
-  const { data: business } = await supabase
-    .from(WavonDbTable.businesses)
-    .select("id, subscription_status, subscription_plan")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!business?.id) return NextResponse.json({ error: "Commerce introuvable." }, { status: 404 });
-
-  const profileRow = await fetchProfileSubscriptionRow(supabase, user.id);
-  if (!profileGrantsProOverride(profileRow)) {
-    const status = String((business as { subscription_status?: unknown }).subscription_status ?? "");
-    const plan = (business as { subscription_plan?: string | null }).subscription_plan ?? null;
-    if (!canAccessFeature({ status, plan }, "invoices")) {
-      return NextResponse.json(
-        { error: "La création de factures est disponible avec le plan Pro.", code: "feature_locked" },
-        { status: 403 }
-      );
-    }
-  }
+  const gate = await requireProInvoicesAccess();
+  if (!gate.ok) return gate.res;
+  const { supabase, businessId } = gate;
 
   const patch: Record<string, unknown> = { status: nextStatus };
   const nowIso = new Date().toISOString();
@@ -68,7 +39,7 @@ export async function POST(
     .from(WavonDbTable.invoices)
     .update(patch)
     .eq("id", id)
-    .eq("business_id", business.id);
+    .eq("business_id", businessId);
 
   if (error) {
     console.error("[api/invoices/status] update error:", error);

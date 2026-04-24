@@ -3,10 +3,18 @@ import { getBusinessSubscriptionStatus } from "@/lib/stripe/subscription";
 import type { SubscriptionSnapshot, WorkspaceAccessSummary } from "@/lib/wavon/types";
 import { buildAdminWorkspaceAccessState } from "@/lib/subscription/admin-access";
 import {
+  effectiveSubscriptionFromStripeAccess,
+  internalAdminEffectiveSubscription,
+  isInternalAdminAuthEmail,
+  profileProEffectiveSubscription,
+  type EffectiveSubscription,
+} from "@/lib/subscription/effective-subscription";
+import {
   fetchProfileSubscriptionRow,
-  fetchProfileSubscriptionRowAdmin,
   profileGrantsProOverride,
+  type ProfileSubscriptionRow,
 } from "@/lib/subscription/profile-subscription-override";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
 function billingDebugEnabled(): boolean {
   return (
@@ -80,22 +88,90 @@ export async function getWorkspaceSubscriptionAccess(workspaceId: string): Promi
   };
 }
 
+type MerchantUserContext = { user: { id: string; email?: string | null }; supabase: SupabaseClient };
+
+async function normalizeMerchantUserContext(
+  ctx: MerchantUserContext | { ownerUserId: string }
+): Promise<MerchantUserContext> {
+  if ("user" in ctx) return ctx;
+  const adminClient = createAdminSupabaseClient();
+  const { data: authData, error: authErr } = await adminClient.auth.admin.getUserById(ctx.ownerUserId);
+  const email = authErr ? null : (authData.user?.email ?? null);
+  return {
+    user: { id: ctx.ownerUserId, email },
+    supabase: adminClient,
+  };
+}
+
 /**
- * Abonnement effectif pour un commerce : overrides `profiles` (admin / plan_override pro) puis Stripe.
+ * Résolution unique : email interne → profil override → Stripe.
+ * Utilisée par le dashboard, le middleware (gate) et {@link getEffectiveSubscription}.
+ */
+export async function resolveMerchantSubscription(
+  workspaceId: string,
+  ctx: MerchantUserContext | { ownerUserId: string }
+): Promise<{
+  access: WorkspaceAccessState;
+  effective: EffectiveSubscription;
+  /** Ligne `profiles` lue pour ce user (`null` si court-circuit email interne). */
+  profileRow: ProfileSubscriptionRow | null;
+  /** Email Supabase Auth du commerçant résolu (pour garde-fous basés sur l’email). */
+  authEmail: string | null;
+}> {
+  const id = workspaceId.trim();
+  const { user, supabase } = await normalizeMerchantUserContext(ctx);
+  const authEmail = user.email ?? null;
+
+  if (isInternalAdminAuthEmail(user.email)) {
+    return {
+      access: buildAdminWorkspaceAccessState(id),
+      effective: internalAdminEffectiveSubscription(),
+      profileRow: null,
+      authEmail,
+    };
+  }
+
+  const row = await fetchProfileSubscriptionRow(supabase, user.id);
+  if (profileGrantsProOverride(row)) {
+    return {
+      access: buildAdminWorkspaceAccessState(id),
+      effective: profileProEffectiveSubscription(row!),
+      profileRow: row,
+      authEmail,
+    };
+  }
+
+  const access = await getWorkspaceSubscriptionAccess(id);
+  return {
+    access,
+    effective: effectiveSubscriptionFromStripeAccess({
+      hasActiveSubscription: access.hasActiveSubscription,
+      subscriptionStatus: access.subscriptionStatus,
+      planName: access.planName,
+    }),
+    profileRow: row,
+    authEmail,
+  };
+}
+
+/** Source de vérité abonnement effectif (email Auth en premier, puis profil, puis Stripe). */
+export async function getEffectiveSubscription(
+  user: { id: string; email?: string | null },
+  ctx: { workspaceId: string; supabase: SupabaseClient }
+): Promise<EffectiveSubscription> {
+  const { effective } = await resolveMerchantSubscription(ctx.workspaceId, { user, supabase: ctx.supabase });
+  return effective;
+}
+
+/**
+ * Abonnement effectif pour un commerce : email interne, overrides `profiles`, puis Stripe.
  */
 export async function getMerchantWorkspaceSubscriptionAccess(
   workspaceId: string,
-  ctx: { userId: string; supabase: SupabaseClient } | { ownerUserId: string }
+  ctx: MerchantUserContext | { ownerUserId: string }
 ): Promise<WorkspaceAccessState> {
-  const id = workspaceId.trim();
-  const row =
-    "userId" in ctx
-      ? await fetchProfileSubscriptionRow(ctx.supabase, ctx.userId)
-      : await fetchProfileSubscriptionRowAdmin(ctx.ownerUserId);
-  if (profileGrantsProOverride(row)) {
-    return buildAdminWorkspaceAccessState(id);
-  }
-  return getWorkspaceSubscriptionAccess(id);
+  const { access } = await resolveMerchantSubscription(workspaceId, ctx);
+  return access;
 }
 
 /** @deprecated Utiliser {@link getWorkspaceSubscriptionAccess}. */

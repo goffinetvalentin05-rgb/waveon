@@ -31,8 +31,8 @@ export async function merchantBillingGateResponse(): Promise<NextResponse | null
   }
   const { access } = await getWorkspaceSubscriptionStatusForUserSession(
     (biz as { id: string }).id,
-    user.id,
-    supabase
+    supabase,
+    user
   );
   if (!access.hasActiveSubscription) {
     return NextResponse.json(SUBSCRIPTION_REQUIRED, { status: 402 });

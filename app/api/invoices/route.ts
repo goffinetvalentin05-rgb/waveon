@@ -1,71 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
-import { canAccessFeature } from "@/lib/subscription/access";
-import {
-  fetchProfileSubscriptionRow,
-  profileGrantsProOverride,
-} from "@/lib/subscription/profile-subscription-override";
+import { requireProInvoicesAccess } from "@/lib/subscription/require-pro-invoices-access";
 
 export const runtime = "nodejs";
-
-async function requireProInvoicesAccess() {
-  const supabase = await createRouteHandlerSupabase();
-  const {
-    data: { user },
-    error: authErr,
-  } = await supabase.auth.getUser();
-  if (authErr || !user) {
-    return { ok: false as const, res: NextResponse.json({ error: "Non authentifié." }, { status: 401 }) };
-  }
-
-  const profileRow = await fetchProfileSubscriptionRow(supabase, user.id);
-  if (profileGrantsProOverride(profileRow)) {
-    const { data: business } = await supabase
-      .from(WavonDbTable.businesses)
-      .select("id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!business?.id) {
-      return {
-        ok: false as const,
-        res: NextResponse.json({ error: "Commerce introuvable." }, { status: 404 }),
-      };
-    }
-    return { ok: true as const, supabase, businessId: business.id as string };
-  }
-
-  const { data: business, error: bizErr } = await supabase
-    .from(WavonDbTable.businesses)
-    .select("id, subscription_status, subscription_plan")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (bizErr || !business?.id) {
-    return {
-      ok: false as const,
-      res: NextResponse.json({ error: "Commerce introuvable." }, { status: 404 }),
-    };
-  }
-
-  const status = String((business as { subscription_status?: unknown }).subscription_status ?? "");
-  const plan = (business as { subscription_plan?: string | null }).subscription_plan ?? null;
-  const allowed = canAccessFeature({ status, plan }, "invoices");
-  if (!allowed) {
-    return {
-      ok: false as const,
-      res: NextResponse.json(
-        {
-          error: "La création de factures est disponible avec le plan Pro.",
-          code: "feature_locked",
-        },
-        { status: 403 }
-      ),
-    };
-  }
-
-  return { ok: true as const, supabase, businessId: business.id as string };
-}
 
 export async function GET() {
   const gate = await requireProInvoicesAccess();

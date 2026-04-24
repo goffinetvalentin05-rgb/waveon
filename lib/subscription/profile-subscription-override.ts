@@ -68,3 +68,14 @@ export function profileAccessForApi(row: ProfileSubscriptionRow | null): Workspa
     subscriptionStatusOverride: row!.subscription_status_override ?? null,
   };
 }
+
+/** Libellé facturation pour le compte interne identifié par email Auth (sans ligne `profiles`). */
+export function workspaceProfileAccessFromInternalAdminEmail(): WorkspaceProfileAccess {
+  return {
+    displayLabel: "Plan Pro actif — accès admin interne",
+    isAdmin: true,
+    role: "admin",
+    planOverride: "pro",
+    subscriptionStatusOverride: "active",
+  };
+}

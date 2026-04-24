@@ -1,4 +1,5 @@
 import { parseSubscriptionPlan } from "@/lib/subscription/access";
+import type { EffectiveSubscription } from "@/lib/subscription/effective-subscription";
 import {
   EMPTY_SUBSCRIPTION_SNAPSHOT,
   type SubscriptionAccessSource,
@@ -73,9 +74,31 @@ export function parseWorkspaceAccessFromLive(body: unknown): WorkspaceAccessSumm
     }
   }
 
+  let effective: EffectiveSubscription | undefined;
+  const rawEff = x.effective;
+  if (rawEff && typeof rawEff === "object") {
+    const e = rawEff as Record<string, unknown>;
+    const planRaw = e.plan;
+    const plan = planRaw === "starter" || planRaw === "pro" ? planRaw : null;
+    if (typeof e.isActive === "boolean") {
+      effective = {
+        plan,
+        status: typeof e.status === "string" ? e.status : "",
+        isActive: e.isActive,
+        isAdmin: Boolean(e.isAdmin),
+        canAccessAll: Boolean(e.canAccessAll),
+        canUseServices: Boolean(e.canUseServices),
+        canUseReservations: Boolean(e.canUseReservations),
+        canUseAvailability: Boolean(e.canUseAvailability),
+        canUseInvoices: Boolean(e.canUseInvoices),
+      };
+    }
+  }
+
   return {
     hasActiveSubscription: hasActive,
     canUsePremiumFeatures: canUse,
     ...(profileAccess ? { profileAccess } : {}),
+    ...(effective ? { effective } : {}),
   };
 }

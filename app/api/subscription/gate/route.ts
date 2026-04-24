@@ -3,12 +3,13 @@ import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { getBillingStatusFromAccess } from "@/lib/subscription/billing-status";
-import { getMerchantWorkspaceSubscriptionAccess } from "@/lib/subscription/workspace-access";
+import { resolveMerchantSubscription } from "@/lib/subscription/workspace-access";
 import {
   fetchProfileSubscriptionRow,
-  fetchProfileSubscriptionRowAdmin,
   profileAccessForApi,
+  workspaceProfileAccessFromInternalAdminEmail,
 } from "@/lib/subscription/profile-subscription-override";
+import { isInternalAdminAuthEmail } from "@/lib/subscription/effective-subscription";
 
 export const runtime = "nodejs";
 
@@ -45,10 +46,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(BLOCKED_PAYLOAD);
     }
 
-    const profileRow = await fetchProfileSubscriptionRowAdmin(ownerUserId);
-    const profileAccess = profileAccessForApi(profileRow);
+    const { access, effective, profileRow, authEmail } = await resolveMerchantSubscription(businessId, {
+      ownerUserId,
+    });
+    const profileAccess =
+      profileAccessForApi(profileRow) ??
+      (isInternalAdminAuthEmail(authEmail) ? workspaceProfileAccessFromInternalAdminEmail() : null);
 
-    const access = await getMerchantWorkspaceSubscriptionAccess(businessId, { ownerUserId });
     const billing = getBillingStatusFromAccess(access);
     const canBook = access.hasActiveSubscription;
     return NextResponse.json({
@@ -63,6 +67,7 @@ export async function GET(req: NextRequest) {
         planName: access.planName,
         stripeCustomerId: access.stripeCustomerId,
         currentPeriodEnd: access.currentPeriodEnd,
+        effective,
         ...(profileAccess ? { profileAccess } : {}),
       },
     });
@@ -77,15 +82,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
   }
 
-  const profileRow = await fetchProfileSubscriptionRow(supabase, user.id);
-  const profileAccess = profileAccessForApi(profileRow);
-
   const { data: biz } = await supabase
     .from(WavonDbTable.businesses)
     .select("id")
     .eq("user_id", user.id)
     .maybeSingle();
   if (!biz) {
+    const profileRowNoBiz = await fetchProfileSubscriptionRow(supabase, user.id);
+    const profileAccess =
+      profileAccessForApi(profileRowNoBiz) ??
+      (isInternalAdminAuthEmail(user.email) ? workspaceProfileAccessFromInternalAdminEmail() : null);
     return NextResponse.json({
       canUseApp: true,
       canUsePremiumFeatures: false,
@@ -99,10 +105,15 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  const access = await getMerchantWorkspaceSubscriptionAccess((biz as { id: string }).id, {
-    userId: user.id,
+  const businessId = (biz as { id: string }).id;
+  const { access, effective, profileRow } = await resolveMerchantSubscription(businessId, {
+    user: { id: user.id, email: user.email },
     supabase,
   });
+  const profileAccess =
+    profileAccessForApi(profileRow) ??
+    (isInternalAdminAuthEmail(user.email) ? workspaceProfileAccessFromInternalAdminEmail() : null);
+
   const billing = getBillingStatusFromAccess(access);
   return NextResponse.json({
     canUseApp: true,
@@ -116,6 +127,7 @@ export async function GET(req: NextRequest) {
       planName: access.planName,
       stripeCustomerId: access.stripeCustomerId,
       currentPeriodEnd: access.currentPeriodEnd,
+      effective,
       ...(profileAccess ? { profileAccess } : {}),
     },
     state: {
