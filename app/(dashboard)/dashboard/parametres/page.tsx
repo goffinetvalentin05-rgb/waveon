@@ -24,7 +24,14 @@ import { BUSINESS_CURRENCY_OPTIONS, normalizeBusinessCurrency } from "@/lib/util
 import { publicBookingPath } from "@/lib/wavon/public-page-url";
 import { canUsePremiumFeatures } from "@/lib/wavon/premium-access";
 
-type SettingsTab = "business" | "equipe" | "reservation" | "public" | "mon-lien" | "emails";
+type SettingsTab =
+  | "business"
+  | "equipe"
+  | "reservation"
+  | "public"
+  | "mon-lien"
+  | "emails"
+  | "facturation";
 
 const TAB_LABELS: Record<SettingsTab, string> = {
   business: "Business",
@@ -33,9 +40,18 @@ const TAB_LABELS: Record<SettingsTab, string> = {
   public: "Page publique",
   "mon-lien": "Mon lien",
   emails: "Emails",
+  facturation: "Facturation",
 };
 
-const SETTINGS_TAB_IDS: SettingsTab[] = ["business", "equipe", "reservation", "public", "mon-lien", "emails"];
+const SETTINGS_TAB_IDS: SettingsTab[] = [
+  "business",
+  "equipe",
+  "reservation",
+  "public",
+  "mon-lien",
+  "emails",
+  "facturation",
+];
 
 const PUBLIC_DISPLAY_NAME_MAX = 60;
 const PUBLIC_WELCOME_MAX = 200;
@@ -46,11 +62,23 @@ function ParametresPageContent() {
   const { ready, state, patchSettings, businessId } = useWavon();
   const toast = useToast();
   const premium = canUsePremiumFeatures(state.workspaceAccess);
+  const canInvoices =
+    state.subscription?.plan === "pro" &&
+    (state.subscription?.status === "active" || state.subscription?.status === "past_due");
   const [saving, setSaving] = useState(false);
   const [brandingLoading, setBrandingLoading] = useState<null | "logo" | "cover">(null);
   const [pubDisplayName, setPubDisplayName] = useState("");
   const [pubWelcomeMessage, setPubWelcomeMessage] = useState("");
   const [pubDescriptionField, setPubDescriptionField] = useState("");
+  const [invoiceSaving, setInvoiceSaving] = useState(false);
+  const [invoiceSettings, setInvoiceSettings] = useState<null | {
+    autoCreateOnConfirmed: boolean;
+    companyName: string;
+    companyAddress: string;
+    companyEmail: string;
+    companyVatIde: string;
+    paymentTerms: string;
+  }>(null);
 
   const tabParam = searchParams.get("tab") as SettingsTab | null;
   const [tab, setTab] = useState<SettingsTab>("business");
@@ -69,6 +97,33 @@ function ParametresPageContent() {
     setPubWelcomeMessage(s.publicWelcomeMessage ?? "");
     setPubDescriptionField(s.publicDescription ?? "");
   }, [ready, s.publicDisplayName, s.publicWelcomeMessage, s.publicDescription]);
+
+  useEffect(() => {
+    if (!ready) return;
+    if (!canInvoices) return;
+    void (async () => {
+      const res = await fetch("/api/invoice-settings", { credentials: "same-origin" });
+      const body = (await res.json().catch(() => ({}))) as {
+        invoiceSettings?: {
+          auto_create_on_confirmed: boolean;
+          company_name: string | null;
+          company_address: string | null;
+          company_email: string | null;
+          company_vat_ide: string | null;
+          payment_terms: string;
+        } | null;
+      };
+      const row = body.invoiceSettings ?? null;
+      setInvoiceSettings({
+        autoCreateOnConfirmed: Boolean(row?.auto_create_on_confirmed ?? false),
+        companyName: row?.company_name ?? "",
+        companyAddress: row?.company_address ?? "",
+        companyEmail: row?.company_email ?? "",
+        companyVatIde: row?.company_vat_ide ?? "",
+        paymentTerms: row?.payment_terms ?? "Paiement à 30 jours",
+      });
+    })();
+  }, [ready, canInvoices]);
 
   if (!ready) {
     return (
@@ -570,6 +625,141 @@ function ParametresPageContent() {
       {tab === "mon-lien" ? <MonLienTab key={s.publicSlug ?? ""} /> : null}
 
       {tab === "emails" ? <EmailsSettingsTab /> : null}
+
+      {tab === "facturation" ? (
+        <SectionCard
+          title="Facturation"
+          description="Génération automatique des factures et informations légales affichées sur tes documents."
+        >
+          {!canInvoices ? (
+            <div className="rounded-2xl border border-neutral-200/90 bg-neutral-50/70 p-5">
+              <p className="text-sm font-medium text-neutral-950">
+                La création de factures est disponible avec le plan Pro.
+              </p>
+              <p className="mt-2 text-sm text-neutral-600">
+                Passe au plan Pro pour activer les factures et suivre les paiements.
+              </p>
+              <Link href="/dashboard/facturation#waevon-pricing" className={`${btnPrimaryClass} mt-4 inline-flex w-fit`}>
+                Passer au plan Pro
+              </Link>
+            </div>
+          ) : (
+            <form
+              className="grid max-w-2xl gap-6"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!invoiceSettings) return;
+                setInvoiceSaving(true);
+                try {
+                  const res = await fetch("/api/invoice-settings", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(invoiceSettings),
+                    credentials: "same-origin",
+                  });
+                  const body = (await res.json().catch(() => ({}))) as { error?: string };
+                  if (!res.ok) throw new Error(body.error ?? "Enregistrement impossible.");
+                  toast.push({ message: "Paramètres de facturation enregistrés." });
+                } catch (err) {
+                  toast.push({ kind: "error", message: err instanceof Error ? err.message : "Erreur." });
+                } finally {
+                  setInvoiceSaving(false);
+                }
+              }}
+            >
+              <label className="flex cursor-pointer items-center gap-3 text-sm text-neutral-700">
+                <input
+                  type="checkbox"
+                  checked={Boolean(invoiceSettings?.autoCreateOnConfirmed ?? false)}
+                  onChange={(e) =>
+                    setInvoiceSettings((prev) =>
+                      prev ? { ...prev, autoCreateOnConfirmed: e.target.checked } : prev
+                    )
+                  }
+                  className="size-4 rounded border-neutral-300 text-neutral-950"
+                />
+                <span>
+                  <span className="font-medium text-neutral-950">Générer automatiquement une facture</span>
+                  <span className="mt-0.5 block text-xs text-neutral-500">
+                    Une facture est créée à chaque réservation confirmée.
+                  </span>
+                </span>
+              </label>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className={labelClass}>Nom de l’entreprise</label>
+                  <input
+                    className={`${inputClass} mt-2`}
+                    value={invoiceSettings?.companyName ?? ""}
+                    onChange={(e) =>
+                      setInvoiceSettings((prev) => (prev ? { ...prev, companyName: e.target.value } : prev))
+                    }
+                    placeholder={s.businessName || "Entreprise"}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Email</label>
+                  <input
+                    className={`${inputClass} mt-2`}
+                    value={invoiceSettings?.companyEmail ?? ""}
+                    onChange={(e) =>
+                      setInvoiceSettings((prev) => (prev ? { ...prev, companyEmail: e.target.value } : prev))
+                    }
+                    placeholder={s.email ?? ""}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Adresse</label>
+                <input
+                  className={`${inputClass} mt-2`}
+                  value={invoiceSettings?.companyAddress ?? ""}
+                  onChange={(e) =>
+                    setInvoiceSettings((prev) => (prev ? { ...prev, companyAddress: e.target.value } : prev))
+                  }
+                  placeholder={s.address || ""}
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className={labelClass}>Numéro IDE/TVA (optionnel)</label>
+                  <input
+                    className={`${inputClass} mt-2`}
+                    value={invoiceSettings?.companyVatIde ?? ""}
+                    onChange={(e) =>
+                      setInvoiceSettings((prev) => (prev ? { ...prev, companyVatIde: e.target.value } : prev))
+                    }
+                    placeholder="CHE-123.456.789"
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Conditions de paiement</label>
+                  <input
+                    className={`${inputClass} mt-2`}
+                    value={invoiceSettings?.paymentTerms ?? "Paiement à 30 jours"}
+                    onChange={(e) =>
+                      setInvoiceSettings((prev) => (prev ? { ...prev, paymentTerms: e.target.value } : prev))
+                    }
+                    placeholder="Paiement à 30 jours"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4">
+                <button type="submit" disabled={invoiceSaving} className={`${btnPrimaryClass} w-fit`}>
+                  {invoiceSaving ? "Enregistrement…" : "Enregistrer"}
+                </button>
+                <Link href="/dashboard/factures" className={linkClass}>
+                  Ouvrir les factures
+                </Link>
+              </div>
+            </form>
+          )}
+        </SectionCard>
+      ) : null}
     </div>
   );
 }

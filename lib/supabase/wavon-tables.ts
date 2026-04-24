@@ -24,6 +24,8 @@ export const WavonDbTable = {
   services: `${TABLE_PREFIX}_services`,
   clients: `${TABLE_PREFIX}_clients`,
   reservations: `${TABLE_PREFIX}_reservations`,
+  invoices: `${TABLE_PREFIX}_invoices`,
+  invoiceSettings: `${TABLE_PREFIX}_invoice_settings`,
   employees: `${TABLE_PREFIX}_employees`,
   availabilityRules: `${TABLE_PREFIX}_availability_rules`,
   customDays: `${TABLE_PREFIX}_custom_days`,

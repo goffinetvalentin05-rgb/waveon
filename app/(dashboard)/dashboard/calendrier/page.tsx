@@ -115,6 +115,9 @@ export default function CalendrierPage() {
   } = useWavon();
   const toast = useToast();
   const premium = canUsePremiumFeatures(state.workspaceAccess);
+  const canInvoices =
+    state.subscription?.plan === "pro" &&
+    (state.subscription?.status === "active" || state.subscription?.status === "past_due");
   const [view, setView] = useState<View>("week");
   const [date, setDate] = useState(() => new Date());
 
@@ -785,6 +788,61 @@ export default function CalendrierPage() {
             </button>
             {detailRes ? (
               <>
+                <button
+                  type="button"
+                  className={`${btnGhostClass} ${!canInvoices || detailRes.status !== "confirmed" ? "opacity-50" : ""}`}
+                  disabled={!canInvoices || detailRes.status !== "confirmed"}
+                  onClick={async () => {
+                    if (!detailRes) return;
+                    if (!canInvoices) {
+                      toast.push({
+                        kind: "error",
+                        message: "La création de factures est disponible avec le plan Pro.",
+                      });
+                      return;
+                    }
+                    if (detailRes.status !== "confirmed") {
+                      toast.push({
+                        kind: "error",
+                        message: "Confirme la réservation avant de créer une facture.",
+                      });
+                      return;
+                    }
+                    try {
+                      const res = await fetch("/api/invoices", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ reservationId: detailRes.id }),
+                        credentials: "same-origin",
+                      });
+                      const body = (await res.json().catch(() => ({}))) as { id?: string; error?: string; code?: string };
+                      if (!res.ok) {
+                        if (res.status === 403 && body.code === "feature_locked") {
+                          toast.push({
+                            kind: "error",
+                            message: "La création de factures est disponible avec le plan Pro.",
+                          });
+                          return;
+                        }
+                        throw new Error(body.error ?? "Création de facture impossible.");
+                      }
+                      if (!body.id) throw new Error("Facture créée sans identifiant.");
+                      setDetailOpen(false);
+                      window.location.href = `/dashboard/factures/${body.id}`;
+                    } catch (e) {
+                      toast.push({ kind: "error", message: e instanceof Error ? e.message : "Erreur." });
+                    }
+                  }}
+                  title={
+                    !canInvoices
+                      ? "Disponible avec le plan Pro"
+                      : detailRes.status !== "confirmed"
+                        ? "Réservation à confirmer"
+                        : "Créer une facture liée à ce rendez-vous"
+                  }
+                >
+                  Créer une facture
+                </button>
                 <button
                   type="button"
                   className={btnGhostClass}

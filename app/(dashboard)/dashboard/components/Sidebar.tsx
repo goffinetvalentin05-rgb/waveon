@@ -15,6 +15,7 @@ const navItems = [
   { id: "calendar", label: "Calendrier", href: "/dashboard/calendrier" },
   { id: "services", label: "Services", href: "/dashboard/services" },
   { id: "clients", label: "Clients", href: "/dashboard/clients" },
+  { id: "invoices", label: "Factures", href: "/dashboard/factures" },
   { id: "availability", label: "Disponibilités", href: "/dashboard/disponibilites" },
   { id: "settings", label: "Paramètres", href: "/dashboard/parametres" },
   { id: "billing", label: "Facturation", href: "/dashboard/facturation" },
