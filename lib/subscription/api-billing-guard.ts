@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { getWorkspaceSubscriptionStatus } from "./workspace-billing";
-import { isAdminEmail } from "@/lib/auth/admin-emails";
+import { isAdminUser } from "@/lib/auth/admin-emails";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
 const SUBSCRIPTION_REQUIRED = {
@@ -20,7 +20,7 @@ export async function merchantBillingGateResponse(): Promise<NextResponse | null
   if (authErr || !user) {
     return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
   }
-  if (isAdminEmail(user.email)) {
+  if (isAdminUser(user)) {
     return null;
   }
   const { data: biz, error: bizErr } = await supabase
@@ -55,8 +55,8 @@ export async function billingGateResponseForBusinessId(businessId: string): Prom
     const ownerUserId = (biz as { user_id?: string | null } | null)?.user_id ?? null;
     if (ownerUserId) {
       const { data } = await admin.auth.admin.getUserById(ownerUserId);
-      const email = data?.user?.email ?? null;
-      if (isAdminEmail(email)) {
+      const owner = data?.user ?? null;
+      if (owner && isAdminUser(owner)) {
         return null;
       }
     }

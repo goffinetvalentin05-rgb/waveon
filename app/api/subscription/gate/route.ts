@@ -4,7 +4,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { getBillingStatusFromAccess } from "@/lib/subscription/billing-status";
 import { getWorkspaceSubscriptionAccess } from "@/lib/subscription/workspace-access";
-import { isAdminEmail } from "@/lib/auth/admin-emails";
+import { adminAccessDebugEnabled, isAdminUser } from "@/lib/auth/admin-emails";
 import { buildAdminWorkspaceAccessState } from "@/lib/subscription/admin-access";
 export const runtime = "nodejs";
 
@@ -40,8 +40,8 @@ export async function GET(req: NextRequest) {
     if (ownerUserId) {
       try {
         const { data } = await admin.auth.admin.getUserById(ownerUserId);
-        const email = data?.user?.email ?? null;
-        if (isAdminEmail(email)) {
+        const owner = data?.user ?? null;
+        if (owner && isAdminUser(owner)) {
           const adminAccess = buildAdminWorkspaceAccessState(businessId);
           const billing = getBillingStatusFromAccess(adminAccess);
           return NextResponse.json({
@@ -92,11 +92,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
   }
 
-  const adminMatch = isAdminEmail(user.email);
-  if (process.env.NODE_ENV !== "production") {
+  const adminMatch = isAdminUser(user);
+  if (adminAccessDebugEnabled() || process.env.NODE_ENV !== "production") {
     console.log("[admin-access] /api/subscription/gate", {
-      userEmail: (user.email ?? "").toLowerCase(),
-      adminEmails: (process.env.ADMIN_EMAILS ?? "").toLowerCase(),
+      userId: user.id,
+      userEmail: user.email ?? null,
+      adminEmailsConfigured: Boolean((process.env.ADMIN_EMAILS ?? "").trim()),
       isAdmin: adminMatch,
       plan: adminMatch ? "pro" : null,
     });

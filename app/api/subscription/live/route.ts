@@ -8,7 +8,7 @@ import {
   workspaceAccessSummaryFromSnapshot,
 } from "@/lib/subscription/workspace-access";
 import { SYNC_ERROR_SUBSCRIPTION_SNAPSHOT } from "@/lib/wavon/types";
-import { isAdminEmail } from "@/lib/auth/admin-emails";
+import { adminAccessDebugEnabled, isAdminUser } from "@/lib/auth/admin-emails";
 import { buildAdminWorkspaceAccessState } from "@/lib/subscription/admin-access";
 
 export const runtime = "nodejs";
@@ -30,11 +30,12 @@ export async function GET() {
     return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
   }
 
-  const admin = isAdminEmail(user.email);
-  if (process.env.NODE_ENV !== "production") {
+  const admin = isAdminUser(user);
+  if (adminAccessDebugEnabled() || process.env.NODE_ENV !== "production") {
     console.log("[admin-access] /api/subscription/live", {
-      userEmail: (user.email ?? "").toLowerCase(),
-      adminEmails: (process.env.ADMIN_EMAILS ?? "").toLowerCase(),
+      userId: user.id,
+      userEmail: user.email ?? null,
+      adminEmailsConfigured: Boolean((process.env.ADMIN_EMAILS ?? "").trim()),
       isAdmin: admin,
       plan: admin ? "pro" : null,
     });
