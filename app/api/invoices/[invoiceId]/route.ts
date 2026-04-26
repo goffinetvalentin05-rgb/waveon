@@ -117,9 +117,9 @@ export async function GET(
     .single();
 
   return NextResponse.json({
-    invoice: mapInvoiceRow(invoiceRow as Record<string, unknown>),
-    items: (itemRows ?? []).map((r) => mapItemRow(r as Record<string, unknown>)),
-    settings: mapInvoiceSettings(settingsRow as Record<string, unknown> | null),
+    invoice: mapInvoiceRow(invoiceRow as unknown as Record<string, unknown>),
+    items: (itemRows ?? []).map((r) => mapItemRow(r as unknown as Record<string, unknown>)),
+    settings: mapInvoiceSettings(settingsRow as unknown as Record<string, unknown> | null),
     business: businessRow ?? null,
   });
 }
@@ -143,16 +143,25 @@ export async function PATCH(
     return NextResponse.json({ error: "Corps de requête invalide." }, { status: 400 });
   }
 
-  const { data: existing, error: existingErr } = await supabase
+  const { data: existingRaw, error: existingErr } = await supabase
     .from(WavonDbTable.invoices)
     .select("id,status,sent_at,paid_at,cancelled_at,discount_amount")
     .eq("id", id)
     .eq("business_id", businessId)
     .single();
 
-  if (existingErr || !existing) {
+  if (existingErr || !existingRaw) {
     return NextResponse.json({ error: "Cette facture est introuvable." }, { status: 404 });
   }
+
+  const existing = existingRaw as unknown as {
+    id: string;
+    status: InvoiceStatus;
+    sent_at: string | null;
+    paid_at: string | null;
+    cancelled_at: string | null;
+    discount_amount: number | null;
+  };
 
   const patch: Record<string, unknown> = {};
   const nowIso = new Date().toISOString();
@@ -248,13 +257,13 @@ export async function PATCH(
           unitPrice: it.unit_price,
           total: it.total,
         }))
-      : ((
+      : (((
           await supabase
             .from("wavon_invoice_items")
             .select("quantity,unit_price,total")
             .eq("invoice_id", id)
-        ).data ?? []
-        ).map((r: Record<string, unknown>) => ({
+        ).data ?? []) as unknown as Array<Record<string, unknown>>
+        ).map((r) => ({
           quantity: Number(r.quantity ?? 1),
           unitPrice: Number(r.unit_price ?? 0),
           total: Number(r.total ?? 0),
@@ -379,8 +388,10 @@ export async function PATCH(
     .order("created_at", { ascending: true });
 
   return NextResponse.json({
-    invoice: invoiceRow ? mapInvoiceRow(invoiceRow as Record<string, unknown>) : null,
-    items: (itemRows ?? []).map((r) => mapItemRow(r as Record<string, unknown>)) as InvoiceItem[],
+    invoice: invoiceRow ? mapInvoiceRow(invoiceRow as unknown as Record<string, unknown>) : null,
+    items: (itemRows ?? []).map(
+      (r) => mapItemRow(r as unknown as Record<string, unknown>)
+    ) as InvoiceItem[],
   });
 }
 

@@ -62,10 +62,10 @@ export async function GET(
       .maybeSingle(),
   ]);
 
-  const invoice = mapInvoiceRow(invoiceRow as Record<string, unknown>);
-  const items = (itemRows ?? []).map((r) => mapItemRow(r as Record<string, unknown>));
-  const settings = mapInvoiceSettings(settingsRow as Record<string, unknown> | null);
-  const business = (businessRow as BusinessPdfRow) ?? ({} as BusinessPdfRow);
+  const invoice = mapInvoiceRow(invoiceRow as unknown as Record<string, unknown>);
+  const items = (itemRows ?? []).map((r) => mapItemRow(r as unknown as Record<string, unknown>));
+  const settings = mapInvoiceSettings(settingsRow as unknown as Record<string, unknown> | null);
+  const business = (businessRow as unknown as BusinessPdfRow) ?? ({} as BusinessPdfRow);
 
   const pdf = await buildInvoicePdfBuffer({ invoice, items, business, settings });
 
