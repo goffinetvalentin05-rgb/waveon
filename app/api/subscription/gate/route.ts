@@ -9,7 +9,7 @@ import {
   profileAccessForApi,
   workspaceProfileAccessFromInternalAdminEmail,
 } from "@/lib/subscription/profile-subscription-override";
-import { isInternalAdminAuthEmail } from "@/lib/subscription/effective-subscription";
+import { isAdminTestAccount } from "@/lib/subscription/effective-subscription";
 import { buildWorkspaceTrialInfo } from "@/lib/subscription/user-access";
 
 export const runtime = "nodejs";
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
     });
     const profileAccess =
       profileAccessForApi(profileRow) ??
-      (isInternalAdminAuthEmail(authEmail) ? workspaceProfileAccessFromInternalAdminEmail() : null);
+      (isAdminTestAccount(authEmail) ? workspaceProfileAccessFromInternalAdminEmail() : null);
 
     const billing = getBillingStatusFromAccess(access, effective);
     const canBook = Boolean(effective.canUseReservations);
@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
     const profileRowNoBiz = await fetchProfileSubscriptionRow(supabase, user.id);
     const profileAccess =
       profileAccessForApi(profileRowNoBiz) ??
-      (isInternalAdminAuthEmail(user.email) ? workspaceProfileAccessFromInternalAdminEmail() : null);
+      (isAdminTestAccount(user.email) ? workspaceProfileAccessFromInternalAdminEmail() : null);
     return NextResponse.json({
       canUseApp: true,
       canUsePremiumFeatures: false,
@@ -115,7 +115,7 @@ export async function GET(req: NextRequest) {
   });
   const profileAccess =
     profileAccessForApi(profileRow) ??
-    (isInternalAdminAuthEmail(user.email) ? workspaceProfileAccessFromInternalAdminEmail() : null);
+    (isAdminTestAccount(user.email) ? workspaceProfileAccessFromInternalAdminEmail() : null);
 
   const billing = getBillingStatusFromAccess(access, effective);
   const trialInfo = buildWorkspaceTrialInfo(profileRow, access.hasActiveSubscription);

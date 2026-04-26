@@ -72,6 +72,7 @@ export default function ServicesPage() {
   const [bookingNoticeHours, setBookingNoticeHours] = useState<string>("");
   const [allEmployees, setAllEmployees] = useState(true);
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
 
   const openCreate = () => {
     if (!premium) {
@@ -119,7 +120,7 @@ export default function ServicesPage() {
     setOpen(true);
   };
 
-  const save = () => {
+  const save = async () => {
     if (!premium) {
       toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
       return;
@@ -152,10 +153,14 @@ export default function ServicesPage() {
         bookingNoticeHours: bookingNoticeHours.trim() === "" ? null : Math.max(0, Number(bookingNoticeHours) || 0),
       });
       toast.push({ message: "Service mis à jour." });
-    } else {
+      setOpen(false);
+      return;
+    }
+    setSaving(true);
+    try {
       const nextOrder =
         state.services.length === 0 ? 0 : Math.max(...state.services.map((x) => x.sortOrder ?? 0)) + 1;
-      addService({
+      const res = await addService({
         name: trimmedName,
         durationMin,
         price,
@@ -171,9 +176,15 @@ export default function ServicesPage() {
         color: null,
         sortOrder: nextOrder,
       });
+      if (!res.ok) {
+        toast.push({ kind: "error", message: res.error });
+        return;
+      }
       toast.push({ message: "Service créé." });
+      setOpen(false);
+    } finally {
+      setSaving(false);
     }
-    setOpen(false);
   };
 
   const remove = (s: Service) => {
@@ -365,7 +376,12 @@ export default function ServicesPage() {
             <button type="button" className={btnGhostClass} onClick={() => setOpen(false)}>
               Annuler
             </button>
-            <button type="button" className={btnPrimaryClass} onClick={save}>
+            <button
+              type="button"
+              className={btnPrimaryClass}
+              onClick={() => void save()}
+              disabled={saving}
+            >
               Enregistrer
             </button>
           </>

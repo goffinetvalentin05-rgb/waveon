@@ -32,12 +32,18 @@ import {
   parseWorkspaceAccessFromLive,
 } from "@/lib/subscription/parse-live-subscription";
 import {
+  internalAdminEffectiveSubscription,
+  isAdminTestAccount,
+} from "@/lib/subscription/effective-subscription";
+import { workspaceProfileAccessFromInternalAdminEmail } from "@/lib/subscription/profile-subscription-override";
+import {
   workspaceAccessSummaryFromSnapshot,
 } from "@/lib/subscription/workspace-access";
 import { supabase } from "@/lib/supabase/client";
 import { normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
 import { normalizePublicSlugInput, validatePublicSlugFormat } from "@/lib/wavon/public-slug";
 import { messageIfWriteBlocked } from "@/lib/wavon/premium-access";
+import { userMessageForSupabaseWriteError } from "@/lib/wavon/supabase-user-write-error";
 
 const SERVICE_DESCRIPTION_DB_MAX = 300;
 const PUBLIC_DISPLAY_NAME_MAX = 60;
@@ -311,11 +317,13 @@ type Ctx = {
   setAvailabilityMode: (mode: WavonState["availabilityMode"]) => void;
   setCustomDays: (days: CustomDaySlot[]) => void;
   setBlockedDates: (dates: string[]) => void;
-  addService: (s: Omit<Service, "id">) => void;
+  addService: (
+    s: Omit<Service, "id">
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
   updateService: (id: string, patch: Partial<Service>) => void;
   updateServiceChecked: (id: string, patch: Partial<Service>) => Promise<{ ok: true } | { ok: false; error: string }>;
   deleteService: (id: string) => void;
-  addClient: (c: Omit<Client, "id">) => void;
+  addClient: (c: Omit<Client, "id">) => Promise<{ ok: true } | { ok: false; error: string }>;
   updateClient: (id: string, patch: Partial<Client>) => void;
   deleteClient: (id: string) => void;
   addReservation: (input: {
@@ -570,7 +578,17 @@ export function WavonProvider({
 
       const fromSnapshot = workspaceAccessSummaryFromSnapshot(subscription);
       const fromApi = liveBody ? parseWorkspaceAccessFromLive(liveBody) : null;
-      const workspaceAccess = fromApi ?? fromSnapshot;
+      let workspaceAccess = fromApi ?? fromSnapshot;
+      const { data: sessionUser } = await supabase.auth.getUser();
+      if (isAdminTestAccount(sessionUser.user?.email)) {
+        workspaceAccess = {
+          ...(fromApi ?? fromSnapshot),
+          hasActiveSubscription: true,
+          canUsePremiumFeatures: true,
+          effective: internalAdminEffectiveSubscription(),
+          profileAccess: fromApi?.profileAccess ?? workspaceProfileAccessFromInternalAdminEmail(),
+        };
+      }
 
       const next: WavonState = {
         version: 1,
@@ -881,32 +899,44 @@ export function WavonProvider({
     })();
   }, [businessId, availabilityEmployeeId]);
 
-  const addService = useCallback((s: Omit<Service, "id">) => {
-    if (!businessId) return;
-    if (messageIfWriteBlocked(stateRef.current.workspaceAccess)) return;
-    void (async () => {
+  const addService = useCallback(
+    async (s: Omit<Service, "id">): Promise<{ ok: true } | { ok: false; error: string }> => {
+      if (!businessId) {
+        return { ok: false, error: "Compte non initialisé. Reconnecte-toi." };
+      }
+      const wBlock = messageIfWriteBlocked(stateRef.current.workspaceAccess);
+      if (wBlock) return { ok: false, error: wBlock };
+      const payload = {
+        business_id: businessId,
+        name: s.name,
+        duration_minutes: s.durationMin,
+        price: s.price,
+        description: clipServiceDescription(s.description ?? ""),
+        is_active: s.isActive,
+        is_public: s.isPublic,
+        color: s.color ?? null,
+        employee_ids: (s.employeeIds ?? []).length ? (s.employeeIds ?? []) : [],
+        buffer_before_minutes: s.bufferBeforeMin ?? 0,
+        buffer_after_minutes: s.bufferAfterMin ?? 0,
+        booking_notice_hours: s.bookingNoticeHours ?? null,
+        sort_order: s.sortOrder ?? 0,
+      };
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[WavonProvider] addService", { businessId, payload });
+      }
       const { data, error } = await supabase
         .from(WavonDbTable.services)
-        .insert({
-          business_id: businessId,
-          name: s.name,
-          duration_minutes: s.durationMin,
-          price: s.price,
-          description: clipServiceDescription(s.description ?? ""),
-          is_active: s.isActive,
-          is_public: s.isPublic,
-          color: s.color ?? null,
-          employee_ids: (s.employeeIds ?? []).length ? (s.employeeIds ?? []) : [],
-          buffer_before_minutes: s.bufferBeforeMin ?? 0,
-          buffer_after_minutes: s.bufferAfterMin ?? 0,
-          booking_notice_hours: s.bookingNoticeHours ?? null,
-          sort_order: s.sortOrder ?? 0,
-        })
+        .insert(payload)
         .select(
           "id,business_id,name,duration_minutes,price,description,is_active,is_public,color,employee_ids,buffer_before_minutes,buffer_after_minutes,booking_notice_hours,sort_order"
         )
         .single();
-      if (error) throw error;
+      if (error) {
+        if (process.env.NODE_ENV !== "production") {
+          console.error("[WavonProvider] addService failed", { businessId, message: error.message, code: error.code });
+        }
+        return { ok: false, error: userMessageForSupabaseWriteError(error) };
+      }
       const row = data as DbService & { employee_ids?: string[] | null };
       setState((prev) => ({
         ...prev,
@@ -929,8 +959,10 @@ export function WavonProvider({
           },
         ],
       }));
-    })();
-  }, [businessId]);
+      return { ok: true };
+    },
+    [businessId]
+  );
 
   const refreshServices = useCallback(async () => {
     if (!businessId) return;
@@ -1050,22 +1082,37 @@ export function WavonProvider({
     void supabase.from(WavonDbTable.services).delete().eq("id", id).eq("business_id", businessId);
   }, [businessId]);
 
-  const addClient = useCallback((c: Omit<Client, "id">) => {
-    if (!businessId) return;
-    if (messageIfWriteBlocked(stateRef.current.workspaceAccess)) return;
-    void (async () => {
+  const addClient = useCallback(
+    async (c: Omit<Client, "id">): Promise<{ ok: true } | { ok: false; error: string }> => {
+      if (!businessId) {
+        return { ok: false, error: "Compte non initialisé. Reconnecte-toi." };
+      }
+      const wBlock = messageIfWriteBlocked(stateRef.current.workspaceAccess);
+      if (wBlock) return { ok: false, error: wBlock };
+      const payload = {
+        business_id: businessId,
+        full_name: c.name,
+        phone: c.phone || null,
+        email: c.email || null,
+        private_note: c.privateNote?.trim() || null,
+      };
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[WavonProvider] addClient", {
+          businessId,
+          payload: { ...payload, private_note: payload.private_note ? "[redacted]" : null },
+        });
+      }
       const { data, error } = await supabase
         .from(WavonDbTable.clients)
-        .insert({
-          business_id: businessId,
-          full_name: c.name,
-          phone: c.phone || null,
-          email: c.email || null,
-          private_note: c.privateNote?.trim() || null,
-        })
+        .insert(payload)
         .select("id,business_id,full_name,email,phone,private_note")
         .single();
-      if (error) throw error;
+      if (error) {
+        if (process.env.NODE_ENV !== "production") {
+          console.error("[WavonProvider] addClient failed", { businessId, message: error.message, code: error.code });
+        }
+        return { ok: false, error: userMessageForSupabaseWriteError(error) };
+      }
       const row = data as DbClient;
       setState((prev) => ({
         ...prev,
@@ -1080,8 +1127,10 @@ export function WavonProvider({
           },
         ],
       }));
-    })();
-  }, [businessId]);
+      return { ok: true };
+    },
+    [businessId]
+  );
 
   const updateClient = useCallback((id: string, patch: Partial<Client>) => {
     if (messageIfWriteBlocked(stateRef.current.workspaceAccess)) return;

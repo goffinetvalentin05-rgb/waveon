@@ -37,6 +37,7 @@ export default function ClientsPage() {
   const [search, setSearch] = useState("");
   const [drawerClient, setDrawerClient] = useState<Client | null>(null);
   const [privateNote, setPrivateNote] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const counts = useMemo(() => {
     const m = new Map<string, number>();
@@ -123,7 +124,7 @@ export default function ClientsPage() {
     setOpen(true);
   };
 
-  const save = () => {
+  const save = async () => {
     if (!premium) {
       toast.push({ kind: "error", message: "Cette fonctionnalité nécessite un abonnement actif." });
       return;
@@ -139,16 +140,26 @@ export default function ClientsPage() {
         email: email.trim(),
       });
       toast.push({ message: "Client mis à jour." });
-    } else {
-      addClient({
+      setOpen(false);
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await addClient({
         name: name.trim(),
         phone: phone.trim(),
         email: email.trim(),
         privateNote: "",
       });
+      if (!res.ok) {
+        toast.push({ kind: "error", message: res.error });
+        return;
+      }
       toast.push({ message: "Client ajouté." });
+      setOpen(false);
+    } finally {
+      setSaving(false);
     }
-    setOpen(false);
   };
 
   const remove = (c: Client) => {
@@ -287,7 +298,12 @@ export default function ClientsPage() {
             <button type="button" className={btnGhostClass} onClick={() => setOpen(false)}>
               Annuler
             </button>
-            <button type="button" className={btnPrimaryClass} onClick={save}>
+            <button
+              type="button"
+              className={btnPrimaryClass}
+              onClick={() => void save()}
+              disabled={saving}
+            >
               Enregistrer
             </button>
           </>

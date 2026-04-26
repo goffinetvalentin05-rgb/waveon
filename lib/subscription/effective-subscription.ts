@@ -1,7 +1,10 @@
 import type { ProfileSubscriptionRow } from "@/lib/subscription/profile-subscription-override";
 
-/** Compte interne : accès Pro immédiat sans Stripe (email Supabase Auth). */
-export const INTERNAL_ADMIN_AUTH_EMAIL = "goffinetvalentin05@gmail.com";
+/** Compte test / admin : accès complet sans abonnement Stripe (aligné RLS + API). */
+export const INTERNAL_ADMIN_TEST_EMAIL = "goffinetvalentin05@gmail.com";
+
+/** @deprecated Préférer {@link INTERNAL_ADMIN_TEST_EMAIL} */
+export const INTERNAL_ADMIN_AUTH_EMAIL = INTERNAL_ADMIN_TEST_EMAIL;
 
 /**
  * Source de vérité côté produit pour ce qui est « abonnement effectif » (hors affichage Stripe seul).
@@ -19,8 +22,13 @@ export type EffectiveSubscription = {
   canUseInvoices: boolean;
 };
 
+export function isAdminTestAccount(email: string | null | undefined): boolean {
+  return (email ?? "").toLowerCase().trim() === INTERNAL_ADMIN_TEST_EMAIL;
+}
+
+/** @deprecated Préférer {@link isAdminTestAccount} */
 export function isInternalAdminAuthEmail(email: string | null | undefined): boolean {
-  return (email ?? "").toLowerCase().trim() === INTERNAL_ADMIN_AUTH_EMAIL;
+  return isAdminTestAccount(email);
 }
 
 export function internalAdminEffectiveSubscription(): EffectiveSubscription {

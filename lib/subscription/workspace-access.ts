@@ -5,7 +5,7 @@ import { buildAdminWorkspaceAccessState } from "@/lib/subscription/admin-access"
 import {
   effectiveSubscriptionFromStripeAccess,
   internalAdminEffectiveSubscription,
-  isInternalAdminAuthEmail,
+  isAdminTestAccount,
   profileProEffectiveSubscription,
   type EffectiveSubscription,
 } from "@/lib/subscription/effective-subscription";
@@ -153,7 +153,7 @@ export async function resolveMerchantSubscription(
   const { user, supabase } = await normalizeMerchantUserContext(ctx);
   const authEmail = user.email ?? null;
 
-  if (isInternalAdminAuthEmail(user.email)) {
+  if (isAdminTestAccount(user.email)) {
     return {
       access: buildAdminWorkspaceAccessState(id),
       effective: internalAdminEffectiveSubscription(),

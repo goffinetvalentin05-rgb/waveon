@@ -8,7 +8,7 @@ import {
   profileAccessForApi,
   workspaceProfileAccessFromInternalAdminEmail,
 } from "@/lib/subscription/profile-subscription-override";
-import { isInternalAdminAuthEmail } from "@/lib/subscription/effective-subscription";
+import { isAdminTestAccount } from "@/lib/subscription/effective-subscription";
 import { buildWorkspaceTrialInfo } from "@/lib/subscription/user-access";
 import { SYNC_ERROR_SUBSCRIPTION_SNAPSHOT } from "@/lib/wavon/types";
 
@@ -76,7 +76,7 @@ export async function GET() {
   });
   const profileAccess =
     profileAccessForApi(profileRow) ??
-    (isInternalAdminAuthEmail(user.email) ? workspaceProfileAccessFromInternalAdminEmail() : null);
+    (isAdminTestAccount(user.email) ? workspaceProfileAccessFromInternalAdminEmail() : null);
 
   const snapshot = access.snapshot;
   const billing = getBillingStatusFromAccess(access, effective);
