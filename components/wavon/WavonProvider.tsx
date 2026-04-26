@@ -40,6 +40,7 @@ import {
   workspaceAccessSummaryFromSnapshot,
 } from "@/lib/subscription/workspace-access";
 import { supabase } from "@/lib/supabase/client";
+import { ensurePublicSlugForBusinessIfEmpty } from "@/lib/wavon/ensure-public-slug-for-business";
 import { normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
 import { normalizePublicSlugInput, validatePublicSlugFormat } from "@/lib/wavon/public-slug";
 import { messageIfWriteBlocked } from "@/lib/wavon/premium-access";
@@ -413,7 +414,7 @@ export function WavonProvider({
         .maybeSingle();
       if (businessErr) throw businessErr;
 
-      const ensuredBusiness: DbBusiness =
+      let ensuredBusiness: DbBusiness =
         (business as DbBusiness | null) ??
         (await (async () => {
           const provisionalSlug = `c-${crypto.randomUUID().replace(/-/g, "").slice(0, 11)}`;
@@ -432,6 +433,17 @@ export function WavonProvider({
           if (error) throw error;
           return created as DbBusiness;
         })());
+
+      if (!cancelled) {
+        const newSlug = await ensurePublicSlugForBusinessIfEmpty(supabase, {
+          id: ensuredBusiness.id,
+          public_slug: ensuredBusiness.public_slug,
+          business_name: ensuredBusiness.business_name,
+        });
+        if (newSlug) {
+          ensuredBusiness = { ...ensuredBusiness, public_slug: newSlug };
+        }
+      }
 
       if (cancelled) return;
       setBusinessId(ensuredBusiness.id);

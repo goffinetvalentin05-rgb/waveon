@@ -164,8 +164,15 @@ function segmentsFromJson(value: unknown): { start: string; end: string }[] {
   return out;
 }
 
+function publicBookingClientDebug(message: string, payload: Record<string, unknown>) {
+  if (process.env.NEXT_PUBLIC_PUBLIC_BOOKING_DEBUG === "1") {
+    console.log(`[public booking][client] ${message}`, payload);
+  }
+}
+
 export default function PublicBookingClient({ slug }: { slug: string }) {
   const [loadingInit, setLoadingInit] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [state, setState] = useState<WavonState | null>(null);
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [publishedName, setPublishedName] = useState<string>("");
@@ -181,6 +188,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
     let cancelled = false;
     async function load() {
       setLoadingInit(true);
+      setLoadError(null);
       setState(null);
       setBusinessId(null);
       try {
@@ -189,9 +197,19 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
           .select(
             "id,business_name,currency,public_slug,public_welcome_message,public_description,public_display_name,public_logo_url,public_cover_url,public_show_phone,public_show_address,public_show_description,phone,address"
           )
-          .eq("public_slug", slug)
+          .ilike("public_slug", slug)
           .maybeSingle();
-        if (businessErr) throw businessErr;
+        publicBookingClientDebug("business row", { slug, found: Boolean(business), err: businessErr?.message });
+        if (businessErr) {
+          if (process.env.NODE_ENV === "development") {
+            console.error("[public booking] business load:", businessErr);
+          }
+          if (!cancelled) {
+            setLoadError("Impossible de charger les informations du commerce. Réessaie dans un instant.");
+            setLoadingInit(false);
+          }
+          return;
+        }
         if (!business) {
           if (!cancelled) setLoadingInit(false);
           return;
@@ -239,20 +257,28 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
               .order("created_at", { ascending: true }),
           ]);
 
-        if (
+        const firstBatchErr =
           settingsRes.error ||
           servicesRes.error ||
           reservationsRes.error ||
           blockedSlotsRes.error ||
-          employeesRes.error
-        ) {
-          throw (
-            settingsRes.error ||
-            servicesRes.error ||
-            reservationsRes.error ||
-            blockedSlotsRes.error ||
-            employeesRes.error
-          );
+          employeesRes.error;
+        if (firstBatchErr) {
+          if (process.env.NODE_ENV === "development") {
+            console.error("[public booking] load batch:", {
+              settings: settingsRes.error?.message,
+              services: servicesRes.error?.message,
+              reservations: reservationsRes.error?.message,
+              blockedSlots: blockedSlotsRes.error?.message,
+              employees: employeesRes.error?.message,
+            });
+          }
+          publicBookingClientDebug("first batch error", { message: firstBatchErr.message, code: firstBatchErr.code });
+          if (!cancelled) {
+            setLoadError("Impossible de charger le planning pour le moment. Réessaie plus tard.");
+            setLoadingInit(false);
+          }
+          return;
         }
 
         const dbSettings = (settingsRes.data as DbSettings | null) ?? null;
@@ -405,6 +431,13 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
                   .eq("employee_id", employeeId),
               ]);
               if (weeklyRes.error || customRes.error || blockedRes.error) {
+                if (process.env.NODE_ENV === "development") {
+                  console.error("[public booking] planning for employee", employeeId, {
+                    weekly: weeklyRes.error,
+                    custom: customRes.error,
+                    blocked: blockedRes.error,
+                  });
+                }
                 return null;
               }
               const weekly = { ...emptyWeekly };
@@ -436,6 +469,7 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
           console.error("[public booking] load error:", e);
         }
         if (!cancelled) {
+          setLoadError("Une erreur inattendue s’est produite. Réessaie dans quelques instants.");
           setLoadingInit(false);
         }
       }
@@ -766,12 +800,18 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
         <div className={`${landingSection} text-center`}>
           <div className="mx-auto max-w-md rounded-3xl border border-neutral-200/90 bg-white px-8 py-12 shadow-[0_2px_16px_-4px_rgba(0,0,0,0.06)]">
             <h1 className="text-lg font-semibold text-neutral-950">
-              {loadingInit ? "Chargement…" : "Lien introuvable"}
+              {loadError
+                ? "Problème de chargement"
+                : loadingInit
+                  ? "Chargement…"
+                  : "Page de réservation introuvable"}
             </h1>
             <p className="mt-3 text-sm leading-relaxed text-neutral-500">
-              {loadingInit
-                ? "Connexion au planning…"
-                : "Ce lien de réservation n’existe pas ou n’est plus actif."}
+              {loadError
+                ? loadError
+                : loadingInit
+                  ? "Connexion au planning…"
+                  : "Ce lien ne correspond à aucun commerce, ou n’est plus disponible."}
             </p>
           </div>
         </div>

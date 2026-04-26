@@ -16,6 +16,7 @@ export const RESERVED_PUBLIC_SLUGS = new Set([
   "login",
   "logout",
   "mockup-export",
+  "pricing",
   "register",
   "reserver",
   "signup",
