@@ -4,15 +4,16 @@ import { requireProInvoicesAccess } from "@/lib/subscription/require-pro-invoice
 
 export const runtime = "nodejs";
 
+const PROJECTION =
+  "auto_create_on_confirmed,company_name,company_address,company_email,company_phone,company_vat_ide,payment_terms,payment_iban,payment_account_holder,payment_bank_name,brand_color,legal_footer,updated_at";
+
 export async function GET() {
   const gate = await requireProInvoicesAccess();
   if (!gate.ok) return gate.res;
 
   const { data, error } = await gate.supabase
     .from(WavonDbTable.invoiceSettings)
-    .select(
-      "auto_create_on_confirmed,company_name,company_address,company_email,company_phone,company_vat_ide,payment_terms,brand_color,legal_footer,updated_at"
-    )
+    .select(PROJECTION)
     .eq("business_id", gate.businessId)
     .maybeSingle();
 
@@ -36,29 +37,38 @@ export async function POST(req: NextRequest) {
     companyPhone?: string;
     companyVatIde?: string;
     paymentTerms?: string;
+    paymentIban?: string;
+    paymentAccountHolder?: string;
+    paymentBankName?: string;
     brandColor?: string;
     legalFooter?: string;
+  };
+
+  const trimOrNull = (v: unknown): string | null => {
+    const t = typeof v === "string" ? v.trim() : "";
+    return t.length === 0 ? null : t;
   };
 
   const payload = {
     business_id: gate.businessId,
     auto_create_on_confirmed: Boolean(body?.autoCreateOnConfirmed ?? false),
-    company_name: (body?.companyName ?? "").trim() || null,
-    company_address: (body?.companyAddress ?? "").trim() || null,
-    company_email: (body?.companyEmail ?? "").trim() || null,
-    company_phone: (body?.companyPhone ?? "").trim() || null,
-    company_vat_ide: (body?.companyVatIde ?? "").trim() || null,
-    payment_terms: (body?.paymentTerms ?? "").trim() || "Paiement à 30 jours",
-    brand_color: (body?.brandColor ?? "").trim() || null,
-    legal_footer: (body?.legalFooter ?? "").trim() || null,
+    company_name: trimOrNull(body?.companyName),
+    company_address: trimOrNull(body?.companyAddress),
+    company_email: trimOrNull(body?.companyEmail),
+    company_phone: trimOrNull(body?.companyPhone),
+    company_vat_ide: trimOrNull(body?.companyVatIde),
+    payment_terms: trimOrNull(body?.paymentTerms) ?? "Paiement à 30 jours",
+    payment_iban: trimOrNull(body?.paymentIban),
+    payment_account_holder: trimOrNull(body?.paymentAccountHolder),
+    payment_bank_name: trimOrNull(body?.paymentBankName),
+    brand_color: trimOrNull(body?.brandColor),
+    legal_footer: trimOrNull(body?.legalFooter),
   };
 
   const { data, error } = await gate.supabase
     .from(WavonDbTable.invoiceSettings)
     .upsert(payload, { onConflict: "business_id" })
-    .select(
-      "auto_create_on_confirmed,company_name,company_address,company_email,company_phone,company_vat_ide,payment_terms,brand_color,legal_footer,updated_at"
-    )
+    .select(PROJECTION)
     .single();
 
   if (error) {
@@ -68,4 +78,3 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ invoiceSettings: data });
 }
-

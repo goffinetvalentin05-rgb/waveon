@@ -56,7 +56,7 @@ export async function GET(
     supabase
       .from(WavonDbTable.invoiceSettings)
       .select(
-        "company_name,company_address,company_email,company_phone,company_vat_ide,payment_terms,brand_color,legal_footer"
+        "company_name,company_address,company_email,company_phone,company_vat_ide,payment_terms,payment_iban,payment_account_holder,payment_bank_name,brand_color,legal_footer"
       )
       .eq("business_id", businessId)
       .maybeSingle(),

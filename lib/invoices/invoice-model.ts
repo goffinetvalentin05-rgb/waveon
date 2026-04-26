@@ -45,6 +45,9 @@ export type InvoiceRecord = {
 
   notes: string | null;
   paymentTerms: string | null;
+  paymentIban: string | null;
+  paymentAccountHolder: string | null;
+  paymentBankName: string | null;
 
   reservationStartAt: string | null;
 
@@ -67,6 +70,9 @@ export type InvoiceSettings = {
   companyPhone: string | null;
   companyVatIde: string | null;
   paymentTerms: string;
+  paymentIban: string | null;
+  paymentAccountHolder: string | null;
+  paymentBankName: string | null;
   brandColor: string | null;
   legalFooter: string | null;
 };
@@ -166,6 +172,9 @@ export function mapInvoiceRow(row: Record<string, unknown>): InvoiceRecord {
     currency: normalizeBusinessCurrency((row.currency as string | null | undefined) ?? "CHF"),
     notes: str("notes"),
     paymentTerms: str("payment_terms"),
+    paymentIban: str("payment_iban"),
+    paymentAccountHolder: str("payment_account_holder"),
+    paymentBankName: str("payment_bank_name"),
     reservationStartAt: str("reservation_start_at"),
     createdAt: (row.created_at as string) ?? "",
     updatedAt: str("updated_at"),
@@ -189,6 +198,10 @@ export function mapInvoiceSettings(
       typeof row.payment_terms === "string" && row.payment_terms.trim().length > 0
         ? row.payment_terms
         : "Paiement à 30 jours",
+    paymentIban: typeof row.payment_iban === "string" ? row.payment_iban : null,
+    paymentAccountHolder:
+      typeof row.payment_account_holder === "string" ? row.payment_account_holder : null,
+    paymentBankName: typeof row.payment_bank_name === "string" ? row.payment_bank_name : null,
     brandColor: typeof row.brand_color === "string" ? row.brand_color : null,
     legalFooter: typeof row.legal_footer === "string" ? row.legal_footer : null,
   };
@@ -199,7 +212,8 @@ export const INVOICE_PROJECTION =
   "client_name,client_email,client_phone,client_address," +
   "business_name,business_address,business_email,business_phone,business_logo_url,business_primary_color," +
   "issue_date,due_date,subtotal,discount_amount,total_amount,currency," +
-  "notes,payment_terms,reservation_start_at," +
+  "notes,payment_terms,payment_iban,payment_account_holder,payment_bank_name," +
+  "reservation_start_at," +
   "service_name,service_price,line_unit_price,line_quantity,description," +
   "created_at,updated_at,sent_at,paid_at,cancelled_at";
 

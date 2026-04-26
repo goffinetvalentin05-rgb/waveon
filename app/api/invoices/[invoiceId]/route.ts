@@ -36,6 +36,9 @@ type PatchPayload = {
   dueDate?: string | null;
   notes?: string | null;
   paymentTerms?: string | null;
+  paymentIban?: string | null;
+  paymentAccountHolder?: string | null;
+  paymentBankName?: string | null;
   discountAmount?: number | string | null;
   primaryColor?: string | null;
   items?: ItemPayload[] | null;
@@ -105,7 +108,7 @@ export async function GET(
   const { data: settingsRow } = await supabase
     .from(WavonDbTable.invoiceSettings)
     .select(
-      "auto_create_on_confirmed,company_name,company_address,company_email,company_phone,company_vat_ide,payment_terms,brand_color,legal_footer,updated_at"
+      "auto_create_on_confirmed,company_name,company_address,company_email,company_phone,company_vat_ide,payment_terms,payment_iban,payment_account_holder,payment_bank_name,brand_color,legal_footer,updated_at"
     )
     .eq("business_id", businessId)
     .maybeSingle();
@@ -208,6 +211,15 @@ export async function PATCH(
   }
   if (body.paymentTerms !== undefined) {
     patch.payment_terms = trimOrNull(body.paymentTerms);
+  }
+  if (body.paymentIban !== undefined) {
+    patch.payment_iban = trimOrNull(body.paymentIban);
+  }
+  if (body.paymentAccountHolder !== undefined) {
+    patch.payment_account_holder = trimOrNull(body.paymentAccountHolder);
+  }
+  if (body.paymentBankName !== undefined) {
+    patch.payment_bank_name = trimOrNull(body.paymentBankName);
   }
   if (body.primaryColor !== undefined) {
     const v = trimOrNull(body.primaryColor);

@@ -78,6 +78,9 @@ function ParametresPageContent() {
     companyPhone: string;
     companyVatIde: string;
     paymentTerms: string;
+    paymentIban: string;
+    paymentAccountHolder: string;
+    paymentBankName: string;
     brandColor: string;
     legalFooter: string;
   }>(null);
@@ -114,6 +117,9 @@ function ParametresPageContent() {
           company_phone: string | null;
           company_vat_ide: string | null;
           payment_terms: string;
+          payment_iban: string | null;
+          payment_account_holder: string | null;
+          payment_bank_name: string | null;
           brand_color: string | null;
           legal_footer: string | null;
         } | null;
@@ -127,6 +133,9 @@ function ParametresPageContent() {
         companyPhone: row?.company_phone ?? "",
         companyVatIde: row?.company_vat_ide ?? "",
         paymentTerms: row?.payment_terms ?? "Paiement à 30 jours",
+        paymentIban: row?.payment_iban ?? "",
+        paymentAccountHolder: row?.payment_account_holder ?? "",
+        paymentBankName: row?.payment_bank_name ?? "",
         brandColor: row?.brand_color ?? "",
         legalFooter: row?.legal_footer ?? "",
       });
@@ -779,6 +788,57 @@ function ParametresPageContent() {
                   placeholder="#2563EB"
                 />
               </div>
+
+              <fieldset className="mt-2 grid gap-4 rounded-2xl border border-neutral-200/80 bg-neutral-50/60 p-4">
+                <legend className="px-2 text-xs font-medium uppercase tracking-wide text-neutral-500">
+                  Informations bancaires (par défaut)
+                </legend>
+                <p className="text-xs text-neutral-500">
+                  Affichées sur tes factures, modifiables ligne par ligne. Préremplies à la création
+                  d&apos;une facture.
+                </p>
+                <div>
+                  <label className={labelClass}>IBAN</label>
+                  <input
+                    className={`${inputClass} mt-2 tabular-nums`}
+                    value={invoiceSettings?.paymentIban ?? ""}
+                    onChange={(e) =>
+                      setInvoiceSettings((prev) =>
+                        prev ? { ...prev, paymentIban: e.target.value } : prev
+                      )
+                    }
+                    placeholder="CH00 0000 0000 0000 0000 0"
+                  />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className={labelClass}>Titulaire du compte</label>
+                    <input
+                      className={`${inputClass} mt-2`}
+                      value={invoiceSettings?.paymentAccountHolder ?? ""}
+                      onChange={(e) =>
+                        setInvoiceSettings((prev) =>
+                          prev ? { ...prev, paymentAccountHolder: e.target.value } : prev
+                        )
+                      }
+                      placeholder={invoiceSettings?.companyName || s.businessName || "Nom du commerce"}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Banque</label>
+                    <input
+                      className={`${inputClass} mt-2`}
+                      value={invoiceSettings?.paymentBankName ?? ""}
+                      onChange={(e) =>
+                        setInvoiceSettings((prev) =>
+                          prev ? { ...prev, paymentBankName: e.target.value } : prev
+                        )
+                      }
+                      placeholder="Banque Cantonale Vaudoise"
+                    />
+                  </div>
+                </div>
+              </fieldset>
 
               <div>
                 <label className={labelClass}>Mentions légales / bas de facture (optionnel)</label>

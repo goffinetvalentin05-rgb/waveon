@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useToast } from "@/components/wavon/Toast";
 import { useWavon } from "@/components/wavon/WavonProvider";
 import { PageHeader } from "@/components/wavon/ui/PageHeader";
-import { InvoicePreview } from "@/components/wavon/factures/InvoicePreview";
 import {
   expandHexColor,
   recomputeTotals,
@@ -21,6 +21,7 @@ import { currencyFieldAffix } from "@/lib/utils/formatPrice";
 import {
   btnGhostClass,
   btnPrimaryClass,
+  btnSecondaryClass,
   cardClass,
   inputClass,
   labelClass,
@@ -29,20 +30,15 @@ import {
   textareaClass,
   userTextBreakClass,
 } from "@/lib/wavon/tokens";
+import type { InvoiceTemplateBusiness } from "@/components/wavon/factures/InvoiceTemplate";
 
-type BusinessRow = {
-  business_name: string | null;
-  email: string | null;
-  phone: string | null;
-  address: string | null;
-  city: string | null;
-  postal_code: string | null;
-  public_logo_url: string | null;
-  public_accent_color: string | null;
-};
+const InvoicePreviewModal = dynamic(
+  () =>
+    import("@/components/wavon/factures/InvoicePreviewModal").then((m) => m.InvoicePreviewModal),
+  { ssr: false }
+);
 
 type DraftItem = {
-  /** id existant (uuid) ou identifiant local pour un item non encore enregistré. */
   key: string;
   serverId: string | null;
   description: string;
@@ -97,12 +93,14 @@ export default function FactureDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [locked, setLocked] = useState(false);
   const [notFound, setNotFound] = useState(false);
+
   const [serverInvoice, setServerInvoice] = useState<InvoiceRecord | null>(null);
   const [serverItems, setServerItems] = useState<InvoiceItem[]>([]);
   const [settings, setSettings] = useState<InvoiceSettings | null>(null);
-  const [business, setBusiness] = useState<BusinessRow | null>(null);
+  const [business, setBusiness] = useState<InvoiceTemplateBusiness | null>(null);
 
   const [draftStatus, setDraftStatus] = useState<InvoiceStatus>("draft");
   const [draftCustomerName, setDraftCustomerName] = useState("");
@@ -113,6 +111,9 @@ export default function FactureDetailPage() {
   const [draftDueDate, setDraftDueDate] = useState("");
   const [draftDiscount, setDraftDiscount] = useState("0");
   const [draftPaymentTerms, setDraftPaymentTerms] = useState("");
+  const [draftPaymentIban, setDraftPaymentIban] = useState("");
+  const [draftPaymentHolder, setDraftPaymentHolder] = useState("");
+  const [draftPaymentBank, setDraftPaymentBank] = useState("");
   const [draftNotes, setDraftNotes] = useState("");
   const [draftPrimaryColor, setDraftPrimaryColor] = useState("");
   const [draftItems, setDraftItems] = useState<DraftItem[]>([]);
@@ -127,7 +128,7 @@ export default function FactureDetailPage() {
         invoice?: InvoiceRecord;
         items?: InvoiceItem[];
         settings?: InvoiceSettings | null;
-        business?: BusinessRow | null;
+        business?: InvoiceTemplateBusiness | null;
         error?: string;
         code?: string;
       };
@@ -162,6 +163,11 @@ export default function FactureDetailPage() {
       setDraftDueDate(body.invoice.dueDate ?? "");
       setDraftDiscount(String(Math.max(0, body.invoice.discountAmount ?? 0)));
       setDraftPaymentTerms(body.invoice.paymentTerms ?? body.settings?.paymentTerms ?? "");
+      setDraftPaymentIban(body.invoice.paymentIban ?? body.settings?.paymentIban ?? "");
+      setDraftPaymentHolder(
+        body.invoice.paymentAccountHolder ?? body.settings?.paymentAccountHolder ?? ""
+      );
+      setDraftPaymentBank(body.invoice.paymentBankName ?? body.settings?.paymentBankName ?? "");
       setDraftNotes(body.invoice.notes ?? "");
       setDraftPrimaryColor(
         expandHexColor(body.invoice.businessPrimaryColor) ??
@@ -172,7 +178,15 @@ export default function FactureDetailPage() {
       setDraftItems(
         baseItems.length > 0
           ? baseItems
-          : [{ key: newLocalKey(), serverId: null, description: "Prestation", quantity: "1", unitPrice: "0" }]
+          : [
+              {
+                key: newLocalKey(),
+                serverId: null,
+                description: "Prestation",
+                quantity: "1",
+                unitPrice: "0",
+              },
+            ]
       );
     } catch (e) {
       toast.push({ kind: "error", message: e instanceof Error ? e.message : "Erreur." });
@@ -185,47 +199,6 @@ export default function FactureDetailPage() {
     if (!ready || !invoiceId) return;
     void fetchInvoice();
   }, [ready, invoiceId, fetchInvoice]);
-
-  const previewInvoice: InvoiceRecord | null = useMemo(() => {
-    if (!serverInvoice) return null;
-    const totals = recomputeTotals(
-      draftItems.map((it) => ({
-        quantity: parseQuantity(it.quantity),
-        unitPrice: parseUnit(it.unitPrice),
-      })),
-      parseUnit(draftDiscount)
-    );
-    return {
-      ...serverInvoice,
-      status: draftStatus,
-      customerName: draftCustomerName.trim() || "Client",
-      customerEmail: draftCustomerEmail.trim() || null,
-      customerPhone: draftCustomerPhone.trim() || null,
-      customerAddress: draftCustomerAddress.trim() || null,
-      issueDate: draftIssueDate || serverInvoice.issueDate,
-      dueDate: draftDueDate || null,
-      notes: draftNotes.trim() || null,
-      paymentTerms: draftPaymentTerms.trim() || null,
-      businessPrimaryColor: expandHexColor(draftPrimaryColor) ?? serverInvoice.businessPrimaryColor,
-      subtotal: totals.subtotal,
-      discountAmount: totals.discountAmount,
-      totalAmount: totals.total,
-    };
-  }, [
-    serverInvoice,
-    draftItems,
-    draftDiscount,
-    draftStatus,
-    draftCustomerName,
-    draftCustomerEmail,
-    draftCustomerPhone,
-    draftCustomerAddress,
-    draftIssueDate,
-    draftDueDate,
-    draftNotes,
-    draftPaymentTerms,
-    draftPrimaryColor,
-  ]);
 
   const previewItems: InvoiceItem[] = useMemo(
     () =>
@@ -256,6 +229,46 @@ export default function FactureDetailPage() {
     [draftItems, draftDiscount]
   );
 
+  const previewInvoice: InvoiceRecord | null = useMemo(() => {
+    if (!serverInvoice) return null;
+    return {
+      ...serverInvoice,
+      status: draftStatus,
+      customerName: draftCustomerName.trim() || "Client",
+      customerEmail: draftCustomerEmail.trim() || null,
+      customerPhone: draftCustomerPhone.trim() || null,
+      customerAddress: draftCustomerAddress.trim() || null,
+      issueDate: draftIssueDate || serverInvoice.issueDate,
+      dueDate: draftDueDate || null,
+      notes: draftNotes.trim() || null,
+      paymentTerms: draftPaymentTerms.trim() || null,
+      paymentIban: draftPaymentIban.trim() || null,
+      paymentAccountHolder: draftPaymentHolder.trim() || null,
+      paymentBankName: draftPaymentBank.trim() || null,
+      businessPrimaryColor:
+        expandHexColor(draftPrimaryColor) ?? serverInvoice.businessPrimaryColor,
+      subtotal: totals.subtotal,
+      discountAmount: totals.discountAmount,
+      totalAmount: totals.total,
+    };
+  }, [
+    serverInvoice,
+    draftStatus,
+    draftCustomerName,
+    draftCustomerEmail,
+    draftCustomerPhone,
+    draftCustomerAddress,
+    draftIssueDate,
+    draftDueDate,
+    draftNotes,
+    draftPaymentTerms,
+    draftPaymentIban,
+    draftPaymentHolder,
+    draftPaymentBank,
+    draftPrimaryColor,
+    totals,
+  ]);
+
   const isDirty = useMemo(() => {
     if (!serverInvoice) return false;
     if (draftStatus !== serverInvoice.status) return true;
@@ -267,6 +280,9 @@ export default function FactureDetailPage() {
     if (draftDueDate !== (serverInvoice.dueDate ?? "")) return true;
     if (draftNotes !== (serverInvoice.notes ?? "")) return true;
     if (draftPaymentTerms !== (serverInvoice.paymentTerms ?? "")) return true;
+    if (draftPaymentIban !== (serverInvoice.paymentIban ?? "")) return true;
+    if (draftPaymentHolder !== (serverInvoice.paymentAccountHolder ?? "")) return true;
+    if (draftPaymentBank !== (serverInvoice.paymentBankName ?? "")) return true;
     if (
       (expandHexColor(draftPrimaryColor) ?? "") !==
       (expandHexColor(serverInvoice.businessPrimaryColor) ?? "")
@@ -296,6 +312,9 @@ export default function FactureDetailPage() {
     draftDueDate,
     draftNotes,
     draftPaymentTerms,
+    draftPaymentIban,
+    draftPaymentHolder,
+    draftPaymentBank,
     draftPrimaryColor,
     draftDiscount,
     draftItems,
@@ -325,7 +344,10 @@ export default function FactureDetailPage() {
         }))
         .filter((it) => it.description.length > 0 || it.unitPrice > 0 || it.quantity > 0);
       if (cleanedItems.length === 0) {
-        toast.push({ kind: "error", message: "Ajoute au moins une ligne avant d'enregistrer." });
+        toast.push({
+          kind: "error",
+          message: "Ajoute au moins une ligne avant d'enregistrer.",
+        });
         return;
       }
       const payload = {
@@ -338,6 +360,9 @@ export default function FactureDetailPage() {
         dueDate: draftDueDate || null,
         notes: draftNotes.trim() || null,
         paymentTerms: draftPaymentTerms.trim() || null,
+        paymentIban: draftPaymentIban.trim() || null,
+        paymentAccountHolder: draftPaymentHolder.trim() || null,
+        paymentBankName: draftPaymentBank.trim() || null,
         primaryColor: expandHexColor(draftPrimaryColor) ?? null,
         discountAmount: parseUnit(draftDiscount),
         items: cleanedItems,
@@ -362,7 +387,15 @@ export default function FactureDetailPage() {
       setDraftItems(
         baseItems.length > 0
           ? baseItems
-          : [{ key: newLocalKey(), serverId: null, description: "Prestation", quantity: "1", unitPrice: "0" }]
+          : [
+              {
+                key: newLocalKey(),
+                serverId: null,
+                description: "Prestation",
+                quantity: "1",
+                unitPrice: "0",
+              },
+            ]
       );
       setDraftStatus(body.invoice.status);
       setDraftDiscount(String(Math.max(0, body.invoice.discountAmount ?? 0)));
@@ -385,6 +418,9 @@ export default function FactureDetailPage() {
     draftDueDate,
     draftNotes,
     draftPaymentTerms,
+    draftPaymentIban,
+    draftPaymentHolder,
+    draftPaymentBank,
     draftPrimaryColor,
     draftDiscount,
     toast,
@@ -400,7 +436,9 @@ export default function FactureDetailPage() {
     }
     setDownloading(true);
     try {
-      const res = await fetch(`/api/invoices/${serverInvoice.id}/pdf`, { credentials: "same-origin" });
+      const res = await fetch(`/api/invoices/${serverInvoice.id}/pdf`, {
+        credentials: "same-origin",
+      });
       if (!res.ok) {
         const txt = await res.text().catch(() => "");
         throw new Error(txt || "La génération du PDF a échoué.");
@@ -487,6 +525,7 @@ export default function FactureDetailPage() {
 
   const currencyAffix = currencyFieldAffix(serverInvoice.currency);
   const previewKeyColor = resolvePrimaryColor(previewInvoice, settings);
+  const fileName = `facture-${serverInvoice.invoiceNumber || serverInvoice.id}.pdf`;
 
   return (
     <div className="space-y-6 pb-12">
@@ -502,6 +541,13 @@ export default function FactureDetailPage() {
             <Link href="/dashboard/factures" className={btnGhostClass}>
               ← Retour
             </Link>
+            <button
+              type="button"
+              className={btnSecondaryClass}
+              onClick={() => setPreviewOpen(true)}
+            >
+              Aperçu de la facture
+            </button>
             <button
               type="button"
               className={btnGhostClass}
@@ -523,11 +569,11 @@ export default function FactureDetailPage() {
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,640px)]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-6">
           <section className={cardClass}>
             <h2 className="text-base font-semibold text-neutral-950">Statut & dates</h2>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
                 <label className={labelClass}>Statut</label>
                 <select
@@ -633,7 +679,13 @@ export default function FactureDetailPage() {
                 onClick={() =>
                   setDraftItems((prev) => [
                     ...prev,
-                    { key: newLocalKey(), serverId: null, description: "", quantity: "1", unitPrice: "0" },
+                    {
+                      key: newLocalKey(),
+                      serverId: null,
+                      description: "",
+                      quantity: "1",
+                      unitPrice: "0",
+                    },
                   ])
                 }
               >
@@ -670,7 +722,9 @@ export default function FactureDetailPage() {
                         value={it.quantity}
                         onChange={(e) =>
                           setDraftItems((prev) =>
-                            prev.map((p, pIdx) => (pIdx === idx ? { ...p, quantity: e.target.value } : p))
+                            prev.map((p, pIdx) =>
+                              pIdx === idx ? { ...p, quantity: e.target.value } : p
+                            )
                           )
                         }
                       />
@@ -683,7 +737,9 @@ export default function FactureDetailPage() {
                         value={it.unitPrice}
                         onChange={(e) =>
                           setDraftItems((prev) =>
-                            prev.map((p, pIdx) => (pIdx === idx ? { ...p, unitPrice: e.target.value } : p))
+                            prev.map((p, pIdx) =>
+                              pIdx === idx ? { ...p, unitPrice: e.target.value } : p
+                            )
                           )
                         }
                       />
@@ -691,7 +747,9 @@ export default function FactureDetailPage() {
                     <div className="md:col-span-3">
                       <label className={labelClass}>Total ligne</label>
                       <p className="mt-2 inline-flex h-11 w-full items-center justify-end rounded-2xl border border-transparent bg-white px-4 text-sm font-medium tabular-nums text-neutral-900">
-                        {(parseQuantity(it.quantity) * parseUnit(it.unitPrice)).toLocaleString("fr-CH")}{" "}
+                        {(parseQuantity(it.quantity) * parseUnit(it.unitPrice)).toLocaleString(
+                          "fr-CH"
+                        )}{" "}
                         {currencyAffix}
                       </p>
                     </div>
@@ -714,15 +772,37 @@ export default function FactureDetailPage() {
           </section>
 
           <section className={cardClass}>
-            <h2 className="text-base font-semibold text-neutral-950">Totaux & paiement</h2>
+            <h2 className="text-base font-semibold text-neutral-950">Informations de paiement</h2>
+            <p className="mt-1 text-sm text-neutral-500">
+              Affichées sur la facture, en bas du document. Préremplies depuis tes paramètres de
+              facturation, modifiables par facture.
+            </p>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className={labelClass}>Rabais ({currencyAffix})</label>
+              <div className="sm:col-span-2">
+                <label className={labelClass}>IBAN</label>
                 <input
-                  inputMode="decimal"
-                  className={`${inputClass} mt-2 tabular-nums`}
-                  value={draftDiscount}
-                  onChange={(e) => setDraftDiscount(e.target.value)}
+                  className={`${inputClass} mt-2 tabular-nums ${userTextBreakClass}`}
+                  value={draftPaymentIban}
+                  onChange={(e) => setDraftPaymentIban(e.target.value)}
+                  placeholder="CH00 0000 0000 0000 0000 0"
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Titulaire du compte</label>
+                <input
+                  className={`${inputClass} mt-2 ${userTextBreakClass}`}
+                  value={draftPaymentHolder}
+                  onChange={(e) => setDraftPaymentHolder(e.target.value)}
+                  placeholder="Nom du commerce"
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Banque</label>
+                <input
+                  className={`${inputClass} mt-2 ${userTextBreakClass}`}
+                  value={draftPaymentBank}
+                  onChange={(e) => setDraftPaymentBank(e.target.value)}
+                  placeholder="Banque Cantonale Vaudoise"
                 />
               </div>
               <div className="sm:col-span-2">
@@ -731,7 +811,22 @@ export default function FactureDetailPage() {
                   className={`${textareaClass} mt-2 min-h-[72px] ${userTextBreakClass}`}
                   value={draftPaymentTerms}
                   onChange={(e) => setDraftPaymentTerms(e.target.value)}
-                  placeholder="Paiement à 30 jours, IBAN CH…"
+                  placeholder="Paiement à 30 jours, virement bancaire."
+                />
+              </div>
+            </div>
+          </section>
+
+          <section className={cardClass}>
+            <h2 className="text-base font-semibold text-neutral-950">Totaux & notes</h2>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className={labelClass}>Rabais ({currencyAffix})</label>
+                <input
+                  inputMode="decimal"
+                  className={`${inputClass} mt-2 tabular-nums`}
+                  value={draftDiscount}
+                  onChange={(e) => setDraftDiscount(e.target.value)}
                 />
               </div>
               <div className="sm:col-span-2">
@@ -783,25 +878,72 @@ export default function FactureDetailPage() {
           </section>
         </div>
 
-        <div className="space-y-3 lg:sticky lg:top-4 lg:self-start">
-          <div className="flex items-center justify-between text-xs uppercase tracking-wide text-neutral-500">
-            <span>Aperçu live</span>
-            <span>Format A4</span>
-          </div>
-          <div className="rounded-3xl border border-neutral-200/80 bg-neutral-50/60 p-4">
-            <div className="origin-top-left">
-              <div className="overflow-hidden">
-                <InvoicePreview
-                  invoice={previewInvoice}
-                  items={previewItems}
-                  settings={settings}
-                  business={business}
-                />
-              </div>
+        <aside className="space-y-4 xl:sticky xl:top-4 xl:self-start">
+          <div className={`${cardClass} space-y-4`}>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+              Récap rapide
+            </h2>
+            <div className="flex items-baseline justify-between text-sm">
+              <span className="text-neutral-500">Numéro</span>
+              <span className="font-medium text-neutral-950">
+                {serverInvoice.invoiceNumber || "—"}
+              </span>
             </div>
+            <div className="flex items-baseline justify-between text-sm">
+              <span className="text-neutral-500">Statut</span>
+              <span className="font-medium text-neutral-950">
+                {STATUS_OPTIONS.find((o) => o.value === draftStatus)?.label}
+              </span>
+            </div>
+            <div className="flex items-baseline justify-between text-sm">
+              <span className="text-neutral-500">Total</span>
+              <span className="font-semibold text-neutral-950 tabular-nums">
+                {totals.total.toLocaleString("fr-CH")} {currencyAffix}
+              </span>
+            </div>
+            <div className="grid gap-2 pt-2">
+              <button
+                type="button"
+                className={btnSecondaryClass}
+                onClick={() => setPreviewOpen(true)}
+              >
+                Aperçu de la facture
+              </button>
+              <button
+                type="button"
+                className={btnGhostClass}
+                onClick={() => void handleDownloadPdf()}
+                disabled={downloading}
+              >
+                {downloading ? "Génération…" : "Télécharger PDF"}
+              </button>
+              <button
+                type="button"
+                className={btnPrimaryClass}
+                onClick={() => void handleSave()}
+                disabled={saving || !isDirty}
+              >
+                {saving ? "Enregistrement…" : isDirty ? "Enregistrer" : "Enregistré"}
+              </button>
+            </div>
+            {isDirty ? (
+              <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                Modifications non enregistrées. L&apos;aperçu utilise tes valeurs en cours.
+              </p>
+            ) : null}
           </div>
-        </div>
+        </aside>
       </div>
+
+      <InvoicePreviewModal
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        invoice={previewInvoice}
+        items={previewItems}
+        settings={settings}
+        business={business}
+        fileName={fileName}
+      />
     </div>
   );
 }
