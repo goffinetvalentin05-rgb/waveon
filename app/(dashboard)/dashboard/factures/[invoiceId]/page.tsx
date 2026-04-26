@@ -36,8 +36,11 @@ type InvoiceSettings = {
   company_name: string | null;
   company_address: string | null;
   company_email: string | null;
+  company_phone: string | null;
   company_vat_ide: string | null;
   payment_terms: string;
+  brand_color: string | null;
+  legal_footer: string | null;
   updated_at: string;
 };
 
@@ -144,7 +147,7 @@ export default function FactureDetailPage() {
       <div className="space-y-8 pb-8">
         <PageHeader
           title="Factures"
-          description="La création de factures est disponible avec le plan Pro."
+          description="La facturation est disponible avec le plan Pro."
           actions={
             <Link href="/dashboard/facturation#waevon-pricing" className={btnPrimaryClass}>
               Passer au plan Pro
@@ -187,6 +190,12 @@ export default function FactureDetailPage() {
         description={`Créée le ${formatDateFr(invoice.created_at, "d MMM yyyy")}`}
         actions={
           <div className="flex flex-wrap gap-2">
+            <a
+              href={`/api/invoices/${invoice.id}/pdf`}
+              className={btnPrimaryClass + " no-underline inline-flex items-center justify-center"}
+            >
+              Télécharger le PDF
+            </a>
             <Link href="/dashboard/factures" className={btnGhostClass}>
               Retour
             </Link>

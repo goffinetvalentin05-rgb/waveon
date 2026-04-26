@@ -38,7 +38,7 @@ export async function requireProInvoicesAccess(): Promise<
     return {
       ok: false,
       res: NextResponse.json(
-        { error: "La création de factures est disponible avec le plan Pro.", code: "feature_locked" },
+        { error: "La facturation est disponible avec le plan Pro.", code: "feature_locked" },
         { status: 403 }
       ),
     };

@@ -21,7 +21,7 @@ export async function GET(
   const { data: invoice, error } = await supabase
     .from(WavonDbTable.invoices)
     .select(
-      "id,business_id,reservation_id,invoice_number,status,client_name,client_email,client_phone,reservation_start_at,service_name,service_price,currency,created_at,sent_at,paid_at,cancelled_at"
+      "id,business_id,reservation_id,invoice_number,status,client_name,client_email,client_phone,client_id,reservation_start_at,service_name,description,service_price,line_quantity,currency,issue_date,notes,created_at,sent_at,paid_at,cancelled_at"
     )
     .eq("id", id)
     .eq("business_id", businessId)
@@ -34,7 +34,7 @@ export async function GET(
   const { data: settings } = await supabase
     .from(WavonDbTable.invoiceSettings)
     .select(
-      "auto_create_on_confirmed,company_name,company_address,company_email,company_vat_ide,payment_terms,updated_at"
+      "auto_create_on_confirmed,company_name,company_address,company_email,company_phone,company_vat_ide,payment_terms,brand_color,legal_footer,updated_at"
     )
     .eq("business_id", businessId)
     .maybeSingle();

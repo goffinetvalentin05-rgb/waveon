@@ -3,6 +3,7 @@
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
 import { useCallback, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Calendar, dateFnsLocalizer, type View } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay, addMonths, addWeeks, addDays } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -114,6 +115,7 @@ export default function CalendrierPage() {
     deleteBlockedSlot,
   } = useWavon();
   const toast = useToast();
+  const router = useRouter();
   const premium = canUsePremiumFeatures(state.workspaceAccess);
   const canInvoices = canUseProInvoices(state);
   const [view, setView] = useState<View>("week");
@@ -795,7 +797,7 @@ export default function CalendrierPage() {
                     if (!canInvoices) {
                       toast.push({
                         kind: "error",
-                        message: "La création de factures est disponible avec le plan Pro.",
+                        message: "La facturation est disponible avec le plan Pro.",
                       });
                       return;
                     }
@@ -813,20 +815,30 @@ export default function CalendrierPage() {
                         body: JSON.stringify({ reservationId: detailRes.id }),
                         credentials: "same-origin",
                       });
-                      const body = (await res.json().catch(() => ({}))) as { id?: string; error?: string; code?: string };
+                      const body = (await res.json().catch(() => ({}))) as {
+                        id?: string;
+                        error?: string;
+                        code?: string;
+                        existed?: boolean;
+                      };
                       if (!res.ok) {
                         if (res.status === 403 && body.code === "feature_locked") {
                           toast.push({
                             kind: "error",
-                            message: "La création de factures est disponible avec le plan Pro.",
+                            message: "La facturation est disponible avec le plan Pro.",
                           });
                           return;
                         }
-                        throw new Error(body.error ?? "Création de facture impossible.");
+                        throw new Error(body.error ?? "La création de la facture a échoué.");
                       }
                       if (!body.id) throw new Error("Facture créée sans identifiant.");
                       setDetailOpen(false);
-                      window.location.href = `/dashboard/factures/${body.id}`;
+                      if (body.code === "existing" || body.existed) {
+                        toast.push({ message: "Une facture existe déjà pour ce rendez-vous." });
+                      } else {
+                        toast.push({ message: "Facture créée avec succès." });
+                      }
+                      router.push(`/dashboard/factures/${body.id}`);
                     } catch (e) {
                       toast.push({ kind: "error", message: e instanceof Error ? e.message : "Erreur." });
                     }

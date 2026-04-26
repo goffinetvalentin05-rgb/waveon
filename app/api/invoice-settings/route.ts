@@ -11,7 +11,7 @@ export async function GET() {
   const { data, error } = await gate.supabase
     .from(WavonDbTable.invoiceSettings)
     .select(
-      "auto_create_on_confirmed,company_name,company_address,company_email,company_vat_ide,payment_terms,updated_at"
+      "auto_create_on_confirmed,company_name,company_address,company_email,company_phone,company_vat_ide,payment_terms,brand_color,legal_footer,updated_at"
     )
     .eq("business_id", gate.businessId)
     .maybeSingle();
@@ -33,8 +33,11 @@ export async function POST(req: NextRequest) {
     companyName?: string;
     companyAddress?: string;
     companyEmail?: string;
+    companyPhone?: string;
     companyVatIde?: string;
     paymentTerms?: string;
+    brandColor?: string;
+    legalFooter?: string;
   };
 
   const payload = {
@@ -43,15 +46,18 @@ export async function POST(req: NextRequest) {
     company_name: (body?.companyName ?? "").trim() || null,
     company_address: (body?.companyAddress ?? "").trim() || null,
     company_email: (body?.companyEmail ?? "").trim() || null,
+    company_phone: (body?.companyPhone ?? "").trim() || null,
     company_vat_ide: (body?.companyVatIde ?? "").trim() || null,
     payment_terms: (body?.paymentTerms ?? "").trim() || "Paiement à 30 jours",
+    brand_color: (body?.brandColor ?? "").trim() || null,
+    legal_footer: (body?.legalFooter ?? "").trim() || null,
   };
 
   const { data, error } = await gate.supabase
     .from(WavonDbTable.invoiceSettings)
     .upsert(payload, { onConflict: "business_id" })
     .select(
-      "auto_create_on_confirmed,company_name,company_address,company_email,company_vat_ide,payment_terms,updated_at"
+      "auto_create_on_confirmed,company_name,company_address,company_email,company_phone,company_vat_ide,payment_terms,brand_color,legal_footer,updated_at"
     )
     .single();
 

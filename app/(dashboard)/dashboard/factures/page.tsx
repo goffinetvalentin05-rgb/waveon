@@ -104,7 +104,7 @@ export default function FacturesPage() {
         <div className={`${cardClass} overflow-hidden`}>
           <div className="p-6">
             <p className="text-lg font-semibold tracking-tight text-neutral-950">
-              La création de factures est disponible avec le plan Pro.
+              La facturation est disponible avec le plan Pro.
             </p>
             <p className="mt-2 text-sm leading-relaxed text-neutral-600">
               Passe au plan Pro pour activer la génération de factures et suivre les paiements.
@@ -190,6 +190,12 @@ export default function FacturesPage() {
                         <Link href={`/dashboard/factures/${r.id}`} className={btnGhostClass + " px-3 py-2 text-xs"}>
                           Voir
                         </Link>
+                        <a
+                          href={`/api/invoices/${r.id}/pdf`}
+                          className={btnGhostClass + " inline-flex items-center px-3 py-2 text-xs no-underline"}
+                        >
+                          PDF
+                        </a>
                         <button
                           type="button"
                           className={btnGhostClass + " px-3 py-2 text-xs"}

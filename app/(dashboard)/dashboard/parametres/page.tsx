@@ -18,6 +18,7 @@ import {
   labelClass,
   linkClass,
   spinnerClass,
+  textareaClass,
 } from "@/lib/wavon/tokens";
 import { deleteBrandingAsset, getBrandingPublicUrl, uploadBrandingAsset } from "@/lib/wavon/storage";
 import { BUSINESS_CURRENCY_OPTIONS, normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
@@ -74,8 +75,11 @@ function ParametresPageContent() {
     companyName: string;
     companyAddress: string;
     companyEmail: string;
+    companyPhone: string;
     companyVatIde: string;
     paymentTerms: string;
+    brandColor: string;
+    legalFooter: string;
   }>(null);
 
   const tabParam = searchParams.get("tab") as SettingsTab | null;
@@ -107,8 +111,11 @@ function ParametresPageContent() {
           company_name: string | null;
           company_address: string | null;
           company_email: string | null;
+          company_phone: string | null;
           company_vat_ide: string | null;
           payment_terms: string;
+          brand_color: string | null;
+          legal_footer: string | null;
         } | null;
       };
       const row = body.invoiceSettings ?? null;
@@ -117,8 +124,11 @@ function ParametresPageContent() {
         companyName: row?.company_name ?? "",
         companyAddress: row?.company_address ?? "",
         companyEmail: row?.company_email ?? "",
+        companyPhone: row?.company_phone ?? "",
         companyVatIde: row?.company_vat_ide ?? "",
         paymentTerms: row?.payment_terms ?? "Paiement à 30 jours",
+        brandColor: row?.brand_color ?? "",
+        legalFooter: row?.legal_footer ?? "",
       });
     })();
   }, [ready, canInvoices]);
@@ -632,7 +642,7 @@ function ParametresPageContent() {
           {!canInvoices ? (
             <div className="rounded-2xl border border-neutral-200/90 bg-neutral-50/70 p-5">
               <p className="text-sm font-medium text-neutral-950">
-                La création de factures est disponible avec le plan Pro.
+                La facturation est disponible avec le plan Pro.
               </p>
               <p className="mt-2 text-sm text-neutral-600">
                 Passe au plan Pro pour activer les factures et suivre les paiements.
@@ -721,6 +731,18 @@ function ParametresPageContent() {
                 />
               </div>
 
+              <div>
+                <label className={labelClass}>Téléphone (affiché sur la facture)</label>
+                <input
+                  className={`${inputClass} mt-2`}
+                  value={invoiceSettings?.companyPhone ?? ""}
+                  onChange={(e) =>
+                    setInvoiceSettings((prev) => (prev ? { ...prev, companyPhone: e.target.value } : prev))
+                  }
+                  placeholder={s.phone || "+41 …"}
+                />
+              </div>
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className={labelClass}>Numéro IDE/TVA (optionnel)</label>
@@ -744,6 +766,30 @@ function ParametresPageContent() {
                     placeholder="Paiement à 30 jours"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Couleur d’accent (PDF, ex. #2563EB)</label>
+                <input
+                  className={`${inputClass} mt-2`}
+                  value={invoiceSettings?.brandColor ?? ""}
+                  onChange={(e) =>
+                    setInvoiceSettings((prev) => (prev ? { ...prev, brandColor: e.target.value } : prev))
+                  }
+                  placeholder="#2563EB"
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>Mentions légales / bas de facture (optionnel)</label>
+                <textarea
+                  className={textareaClass + " mt-2 min-h-[88px]"}
+                  value={invoiceSettings?.legalFooter ?? ""}
+                  onChange={(e) =>
+                    setInvoiceSettings((prev) => (prev ? { ...prev, legalFooter: e.target.value } : prev))
+                  }
+                  placeholder="Ex. Taux de TVA, coordonnées bancaires, pénalités de retard…"
+                />
               </div>
 
               <div className="flex flex-wrap items-center gap-4">
