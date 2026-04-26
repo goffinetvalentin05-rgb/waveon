@@ -8,22 +8,23 @@ export const runtime = "nodejs";
 
 const INVOICE_DEBUG = (process.env.WAVON_INVOICE_DEBUG ?? "").trim() === "1";
 
+const LIST_PROJECTION =
+  "id,invoice_number,status,reservation_id,client_name,service_name,service_price,total_amount,subtotal,discount_amount,currency,reservation_start_at,issue_date,due_date,created_at";
+
 export async function GET() {
   const gate = await requireProInvoicesAccess();
   if (!gate.ok) return gate.res;
 
   const { data, error } = await gate.supabase
     .from(WavonDbTable.invoices)
-    .select(
-      "id,invoice_number,status,client_name,service_name,service_price,total_amount,currency,reservation_start_at,issue_date,created_at"
-    )
+    .select(LIST_PROJECTION)
     .eq("business_id", gate.businessId)
     .order("created_at", { ascending: false })
-    .limit(200);
+    .limit(500);
 
   if (error) {
     console.error("[api/invoices] list error:", error);
-    return NextResponse.json({ error: "Impossible de charger les factures." }, { status: 500 });
+    return NextResponse.json({ error: "Le chargement des factures a échoué." }, { status: 500 });
   }
 
   return NextResponse.json({ invoices: data ?? [] });
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
 
   if (resvErr || !resv) {
     return NextResponse.json(
-      { error: "Réservation introuvable pour ce commerce.", code: "not_found" },
+      { error: "Cette réservation est introuvable.", code: "not_found" },
       { status: 404 }
     );
   }
@@ -120,7 +121,7 @@ export async function POST(req: NextRequest) {
       plan: effective.plan,
       full: error,
     });
-    console.error("[api/invoices] erreur RPC (détail) :", mapped.logMessage, error);
+    console.error("[api/invoices] erreur RPC création :", mapped.logMessage, error);
 
     const { data: existingAfter } = await supabase
       .from(WavonDbTable.invoices)

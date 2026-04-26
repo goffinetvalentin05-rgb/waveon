@@ -4,35 +4,17 @@ import { requireProInvoicesAccess } from "@/lib/subscription/require-pro-invoice
 import {
   buildInvoicePdfBuffer,
   type BusinessPdfRow,
-  type InvoiceBusinessSnapshot,
-  type InvoiceSettingsPdfRow,
 } from "@/lib/invoices/render-invoice-pdf";
 import { normalizeFileName } from "@/lib/invoices/invoice-filename";
+import {
+  INVOICE_ITEM_PROJECTION,
+  INVOICE_PROJECTION,
+  mapInvoiceRow,
+  mapInvoiceSettings,
+  mapItemRow,
+} from "@/lib/invoices/invoice-model";
 
 export const runtime = "nodejs";
-
-type InvoiceRow = {
-  id: string;
-  invoice_number: string;
-  client_name: string;
-  client_email: string | null;
-  client_phone: string | null;
-  service_name: string;
-  service_price: number;
-  line_unit_price: number | null;
-  line_quantity: number | null;
-  total_amount: number | null;
-  currency: string;
-  description: string | null;
-  notes: string | null;
-  issue_date: string | null;
-  reservation_start_at: string;
-  business_name: string | null;
-  business_address: string | null;
-  business_email: string | null;
-  business_phone: string | null;
-  business_logo_url: string | null;
-};
 
 export async function GET(
   _req: Request,
@@ -48,75 +30,52 @@ export async function GET(
   if (!gate.ok) return gate.res;
   const { supabase, businessId } = gate;
 
-  const { data: invoice, error: invErr } = await supabase
+  const { data: invoiceRow, error: invErr } = await supabase
     .from(WavonDbTable.invoices)
-    .select(
-      "id,invoice_number,client_name,client_email,client_phone,service_name,service_price,line_unit_price,line_quantity,total_amount,currency,description,notes,issue_date,reservation_start_at,business_name,business_address,business_email,business_phone,business_logo_url"
-    )
+    .select(INVOICE_PROJECTION)
     .eq("id", id)
     .eq("business_id", businessId)
     .single();
 
-  if (invErr || !invoice) {
-    return NextResponse.json({ error: "Facture introuvable." }, { status: 404 });
+  if (invErr || !invoiceRow) {
+    return NextResponse.json({ error: "Cette facture est introuvable." }, { status: 404 });
   }
 
-  const { data: business } = await supabase
-    .from(WavonDbTable.businesses)
-    .select("business_name,email,phone,address,city,postal_code,public_logo_url")
-    .eq("id", businessId)
-    .single();
+  const [{ data: itemRows }, { data: businessRow }, { data: settingsRow }] = await Promise.all([
+    supabase
+      .from("wavon_invoice_items")
+      .select(INVOICE_ITEM_PROJECTION)
+      .eq("invoice_id", id)
+      .order("position", { ascending: true })
+      .order("created_at", { ascending: true }),
+    supabase
+      .from(WavonDbTable.businesses)
+      .select("business_name,email,phone,address,city,postal_code,public_logo_url,public_accent_color")
+      .eq("id", businessId)
+      .single(),
+    supabase
+      .from(WavonDbTable.invoiceSettings)
+      .select(
+        "company_name,company_address,company_email,company_phone,company_vat_ide,payment_terms,brand_color,legal_footer"
+      )
+      .eq("business_id", businessId)
+      .maybeSingle(),
+  ]);
 
-  const { data: invSettings } = await supabase
-    .from(WavonDbTable.invoiceSettings)
-    .select(
-      "company_name,company_address,company_email,company_phone,company_vat_ide,payment_terms,brand_color,legal_footer"
-    )
-    .eq("business_id", businessId)
-    .maybeSingle();
+  const invoice = mapInvoiceRow(invoiceRow as Record<string, unknown>);
+  const items = (itemRows ?? []).map((r) => mapItemRow(r as Record<string, unknown>));
+  const settings = mapInvoiceSettings(settingsRow as Record<string, unknown> | null);
+  const business = (businessRow as BusinessPdfRow) ?? ({} as BusinessPdfRow);
 
-  const inv = invoice as InvoiceRow;
-  const b = (business as BusinessPdfRow) ?? ({} as BusinessPdfRow);
-  const s = (invSettings as InvoiceSettingsPdfRow | null) ?? null;
-  const snap: InvoiceBusinessSnapshot | null =
-    inv.business_name || inv.business_address || inv.business_email || inv.business_phone || inv.business_logo_url
-      ? {
-          business_name: inv.business_name,
-          business_address: inv.business_address,
-          business_email: inv.business_email,
-          business_phone: inv.business_phone,
-          business_logo_url: inv.business_logo_url,
-        }
-      : null;
+  const pdf = await buildInvoicePdfBuffer({ invoice, items, business, settings });
 
-  const pdf = await buildInvoicePdfBuffer({
-    invoice: {
-      invoice_number: inv.invoice_number,
-      issue_date: inv.issue_date,
-      client_name: inv.client_name,
-      client_email: inv.client_email,
-      client_phone: inv.client_phone,
-      service_name: inv.service_name,
-      service_price: inv.service_price,
-      line_unit_price: inv.line_unit_price != null ? Number(inv.line_unit_price) : undefined,
-      line_quantity: inv.line_quantity != null ? Number(inv.line_quantity) : 1,
-      total_amount: inv.total_amount != null ? Number(inv.total_amount) : undefined,
-      currency: inv.currency,
-      description: inv.description,
-      notes: inv.notes,
-      reservation_start_at: inv.reservation_start_at,
-    },
-    business: b,
-    invoiceSettings: s,
-    businessOnInvoice: snap,
-  });
-
-  const name = `Facture-${normalizeFileName(inv.invoice_number)}.pdf`;
+  const baseName = `facture-${normalizeFileName(invoice.invoiceNumber || invoice.id)}`;
+  const fileName = `${baseName}.pdf`;
   return new NextResponse(Buffer.from(pdf), {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${name}"; filename*=UTF-8''${encodeURIComponent(name)}`,
+      "Content-Disposition": `attachment; filename="${fileName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
       "Cache-Control": "private, no-store",
     },
   });
