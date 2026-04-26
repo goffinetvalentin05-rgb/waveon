@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   addMinutes,
   combineYmdTime,
@@ -24,6 +24,11 @@ import type { BlockedSlot, DayKey, Employee, Service, WavonState } from "@/lib/w
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { EMPTY_SUBSCRIPTION_SNAPSHOT } from "@/lib/wavon/types";
 import { getBrandingPublicUrl } from "@/lib/wavon/storage";
+import {
+  buildReservationIcsString,
+  downloadTextFile,
+  sanitizeIcsFilenameSegment,
+} from "@/lib/wavon/reservation-ics";
 
 type DbBusiness = {
   id: string;
@@ -169,6 +174,21 @@ function publicBookingClientDebug(message: string, payload: Record<string, unkno
     console.log(`[public booking][client] ${message}`, payload);
   }
 }
+
+type ConfirmedReservation = {
+  id: string;
+  status: "confirmed" | "pending";
+  serviceName: string;
+  durationMinutes: number;
+  employeeName: string;
+  startAt: string;
+  endAt: string;
+  clientName: string;
+  clientEmail: string | null;
+  clientPhone: string | null;
+  emailSent: boolean;
+  accentColor: string | null;
+};
 
 export default function PublicBookingClient({ slug }: { slug: string }) {
   const [loadingInit, setLoadingInit] = useState(true);
@@ -488,9 +508,10 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
   const [clientName, setClientName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [confirmedReservation, setConfirmedReservation] = useState<ConfirmedReservation | null>(null);
+  const submitGuardRef = useRef(false);
 
   const resolvedServiceId =
     serviceId && state?.services.some((s) => s.id === serviceId)
@@ -588,7 +609,8 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
     setStep("service");
     setEmployeeChoice("");
     setErr(null);
-    setMsg(null);
+    setConfirmedReservation(null);
+    submitGuardRef.current = false;
   }, [svc?.id]);
 
   const statesByEmployeeId = useMemo(() => {
@@ -821,7 +843,8 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
 
   const submit = async () => {
     setErr(null);
-    setMsg(null);
+    if (confirmedReservation) return;
+    if (submitGuardRef.current) return;
     if (!state.services.length) {
       setErr("Aucun service disponible.");
       return;
@@ -842,7 +865,9 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
       setErr("Aucun créneau disponible pour ce jour.");
       return;
     }
+    submitGuardRef.current = true;
     setLoading(true);
+    let succeeded = false;
     try {
       const start = combineYmdTime(dateYmd, time);
       // Re-validate against fresh DB data right before creating reservation.
@@ -1034,16 +1059,46 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
           buffer_after_minutes: effectiveSvc.bufferAfterMin ?? 0,
           status,
         })
-        .select("id,created_at")
+        .select("id,created_at,start_at,end_at,status,duration_minutes,client_id,client_name")
         .single();
       if (rErr) {
         const code = (rErr as { code?: string } | null)?.code;
         if (code === "23P01") {
-          setErr("Ce créneau vient d’être pris. Choisis un autre horaire.");
+          setErr("Ce créneau vient d’être réservé. Veuillez choisir un autre horaire.");
           return;
         }
         throw rErr;
       }
+
+      const row = createdRes as {
+        id: string;
+        created_at: string;
+        start_at: string;
+        end_at: string;
+        status: "confirmed" | "pending";
+        duration_minutes: number | null;
+        client_id: string | null;
+        client_name: string | null;
+      };
+
+      let clientEmail: string | null = null;
+      let clientPhone: string | null = null;
+      let clientDisplayName = row.client_name?.trim() || displayName;
+      if (row.client_id) {
+        const { data: cli } = await supabase
+          .from(WavonDbTable.clients)
+          .select("full_name,email,phone")
+          .eq("id", row.client_id)
+          .maybeSingle();
+        const c = cli as { full_name: string | null; email: string | null; phone: string | null } | null;
+        if (c) {
+          clientDisplayName = c.full_name?.trim() || clientDisplayName;
+          clientEmail = c.email?.trim() || null;
+          clientPhone = c.phone?.trim() || null;
+        }
+      }
+
+      const employeeName = employees.find((e) => e.id === finalEmployeeId)?.name ?? "—";
 
       setState((prev) => {
         if (!prev) return prev;
@@ -1052,43 +1107,66 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
           reservations: [
             ...prev.reservations,
             {
-              id: (createdRes as { id: string }).id,
+              id: row.id,
               clientId,
-              clientName: displayName,
+              clientName: clientDisplayName,
               serviceId: effectiveSvc.id,
               employeeId: finalEmployeeId,
-              start: start.toISOString(),
-              end: end.toISOString(),
-              durationMin: effectiveSvc.durationMin,
+              start: row.start_at,
+              end: row.end_at,
+              durationMin: row.duration_minutes ?? effectiveSvc.durationMin,
               bufferBeforeMin: effectiveSvc.bufferBeforeMin ?? 0,
               bufferAfterMin: effectiveSvc.bufferAfterMin ?? 0,
-              status,
-              createdAt: (createdRes as { created_at: string }).created_at,
+              status: row.status,
+              createdAt: row.created_at,
               notes: "",
             },
           ],
         };
       });
 
-      // Envoi des emails de confirmation (fire-and-forget)
-      void fetch("/api/emails/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "new_booking",
-          reservationId: (createdRes as { id: string }).id,
-          businessId,
-        }),
-      }).catch(() => {});
+      let emailSent = false;
+      try {
+        const res = await fetch("/api/emails/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "new_booking",
+            reservationId: row.id,
+            businessId,
+          }),
+        });
+        if (res.ok) {
+          const json = (await res.json()) as { ok?: boolean };
+          emailSent = Boolean(json?.ok);
+        }
+      } catch {
+        emailSent = false;
+      }
 
-      setMsg(state.settings.publicAfterBookingMessage || "Ta demande est enregistrée. À très bientôt.");
+      setConfirmedReservation({
+        id: row.id,
+        status: row.status,
+        serviceName: effectiveSvc.name,
+        durationMinutes: row.duration_minutes ?? effectiveSvc.durationMin,
+        employeeName,
+        startAt: row.start_at,
+        endAt: row.end_at,
+        clientName: clientDisplayName,
+        clientEmail,
+        clientPhone,
+        emailSent,
+        accentColor: effectiveSvc.color?.trim() || null,
+      });
+      succeeded = true;
     } catch (e) {
       if (process.env.NODE_ENV !== "production") {
         console.error("[public booking] submit error:", e);
       }
-      setErr("Impossible d’enregistrer la réservation. Réessaie dans un instant.");
+      setErr("Impossible de confirmer la réservation. Veuillez réessayer.");
     } finally {
       setLoading(false);
+      if (!succeeded) submitGuardRef.current = false;
     }
   };
 
@@ -1196,8 +1274,240 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
                 </div>
 
                 {/* Form section (integrated) */}
-                <div className="border-t border-neutral-100 px-6 py-6 sm:px-8 sm:py-8">
+                <div
+                  className={`border-t border-neutral-100 px-6 py-6 sm:px-8 sm:py-8 ${
+                    confirmedReservation
+                      ? "bg-gradient-to-b from-emerald-50/45 via-[#fbfdfb] to-white"
+                      : ""
+                  }`}
+                >
                   <div className="space-y-6">
+                    {confirmedReservation ? (
+                      <div className="relative px-0.5 pb-1">
+                        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+                          <span className="absolute left-[8%] top-6 text-lg text-amber-400/35">✦</span>
+                          <span className="absolute right-[10%] top-10 text-base text-emerald-400/30">✦</span>
+                          <span className="absolute left-[12%] bottom-32 text-sm text-violet-300/35">✦</span>
+                          <span className="absolute right-[14%] bottom-20 text-lg text-emerald-300/25">✦</span>
+                        </div>
+
+                        <div className="relative mx-auto max-w-md text-center">
+                          {(() => {
+                            const cr = confirmedReservation;
+                            const accent = cr.accentColor;
+                            const accentStyle =
+                              accent && /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(accent)
+                                ? { boxShadow: `0 0 0 2px ${accent}33`, backgroundColor: `${accent}14` }
+                                : undefined;
+                            const dateLabel = new Date(cr.startAt).toLocaleDateString("fr-FR", {
+                              weekday: "long",
+                              day: "numeric",
+                              month: "long",
+                              year: "numeric",
+                            });
+                            const timeLabel = new Date(cr.startAt)
+                              .toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+                              .replace(":", "h");
+                            const refShort = cr.id.replace(/-/g, "").slice(0, 8).toUpperCase();
+                            const bizAddress =
+                              state.settings.publicShowAddress && state.settings.address?.trim()
+                                ? state.settings.address.trim()
+                                : "";
+                            const bizDesc =
+                              state.settings.publicShowDescription && state.settings.publicDescription?.trim()
+                                ? state.settings.publicDescription.trim()
+                                : "";
+                            const onAddToCalendar = () => {
+                              const loc =
+                                bizAddress ||
+                                (state.settings.publicShowPhone && state.settings.phone?.trim()
+                                  ? state.settings.phone.trim()
+                                  : displayName);
+                              const descLines = [
+                                `Commerce : ${displayName}`,
+                                `Prestation : ${cr.serviceName}`,
+                                `Prestataire : ${cr.employeeName}`,
+                                `Client : ${cr.clientName}`,
+                                cr.clientEmail ? `Email : ${cr.clientEmail}` : null,
+                                cr.clientPhone ? `Téléphone : ${cr.clientPhone}` : null,
+                                `Référence : ${refShort}`,
+                              ].filter(Boolean) as string[];
+                              const ics = buildReservationIcsString({
+                                reservationId: cr.id,
+                                title: `Rendez-vous - ${cr.serviceName}`,
+                                description: descLines.join("\n"),
+                                location: loc,
+                                start: new Date(cr.startAt),
+                                end: new Date(cr.endAt),
+                              });
+                              downloadTextFile(
+                                `rendez-vous-${sanitizeIcsFilenameSegment(cr.serviceName)}.ics`,
+                                ics,
+                                "text/calendar;charset=utf-8"
+                              );
+                            };
+
+                            return (
+                              <>
+                                <div
+                                  className="mx-auto flex size-[4.25rem] items-center justify-center rounded-full bg-emerald-100 text-emerald-600 ring-4 ring-white shadow-sm"
+                                  style={accentStyle}
+                                >
+                                  <svg
+                                    className="size-9"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    aria-hidden
+                                  >
+                                    <path d="M20 6 9 17l-5-5" />
+                                  </svg>
+                                </div>
+                                <h2 className="mt-5 text-2xl font-semibold tracking-tight text-neutral-950 sm:text-[1.65rem]">
+                                  Réservation confirmée !
+                                </h2>
+                                <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-neutral-600">
+                                  Votre rendez-vous a bien été enregistré.
+                                </p>
+                                {cr.status === "pending" ? (
+                                  <p className="mx-auto mt-2 max-w-sm text-xs font-medium text-amber-800/90">
+                                    En attente de validation par le commerce.
+                                  </p>
+                                ) : null}
+
+                                <div className="mx-auto mt-8 w-full max-w-md rounded-3xl border border-neutral-200/90 bg-white/90 p-5 text-left shadow-[0_8px_40px_-24px_rgba(0,0,0,0.12)] backdrop-blur-sm">
+                                  <div className="flex gap-4">
+                                    <div className="relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-neutral-200/90 bg-neutral-50">
+                                      {logoUrl ? (
+                                        <Image src={logoUrl} alt="" fill className="object-cover" />
+                                      ) : (
+                                        <span className="text-sm font-semibold text-neutral-600">{initials}</span>
+                                      )}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <p className={`text-base font-semibold text-neutral-950 ${userTextBreakClass}`}>
+                                        {displayName}
+                                      </p>
+                                      {bizDesc ? (
+                                        <p className={`mt-1 text-xs leading-relaxed text-neutral-500 ${userTextBreakClass}`}>
+                                          {bizDesc}
+                                        </p>
+                                      ) : null}
+                                      {bizAddress ? (
+                                        <p className={`mt-2 text-xs text-neutral-500 ${userTextBreakClass}`}>
+                                          {bizAddress}
+                                        </p>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="mx-auto mt-6 w-full max-w-md rounded-3xl border border-neutral-200/80 bg-white/95 p-5 text-left">
+                                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                                    Détails
+                                  </p>
+                                  <dl className="mt-3 space-y-2.5 text-sm text-neutral-700">
+                                    <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between">
+                                      <dt className="font-medium text-neutral-950">Prestation</dt>
+                                      <dd className={`text-neutral-600 ${userTextBreakClass}`}>{cr.serviceName}</dd>
+                                    </div>
+                                    <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between">
+                                      <dt className="font-medium text-neutral-950">Prestataire</dt>
+                                      <dd className={`text-neutral-600 ${userTextBreakClass}`}>{cr.employeeName}</dd>
+                                    </div>
+                                    <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between">
+                                      <dt className="font-medium text-neutral-950">Date</dt>
+                                      <dd className={`text-neutral-600 capitalize ${userTextBreakClass}`}>{dateLabel}</dd>
+                                    </div>
+                                    <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between">
+                                      <dt className="font-medium text-neutral-950">Heure</dt>
+                                      <dd className="text-neutral-600">{timeLabel}</dd>
+                                    </div>
+                                    <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between">
+                                      <dt className="font-medium text-neutral-950">Nom</dt>
+                                      <dd className={`text-neutral-600 ${userTextBreakClass}`}>{cr.clientName}</dd>
+                                    </div>
+                                    {cr.clientEmail ? (
+                                      <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between">
+                                        <dt className="font-medium text-neutral-950">Email</dt>
+                                        <dd className={`break-all text-neutral-600 ${userTextBreakClass}`}>
+                                          {cr.clientEmail}
+                                        </dd>
+                                      </div>
+                                    ) : null}
+                                    {cr.clientPhone ? (
+                                      <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between">
+                                        <dt className="font-medium text-neutral-950">Téléphone</dt>
+                                        <dd className={`text-neutral-600 ${userTextBreakClass}`}>{cr.clientPhone}</dd>
+                                      </div>
+                                    ) : null}
+                                    <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between">
+                                      <dt className="font-medium text-neutral-950">Référence</dt>
+                                      <dd className="font-mono text-xs text-neutral-600">{refShort}</dd>
+                                    </div>
+                                  </dl>
+                                </div>
+
+                                <div
+                                  className={`mx-auto mt-6 max-w-md rounded-2xl border px-4 py-3.5 text-left text-sm leading-relaxed ${
+                                    !cr.clientEmail
+                                      ? "border-neutral-200/90 bg-neutral-50/90 text-neutral-800"
+                                      : cr.emailSent
+                                        ? "border-emerald-200/90 bg-emerald-50/80 text-emerald-950"
+                                        : "border-amber-200/90 bg-amber-50/85 text-amber-950"
+                                  }`}
+                                >
+                                  {!cr.clientEmail ? (
+                                    <>
+                                      <p className="font-medium">Votre réservation est bien enregistrée.</p>
+                                      <p className="mt-1 text-neutral-600">
+                                        Vous n&apos;avez pas indiqué d&apos;email : ajoutez ce rendez-vous à votre
+                                        calendrier ou conservez votre référence ci-dessus.
+                                      </p>
+                                    </>
+                                  ) : cr.emailSent ? (
+                                    <>
+                                      <p className="font-medium">Un email de confirmation vient de vous être envoyé.</p>
+                                      <p className="mt-1 text-emerald-900/85">
+                                        Vous y trouverez tous les détails de votre réservation.
+                                      </p>
+                                    </>
+                                  ) : (
+                                    <p className="font-medium">
+                                      Votre réservation est bien enregistrée. L&apos;email de confirmation n&apos;a pas pu
+                                      être envoyé pour le moment.
+                                    </p>
+                                  )}
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={onAddToCalendar}
+                                  className="mx-auto mt-6 flex min-h-[48px] w-full max-w-md items-center justify-center gap-2 rounded-2xl border-2 border-neutral-900/10 bg-white px-4 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-neutral-50"
+                                  style={
+                                    accent && /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(accent)
+                                      ? { borderColor: `${accent}55` }
+                                      : undefined
+                                  }
+                                >
+                                  <span aria-hidden>📅</span>
+                                  Ajouter à mon calendrier
+                                </button>
+
+                                <p className="mt-8 text-lg font-semibold text-neutral-950">À très bientôt !</p>
+                                <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-neutral-500">
+                                  Merci pour votre confiance, nous avons hâte de vous accueillir.
+                                </p>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    ) : (
+                      <>
                     <div className="flex items-center justify-between">
                       {step !== "service" ? (
                         <button
@@ -1430,11 +1740,6 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
                             {err}
                           </div>
                         ) : null}
-                        {msg ? (
-                          <div className={`rounded-2xl border border-neutral-200/90 bg-neutral-50 px-4 py-3 text-sm text-neutral-800 ${userTextBreakClass}`}>
-                            {msg}
-                          </div>
-                        ) : null}
 
                         <button
                           type="button"
@@ -1445,10 +1750,10 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
                           {loading ? (
                             <span className="inline-flex items-center gap-2">
                               <span
-                                className="size-5 rounded-full border-2 border-neutral-200 border-t-neutral-950 motion-safe:animate-spin"
+                                className="size-5 rounded-full border-2 border-white/40 border-t-white motion-safe:animate-spin"
                                 aria-hidden
                               />
-                              Envoi…
+                              Confirmation en cours…
                             </span>
                           ) : (
                             "Confirmer la réservation"
@@ -1462,6 +1767,8 @@ export default function PublicBookingClient({ slug }: { slug: string }) {
                         {err}
                       </div>
                     ) : null}
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
