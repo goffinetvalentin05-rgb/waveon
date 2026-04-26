@@ -1,15 +1,17 @@
+import type { EffectiveSubscription } from "./effective-subscription";
 import type { WorkspaceAccessState } from "./workspace-access";
 import type { SubscriptionSnapshot } from "@/lib/wavon/types";
 
 export type BillingPlanDisplay = "starter" | "pro" | null;
 
-/** Statuts affichables côté produit (plus d’essai gratuit Waevon). */
+/** Statuts affichables côté produit. */
 export type WaevonPublicBillingStatus =
   | "active"
   | "inactive"
   | "past_due"
   | "canceled"
-  | "sync_error";
+  | "sync_error"
+  | "trialing_waevon";
 
 export type BillingStatus = {
   status: string;
@@ -40,6 +42,8 @@ function deriveLabel(publicStatus: WaevonPublicBillingStatus): string {
   switch (publicStatus) {
     case "active":
       return "Abonnement actif";
+    case "trialing_waevon":
+      return "Essai gratuit en cours";
     case "past_due":
       return "Paiement en retard";
     case "canceled":
@@ -59,6 +63,8 @@ function deriveBillingMessage(
   switch (publicStatus) {
     case "active":
       return "Votre abonnement est actif. Vous pouvez utiliser toutes les fonctionnalités Waevon.";
+    case "trialing_waevon":
+      return "Votre période d’essai gratuite de 7 jours est en cours. Profitez de toutes les fonctions d’agenda, sauf la facturation Pro.";
     case "past_due":
       return "Votre dernier paiement n’a pas abouti. Mettez à jour votre moyen de paiement pour conserver l’accès complet.";
     case "canceled":
@@ -80,11 +86,36 @@ function planDisplayFromSnapshot(s: SubscriptionSnapshot): BillingPlanDisplay {
 
 /**
  * Interprète l’état d’abonnement Stripe pour l’UI et les garde-fous métier.
+ * `effective` (optionnel) : essai 7 j sur le profil sans abonnement Stripe.
  */
-export function getBillingStatusFromAccess(access: WorkspaceAccessState): BillingStatus {
+export function getBillingStatusFromAccess(
+  access: WorkspaceAccessState,
+  effective?: EffectiveSubscription | null
+): BillingStatus {
   const snapshot = access.snapshot;
   const stripeCustomerId = access.stripeCustomerId ?? snapshot.stripeCustomerId ?? null;
   const hasActiveSubscription = access.hasActiveSubscription;
+  const trialWrite =
+    !hasActiveSubscription &&
+    Boolean(effective?.canUseServices) &&
+    effective?.status === "trialing";
+
+  if (trialWrite) {
+    return {
+      status: "trialing",
+      publicStatus: "trialing_waevon",
+      label: deriveLabel("trialing_waevon"),
+      billingMessage: deriveBillingMessage("trialing_waevon", false),
+      canUseApp: true,
+      canUsePremiumFeatures: true,
+      plan: (effective?.plan === "pro" || effective?.plan === "starter" ? effective.plan : "starter") as BillingPlanDisplay,
+      currentPeriodEnd: null,
+      canManageBilling: access.canManageBilling,
+      accessSource: snapshot.accessSource,
+      cancelAtPeriodEnd: false,
+      stripeCustomerId,
+    };
+  }
 
   if (hasActiveSubscription) {
     const publicStatus = derivePublicStatus(snapshot);

@@ -63,7 +63,8 @@ export default function FacturationClient() {
       canUsePremiumFeatures: false,
     };
     return getBillingStatusFromAccess(
-      buildWorkspaceAccessState(businessId, state.subscription, summary)
+      buildWorkspaceAccessState(businessId, state.subscription, summary),
+      state.workspaceAccess?.effective ?? null
     );
   }, [ready, businessId, state.subscription, state.workspaceAccess]);
 

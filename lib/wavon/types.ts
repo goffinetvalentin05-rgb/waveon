@@ -231,6 +231,12 @@ export type WorkspaceProfileAccess = {
   subscriptionStatusOverride: string | null;
 };
 
+/** Données d’essai Waevon (7 j) pour l’UI. */
+export type WorkspaceTrialInfo = {
+  trialEnd: string;
+  daysRemaining: number;
+};
+
 /** Résumé accès (synchro avec /api/subscription/live). */
 export type WorkspaceAccessSummary = {
   hasActiveSubscription: boolean;
@@ -238,6 +244,8 @@ export type WorkspaceAccessSummary = {
   profileAccess?: WorkspaceProfileAccess | null;
   /** Abonnement effectif (serveur) — préférer pour les garde-fous UI. */
   effective?: EffectiveSubscription | null;
+  /** Présent si essai 7 j actif (sans abonnement Stripe). */
+  trialInfo?: WorkspaceTrialInfo | null;
 };
 
 export type WavonState = {

@@ -10,6 +10,7 @@ import {
   workspaceProfileAccessFromInternalAdminEmail,
 } from "@/lib/subscription/profile-subscription-override";
 import { isInternalAdminAuthEmail } from "@/lib/subscription/effective-subscription";
+import { buildWorkspaceTrialInfo } from "@/lib/subscription/user-access";
 
 export const runtime = "nodejs";
 
@@ -53,8 +54,9 @@ export async function GET(req: NextRequest) {
       profileAccessForApi(profileRow) ??
       (isInternalAdminAuthEmail(authEmail) ? workspaceProfileAccessFromInternalAdminEmail() : null);
 
-    const billing = getBillingStatusFromAccess(access);
-    const canBook = access.hasActiveSubscription;
+    const billing = getBillingStatusFromAccess(access, effective);
+    const canBook = Boolean(effective.canUseReservations);
+    const trialInfo = buildWorkspaceTrialInfo(profileRow, access.hasActiveSubscription);
     return NextResponse.json({
       canUseApp: canBook,
       canUsePremiumFeatures: canBook,
@@ -62,12 +64,13 @@ export async function GET(req: NextRequest) {
       workspaceAccess: {
         workspaceId: access.workspaceId,
         hasActiveSubscription: access.hasActiveSubscription,
-        canUsePremiumFeatures: access.canUsePremiumFeatures,
+        canUsePremiumFeatures: effective.canUseServices,
         subscriptionStatus: access.subscriptionStatus,
         planName: access.planName,
         stripeCustomerId: access.stripeCustomerId,
         currentPeriodEnd: access.currentPeriodEnd,
         effective,
+        trialInfo: trialInfo ?? null,
         ...(profileAccess ? { profileAccess } : {}),
       },
     });
@@ -114,24 +117,29 @@ export async function GET(req: NextRequest) {
     profileAccessForApi(profileRow) ??
     (isInternalAdminAuthEmail(user.email) ? workspaceProfileAccessFromInternalAdminEmail() : null);
 
-  const billing = getBillingStatusFromAccess(access);
+  const billing = getBillingStatusFromAccess(access, effective);
+  const trialInfo = buildWorkspaceTrialInfo(profileRow, access.hasActiveSubscription);
   return NextResponse.json({
     canUseApp: true,
-    canUsePremiumFeatures: access.hasActiveSubscription,
+    canUsePremiumFeatures: effective.canUseServices,
     billing,
     workspaceAccess: {
       workspaceId: access.workspaceId,
       hasActiveSubscription: access.hasActiveSubscription,
-      canUsePremiumFeatures: access.canUsePremiumFeatures,
+      canUsePremiumFeatures: effective.canUseServices,
       subscriptionStatus: access.subscriptionStatus,
       planName: access.planName,
       stripeCustomerId: access.stripeCustomerId,
       currentPeriodEnd: access.currentPeriodEnd,
       effective,
+      trialInfo: trialInfo ?? null,
       ...(profileAccess ? { profileAccess } : {}),
     },
     state: {
-      kind: access.hasActiveSubscription ? ("active" as const) : ("subscription_required" as const),
+      kind:
+        effective.canUseServices || access.hasActiveSubscription
+          ? ("active" as const)
+          : ("subscription_required" as const),
     },
   });
 }

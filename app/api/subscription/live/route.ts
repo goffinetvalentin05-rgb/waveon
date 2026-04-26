@@ -9,6 +9,7 @@ import {
   workspaceProfileAccessFromInternalAdminEmail,
 } from "@/lib/subscription/profile-subscription-override";
 import { isInternalAdminAuthEmail } from "@/lib/subscription/effective-subscription";
+import { buildWorkspaceTrialInfo } from "@/lib/subscription/user-access";
 import { SYNC_ERROR_SUBSCRIPTION_SNAPSHOT } from "@/lib/wavon/types";
 
 export const runtime = "nodejs";
@@ -78,7 +79,8 @@ export async function GET() {
     (isInternalAdminAuthEmail(user.email) ? workspaceProfileAccessFromInternalAdminEmail() : null);
 
   const snapshot = access.snapshot;
-  const billing = getBillingStatusFromAccess(access);
+  const billing = getBillingStatusFromAccess(access, effective);
+  const trialInfo = buildWorkspaceTrialInfo(profileRow, access.hasActiveSubscription);
 
   if (billingDebugEnabled()) {
     console.log("[billing] /api/subscription/live", {
@@ -106,8 +108,9 @@ export async function GET() {
     billing,
     workspaceAccess: {
       hasActiveSubscription: access.hasActiveSubscription,
-      canUsePremiumFeatures: access.canUsePremiumFeatures,
+      canUsePremiumFeatures: effective.canUseServices,
       effective,
+      trialInfo: trialInfo ?? null,
       ...(profileAccess ? { profileAccess } : {}),
     },
   });

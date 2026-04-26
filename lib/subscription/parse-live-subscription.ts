@@ -6,6 +6,7 @@ import {
   type SubscriptionSnapshot,
   type WorkspaceAccessSummary,
   type WorkspaceProfileAccess,
+  type WorkspaceTrialInfo,
 } from "@/lib/wavon/types";
 
 /**
@@ -54,7 +55,7 @@ export function parseWorkspaceAccessFromLive(body: unknown): WorkspaceAccessSumm
         : null;
   if (hasActive === null) return null;
 
-  const canUse =
+  let canUse =
     typeof x.canUsePremiumFeatures === "boolean" ? x.canUsePremiumFeatures : hasActive;
 
   let profileAccess: WorkspaceProfileAccess | null | undefined;
@@ -95,10 +96,24 @@ export function parseWorkspaceAccessFromLive(body: unknown): WorkspaceAccessSumm
     }
   }
 
+  if (effective && typeof effective.canUseServices === "boolean") {
+    canUse = effective.canUseServices;
+  }
+
+  let trialInfo: WorkspaceTrialInfo | null | undefined;
+  const t = x.trialInfo;
+  if (t && typeof t === "object") {
+    const o = t as Record<string, unknown>;
+    if (typeof o.trialEnd === "string" && typeof o.daysRemaining === "number") {
+      trialInfo = { trialEnd: o.trialEnd, daysRemaining: o.daysRemaining };
+    }
+  }
+
   return {
     hasActiveSubscription: hasActive,
     canUsePremiumFeatures: canUse,
     ...(profileAccess ? { profileAccess } : {}),
     ...(effective ? { effective } : {}),
+    trialInfo: trialInfo ?? null,
   };
 }

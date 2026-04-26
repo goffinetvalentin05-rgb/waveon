@@ -53,7 +53,38 @@ export async function syncStripeSubscriptionToBusinessRow(
   const { error } = await admin.from(WavonDbTable.businesses).update(patch).eq("id", businessId);
 
   if (error) throw error;
+  await syncProfileWithStripeAccess(admin, businessId, plan, status);
   invalidateBusinessSubscriptionCache(businessId);
+}
+
+async function syncProfileWithStripeAccess(
+  admin: ReturnType<typeof createAdminSupabaseClient>,
+  businessId: string,
+  plan: "starter" | "pro" | null,
+  subscriptionStatus: string
+): Promise<void> {
+  const { data: row, error: qErr } = await admin
+    .from(WavonDbTable.businesses)
+    .select("user_id")
+    .eq("id", businessId)
+    .maybeSingle();
+  if (qErr || !row) return;
+  const userId = (row as { user_id: string | null }).user_id;
+  if (!userId) return;
+  const activeStatus =
+    subscriptionStatus === "active" || subscriptionStatus === "trialing" || subscriptionStatus === "past_due";
+  const profilePatch: Record<string, unknown> = {
+    subscription_status: activeStatus ? "active" : "expired",
+    plan: plan ?? "starter",
+  };
+  if (activeStatus) {
+    profilePatch.trial_end = null;
+    profilePatch.trial_start = null;
+  }
+  const { error: pErr } = await admin.from("profiles").update(profilePatch).eq("id", userId);
+  if (pErr) {
+    console.warn("[stripe] sync profil", pErr.message);
+  }
 }
 
 export async function findBusinessIdForStripeCustomer(customerId: string): Promise<string | null> {
@@ -87,6 +118,11 @@ export async function resolveBusinessIdFromStripeSubscription(sub: Stripe.Subscr
  */
 export async function applyStripeSubscriptionDeleted(businessId: string): Promise<void> {
   const admin = createAdminSupabaseClient();
+  const { data: biz } = await admin
+    .from(WavonDbTable.businesses)
+    .select("user_id")
+    .eq("id", businessId)
+    .maybeSingle();
   const { error: upErr } = await admin
     .from(WavonDbTable.businesses)
     .update({
@@ -97,5 +133,15 @@ export async function applyStripeSubscriptionDeleted(businessId: string): Promis
     })
     .eq("id", businessId);
   if (upErr) throw upErr;
+  const userId = (biz as { user_id: string | null } | null)?.user_id;
+  if (userId) {
+    const { error: pErr } = await admin
+      .from("profiles")
+      .update({ subscription_status: "expired" })
+      .eq("id", userId);
+    if (pErr) {
+      console.warn("[stripe] profil fin abo", pErr.message);
+    }
+  }
   invalidateBusinessSubscriptionCache(businessId);
 }

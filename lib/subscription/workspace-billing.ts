@@ -5,8 +5,8 @@ import type { SubscriptionSnapshot } from "@/lib/wavon/types";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import {
-  getMerchantWorkspaceSubscriptionAccess,
   getWorkspaceSubscriptionAccess,
+  resolveMerchantSubscription,
   type WorkspaceAccessState,
 } from "./workspace-access";
 
@@ -64,11 +64,11 @@ export async function getWorkspaceSubscriptionStatusForUserSession(
   if (!user) {
     throw new Error("Session utilisateur requise pour le statut d’abonnement.");
   }
-  const access = await getMerchantWorkspaceSubscriptionAccess(id, {
+  const { access, effective } = await resolveMerchantSubscription(id, {
     user: { id: user.id, email: user.email },
     supabase,
   });
-  const billing = getBillingStatusFromAccess(access);
+  const billing = getBillingStatusFromAccess(access, effective);
   return {
     workspaceId: id,
     access,
@@ -98,8 +98,8 @@ export async function getWorkspaceSubscriptionStatusForBusinessOwner(
       .maybeSingle();
     const ownerUserId = (biz as { user_id?: string | null } | null)?.user_id ?? null;
     if (!error && ownerUserId) {
-      const access = await getMerchantWorkspaceSubscriptionAccess(id, { ownerUserId });
-      const billing = getBillingStatusFromAccess(access);
+      const { access, effective } = await resolveMerchantSubscription(id, { ownerUserId });
+      const billing = getBillingStatusFromAccess(access, effective);
       return {
         workspaceId: id,
         access,

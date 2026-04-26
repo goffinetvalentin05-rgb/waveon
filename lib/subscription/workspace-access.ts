@@ -9,12 +9,14 @@ import {
   profileProEffectiveSubscription,
   type EffectiveSubscription,
 } from "@/lib/subscription/effective-subscription";
+import { isProfileFreeTrialWriteAllowed } from "@/lib/subscription/user-access";
 import {
   fetchProfileSubscriptionRow,
   profileGrantsProOverride,
   type ProfileSubscriptionRow,
 } from "@/lib/subscription/profile-subscription-override";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { parseSubscriptionPlan } from "@/lib/subscription/access";
 
 function billingDebugEnabled(): boolean {
   return (
@@ -45,6 +47,35 @@ export type WorkspaceAccessState = {
   snapshot: SubscriptionSnapshot;
   stripeCustomerId: string | null;
 };
+
+/**
+ * Abonnement effectif : après Stripe, essai 7 j sur le profil (starter) si pas encore payant.
+ */
+export function applyProfileFreeTrialToEffective(
+  base: EffectiveSubscription,
+  row: ProfileSubscriptionRow | null,
+  hasActiveStripeFromBusiness: boolean
+): EffectiveSubscription {
+  if (hasActiveStripeFromBusiness) return base;
+  if (profileGrantsProOverride(row)) {
+    return row ? profileProEffectiveSubscription(row) : base;
+  }
+  if (isProfileFreeTrialWriteAllowed(row, new Date())) {
+    const plan = parseSubscriptionPlan((row?.plan as string) ?? "starter") ?? "starter";
+    return {
+      plan,
+      status: "trialing",
+      isActive: true,
+      isAdmin: false,
+      canAccessAll: true,
+      canUseServices: true,
+      canUseReservations: true,
+      canUseAvailability: true,
+      canUseInvoices: false,
+    };
+  }
+  return base;
+}
 
 /**
  * Résumé client à partir du snapshot Stripe uniquement.
@@ -142,13 +173,14 @@ export async function resolveMerchantSubscription(
   }
 
   const access = await getWorkspaceSubscriptionAccess(id);
+  const stripeBase = effectiveSubscriptionFromStripeAccess({
+    hasActiveSubscription: access.hasActiveSubscription,
+    subscriptionStatus: access.subscriptionStatus,
+    planName: access.planName,
+  });
   return {
     access,
-    effective: effectiveSubscriptionFromStripeAccess({
-      hasActiveSubscription: access.hasActiveSubscription,
-      subscriptionStatus: access.subscriptionStatus,
-      planName: access.planName,
-    }),
+    effective: applyProfileFreeTrialToEffective(stripeBase, row, access.hasActiveSubscription),
     profileRow: row,
     authEmail,
   };

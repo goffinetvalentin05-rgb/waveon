@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { addMinutes, validateBooking, weeklyDefault } from "@/lib/wavon/booking-logic";
@@ -36,6 +37,7 @@ import {
 import { supabase } from "@/lib/supabase/client";
 import { normalizeBusinessCurrency } from "@/lib/utils/formatPrice";
 import { normalizePublicSlugInput, validatePublicSlugFormat } from "@/lib/wavon/public-slug";
+import { messageIfWriteBlocked } from "@/lib/wavon/premium-access";
 
 const SERVICE_DESCRIPTION_DB_MAX = 300;
 const PUBLIC_DISPLAY_NAME_MAX = 60;
@@ -377,8 +379,13 @@ export function WavonProvider({
 }) {
   const [ready, setReady] = useState(false);
   const [state, setState] = useState<WavonState>(() => createEmptyState());
+  const stateRef = useRef(state);
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [availabilityEmployeeId, setAvailabilityEmployeeIdState] = useState<string | null>(null);
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   useEffect(() => {
     let cancelled = false;
@@ -701,6 +708,8 @@ export function WavonProvider({
       day: DayKey,
       patch: WeeklyDaySchedule
     ): Promise<{ ok: true } | { ok: false; error: string }> => {
+    const blocked = messageIfWriteBlocked(stateRef.current.workspaceAccess);
+    if (blocked) return { ok: false, error: blocked };
     // Optimistic UI update, then hard-confirm in DB.
     setState((prev) => ({ ...prev, weekly: { ...prev.weekly, [day]: patch } }));
     if (!businessId) {
@@ -819,6 +828,7 @@ export function WavonProvider({
   );
 
   const setAvailabilityMode = useCallback((mode: WavonState["availabilityMode"]) => {
+    if (messageIfWriteBlocked(stateRef.current.workspaceAccess)) return;
     setState((prev) => ({ ...prev, availabilityMode: mode }));
     if (!businessId) return;
     void supabase
@@ -828,6 +838,7 @@ export function WavonProvider({
   }, [businessId]);
 
   const setCustomDays = useCallback((days: CustomDaySlot[]) => {
+    if (messageIfWriteBlocked(stateRef.current.workspaceAccess)) return;
     setState((prev) => ({ ...prev, customDays: days }));
     if (!businessId || !availabilityEmployeeId) return;
     // Simple sync: replace all (acceptable for now; can be optimized later)
@@ -850,6 +861,7 @@ export function WavonProvider({
   }, [businessId, availabilityEmployeeId]);
 
   const setBlockedDates = useCallback((dates: string[]) => {
+    if (messageIfWriteBlocked(stateRef.current.workspaceAccess)) return;
     setState((prev) => ({ ...prev, blockedDates: dates }));
     if (!businessId || !availabilityEmployeeId) return;
     void (async () => {
@@ -871,6 +883,7 @@ export function WavonProvider({
 
   const addService = useCallback((s: Omit<Service, "id">) => {
     if (!businessId) return;
+    if (messageIfWriteBlocked(stateRef.current.workspaceAccess)) return;
     void (async () => {
       const { data, error } = await supabase
         .from(WavonDbTable.services)
@@ -959,6 +972,8 @@ export function WavonProvider({
   const updateServiceChecked = useCallback(
     async (id: string, patch: Partial<Service>): Promise<{ ok: true } | { ok: false; error: string }> => {
       if (!businessId) return { ok: false, error: "Compte non initialisé." };
+      const wBlock = messageIfWriteBlocked(stateRef.current.workspaceAccess);
+      if (wBlock) return { ok: false, error: wBlock };
 
       const nextPatch =
         patch.description !== undefined
@@ -1011,6 +1026,7 @@ export function WavonProvider({
   );
 
   const updateService = useCallback((id: string, patch: Partial<Service>) => {
+    if (messageIfWriteBlocked(stateRef.current.workspaceAccess)) return;
     const nextPatch =
       patch.description !== undefined
         ? { ...patch, description: clipServiceDescription(patch.description) }
@@ -1024,6 +1040,7 @@ export function WavonProvider({
   }, [businessId, updateServiceChecked]);
 
   const deleteService = useCallback((id: string) => {
+    if (messageIfWriteBlocked(stateRef.current.workspaceAccess)) return;
     setState((prev) => ({
       ...prev,
       services: prev.services.filter((x) => x.id !== id),
@@ -1035,6 +1052,7 @@ export function WavonProvider({
 
   const addClient = useCallback((c: Omit<Client, "id">) => {
     if (!businessId) return;
+    if (messageIfWriteBlocked(stateRef.current.workspaceAccess)) return;
     void (async () => {
       const { data, error } = await supabase
         .from(WavonDbTable.clients)
@@ -1066,6 +1084,7 @@ export function WavonProvider({
   }, [businessId]);
 
   const updateClient = useCallback((id: string, patch: Partial<Client>) => {
+    if (messageIfWriteBlocked(stateRef.current.workspaceAccess)) return;
     setState((prev) => ({
       ...prev,
       clients: prev.clients.map((x) => (x.id === id ? { ...x, ...patch } : x)),
@@ -1086,6 +1105,7 @@ export function WavonProvider({
   }, [businessId]);
 
   const deleteClient = useCallback((id: string) => {
+    if (messageIfWriteBlocked(stateRef.current.workspaceAccess)) return;
     setState((prev) => ({
       ...prev,
       clients: prev.clients.filter((x) => x.id !== id),
@@ -1108,6 +1128,10 @@ export function WavonProvider({
     }): { ok: true; id: string } | { ok: false; error: string } => {
       if (!businessId) {
         return { ok: false, error: "Compte non initialisé." };
+      }
+      const wRes = messageIfWriteBlocked(stateRef.current.workspaceAccess);
+      if (wRes) {
+        return { ok: false, error: wRes };
       }
 
       const outcome: {
@@ -1220,6 +1244,10 @@ export function WavonProvider({
         notes: string;
       }>
     ): { ok: true } | { ok: false; error: string } => {
+      const wRes = messageIfWriteBlocked(stateRef.current.workspaceAccess);
+      if (wRes) {
+        return { ok: false, error: wRes };
+      }
       let errorMsg: string | null = null;
       setState((prev) => {
         const cur = prev.reservations.find((r) => r.id === id);
@@ -1375,6 +1403,8 @@ export function WavonProvider({
       displayOrder: number;
     }): Promise<{ ok: true; id: string } | { ok: false; error: string }> => {
       if (!businessId) return { ok: false, error: "Compte non initialisé." };
+      const wB = messageIfWriteBlocked(stateRef.current.workspaceAccess);
+      if (wB) return { ok: false, error: wB };
       const payload = {
         ...(input.id ? { id: input.id } : {}),
         business_id: businessId,
@@ -1423,6 +1453,8 @@ export function WavonProvider({
   const deleteEmployee = useCallback(
     async (employeeId: string): Promise<{ ok: true } | { ok: false; error: string }> => {
       if (!businessId) return { ok: false, error: "Compte non initialisé." };
+      const wB = messageIfWriteBlocked(stateRef.current.workspaceAccess);
+      if (wB) return { ok: false, error: wB };
       const { error } = await supabase
         .from(WavonDbTable.employees)
         .delete()
@@ -1445,6 +1477,7 @@ export function WavonProvider({
 
   const deleteReservation = useCallback(
     async (id: string) => {
+      if (messageIfWriteBlocked(stateRef.current.workspaceAccess)) return;
       const snap = state.reservations.find((r) => r.id === id);
       if (businessId && snap && snap.status !== "cancelled") {
         const base = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, "") || "";
@@ -1483,6 +1516,8 @@ export function WavonProvider({
       reason: string | null;
     }): Promise<{ ok: true; id: string } | { ok: false; error: string }> => {
       if (!businessId) return { ok: false, error: "Compte non initialisé." };
+      const wB = messageIfWriteBlocked(stateRef.current.workspaceAccess);
+      if (wB) return { ok: false, error: wB };
       if (!(input.end > input.start)) {
         return { ok: false, error: "La fin doit être après le début." };
       }
@@ -1545,6 +1580,8 @@ export function WavonProvider({
       }>
     ): Promise<{ ok: true } | { ok: false; error: string }> => {
       if (!businessId) return { ok: false, error: "Compte non initialisé." };
+      const wB = messageIfWriteBlocked(stateRef.current.workspaceAccess);
+      if (wB) return { ok: false, error: wB };
 
       const payload: Record<string, unknown> = {};
       if (patch.employeeId !== undefined) payload.employee_id = patch.employeeId;
@@ -1591,6 +1628,8 @@ export function WavonProvider({
   const deleteBlockedSlot = useCallback(
     async (id: string): Promise<{ ok: true } | { ok: false; error: string }> => {
       if (!businessId) return { ok: false, error: "Compte non initialisé." };
+      const wB = messageIfWriteBlocked(stateRef.current.workspaceAccess);
+      if (wB) return { ok: false, error: wB };
       const { error } = await supabase
         .from(WavonDbTable.blockedSlots)
         .delete()
@@ -1612,6 +1651,7 @@ export function WavonProvider({
   );
 
   const patchSettings = useCallback((patch: Partial<WavonState["settings"]>) => {
+    if (messageIfWriteBlocked(stateRef.current.workspaceAccess)) return;
     setState((prev) => {
       const { publicSlug: patchSlug, ...patchRest } = patch;
       const slugMerge: { publicSlug?: string } = {};
@@ -1719,6 +1759,7 @@ export function WavonProvider({
   const upsertEmailTemplate = useCallback(
     (input: { type: EmailTemplateType; isEnabled: boolean; subject: string; body: string }) => {
       if (!businessId) return;
+      if (messageIfWriteBlocked(stateRef.current.workspaceAccess)) return;
       setState((prev) => {
         const cur = prev.emailTemplates.find((t) => t.type === input.type) ?? null;
         const next: EmailTemplate = cur

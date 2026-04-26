@@ -6,6 +6,13 @@ export type ProfileSubscriptionRow = {
   role: string | null;
   plan_override: string | null;
   subscription_status_override: string | null;
+  /** Essai gratuit Waevon (7 j) */
+  trial_start: string | null;
+  trial_end: string | null;
+  /** Plan courant (starter, pro) */
+  plan: string | null;
+  /** trialing | active | expired */
+  subscription_status: string | null;
 };
 
 const PRO_LABEL = "Plan Pro actif — accès admin";
@@ -18,7 +25,7 @@ export async function fetchProfileSubscriptionRow(
   if (!id) return null;
   const { data, error } = await supabase
     .from("profiles")
-    .select("role, plan_override, subscription_status_override")
+    .select("role, plan_override, subscription_status_override, trial_start, trial_end, plan, subscription_status")
     .eq("id", id)
     .maybeSingle();
   if (error) {
@@ -35,7 +42,7 @@ export async function fetchProfileSubscriptionRowAdmin(userId: string): Promise<
     const admin = createAdminSupabaseClient();
     const { data, error } = await admin
       .from("profiles")
-      .select("role, plan_override, subscription_status_override")
+      .select("role, plan_override, subscription_status_override, trial_start, trial_end, plan, subscription_status")
       .eq("id", id)
       .maybeSingle();
     if (error) {
