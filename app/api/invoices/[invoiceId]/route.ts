@@ -21,7 +21,7 @@ export async function GET(
   const { data: invoice, error } = await supabase
     .from(WavonDbTable.invoices)
     .select(
-      "id,business_id,reservation_id,invoice_number,status,client_name,client_email,client_phone,client_id,reservation_start_at,service_name,description,service_price,line_quantity,currency,issue_date,notes,created_at,sent_at,paid_at,cancelled_at"
+      "id,business_id,reservation_id,invoice_number,status,client_name,client_email,client_phone,client_id,reservation_start_at,service_name,description,service_price,line_unit_price,line_quantity,total_amount,currency,issue_date,due_date,notes,created_at,sent_at,paid_at,cancelled_at,business_name,business_address,business_email,business_phone,business_logo_url"
     )
     .eq("id", id)
     .eq("business_id", businessId)

@@ -19,11 +19,22 @@ export type InvoicePdfRow = {
   client_phone: string | null;
   service_name: string;
   service_price: number;
+  line_unit_price?: number;
   line_quantity: number;
+  total_amount?: number;
   currency: string;
   description: string | null;
   notes: string | null;
   reservation_start_at: string;
+};
+
+/** Snapshot enregistré sur la facture (état du commerce à l’émission). */
+export type InvoiceBusinessSnapshot = {
+  business_name: string | null;
+  business_address: string | null;
+  business_email: string | null;
+  business_phone: string | null;
+  business_logo_url: string | null;
 };
 
 export type InvoiceSettingsPdfRow = {
@@ -71,8 +82,13 @@ function formatTimeFr(iso: string | null | undefined): string {
   }
 }
 
-function businessAddressBlock(b: BusinessPdfRow, settings: InvoiceSettingsPdfRow | null): string {
+function businessAddressBlock(
+  b: BusinessPdfRow,
+  settings: InvoiceSettingsPdfRow | null,
+  snapshotBlock: string | null | undefined
+): string {
   if (settings?.company_address?.trim()) return settings.company_address.trim();
+  if (snapshotBlock?.trim()) return snapshotBlock.trim();
   const parts: string[] = [];
   if (b.address?.trim()) parts.push(b.address.trim());
   const line = [b.postal_code?.trim(), b.city?.trim()].filter(Boolean).join(" ");
@@ -121,8 +137,10 @@ export async function buildInvoicePdfBuffer(args: {
   invoice: InvoicePdfRow;
   business: BusinessPdfRow;
   invoiceSettings: InvoiceSettingsPdfRow | null;
+  /** Préféré pour le PDF (aligné sur le moment de la facturation). */
+  businessOnInvoice: InvoiceBusinessSnapshot | null;
 }): Promise<Uint8Array> {
-  const { invoice, business, invoiceSettings: s } = args;
+  const { invoice, business, invoiceSettings: s, businessOnInvoice: snap } = args;
   const pdf = await PDFDocument.create();
   const page = pdf.addPage([A4.w, A4.h]);
   const font = await pdf.embedFont(StandardFonts.Helvetica);
@@ -136,9 +154,11 @@ export async function buildInvoicePdfBuffer(args: {
   let y = A4.h - 44;
   const left = 48;
   const right = A4.w - 48;
-  const brandName = s?.company_name?.trim() || business.business_name?.trim() || "Entreprise";
+  const brandName =
+    s?.company_name?.trim() || snap?.business_name?.trim() || business.business_name?.trim() || "Entreprise";
 
-  const logo = await embedPublicLogo(pdf, business.public_logo_url);
+  const logoUrl = snap?.business_logo_url?.trim() || business.public_logo_url;
+  const logo = await embedPublicLogo(pdf, logoUrl);
   if (logo) {
     page.drawImage(logo.image, { x: left, y: y - logo.h, width: logo.w, height: logo.h });
     y -= logo.h + 10;
@@ -147,19 +167,19 @@ export async function buildInvoicePdfBuffer(args: {
   page.drawText(brandName, { x: left, y, size: 16, font: fontBold, color: dark });
   y -= 20;
 
-  const addr = businessAddressBlock(business, s);
+  const addr = businessAddressBlock(business, s, snap?.business_address);
   if (addr) {
     for (const line of addr.split("\n")) {
       page.drawText(line, { x: left, y, size: 9, font, color: gray });
       y -= 12;
     }
   }
-  const em = s?.company_email?.trim() || business.email?.trim();
+  const em = s?.company_email?.trim() || snap?.business_email?.trim() || business.email?.trim();
   if (em) {
     page.drawText(em, { x: left, y, size: 9, font, color: gray });
     y -= 12;
   }
-  const ph = s?.company_phone?.trim() || business.phone?.trim();
+  const ph = s?.company_phone?.trim() || snap?.business_phone?.trim() || business.phone?.trim();
   if (ph) {
     page.drawText(ph, { x: left, y, size: 9, font, color: gray });
     y -= 12;
@@ -198,8 +218,13 @@ export async function buildInvoicePdfBuffer(args: {
   y -= 16;
 
   const qty = Number(invoice.line_quantity) > 0 ? Number(invoice.line_quantity) : 1;
-  const total = Number(invoice.service_price) || 0;
-  const unit = total / qty;
+  const total = Number(
+    typeof invoice.total_amount === "number" && invoice.total_amount > 0 ? invoice.total_amount : invoice.service_price
+  ) || 0;
+  const unit =
+    typeof invoice.line_unit_price === "number" && invoice.line_unit_price > 0
+      ? invoice.line_unit_price
+      : total / qty;
   const timePart = formatTimeFr(invoice.reservation_start_at);
   const appt = `Rendez-vous le ${formatDateFr(invoice.reservation_start_at)}${timePart ? ` à ${timePart}` : ""}`;
 

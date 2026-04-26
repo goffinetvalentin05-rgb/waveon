@@ -6,6 +6,8 @@ import { userMessageForInvoiceRpcError } from "@/lib/invoices/invoice-api-errors
 
 export const runtime = "nodejs";
 
+const INVOICE_DEBUG = (process.env.WAVON_INVOICE_DEBUG ?? "").trim() === "1";
+
 export async function GET() {
   const gate = await requireProInvoicesAccess();
   if (!gate.ok) return gate.res;
@@ -13,7 +15,7 @@ export async function GET() {
   const { data, error } = await gate.supabase
     .from(WavonDbTable.invoices)
     .select(
-      "id,invoice_number,status,client_name,service_name,service_price,currency,reservation_start_at,issue_date,created_at"
+      "id,invoice_number,status,client_name,service_name,service_price,total_amount,currency,reservation_start_at,issue_date,created_at"
     )
     .eq("business_id", gate.businessId)
     .order("created_at", { ascending: false })
@@ -76,7 +78,23 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (preexisting?.id) {
-    console.error("[api/invoices] facture déjà présente, ouverture", {
+    if (INVOICE_DEBUG) {
+      console.error("[api/invoices] facture déjà présente, ouverture", {
+        reservationId,
+        businessId,
+        clientId: resv.client_id,
+        serviceId: resv.service_id,
+        servicePrice: svc?.price,
+        userEmail: email,
+        plan: effective.plan,
+        invoiceId: preexisting.id,
+      });
+    }
+    return NextResponse.json({ id: preexisting.id, existed: true, code: "existing" });
+  }
+
+  if (INVOICE_DEBUG) {
+    console.error("[api/invoices] appel RPC création", {
       reservationId,
       businessId,
       clientId: resv.client_id,
@@ -84,21 +102,9 @@ export async function POST(req: NextRequest) {
       servicePrice: svc?.price,
       userEmail: email,
       plan: effective.plan,
-      invoiceId: preexisting.id,
+      canUseInvoices: effective.canUseInvoices,
     });
-    return NextResponse.json({ id: preexisting.id, existed: true, code: "existing" });
   }
-
-  console.error("[api/invoices] appel RPC création", {
-    reservationId,
-    businessId,
-    clientId: resv.client_id,
-    serviceId: resv.service_id,
-    servicePrice: svc?.price,
-    userEmail: email,
-    plan: effective.plan,
-    canUseInvoices: effective.canUseInvoices,
-  });
 
   const { data, error } = await supabase.rpc("wavon_create_invoice_from_reservation", {
     p_reservation_id: reservationId,
@@ -136,6 +142,14 @@ export async function POST(req: NextRequest) {
   if (!invoiceId) {
     return NextResponse.json({ error: "Réponse serveur invalide." }, { status: 500 });
   }
-  console.error("[api/invoices] facture créée", { reservationId, businessId, invoiceId, userEmail: email, plan: effective.plan });
+  if (INVOICE_DEBUG) {
+    console.error("[api/invoices] facture créée", {
+      reservationId,
+      businessId,
+      invoiceId,
+      userEmail: email,
+      plan: effective.plan,
+    });
+  }
   return NextResponse.json({ id: invoiceId, existed: false });
 }

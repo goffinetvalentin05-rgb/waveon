@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { WavonDbTable } from "@/lib/supabase/wavon-tables";
 import { requireProInvoicesAccess } from "@/lib/subscription/require-pro-invoices-access";
-import { buildInvoicePdfBuffer, type BusinessPdfRow, type InvoiceSettingsPdfRow } from "@/lib/invoices/render-invoice-pdf";
+import {
+  buildInvoicePdfBuffer,
+  type BusinessPdfRow,
+  type InvoiceBusinessSnapshot,
+  type InvoiceSettingsPdfRow,
+} from "@/lib/invoices/render-invoice-pdf";
 import { normalizeFileName } from "@/lib/invoices/invoice-filename";
 
 export const runtime = "nodejs";
@@ -14,12 +19,19 @@ type InvoiceRow = {
   client_phone: string | null;
   service_name: string;
   service_price: number;
+  line_unit_price: number | null;
   line_quantity: number | null;
+  total_amount: number | null;
   currency: string;
   description: string | null;
   notes: string | null;
   issue_date: string | null;
   reservation_start_at: string;
+  business_name: string | null;
+  business_address: string | null;
+  business_email: string | null;
+  business_phone: string | null;
+  business_logo_url: string | null;
 };
 
 export async function GET(
@@ -39,7 +51,7 @@ export async function GET(
   const { data: invoice, error: invErr } = await supabase
     .from(WavonDbTable.invoices)
     .select(
-      "id,invoice_number,client_name,client_email,client_phone,service_name,service_price,line_quantity,currency,description,notes,issue_date,reservation_start_at"
+      "id,invoice_number,client_name,client_email,client_phone,service_name,service_price,line_unit_price,line_quantity,total_amount,currency,description,notes,issue_date,reservation_start_at,business_name,business_address,business_email,business_phone,business_logo_url"
     )
     .eq("id", id)
     .eq("business_id", businessId)
@@ -66,6 +78,16 @@ export async function GET(
   const inv = invoice as InvoiceRow;
   const b = (business as BusinessPdfRow) ?? ({} as BusinessPdfRow);
   const s = (invSettings as InvoiceSettingsPdfRow | null) ?? null;
+  const snap: InvoiceBusinessSnapshot | null =
+    inv.business_name || inv.business_address || inv.business_email || inv.business_phone || inv.business_logo_url
+      ? {
+          business_name: inv.business_name,
+          business_address: inv.business_address,
+          business_email: inv.business_email,
+          business_phone: inv.business_phone,
+          business_logo_url: inv.business_logo_url,
+        }
+      : null;
 
   const pdf = await buildInvoicePdfBuffer({
     invoice: {
@@ -76,7 +98,9 @@ export async function GET(
       client_phone: inv.client_phone,
       service_name: inv.service_name,
       service_price: inv.service_price,
+      line_unit_price: inv.line_unit_price != null ? Number(inv.line_unit_price) : undefined,
       line_quantity: inv.line_quantity != null ? Number(inv.line_quantity) : 1,
+      total_amount: inv.total_amount != null ? Number(inv.total_amount) : undefined,
       currency: inv.currency,
       description: inv.description,
       notes: inv.notes,
@@ -84,6 +108,7 @@ export async function GET(
     },
     business: b,
     invoiceSettings: s,
+    businessOnInvoice: snap,
   });
 
   const name = `Facture-${normalizeFileName(inv.invoice_number)}.pdf`;

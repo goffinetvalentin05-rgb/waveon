@@ -18,14 +18,17 @@ type InvoiceRow = {
   client_name: string;
   service_name: string;
   service_price: number;
+  total_amount?: number | null;
   currency: string;
   reservation_start_at: string;
+  issue_date?: string | null;
   created_at: string;
 };
 
 function formatDateFr(iso: string): string {
   try {
-    return format(parseISO(iso), "d MMM yyyy", { locale: fr });
+    const s = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T12:00:00` : iso;
+    return format(parseISO(s), "d MMM yyyy", { locale: fr });
   } catch {
     return "—";
   }
@@ -165,7 +168,7 @@ export default function FacturesPage() {
                   <th className="px-6 py-3">Client</th>
                   <th className="px-6 py-3">Service</th>
                   <th className="px-6 py-3">Montant</th>
-                  <th className="px-6 py-3">Date</th>
+                  <th className="px-6 py-3">Émission</th>
                   <th className="px-6 py-3">Statut</th>
                   <th className="px-6 py-3 text-right">Actions</th>
                 </tr>
@@ -177,9 +180,16 @@ export default function FacturesPage() {
                     <td className="px-6 py-4 text-neutral-800">{r.client_name || "—"}</td>
                     <td className="px-6 py-4 text-neutral-700">{r.service_name || "—"}</td>
                     <td className="px-6 py-4 font-medium text-neutral-950">
-                      {formatPrice(r.service_price ?? 0, r.currency || currency)}
+                      {formatPrice(
+                        (typeof r.total_amount === "number" ? r.total_amount : r.service_price) ?? 0,
+                        r.currency || currency
+                      )}
                     </td>
-                    <td className="px-6 py-4 text-neutral-600">{formatDateFr(r.reservation_start_at)}</td>
+                    <td className="px-6 py-4 text-neutral-600" title="Date d’émission">
+                      {formatDateFr(
+                        (r.issue_date && String(r.issue_date).length >= 8 ? String(r.issue_date) : r.reservation_start_at) as string
+                      )}
+                    </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${statusClass(r.status)}`}>
                         {statusLabel(r.status)}
