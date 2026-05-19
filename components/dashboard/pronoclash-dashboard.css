@@ -869,6 +869,158 @@ button.pc-icon-btn {
   color: #fff;
 }
 
+.pc-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #a5b4fc;
+  margin: 0 0 6px;
+}
+
+.pc-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pc-muted);
+}
+
+.pc-input {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 12px;
+  border: 1px solid var(--pc-border);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px 14px;
+  font-size: 15px;
+  color: var(--pc-text);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pc-input::placeholder {
+  color: rgba(148, 163, 184, 0.6);
+}
+
+.pc-input:focus {
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.pc-form-card {
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.pc-plan-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 520px) {
+  .pc-plan-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.pc-plan-card {
+  border-radius: 18px;
+  border: 1px solid var(--pc-border);
+  background: var(--pc-surface);
+  padding: 16px;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pc-plan-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.pc-plan-card.active {
+  border-color: rgba(168, 85, 247, 0.45);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.08));
+  box-shadow: 0 12px 32px -16px rgba(99, 102, 241, 0.5);
+}
+
+.pc-plan-name {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.pc-plan-price {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-top: 8px;
+}
+
+.pc-plan-meta {
+  font-size: 11px;
+  color: var(--pc-muted);
+}
+
+.pc-plan-features {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--pc-muted);
+  line-height: 1.6;
+}
+
+.pc-plan-badge {
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--pc-indigo), var(--pc-violet));
+  padding: 3px 8px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.pc-btn.block {
+  width: 100%;
+}
+
+.pc-btn.lg {
+  padding: 14px 18px;
+  font-size: 15px;
+  border-radius: 12px;
+}
+
+.pc-alert {
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.pc-alert.warn {
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.08);
+  color: #fde68a;
+}
+
+.pc-alert.error {
+  border: 1px solid rgba(244, 63, 94, 0.35);
+  background: rgba(244, 63, 94, 0.1);
+  color: #fecdd3;
+}
+
+.pc-footnote {
+  text-align: center;
+  font-size: 11px;
+  color: var(--pc-muted);
+  margin: 12px 0 0;
+  line-height: 1.5;
+}
+
 @media (min-width: 640px) {
   .pc-inner {
     max-width: 640px;

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { LeaguePlan, LeaguePlanId } from "@/lib/stripe/config";
-import { ui } from "@/lib/design/tokens";
 
 export function NewLeagueForm({ plans }: { plans: LeaguePlan[] }) {
   const searchParams = useSearchParams();
@@ -47,58 +46,52 @@ export function NewLeagueForm({ plans }: { plans: LeaguePlan[] }) {
   };
 
   return (
-    <form onSubmit={submit} className={`${ui.glassCard} space-y-6 p-6 sm:p-8`}>
+    <form onSubmit={submit} className="pc-form-card pc-glass">
       {canceled ? (
-        <p className="rounded-xl border border-amber-300/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+        <p className="pc-alert warn">
           Paiement annulé. Tu peux relancer la création de ligue quand tu veux.
         </p>
       ) : null}
 
-      <div>
-        <label className={ui.label} htmlFor="league-name">Nom de la ligue</label>
+      <div style={{ marginBottom: 20 }}>
+        <label className="pc-label" htmlFor="league-name">
+          Nom de la ligue
+        </label>
         <input
           id="league-name"
           type="text"
-          className={ui.input}
+          className="pc-input"
           placeholder="Les Sabotards"
           value={name}
           onChange={(e) => setName(e.target.value)}
           maxLength={60}
           required
         />
-        <p className="mt-1 text-xs text-white/40">Visible par tes membres. Modifiable plus tard.</p>
+        <p className="pc-footnote" style={{ textAlign: "left", marginTop: 8 }}>
+          Visible par tes membres. Modifiable plus tard.
+        </p>
       </div>
 
-      <div>
-        <div className={`${ui.label} mb-3`}>Plan</div>
-        <div className="grid gap-3 sm:grid-cols-2">
+      <div style={{ marginBottom: 20 }}>
+        <p className="pc-label">Plan</p>
+        <div className="pc-plan-grid">
           {plans.map((p) => (
             <button
               key={p.id}
               type="button"
               onClick={() => setPlan(p.id)}
-              className={`rounded-2xl border p-5 text-left transition ${
-                plan === p.id
-                  ? "border-violet-400/50 bg-gradient-to-br from-violet-500/10 to-blue-500/5 shadow-[0_15px_40px_-15px_rgba(168,85,247,0.45)]"
-                  : "border-white/10 bg-white/[0.03] hover:border-white/20"
-              }`}
+              className={`pc-plan-card${plan === p.id ? " active" : ""}`}
               aria-pressed={plan === p.id}
             >
-              <div className="flex items-center justify-between">
-                <span className="font-display text-lg font-semibold text-white">{p.name}</span>
-                {p.highlight ? (
-                  <span className="rounded-full bg-gradient-to-r from-violet-400 to-fuchsia-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-black">
-                    Top
-                  </span>
-                ) : null}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <span className="pc-plan-name">{p.name}</span>
+                {p.highlight ? <span className="pc-plan-badge">Top</span> : null}
               </div>
-              <div className="mt-2 flex items-baseline gap-1">
-                <span className="font-display text-3xl font-bold text-white">
-                  {p.priceChf.toFixed(2).replace(".00", ".-")}
-                </span>
-                <span className="text-xs text-white/40">CHF · paiement unique</span>
+              <div className="pc-plan-price">
+                {p.priceChf.toFixed(2).replace(".00", ".-")}
+                <span className="pc-plan-meta"> CHF · paiement unique</span>
               </div>
-              <ul className="mt-3 space-y-1.5 text-xs text-white/70">
+              <ul className="pc-plan-features">
                 <li>• Jusqu&apos;à {p.maxPlayers} joueurs</li>
                 {p.features.slice(1, 3).map((f) => (
                   <li key={f}>• {f}</li>
@@ -109,18 +102,14 @@ export function NewLeagueForm({ plans }: { plans: LeaguePlan[] }) {
         </div>
       </div>
 
-      {error ? (
-        <p className="rounded-xl border border-rose-400/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
-          {error}
-        </p>
-      ) : null}
+      {error ? <p className="pc-alert error">{error}</p> : null}
 
-      <button type="submit" disabled={loading} className={`${ui.btnPrimaryLg} w-full justify-center`}>
+      <button type="submit" disabled={loading} className="pc-btn primary lg block">
         {loading ? "Redirection vers Stripe…" : "Continuer vers le paiement"}
       </button>
-      <p className="text-center text-[11px] text-white/40">
-        Chaque pack crée <strong className="text-white/60">une seule</strong> ligue privée.
-        Pour une 2<sup>e</sup> ligue, un nouveau paiement est nécessaire.
+      <p className="pc-footnote">
+        Chaque pack crée <strong style={{ color: "#e2e8f0" }}>une seule</strong> ligue privée. Pour une
+        2<sup>e</sup> ligue, un nouveau paiement est nécessaire.
         <br />
         Paiement sécurisé via Stripe Checkout.
       </p>

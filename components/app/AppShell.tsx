@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { Avatar } from "@/components/app/Avatar";
 import { supabase } from "@/lib/supabase/client";
+import { isPronoClashShellPath } from "@/lib/pronoclash/shell-routes";
 
 export type AppProfile = {
   id: string;
@@ -37,11 +38,7 @@ export function AppShell({ profile, children }: AppShellProps) {
     router.replace("/");
   };
 
-  const isPronoClashShell =
-    pathname === "/dashboard" ||
-    pathname === "/matches" ||
-    pathname === "/global/leaderboard" ||
-    pathname === "/leaderboard";
+  const isPronoClashShell = isPronoClashShellPath(pathname);
 
   return (
     <div

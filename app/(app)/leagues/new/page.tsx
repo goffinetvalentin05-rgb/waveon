@@ -1,32 +1,22 @@
-import { Suspense } from "react";
+import { createServerComponentSupabase } from "@/lib/supabase/server-component";
 import { LEAGUE_PLANS } from "@/lib/stripe/config";
-import { ui } from "@/lib/design/tokens";
-import { NewLeagueForm } from "./NewLeagueForm";
+import { NewLeaguePageClient } from "./NewLeaguePageClient";
 
-export default function NewLeaguePage() {
-  const plans = Object.values(LEAGUE_PLANS);
+export default async function NewLeaguePage() {
+  const supabase = await createServerComponentSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: profile } = user
+    ? await supabase.from("profiles").select("username").eq("id", user.id).maybeSingle()
+    : { data: null };
+
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <header className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-300/80">
-          Nouvelle ligue
-        </p>
-        <h1 className="font-display text-3xl font-semibold text-white sm:text-4xl">
-          Crée ta ligue privée
-        </h1>
-        <p className="max-w-xl text-sm text-white/60">
-          Choisis ton plan, donne un nom à ta ligue. Tu reçois un lien
-          d&apos;invitation WhatsApp dès le paiement validé.
-        </p>
-      </header>
-
-      <Suspense fallback={<div className={`${ui.glassCard} p-6 text-sm text-white/60`}>Chargement…</div>}>
-        <NewLeagueForm plans={plans} />
-      </Suspense>
-
-      <p className="text-center text-xs text-white/40">
-        Paiement unique via Stripe · pas d&apos;abonnement · pas de mise d&apos;argent entre joueurs.
-      </p>
-    </div>
+    <NewLeaguePageClient
+      username={profile?.username}
+      email={user?.email}
+      plans={Object.values(LEAGUE_PLANS)}
+    />
   );
 }
