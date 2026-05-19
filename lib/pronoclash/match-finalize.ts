@@ -6,11 +6,12 @@ import {
 } from "@/lib/pronoclash/scoring";
 
 /**
- * Finalise un match : marque le résultat, calcule les points de TOUS les
- * pronostics liés (global et toutes les ligues), met à jour league_members.points
- * et profiles.total_points, et écrit des scoring_events.
+ * Finalise un match : enregistre le résultat, calcule les points de TOUS les
+ * pronostics (global et ligues privées), met à jour league_members.points,
+ * profiles.total_points, et écrit des scoring_events.
  *
- * Idempotent : on supprime d'abord les scoring_events liés au match.
+ * Idempotent : reset des scoring_events et des compteurs liés à ce match avant
+ * recalcul.
  */
 export async function finalizeMatch(
   admin: SupabaseClient,
@@ -22,20 +23,36 @@ export async function finalizeMatch(
 ): Promise<{ updated: number }> {
   const { matchId, homeScore, awayScore } = args;
   const winner: MatchOutcome = computeWinner(homeScore, awayScore);
+  const isDraw = winner === "draw";
 
-  // 1) update match
+  // 1) Charger le match pour identifier home_team_id / away_team_id
+  const { data: matchRow, error: matchLoadErr } = await admin
+    .from("matches")
+    .select("home_team_id, away_team_id")
+    .eq("id", matchId)
+    .maybeSingle();
+  if (matchLoadErr) throw new Error(`load match: ${matchLoadErr.message}`);
+  if (!matchRow) throw new Error("match introuvable");
+  const homeTeamId = (matchRow as { home_team_id: string | null }).home_team_id;
+  const awayTeamId = (matchRow as { away_team_id: string | null }).away_team_id;
+
+  const winnerTeamId =
+    winner === "home" ? homeTeamId : winner === "away" ? awayTeamId : null;
+
+  // 2) Mettre à jour le match
   const { error: mErr } = await admin
     .from("matches")
     .update({
       home_score: homeScore,
       away_score: awayScore,
-      winner,
+      winner_team_id: winnerTeamId,
+      is_draw: isDraw,
       status: "finished",
     })
     .eq("id", matchId);
   if (mErr) throw new Error(`update match: ${mErr.message}`);
 
-  // 2) reset scoring events liés à ce match (idempotence)
+  // 3) Récupérer les anciens scoring_events pour décrémenter les totaux
   const { data: oldEvents } = await admin
     .from("scoring_events")
     .select("user_id, league_id, points")
@@ -43,7 +60,6 @@ export async function finalizeMatch(
 
   await admin.from("scoring_events").delete().eq("match_id", matchId);
 
-  // Soustraire les anciens scores des totaux
   if (oldEvents && oldEvents.length > 0) {
     type OldEv = { user_id: string | null; league_id: string | null; points: number };
     const byUser = new Map<string, number>();
@@ -55,10 +71,13 @@ export async function finalizeMatch(
         byLeague.set(k, (byLeague.get(k) ?? 0) + e.points);
       }
     }
-    // Décrémenter via rpc / select-then-update
     await Promise.all([
       ...Array.from(byUser.entries()).map(async ([userId, pts]) => {
-        const { data } = await admin.from("profiles").select("total_points").eq("id", userId).maybeSingle();
+        const { data } = await admin
+          .from("profiles")
+          .select("total_points")
+          .eq("id", userId)
+          .maybeSingle();
         if (data) {
           await admin
             .from("profiles")
@@ -85,11 +104,11 @@ export async function finalizeMatch(
     ]);
   }
 
-  // 3) récupérer les pronostics
+  // 4) Récupérer les pronostics de ce match
   const { data: preds } = await admin
     .from("predictions")
     .select(
-      "id, user_id, league_id, predicted_home_score, predicted_away_score, joker_x2"
+      "id, user_id, league_id, predicted_home_score, predicted_away_score, predicted_winner_team_id, joker_x2"
     )
     .eq("match_id", matchId);
 
@@ -99,16 +118,17 @@ export async function finalizeMatch(
     league_id: string | null;
     predicted_home_score: number;
     predicted_away_score: number;
+    predicted_winner_team_id: string | null;
     joker_x2: boolean | null;
   };
   const predictions = (preds ?? []) as Pred[];
 
-  // 4) charger les cards_plays actives sur ce match (pour bus_gare/hold_up/outsider/joker)
+  // 5) Cartes actives sur ce match (pour bonus joker / bus_gare / hold_up / outsider)
   const { data: plays } = await admin
     .from("card_plays")
     .select("user_id, league_id, card_id")
     .eq("match_id", matchId)
-    .eq("status", "active");
+    .eq("status", "played");
   type Play = { user_id: string; league_id: string; card_id: string };
   const playsList = (plays ?? []) as Play[];
   const playKey = (userId: string, leagueId: string, cardId: string) =>
@@ -117,7 +137,7 @@ export async function finalizeMatch(
     playsList.map((p) => playKey(p.user_id, p.league_id, p.card_id))
   );
 
-  // 5) outsider : si une équipe est marquée is_outsider
+  // 6) Outsider : si une équipe est marquée is_outsider
   const { data: matchTeams } = await admin
     .from("matches")
     .select(
@@ -127,21 +147,37 @@ export async function finalizeMatch(
     .maybeSingle();
   type SideTeam = { id: string; is_outsider: boolean | null } | null;
   type MatchTeams = { home: SideTeam; away: SideTeam } | null;
-  const mt = matchTeams as MatchTeams;
-  const outsiderSide: "home" | "away" | null =
-    mt?.home?.is_outsider ? "home" : mt?.away?.is_outsider ? "away" : null;
+  const mt = matchTeams as unknown as MatchTeams;
+  const outsiderSide: "home" | "away" | null = mt?.home?.is_outsider
+    ? "home"
+    : mt?.away?.is_outsider
+      ? "away"
+      : null;
 
-  // 6) calcul + persistance par lot
+  // 7) Calcul + persistance
   let updated = 0;
   for (const p of predictions) {
     const isPrivate = p.league_id != null;
     const usesCard = (cardId: string) =>
       isPrivate && activePlays.has(playKey(p.user_id, p.league_id as string, cardId));
 
-    const { points, reasons } = scorePrediction(
+    // Convertir predicted_winner_team_id en MatchOutcome
+    let predictedOutcome: MatchOutcome;
+    if (p.predicted_winner_team_id == null) {
+      predictedOutcome = computeWinner(p.predicted_home_score, p.predicted_away_score);
+    } else if (p.predicted_winner_team_id === homeTeamId) {
+      predictedOutcome = "home";
+    } else if (p.predicted_winner_team_id === awayTeamId) {
+      predictedOutcome = "away";
+    } else {
+      predictedOutcome = "draw";
+    }
+
+    const result = scorePrediction(
       {
         predicted_home_score: p.predicted_home_score,
         predicted_away_score: p.predicted_away_score,
+        predicted_winner: predictedOutcome,
       },
       { home_score: homeScore, away_score: awayScore, winner },
       {
@@ -152,19 +188,21 @@ export async function finalizeMatch(
       }
     );
 
-    // update prediction
     await admin
       .from("predictions")
       .update({
-        points,
+        points: result.points,
+        exact_score: result.exact_score,
+        correct_winner: result.correct_winner,
+        correct_goal_difference: result.correct_goal_difference,
+        is_locked: true,
         locked_at: new Date().toISOString(),
       })
       .eq("id", p.id);
 
-    // Insertion d'un scoring_event agrégé (avec breakdown JSON dans `reason`)
-    if (reasons.length > 0) {
+    if (result.reasons.length > 0) {
       await admin.from("scoring_events").insert(
-        reasons.map((r) => ({
+        result.reasons.map((r) => ({
           user_id: p.user_id,
           league_id: p.league_id,
           match_id: matchId,
@@ -175,9 +213,7 @@ export async function finalizeMatch(
       );
     }
 
-    // Mettre à jour totaux
-    if (points > 0) {
-      // profile total
+    if (result.points > 0) {
       const { data: prof } = await admin
         .from("profiles")
         .select("total_points")
@@ -185,10 +221,9 @@ export async function finalizeMatch(
         .maybeSingle();
       await admin
         .from("profiles")
-        .update({ total_points: (prof?.total_points ?? 0) + points })
+        .update({ total_points: (prof?.total_points ?? 0) + result.points })
         .eq("id", p.user_id);
 
-      // league_members
       if (p.league_id) {
         const { data: lm } = await admin
           .from("league_members")
@@ -199,7 +234,7 @@ export async function finalizeMatch(
         if (lm) {
           await admin
             .from("league_members")
-            .update({ points: (lm.points ?? 0) + points })
+            .update({ points: (lm.points ?? 0) + result.points })
             .eq("league_id", p.league_id)
             .eq("user_id", p.user_id);
         }
@@ -208,19 +243,22 @@ export async function finalizeMatch(
     updated++;
   }
 
-  // 7) appliquer effet "Tacle glissé" (vol de 2 pts à la cible si auteur > cible)
+  // 8) Effet "Tacle glissé" (vol de 2 pts dans la ligue privée)
   await applyTacleGlisseEffects(admin, matchId);
 
   return { updated };
 }
 
-async function applyTacleGlisseEffects(admin: SupabaseClient, matchId: string): Promise<void> {
+async function applyTacleGlisseEffects(
+  admin: SupabaseClient,
+  matchId: string
+): Promise<void> {
   const { data: tacles } = await admin
     .from("card_plays")
     .select("id, user_id, league_id, target_user_id")
     .eq("match_id", matchId)
     .eq("card_id", "tacle_glisse")
-    .eq("status", "active");
+    .eq("status", "played");
   type Tacle = {
     id: string;
     user_id: string;
@@ -251,7 +289,6 @@ async function applyTacleGlisseEffects(admin: SupabaseClient, matchId: string): 
     const aPts = authorPredRes.data?.points ?? 0;
     const tPts = targetPredRes.data?.points ?? 0;
     if (aPts > tPts) {
-      // Voler 2 pts (max = points dispo de la cible dans cette ligue)
       const { data: lmT } = await admin
         .from("league_members")
         .select("points")
@@ -295,6 +332,6 @@ async function applyTacleGlisseEffects(admin: SupabaseClient, matchId: string): 
         },
       ]);
     }
-    await admin.from("card_plays").update({ status: "consumed" }).eq("id", t.id);
+    await admin.from("card_plays").update({ status: "applied" }).eq("id", t.id);
   }
 }

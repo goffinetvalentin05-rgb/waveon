@@ -53,7 +53,7 @@ export function buildWhatsappInviteMessage(args: {
   inviteUrl: string;
 }): string {
   return (
-    `J'ai créé notre ligue Prono Clash "${args.leagueName}" pour la Coupe du monde. ` +
+    `J'ai créé notre ligue Prono Clash pour le tournoi mondial de foot 2026. ` +
     `Viens pronostiquer, jouer des cartes et saboter le groupe : ${args.inviteUrl}`
   );
 }

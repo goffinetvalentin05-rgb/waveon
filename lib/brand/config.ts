@@ -20,7 +20,8 @@ export const brand = {
   domain: "pronoclash.app",
   // Métadonnées SEO / OG
   description:
-    "Le jeu de pronostics entre potes pour la Coupe du monde. Crée ta ligue privée, joue des cartes spéciales, sabote tes amis. Sans pari d'argent.",
+    "Le jeu de pronostics entre potes pour le tournoi mondial de foot 2026. Crée ta ligue privée, joue des cartes spéciales, sabote tes amis. Sans pari d'argent.",
+  tournamentLabel: "Tournoi mondial 2026",
   // Restriction légale visible partout
   notAGamblingDisclaimer:
     "Jeu de pronostics entre amis, sans mise d'argent. Aucune affiliation officielle avec la FIFA, la Coupe du Monde ou les fédérations sportives.",

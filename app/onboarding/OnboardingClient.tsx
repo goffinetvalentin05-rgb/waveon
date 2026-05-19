@@ -1,52 +1,33 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/brand/Logo";
 import { AVATAR_COLORS, type AvatarColorId } from "@/lib/pronoclash/avatar-colors";
 import { ui } from "@/lib/design/tokens";
 
-type Team = { id: string; name: string; color: string | null; short_code: string | null };
-type Player = { id: string; full_name: string; team_id: string | null };
-
 type OnboardingClientProps = {
-  teams: Team[];
-  players: Player[];
-  deadlineIso: string | null;
-  deadlinePassed: boolean;
   nextHint: string | null;
 };
 
-type StepId = "pseudo" | "predictions" | "consents";
+type StepId = "identity" | "consents";
 
-export function OnboardingClient({
-  teams,
-  players,
-  deadlinePassed,
-  nextHint,
-}: OnboardingClientProps) {
+export function OnboardingClient({ nextHint }: OnboardingClientProps) {
   const router = useRouter();
-  const [step, setStep] = useState<StepId>("pseudo");
+  const [step, setStep] = useState<StepId>("identity");
 
   const [username, setUsername] = useState("");
   const [avatarColor, setAvatarColor] = useState<AvatarColorId>(AVATAR_COLORS[0].id);
 
-  const [championTeamId, setChampionTeamId] = useState<string>("");
-  const [topScorerId, setTopScorerId] = useState<string>("");
-
   const [consentTerms, setConsentTerms] = useState(false);
+  const [consentContestRules, setConsentContestRules] = useState(false);
   const [consentMarketingApp, setConsentMarketingApp] = useState(false);
   const [consentPartnerOffers, setConsentPartnerOffers] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const filteredPlayers = useMemo(() => {
-    if (!championTeamId) return players;
-    return players.filter((p) => !p.team_id || p.team_id === championTeamId);
-  }, [players, championTeamId]);
-
-  const canNextPseudo = username.trim().length >= 2;
+  const canNextIdentity = username.trim().length >= 2;
 
   const submit = async () => {
     setError(null);
@@ -58,9 +39,8 @@ export function OnboardingClient({
         body: JSON.stringify({
           username: username.trim(),
           avatarColor,
-          championTeamId: championTeamId || null,
-          topScorerId: topScorerId || null,
           consentTerms,
+          consentContestRules,
           consentMarketingApp,
           consentPartnerOffers,
         }),
@@ -87,61 +67,47 @@ export function OnboardingClient({
       <div className="pc-aurora" />
       <header className="relative z-10 flex items-center justify-between px-5 py-5 sm:px-8">
         <Logo />
-        <div className="hidden text-xs text-white/40 sm:block">Étape {stepIndex(step) + 1}/3</div>
+        <div className="hidden text-xs text-white/40 sm:block">
+          Étape {step === "identity" ? 1 : 2}/2
+        </div>
       </header>
       <main className="relative z-10 mx-auto w-full max-w-2xl flex-1 px-5 pb-12 sm:px-8">
         <StepBar step={step} />
-        {step === "pseudo" ? (
-          <PseudoStep
+        {step === "identity" ? (
+          <IdentityStep
             username={username}
             setUsername={setUsername}
             avatarColor={avatarColor}
             setAvatarColor={setAvatarColor}
-            onNext={() => setStep("predictions")}
-            canNext={canNextPseudo}
-          />
-        ) : null}
-        {step === "predictions" ? (
-          <PredictionsStep
-            teams={teams}
-            players={filteredPlayers}
-            championTeamId={championTeamId}
-            setChampionTeamId={setChampionTeamId}
-            topScorerId={topScorerId}
-            setTopScorerId={setTopScorerId}
-            deadlinePassed={deadlinePassed}
-            onBack={() => setStep("pseudo")}
             onNext={() => setStep("consents")}
+            canNext={canNextIdentity}
           />
-        ) : null}
-        {step === "consents" ? (
+        ) : (
           <ConsentsStep
             consentTerms={consentTerms}
             setConsentTerms={setConsentTerms}
+            consentContestRules={consentContestRules}
+            setConsentContestRules={setConsentContestRules}
             consentMarketingApp={consentMarketingApp}
             setConsentMarketingApp={setConsentMarketingApp}
             consentPartnerOffers={consentPartnerOffers}
             setConsentPartnerOffers={setConsentPartnerOffers}
-            onBack={() => setStep("predictions")}
+            onBack={() => setStep("identity")}
             onSubmit={submit}
             submitting={submitting}
             error={error}
           />
-        ) : null}
+        )}
       </main>
     </div>
   );
 }
 
-function stepIndex(s: StepId): number {
-  return s === "pseudo" ? 0 : s === "predictions" ? 1 : 2;
-}
-
 function StepBar({ step }: { step: StepId }) {
-  const idx = stepIndex(step);
+  const idx = step === "identity" ? 0 : 1;
   return (
     <div className="mb-8 flex items-center gap-2">
-      {[0, 1, 2].map((i) => (
+      {[0, 1].map((i) => (
         <div
           key={i}
           className={`h-1 flex-1 rounded-full transition-colors ${
@@ -153,7 +119,7 @@ function StepBar({ step }: { step: StepId }) {
   );
 }
 
-function PseudoStep({
+function IdentityStep({
   username,
   setUsername,
   avatarColor,
@@ -176,7 +142,7 @@ function PseudoStep({
         Choisis ton identité
       </h1>
       <p className="mt-2 text-sm text-white/55">
-        Visible par tes potes dans les ligues et les classements. Tu pourras la modifier plus tard.
+        Visible par tes potes dans la ligue générale et les classements. Tu pourras la modifier plus tard.
       </p>
       <div className="mt-7 flex flex-col items-center gap-6 sm:flex-row">
         <div
@@ -227,106 +193,11 @@ function PseudoStep({
   );
 }
 
-function PredictionsStep({
-  teams,
-  players,
-  championTeamId,
-  setChampionTeamId,
-  topScorerId,
-  setTopScorerId,
-  deadlinePassed,
-  onBack,
-  onNext,
-}: {
-  teams: Team[];
-  players: Player[];
-  championTeamId: string;
-  setChampionTeamId: (s: string) => void;
-  topScorerId: string;
-  setTopScorerId: (s: string) => void;
-  deadlinePassed: boolean;
-  onBack: () => void;
-  onNext: () => void;
-}) {
-  return (
-    <div className={`${ui.glassCard} p-7 sm:p-9`}>
-      <h1 className="font-display text-2xl font-semibold text-white sm:text-3xl">
-        Tes prédictions finales
-      </h1>
-      <p className="mt-2 text-sm text-white/55">
-        Le champion du tournoi et le meilleur buteur. C&apos;est gratuit, et ça te
-        donne ta participation au concours.
-      </p>
-
-      {deadlinePassed ? (
-        <p className="mt-5 rounded-xl border border-amber-300/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-          La deadline est dépassée. Tes prédictions seront enregistrées en mode
-          verrouillé et ne pourront pas être modifiées.
-        </p>
-      ) : null}
-
-      <div className="mt-7 grid gap-5 sm:grid-cols-2">
-        <div>
-          <label className={ui.label} htmlFor="ob-champion">Champion du tournoi</label>
-          {teams.length === 0 ? (
-            <p className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-white/50">
-              Aucune équipe pour le moment. L&apos;admin doit en ajouter dans /admin/teams.
-            </p>
-          ) : (
-            <select
-              id="ob-champion"
-              className={ui.input}
-              value={championTeamId}
-              onChange={(e) => setChampionTeamId(e.target.value)}
-            >
-              <option value="">— Choisir —</option>
-              {teams.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-        <div>
-          <label className={ui.label} htmlFor="ob-scorer">Meilleur buteur</label>
-          {players.length === 0 ? (
-            <p className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-white/50">
-              Aucun joueur référencé.
-            </p>
-          ) : (
-            <select
-              id="ob-scorer"
-              className={ui.input}
-              value={topScorerId}
-              onChange={(e) => setTopScorerId(e.target.value)}
-            >
-              <option value="">— Choisir —</option>
-              {players.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.full_name}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-9 flex items-center justify-between gap-3">
-        <button type="button" onClick={onBack} className={ui.btnGhost}>
-          ← Retour
-        </button>
-        <button type="button" onClick={onNext} className={ui.btnPrimary}>
-          Continuer
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function ConsentsStep({
   consentTerms,
   setConsentTerms,
+  consentContestRules,
+  setConsentContestRules,
   consentMarketingApp,
   setConsentMarketingApp,
   consentPartnerOffers,
@@ -338,6 +209,8 @@ function ConsentsStep({
 }: {
   consentTerms: boolean;
   setConsentTerms: (v: boolean) => void;
+  consentContestRules: boolean;
+  setConsentContestRules: (v: boolean) => void;
   consentMarketingApp: boolean;
   setConsentMarketingApp: (v: boolean) => void;
   consentPartnerOffers: boolean;
@@ -347,22 +220,29 @@ function ConsentsStep({
   submitting: boolean;
   error: string | null;
 }) {
+  const canSubmit = consentTerms && consentContestRules && !submitting;
   return (
     <div className={`${ui.glassCard} p-7 sm:p-9`}>
       <h1 className="font-display text-2xl font-semibold text-white sm:text-3xl">
         Dernière étape
       </h1>
       <p className="mt-2 text-sm text-white/55">
-        On respecte ta boîte mail. Chaque case est séparée et facultative
-        (sauf les conditions, requises par la loi).
+        Chaque case est séparée. On ne mélange jamais tes consentements (RGPD / LPD suisse).
       </p>
       <div className="mt-7 space-y-3">
         <Consent
           required
           checked={consentTerms}
           onChange={setConsentTerms}
-          title="J'accepte les conditions et le règlement du concours"
-          body="Je confirme avoir lu et accepté les conditions générales, la politique de confidentialité et le règlement du concours."
+          title="J'accepte les conditions générales d'utilisation"
+          body="Je confirme avoir lu et accepté les conditions générales et la politique de confidentialité."
+        />
+        <Consent
+          required
+          checked={consentContestRules}
+          onChange={setConsentContestRules}
+          title="J'accepte le règlement du concours"
+          body="Participation gratuite, basée sur le classement final de la ligue générale. Lot : maillot ou bon équivalent valeur max CHF 120. Aucune affiliation officielle."
         />
         <Consent
           checked={consentMarketingApp}
@@ -374,7 +254,7 @@ function ConsentsStep({
           checked={consentPartnerOffers}
           onChange={setConsentPartnerOffers}
           title="Recevoir des offres de partenaires football sélectionnés"
-          body="Notre partage de ton email avec un partenaire sélectionné n'a lieu QUE si tu coches cette case (RGPD)."
+          body="Ton email n'est partagé avec un partenaire sélectionné QUE si tu coches cette case."
         />
       </div>
       {error ? (
@@ -389,10 +269,10 @@ function ConsentsStep({
         <button
           type="button"
           onClick={onSubmit}
-          disabled={submitting || !consentTerms}
+          disabled={!canSubmit}
           className={ui.btnPrimary}
         >
-          {submitting ? "Enregistrement…" : "Valider mes prédictions"}
+          {submitting ? "Enregistrement…" : "Entrer dans la ligue générale"}
         </button>
       </div>
     </div>

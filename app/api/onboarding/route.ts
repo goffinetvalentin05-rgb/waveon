@@ -9,9 +9,8 @@ export const runtime = "nodejs";
 type OnboardingPayload = {
   username?: unknown;
   avatarColor?: unknown;
-  championTeamId?: unknown;
-  topScorerId?: unknown;
   consentTerms?: unknown;
+  consentContestRules?: unknown;
   consentMarketingApp?: unknown;
   consentPartnerOffers?: unknown;
 };
@@ -41,21 +40,16 @@ export async function POST(req: Request) {
     return bad("Couleur d'avatar invalide.");
   }
 
-  const championTeamId =
-    typeof body.championTeamId === "string" && body.championTeamId.length > 0
-      ? body.championTeamId
-      : null;
-  const topScorerId =
-    typeof body.topScorerId === "string" && body.topScorerId.length > 0
-      ? body.topScorerId
-      : null;
-
   const consentTerms = body.consentTerms === true;
+  const consentContestRules = body.consentContestRules === true;
   const consentMarketingApp = body.consentMarketingApp === true;
   const consentPartnerOffers = body.consentPartnerOffers === true;
 
   if (!consentTerms) {
-    return bad("Les conditions et le règlement du concours doivent être acceptés.");
+    return bad("Les conditions générales doivent être acceptées.");
+  }
+  if (!consentContestRules) {
+    return bad("Le règlement du concours doit être accepté.");
   }
 
   const supabase = await createRouteHandlerSupabase();
@@ -65,18 +59,8 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (authErr || !user) return bad("Non authentifié.", 401);
 
-  // Vérifier la deadline des prédictions champion/buteur
   const admin = createAdminSupabaseClient();
-  const { data: deadlineRow } = await admin
-    .from("app_settings")
-    .select("value")
-    .eq("key", "tournament_predictions_deadline")
-    .maybeSingle();
-  const deadlineRaw =
-    (deadlineRow?.value as { deadline?: string | null } | null)?.deadline ?? null;
-  const deadlinePassed = deadlineRaw ? new Date(deadlineRaw).getTime() < Date.now() : false;
 
-  // Vérifier unicité du pseudo
   const { data: existing } = await admin
     .from("profiles")
     .select("id")
@@ -87,7 +71,6 @@ export async function POST(req: Request) {
 
   const now = new Date().toISOString();
 
-  // Profil
   const { error: profileErr } = await admin
     .from("profiles")
     .upsert(
@@ -96,11 +79,12 @@ export async function POST(req: Request) {
         email: user.email,
         username,
         avatar_color: avatarColor,
-        consent_terms_accepted_at: now,
+        consent_terms_required: consentTerms,
+        consent_contest_rules_required: consentContestRules,
         consent_marketing_app: consentMarketingApp,
-        consent_marketing_app_at: consentMarketingApp ? now : null,
         consent_partner_offers: consentPartnerOffers,
-        consent_partner_offers_at: consentPartnerOffers ? now : null,
+        consent_created_at: now,
+        onboarded_at: now,
       },
       { onConflict: "id" }
     );
@@ -109,37 +93,7 @@ export async function POST(req: Request) {
     return bad(profileErr.message, 500);
   }
 
-  // Prédictions finales (modifiables si pas locked et deadline non passée)
-  if (championTeamId || topScorerId) {
-    const { error: tpErr } = await admin
-      .from("tournament_predictions")
-      .upsert(
-        {
-          user_id: user.id,
-          champion_team_id: championTeamId,
-          top_scorer_id: topScorerId,
-          locked: deadlinePassed,
-        },
-        { onConflict: "user_id" }
-      );
-    if (tpErr) {
-      console.error("[onboarding] tournament_predictions", tpErr);
-      return bad(tpErr.message, 500);
-    }
-  }
-
-  // Entrée concours gratuite
-  await admin.from("contest_entries").insert({
-    user_id: user.id,
-    email: user.email ?? "",
-    champion_team_id: championTeamId,
-    top_scorer_id: topScorerId,
-    consent_terms_accepted: consentTerms,
-    consent_marketing_app: consentMarketingApp,
-    consent_partner_offers: consentPartnerOffers,
-  });
-
-  // Rejoindre la ligue globale automatiquement
+  // Rejoindre automatiquement la ligue générale
   const { data: globalLeague } = await admin
     .from("leagues")
     .select("id")
@@ -155,7 +109,6 @@ export async function POST(req: Request) {
   }
 
   if (user.email) {
-    // Best-effort
     void sendWelcomeEmail({ to: user.email, username }).catch(() => undefined);
   }
 

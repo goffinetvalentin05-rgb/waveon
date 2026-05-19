@@ -12,38 +12,15 @@ export default async function OnboardingPage(props: { searchParams: Promise<Sear
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login?redirect=/onboarding");
 
-  // Si déjà onboardé → dashboard
   const { data: profile } = await supabase
     .from("profiles")
-    .select("username, avatar_color, consent_terms_accepted_at")
+    .select("username, avatar_color, onboarded_at")
     .eq("id", user.id)
     .maybeSingle();
-  if (profile?.username && profile.consent_terms_accepted_at) {
+  if (profile?.username && profile.onboarded_at) {
     if (next === "create-league") redirect("/leagues/new");
     redirect("/dashboard");
   }
 
-  const [teamsRes, playersRes, deadlineRes] = await Promise.all([
-    supabase.from("teams").select("id, name, color, short_code").order("name"),
-    supabase.from("players").select("id, full_name, team_id").order("full_name"),
-    supabase
-      .from("app_settings")
-      .select("value")
-      .eq("key", "tournament_predictions_deadline")
-      .maybeSingle(),
-  ]);
-
-  const deadlineIso =
-    (deadlineRes.data?.value as { deadline?: string | null } | null)?.deadline ?? null;
-  const deadlinePassed = deadlineIso ? new Date(deadlineIso).getTime() < Date.now() : false;
-
-  return (
-    <OnboardingClient
-      teams={teamsRes.data ?? []}
-      players={playersRes.data ?? []}
-      deadlineIso={deadlineIso}
-      deadlinePassed={deadlinePassed}
-      nextHint={next}
-    />
-  );
+  return <OnboardingClient nextHint={next} />;
 }

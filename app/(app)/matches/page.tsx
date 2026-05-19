@@ -10,7 +10,7 @@ export default async function MatchesPage() {
     supabase
       .from("matches")
       .select(
-        "id, kickoff_at, status, stage, home_score, away_score, home:home_team_id(id, name, short_code, color), away:away_team_id(id, name, short_code, color)"
+        "id, match_number, kickoff_at, locked_at, status, stage, group_name, venue, city, country, home_score, away_score, home_placeholder, away_placeholder, home:home_team_id(id, name, country_code, flag_emoji), away:away_team_id(id, name, country_code, flag_emoji)"
       )
       .order("kickoff_at"),
     user
@@ -29,13 +29,21 @@ export default async function MatchesPage() {
 
   type RawMatch = {
     id: string;
+    match_number: number | null;
     kickoff_at: string;
-    status: "scheduled" | "live" | "finished" | "cancelled";
+    locked_at: string;
+    status: "scheduled" | "live" | "finished" | "postponed";
     stage: string;
+    group_name: string | null;
+    venue: string | null;
+    city: string | null;
+    country: string | null;
     home_score: number | null;
     away_score: number | null;
-    home: { id: string; name: string; short_code: string | null; color: string | null } | null;
-    away: { id: string; name: string; short_code: string | null; color: string | null } | null;
+    home_placeholder: string | null;
+    away_placeholder: string | null;
+    home: { id: string; name: string; country_code: string | null; flag_emoji: string | null } | null;
+    away: { id: string; name: string; country_code: string | null; flag_emoji: string | null } | null;
   };
   const matches = (matchesRes.data ?? []) as unknown as RawMatch[];
 
@@ -62,14 +70,14 @@ export default async function MatchesPage() {
           Tes pronostics
         </h1>
         <p className="mt-2 text-sm text-white/55">
-          Score exact = +5 pts. Bon vainqueur = +3. Bon écart = +1 bonus. Tu peux modifier
-          jusqu&apos;au coup d&apos;envoi.
+          Score exact = +5 pts. Bon vainqueur ou bon nul = +3 pts. Bon écart de buts = +1 bonus.
+          Tu peux modifier ton prono jusqu&apos;au coup d&apos;envoi.
         </p>
       </header>
 
       {matches.length === 0 ? (
         <div className={`${ui.glassCard} p-8 text-center text-sm text-white/60`}>
-          Aucun match programmé pour le moment. L&apos;admin va en ajouter.
+          Aucun match programmé pour le moment. L&apos;admin va en ajouter dans /admin/tournament/matches.
         </div>
       ) : (
         <MatchesClient

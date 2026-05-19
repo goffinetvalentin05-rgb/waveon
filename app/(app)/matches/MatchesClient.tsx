@@ -4,15 +4,30 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ui } from "@/lib/design/tokens";
 
+type TeamSide = {
+  id: string;
+  name: string;
+  country_code: string | null;
+  flag_emoji: string | null;
+} | null;
+
 type Match = {
   id: string;
+  match_number: number | null;
   kickoff_at: string;
-  status: "scheduled" | "live" | "finished" | "cancelled";
+  locked_at: string;
+  status: "scheduled" | "live" | "finished" | "postponed";
   stage: string;
+  group_name: string | null;
+  venue: string | null;
+  city: string | null;
+  country: string | null;
   home_score: number | null;
   away_score: number | null;
-  home: { id: string; name: string; short_code: string | null; color: string | null } | null;
-  away: { id: string; name: string; short_code: string | null; color: string | null } | null;
+  home_placeholder: string | null;
+  away_placeholder: string | null;
+  home: TeamSide;
+  away: TeamSide;
 };
 
 type Prediction = {
@@ -33,10 +48,8 @@ type Props = {
 
 export function MatchesClient({ matches, predictions, leagues }: Props) {
   const router = useRouter();
-  // null = global
   const [activeLeague, setActiveLeague] = useState<string | null>(null);
 
-  // Map prediction key → prediction (matchId + leagueId)
   const predByKey = useMemo(() => {
     const map = new Map<string, Prediction>();
     for (const p of predictions) {
@@ -111,7 +124,7 @@ function LeagueTabs({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <TabBtn
-        label="Ligue globale"
+        label="Ligue générale"
         active={active === null}
         onClick={() => onChange(null)}
       />
@@ -165,7 +178,9 @@ function MatchRow({
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
   const kickoffPast = new Date(match.kickoff_at).getTime() <= Date.now();
-  const locked = readonly || kickoffPast || match.status !== "scheduled";
+  const lockedPast = new Date(match.locked_at).getTime() <= Date.now();
+  const hasTeams = !!match.home && !!match.away;
+  const locked = readonly || kickoffPast || lockedPast || match.status !== "scheduled" || !hasTeams;
 
   const save = async () => {
     setSaving(true);
@@ -195,19 +210,30 @@ function MatchRow({
     }
   };
 
+  const stageLabel = match.group_name
+    ? `Groupe ${match.group_name}`
+    : prettyStage(match.stage);
+
   return (
     <li className={`${ui.glassCard} p-4 sm:p-5`}>
       <div className="flex items-center justify-between text-xs text-white/45">
-        <span>
-          {new Date(match.kickoff_at).toLocaleString("fr-CH", {
-            weekday: "short",
-            day: "numeric",
-            month: "short",
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-          {" · "}
-          {match.stage}
+        <span className="flex items-center gap-2">
+          {match.match_number ? (
+            <span className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] font-semibold text-white/60">
+              #{match.match_number}
+            </span>
+          ) : null}
+          <span>
+            {new Date(match.kickoff_at).toLocaleString("fr-CH", {
+              weekday: "short",
+              day: "numeric",
+              month: "short",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+            {" · "}
+            {stageLabel}
+          </span>
         </span>
         {locked ? (
           <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-white/60">
@@ -216,10 +242,16 @@ function MatchRow({
         ) : null}
       </div>
 
+      {match.venue || match.city ? (
+        <div className="mt-1 text-[11px] text-white/35">
+          {[match.venue, match.city, match.country].filter(Boolean).join(" — ")}
+        </div>
+      ) : null}
+
       <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-6">
-        <Team team={match.home} align="left" />
+        <TeamView team={match.home} placeholder={match.home_placeholder} align="left" />
         <div className="text-xs uppercase tracking-widest text-white/30">vs</div>
-        <Team team={match.away} align="right" />
+        <TeamView team={match.away} placeholder={match.away_placeholder} align="right" />
       </div>
 
       {match.status === "finished" ? (
@@ -228,6 +260,10 @@ function MatchRow({
           <div className="mt-1 font-display text-2xl font-bold text-white">
             {match.home_score} – {match.away_score}
           </div>
+        </div>
+      ) : !hasTeams ? (
+        <div className="mt-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-xs text-white/45">
+          Équipes pas encore qualifiées
         </div>
       ) : (
         <div className="mt-4 grid grid-cols-2 items-center gap-3">
@@ -256,20 +292,44 @@ function MatchRow({
   );
 }
 
-function Team({
+function prettyStage(stage: string): string {
+  const map: Record<string, string> = {
+    group: "Phase de groupes",
+    round_of_32: "16es de finale",
+    round_of_16: "8es de finale",
+    quarter_final: "Quart de finale",
+    semi_final: "Demi-finale",
+    third_place: "Match pour la 3ème place",
+    final: "Finale",
+  };
+  return map[stage] ?? stage;
+}
+
+function TeamView({
   team,
+  placeholder,
   align,
 }: {
-  team: Match["home"];
+  team: TeamSide;
+  placeholder: string | null;
   align: "left" | "right";
 }) {
-  const initials = team?.short_code ?? team?.name?.slice(0, 3).toUpperCase() ?? "—";
+  if (!team) {
+    return (
+      <div className={`flex items-center gap-3 ${align === "right" ? "flex-row-reverse text-right" : ""}`}>
+        <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-dashed border-white/15 bg-white/[0.02] text-xs text-white/40">
+          ?
+        </span>
+        <span className="truncate text-xs italic text-white/45">{placeholder ?? "À déterminer"}</span>
+      </div>
+    );
+  }
   return (
     <div className={`flex items-center gap-3 ${align === "right" ? "flex-row-reverse text-right" : ""}`}>
-      <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/40 to-violet-500/40 text-xs font-bold text-white">
-        {initials}
+      <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/30 to-violet-500/30 text-lg">
+        {team.flag_emoji ?? "🏳️"}
       </span>
-      <span className="truncate text-sm font-semibold text-white">{team?.name ?? "—"}</span>
+      <span className="truncate text-sm font-semibold text-white">{team.name}</span>
     </div>
   );
 }

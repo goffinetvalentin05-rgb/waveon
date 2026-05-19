@@ -5,47 +5,67 @@ import { ui } from "@/lib/design/tokens";
 export default async function AdminHomePage() {
   const supabase = await createServerComponentSupabase();
 
-  const [teamsCount, matchesCount, leaguesCount, contestCount, deadlineRow] = await Promise.all([
-    supabase.from("teams").select("id", { count: "exact", head: true }),
-    supabase.from("matches").select("id", { count: "exact", head: true }),
-    supabase.from("leagues").select("id", { count: "exact", head: true }).neq("kind", "global"),
-    supabase.from("contest_entries").select("id", { count: "exact", head: true }),
-    supabase
-      .from("app_settings")
-      .select("value")
-      .eq("key", "tournament_predictions_deadline")
-      .maybeSingle(),
-  ]);
+  const [teamsCount, matchesCount, leaguesCount, usersCount, paymentsCount, contestSettings] =
+    await Promise.all([
+      supabase.from("teams").select("id", { count: "exact", head: true }),
+      supabase.from("matches").select("id", { count: "exact", head: true }),
+      supabase.from("leagues").select("id", { count: "exact", head: true }).neq("kind", "global"),
+      supabase.from("profiles").select("id", { count: "exact", head: true }),
+      supabase
+        .from("payments")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "paid"),
+      supabase
+        .from("contest_settings")
+        .select("prize_title, prize_value_chf, ends_at, is_active")
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
-  const deadlineIso =
-    (deadlineRow.data?.value as { deadline?: string | null } | null)?.deadline ?? null;
+  const cs = contestSettings.data as
+    | { prize_title: string; prize_value_chf: number; ends_at: string | null; is_active: boolean }
+    | null;
 
   return (
     <div className="space-y-6">
       <header>
         <h1 className="font-display text-3xl font-semibold text-white">Espace admin</h1>
         <p className="mt-2 text-sm text-white/55">
-          Gère équipes, joueurs, matchs, scores, et règlement du concours.
+          Tournoi, équipes, matchs, scores, concours, ligues privées et paiements.
         </p>
       </header>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label="Équipes" value={teamsCount.count ?? 0} link="/admin/teams" />
-        <Kpi label="Matchs" value={matchesCount.count ?? 0} link="/admin/matches" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <Kpi label="Joueurs inscrits" value={usersCount.count ?? 0} link="/admin/contest" />
+        <Kpi label="Équipes" value={teamsCount.count ?? 0} link="/admin/tournament/teams" />
+        <Kpi label="Matchs" value={matchesCount.count ?? 0} link="/admin/tournament/matches" />
         <Kpi label="Ligues privées" value={leaguesCount.count ?? 0} link="/admin/leagues" />
-        <Kpi label="Entrées concours" value={contestCount.count ?? 0} link="/admin/contest" />
+        <Kpi label="Paiements payés" value={paymentsCount.count ?? 0} link="/admin/payments" />
       </div>
 
       <section className={`${ui.glassCard} p-6`}>
-        <h2 className="text-lg font-semibold text-white">Deadline prédictions champion/buteur</h2>
-        <p className="mt-2 text-sm text-white/55">
-          Après cette date, plus personne ne peut modifier ses prédictions finales.
-        </p>
-        <p className="mt-3 text-sm font-semibold text-white">
-          Actuelle : {deadlineIso ? new Date(deadlineIso).toLocaleString("fr-CH") : "non définie"}
-        </p>
+        <h2 className="text-lg font-semibold text-white">Concours global</h2>
+        {cs ? (
+          <>
+            <p className="mt-2 text-sm text-white/55">
+              Lot : <span className="text-white">{cs.prize_title}</span> · valeur max{" "}
+              <span className="text-white">CHF {cs.prize_value_chf}</span>
+              {cs.ends_at
+                ? ` · clôture le ${new Date(cs.ends_at).toLocaleDateString("fr-CH")}`
+                : ""}
+              {" · "}
+              {cs.is_active ? (
+                <span className="text-emerald-300">actif</span>
+              ) : (
+                <span className="text-amber-300">en pause</span>
+              )}
+            </p>
+          </>
+        ) : (
+          <p className="mt-2 text-sm text-white/55">Paramètres non initialisés.</p>
+        )}
         <Link href="/admin/contest" className={`${ui.btnSecondary} mt-4`}>
-          Modifier la deadline
+          Gérer le concours
         </Link>
       </section>
     </div>

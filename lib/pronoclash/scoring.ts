@@ -45,11 +45,19 @@ export type ScoringBonus = {
  * Calcule les points bruts d'un pronostic vs le résultat réel.
  * Renvoie une décomposition pour log (scoring_events).
  */
+export type ScoringResult = {
+  points: number;
+  reasons: { reason: string; points: number }[];
+  exact_score: boolean;
+  correct_winner: boolean;
+  correct_goal_difference: boolean;
+};
+
 export function scorePrediction(
   prediction: PredictionInput,
   result: MatchResult,
   bonuses: ScoringBonus = {}
-): { points: number; reasons: { reason: string; points: number }[] } {
+): ScoringResult {
   const reasons: { reason: string; points: number }[] = [];
   const add = (reason: string, points: number) => {
     if (points !== 0) reasons.push({ reason, points });
@@ -62,28 +70,31 @@ export function scorePrediction(
   const exactScore =
     prediction.predicted_home_score === result.home_score &&
     prediction.predicted_away_score === result.away_score;
+  const correctWinner = predictedWinner === result.winner;
+
+  let correctGoalDifference = false;
 
   if (exactScore) {
     add("score_exact", 5);
-  } else if (predictedWinner === result.winner) {
+  } else if (correctWinner) {
     if (result.winner === "draw") {
       add("bon_nul", 3);
     } else {
       add("bon_vainqueur", 3);
-    }
-    // Écart de buts exact (sans match nul)
-    if (result.winner !== "draw") {
       const realGap = Math.abs(result.home_score - result.away_score);
       const predGap = Math.abs(
         prediction.predicted_home_score - prediction.predicted_away_score
       );
       if (realGap === predGap) {
+        correctGoalDifference = true;
         add("bon_ecart", 1);
       }
     }
   }
 
-  // Cartes bonus (en plus des points classiques)
+  // Score exact => par définition, correct_goal_difference est aussi vrai
+  if (exactScore) correctGoalDifference = true;
+
   if (bonuses.bus_gare && result.winner === "draw" && predictedWinner === "draw") {
     add("bus_gare_bonus", 3);
   }
@@ -110,7 +121,13 @@ export function scorePrediction(
     points *= 2;
   }
 
-  return { points, reasons };
+  return {
+    points,
+    reasons,
+    exact_score: exactScore,
+    correct_winner: correctWinner,
+    correct_goal_difference: correctGoalDifference,
+  };
 }
 
 /** Helper : un pronostic est-il verrouillé (locked_at) à la date donnée ? */

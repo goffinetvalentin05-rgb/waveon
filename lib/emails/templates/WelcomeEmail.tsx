@@ -30,9 +30,9 @@ export default function WelcomeEmail({
           Prochaines étapes :
         </Text>
         <ul style={{ paddingLeft: 20, color: "rgba(245,247,255,0.75)", fontSize: "15px", lineHeight: 1.6 }}>
-          <li>finir tes pronostics champion + meilleur buteur ;</li>
-          <li>créer ta ligue privée pour inviter tes potes ;</li>
-          <li>rejoindre la ligue globale (déjà fait) pour le classement public.</li>
+          <li>pronostiquer les prochains matchs de la ligue générale ;</li>
+          <li>grimper au classement et participer au concours gratuit ;</li>
+          <li>créer une ligue privée pour inviter tes potes et jouer des cartes.</li>
         </ul>
         <CtaButton href={`${baseUrl}/dashboard`} label="Ouvrir mon dashboard" />
       </Section>

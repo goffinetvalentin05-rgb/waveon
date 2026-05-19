@@ -3,6 +3,15 @@ import { requireAdmin } from "@/lib/pronoclash/admin-guard";
 
 export const runtime = "nodejs";
 
+function slugify(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export async function POST(req: Request) {
   const guard = await requireAdmin();
   if (!guard.ok) return guard.response;
@@ -16,16 +25,23 @@ export async function POST(req: Request) {
 
   const name = typeof body.name === "string" ? body.name.trim() : "";
   if (name.length < 2) return NextResponse.json({ error: "Nom requis." }, { status: 400 });
-  const shortCode = typeof body.shortCode === "string" ? body.shortCode.trim().toUpperCase().slice(0, 3) : null;
-  const groupLabel = typeof body.groupLabel === "string" ? body.groupLabel.trim().slice(0, 4) : null;
+  const countryCode =
+    typeof body.countryCode === "string"
+      ? body.countryCode.trim().toUpperCase().slice(0, 3) || null
+      : null;
+  const flagEmoji = typeof body.flagEmoji === "string" ? body.flagEmoji.trim() || null : null;
+  const groupName = typeof body.groupName === "string" ? body.groupName.trim() || null : null;
   const isOutsider = body.isOutsider === true;
+  const slug = slugify(name);
 
   const { data, error } = await guard.admin
     .from("teams")
     .insert({
       name,
-      short_code: shortCode || null,
-      group_label: groupLabel || null,
+      slug,
+      country_code: countryCode,
+      flag_emoji: flagEmoji,
+      group_name: groupName,
       is_outsider: isOutsider,
     })
     .select("id")

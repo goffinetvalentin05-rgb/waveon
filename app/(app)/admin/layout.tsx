@@ -4,12 +4,13 @@ import { createServerComponentSupabase } from "@/lib/supabase/server-component";
 import { ui } from "@/lib/design/tokens";
 
 const NAV = [
-  { href: "/admin",          label: "Vue d'ensemble" },
-  { href: "/admin/teams",    label: "Équipes" },
-  { href: "/admin/players",  label: "Joueurs" },
-  { href: "/admin/matches",  label: "Matchs" },
-  { href: "/admin/contest",  label: "Concours" },
-  { href: "/admin/leagues",  label: "Ligues" },
+  { href: "/admin",                    label: "Vue d'ensemble" },
+  { href: "/admin/tournament",         label: "Tournoi" },
+  { href: "/admin/tournament/teams",   label: "Équipes" },
+  { href: "/admin/tournament/matches", label: "Matchs" },
+  { href: "/admin/contest",            label: "Concours" },
+  { href: "/admin/leagues",            label: "Ligues" },
+  { href: "/admin/payments",           label: "Paiements" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

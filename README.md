@@ -1,8 +1,8 @@
 # Prono Clash
 
-Application web mobile-first de pronostics entre amis pour la Coupe du monde de football.
-Pronostiquer les matchs, jouer des cartes spéciales, saboter ses potes, et devenir le
-champion de sa ligue.
+Application web mobile-first de pronostics entre amis pour le tournoi mondial de football 2026.
+Pronostiquer les matchs, grimper dans la ligue générale, jouer des cartes en ligue privée
+et saboter ses potes.
 
 > **Pas une app de paris.** Aucune mise d'argent entre joueurs. Le paiement sert uniquement à
 > créer une ligue privée et à débloquer le mode jeu avec cartes.
@@ -39,9 +39,9 @@ Toutes les migrations sont dans `supabase/migrations/`. La migration initiale
 `20260519180000_pronoclash_init.sql` :
 
 1. supprime entièrement l'ancien schéma SaaS Waevon (réservations, services, etc.) ;
-2. crée le schéma Prono Clash : `profiles`, `teams`, `players`, `tournament_predictions`,
-   `matches`, `leagues`, `league_members`, `predictions`, `cards`, `card_inventory`,
-   `card_plays`, `scoring_events`, `payments`, `contest_entries`, `app_settings` ;
+2. crée le schéma Prono Clash : `profiles`, `groups`, `teams`, `matches`, `leagues`,
+   `league_members`, `predictions`, `cards`, `card_inventory`, `card_plays`,
+   `scoring_events`, `payments`, `contest_settings`, `contest_results`, `app_settings` ;
 3. active RLS et installe les policies (lecture publique des équipes/cartes/classement,
    écriture des prédictions/cartes restreintes au propriétaire, admin pour la gestion).
 
@@ -59,16 +59,18 @@ fichier (puis ajuster `EMAIL_FROM_NAME` côté env si nécessaire).
 |---|---|
 | `/` | Landing page |
 | `/login`, `/signup` | Auth |
-| `/onboarding` | Pseudo, avatar, prédictions finales, consentements |
+| `/onboarding` | Pseudo, avatar, consentements (ligue générale automatique) |
 | `/dashboard` | Vue d'ensemble joueur |
 | `/matches` | Liste des matchs + saisie pronostics |
-| `/leaderboard` | Classement global top 100 |
+| `/global`, `/global/leaderboard` | Ligue générale + classement public |
+| `/leagues/join` | Rejoindre une ligue par code d'invitation |
 | `/leagues/new` | Création d'une ligue privée (Stripe Checkout) |
 | `/leagues/[slug]` | Vue d'une ligue (membres, classement) |
 | `/leagues/[slug]/invite` | Lien d'invitation + bouton WhatsApp |
 | `/leagues/[slug]/cards` | Jouer ses cartes dans une ligue privée |
 | `/leagues/join/[code]` | Rejoindre une ligue via code |
-| `/admin/*` | Espace admin (équipes, matchs, scores, deadline concours, exports) |
+| `/admin/tournament/*` | Équipes, matchs (import CSV), scores |
+| `/admin/contest` | Paramètres concours, recalcul classement, gagnant manuel |
 | `/legal/*` | Conditions, confidentialité, règlement concours |
 
 ## Mécanique de jeu (MVP)

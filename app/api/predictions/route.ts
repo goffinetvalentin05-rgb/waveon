@@ -18,8 +18,9 @@ function bad(message: string, status = 400) {
 /**
  * POST /api/predictions
  *  → enregistre un pronostic pour un match.
- *  - leagueId null = global (un seul pronostic global par user / match)
- *  - vérifie le verrou (kickoff_at + locked_at)
+ *  - leagueId null = ligue générale (un seul pronostic global par user / match)
+ *  - leagueId fourni = ligue privée (vérifie l'appartenance)
+ *  - verrouille au coup d'envoi (kickoff_at) ou à locked_at
  */
 export async function POST(req: Request) {
   let body: Payload;
@@ -43,21 +44,21 @@ export async function POST(req: Request) {
   const { data: { user }, error: authErr } = await supabase.auth.getUser();
   if (authErr || !user) return bad("Non authentifié.", 401);
 
-  // Vérifier le verrou côté serveur
   const { data: match } = await supabase
     .from("matches")
-    .select("id, kickoff_at, status")
+    .select("id, kickoff_at, locked_at, status, home_team_id, away_team_id")
     .eq("id", matchId)
     .maybeSingle();
   if (!match) return bad("Match introuvable.", 404);
-  if (match.status === "finished" || match.status === "cancelled") {
-    return bad("Match terminé : impossible de pronostiquer.", 409);
+  if (match.status === "finished" || match.status === "postponed") {
+    return bad("Match indisponible : impossible de pronostiquer.", 409);
   }
-  if (isPredictionLocked(null, match.kickoff_at as string)) {
-    return bad("Le pronostic est verrouillé (coup d'envoi passé).", 409);
+  if (
+    isPredictionLocked(match.locked_at as string | null, match.kickoff_at as string)
+  ) {
+    return bad("Le pronostic est verrouillé.", 409);
   }
 
-  // Si leagueId fourni, vérifier appartenance
   if (leagueId) {
     const { data: membership } = await supabase
       .from("league_members")
@@ -68,7 +69,14 @@ export async function POST(req: Request) {
     if (!membership) return bad("Tu n'es pas membre de cette ligue.", 403);
   }
 
-  const predictedWinner = home > away ? "home" : away > home ? "away" : "draw";
+  const homeTeamId = (match as { home_team_id: string | null }).home_team_id;
+  const awayTeamId = (match as { away_team_id: string | null }).away_team_id;
+  const isDraw = home === away;
+  const predictedWinnerTeamId = isDraw
+    ? null
+    : home > away
+      ? homeTeamId
+      : awayTeamId;
 
   const upsertPayload = {
     user_id: user.id,
@@ -76,11 +84,10 @@ export async function POST(req: Request) {
     league_id: leagueId,
     predicted_home_score: home,
     predicted_away_score: away,
-    predicted_winner: predictedWinner,
+    predicted_winner_team_id: predictedWinnerTeamId,
+    predicted_is_draw: isDraw,
   };
 
-  // Pour upsert avec contrainte (user_id, match_id, league_id) où league_id peut être null,
-  // on fait insert puis on retombe sur update si conflit.
   const { error: upErr } = await supabase
     .from("predictions")
     .upsert(upsertPayload, { onConflict: "user_id,match_id,league_id" });

@@ -3,47 +3,59 @@ import { ui } from "@/lib/design/tokens";
 const STEPS = [
   {
     n: "01",
-    title: "Crée ou rejoins une ligue",
-    text: "Lance une ligue privée avec tes potes ou rejoins la ligue publique gratuite.",
+    title: "Inscris-toi gratuitement",
+    text: "Pseudo, avatar, consentements séparés. Tu rejoins automatiquement la ligue générale.",
     accent: "from-blue-500 to-indigo-500",
   },
   {
     n: "02",
-    title: "Pronostique les matchs",
-    text: "Score exact, vainqueur, match nul : empoche des points avant chaque coup d'envoi.",
+    title: "Rejoins la ligue générale",
+    text: "Tous les inscrits jouent ensemble. Pronostics classiques, classement public, concours gratuit.",
     accent: "from-indigo-500 to-violet-500",
   },
   {
     n: "03",
-    title: "Joue des cartes",
-    text: "Joker x2, vol de score, carton rouge… Saboter, booster, surprendre, c'est la base.",
+    title: "Pronostique les matchs",
+    text: "Score exact, bon vainqueur, bon nul, bon écart : empoche des points avant chaque coup d'envoi.",
     accent: "from-violet-500 to-fuchsia-500",
   },
   {
     n: "04",
-    title: "Grimpe au classement",
-    text: "Chaque match compte. Termine premier de ta ligue et chambre tes potes.",
+    title: "Gagne des points",
+    text: "Grimpe au classement général. Le premier à la fin du tournoi remporte le lot du concours.",
     accent: "from-fuchsia-500 to-pink-500",
+  },
+  {
+    n: "05",
+    title: "Crée une ligue privée",
+    text: "Paye une fois, invite tes potes par WhatsApp. Classement privé et mode jeu avancé.",
+    accent: "from-pink-500 to-rose-500",
+  },
+  {
+    n: "06",
+    title: "Joue des cartes",
+    text: "Joker x2, Vol de score, Carton rouge, Tacle, VAR… fais basculer le classement entre potes.",
+    accent: "from-rose-500 to-orange-500",
   },
 ];
 
 export function HowItWorksSection() {
   return (
-    <section id="comment" className={`${ui.section}`}>
+    <section id="comment" className={ui.section}>
       <div className={ui.container}>
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-300/80">
             Comment ça marche
           </p>
-          <h2 className={`${ui.h2} mt-3`}>Quatre étapes. Aucun appel téléphonique.</h2>
+          <h2 className={`${ui.h2} mt-3`}>Six étapes. Zéro prise de tête.</h2>
           <p className="mt-4 text-base text-white/60">
-            Pas de tuto de 20 minutes. Tu t'inscris, tu pronostiques, tu sabotes.
+            Inscription gratuite, concours sur le classement général, ligues privées pour le fun entre potes.
           </p>
         </div>
-        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {STEPS.map((s) => (
             <div key={s.n} className={`${ui.glassCard} p-6`}>
-              <div
+                <div
                 className={`inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${s.accent} font-display text-base font-semibold text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.7)]`}
               >
                 {s.n}

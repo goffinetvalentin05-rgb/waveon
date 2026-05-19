@@ -1,13 +1,15 @@
 -- =====================================================================
---  Prono Clash — Migration d'initialisation
+--  Prono Clash — Migration d'initialisation (v2, tournoi mondial 2026)
 --  Objectif : remplacer le schéma SaaS Waevon (réservations) par le
 --             schéma jeu de pronostics Prono Clash.
 --
 --  Cette migration :
 --    1. supprime proprement les anciennes tables wavon_* et structures
 --       métier liées (réservations, services, clients, factures, etc.)
---    2. recrée un schéma propre dédié à Prono Clash
---    3. active RLS et définit les policies de base
+--    2. supprime toute version précédente de Prono Clash si existante
+--    3. recrée un schéma propre dédié à Prono Clash v2
+--    4. active RLS et définit les policies
+--    5. seed 12 groupes + 48 équipes du tournoi mondial 2026
 --
 --  ATTENTION : destructive. Pas de rollback automatique des données.
 -- =====================================================================
@@ -16,14 +18,12 @@
 -- 1) Nettoyage de l'ancien schéma Waevon
 -- ---------------------------------------------------------------------
 
--- Drop des triggers/fonctions qui s'accrochent à auth.users
 drop trigger if exists on_auth_user_created on auth.users;
 drop trigger if exists on_auth_user_created_init on auth.users;
 drop function if exists public.handle_new_user() cascade;
 drop function if exists public.init_new_user() cascade;
 drop function if exists public.wavon_init_new_user() cascade;
 
--- Tables Wavon (toutes en CASCADE pour éviter les dépendances)
 drop table if exists public.wavon_email_delivery_logs cascade;
 drop table if exists public.wavon_email_logs cascade;
 drop table if exists public.wavon_email_templates cascade;
@@ -45,16 +45,40 @@ drop table if exists public.dashboard_whatsapp_messages cascade;
 drop table if exists public.dashboard_whatsapp_threads cascade;
 drop table if exists public.wheel_pool cascade;
 drop table if exists public.participations cascade;
-drop table if exists public.profiles cascade;
-drop table if exists public.users cascade;
 
 -- ---------------------------------------------------------------------
--- 2) Utilitaires
+-- 2) Nettoyage de toute version Prono Clash existante (idempotence)
+-- ---------------------------------------------------------------------
+
+drop function if exists public.is_admin() cascade;
+drop function if exists public.is_league_member(uuid) cascade;
+drop function if exists public.tg_set_updated_at() cascade;
+
+drop table if exists public.card_plays cascade;
+drop table if exists public.card_inventory cascade;
+drop table if exists public.cards cascade;
+drop table if exists public.scoring_events cascade;
+drop table if exists public.predictions cascade;
+drop table if exists public.tournament_predictions cascade;
+drop table if exists public.contest_entries cascade;
+drop table if exists public.contest_results cascade;
+drop table if exists public.contest_settings cascade;
+drop table if exists public.payments cascade;
+drop table if exists public.league_members cascade;
+drop table if exists public.leagues cascade;
+drop table if exists public.matches cascade;
+drop table if exists public.players cascade;
+drop table if exists public.teams cascade;
+drop table if exists public.groups cascade;
+drop table if exists public.app_settings cascade;
+drop table if exists public.profiles cascade;
+
+-- ---------------------------------------------------------------------
+-- 3) Utilitaires
 -- ---------------------------------------------------------------------
 
 create extension if not exists pgcrypto;
 
--- Trigger générique updated_at
 create or replace function public.tg_set_updated_at()
 returns trigger
 language plpgsql
@@ -66,7 +90,7 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------
--- 3) Profils utilisateurs (étend auth.users)
+-- 4) Profils (étend auth.users)
 -- ---------------------------------------------------------------------
 
 create table public.profiles (
@@ -76,24 +100,25 @@ create table public.profiles (
   avatar_color text default 'indigo' not null,
   is_admin boolean default false not null,
   total_points integer default 0 not null,
-  -- Consentements (RGPD, jamais mélangés)
-  consent_terms_accepted_at timestamptz,
+  -- Consentements RGPD / LPD (jamais mélangés)
+  consent_terms_required boolean default false not null,
+  consent_contest_rules_required boolean default false not null,
   consent_marketing_app boolean default false not null,
-  consent_marketing_app_at timestamptz,
   consent_partner_offers boolean default false not null,
-  consent_partner_offers_at timestamptz,
+  consent_created_at timestamptz,
+  onboarded_at timestamptz,
   created_at timestamptz default timezone('utc', now()) not null,
   updated_at timestamptz default timezone('utc', now()) not null
 );
 
-create index profiles_total_points_idx on public.profiles (total_points desc);
-create index profiles_username_idx on public.profiles (username);
+create index profiles_username_idx on public.profiles(username);
+create index profiles_total_points_idx on public.profiles(total_points desc);
 
 create trigger profiles_set_updated_at
   before update on public.profiles
   for each row execute function public.tg_set_updated_at();
 
--- Trigger : à la création d'un user, créer son profil
+-- Auto-création du profil au signup Supabase
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -112,327 +137,7 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- ---------------------------------------------------------------------
--- 4) Tournoi : équipes, joueurs (buteurs), settings
--- ---------------------------------------------------------------------
-
-create table public.teams (
-  id uuid primary key default gen_random_uuid(),
-  -- Nom générique (pas de logo officiel)
-  name text not null unique,
-  short_code text unique,
-  color text,
-  group_label text,
-  is_outsider boolean default false not null,
-  created_at timestamptz default timezone('utc', now()) not null,
-  updated_at timestamptz default timezone('utc', now()) not null
-);
-
-create trigger teams_set_updated_at
-  before update on public.teams
-  for each row execute function public.tg_set_updated_at();
-
-create table public.players (
-  id uuid primary key default gen_random_uuid(),
-  full_name text not null,
-  team_id uuid references public.teams(id) on delete set null,
-  position text,
-  goals_scored integer default 0 not null,
-  created_at timestamptz default timezone('utc', now()) not null,
-  updated_at timestamptz default timezone('utc', now()) not null
-);
-
-create index players_team_id_idx on public.players (team_id);
-create index players_goals_scored_idx on public.players (goals_scored desc);
-
-create trigger players_set_updated_at
-  before update on public.players
-  for each row execute function public.tg_set_updated_at();
-
--- Settings globaux (deadline concours, etc.)
-create table public.app_settings (
-  key text primary key,
-  value jsonb not null,
-  updated_at timestamptz default timezone('utc', now()) not null
-);
-
-insert into public.app_settings (key, value) values
-  ('tournament_predictions_deadline', jsonb_build_object('deadline', null::text)),
-  ('tournament_active', jsonb_build_object('active', true)),
-  ('contest_prize_max_chf', jsonb_build_object('amount', 120));
-
--- ---------------------------------------------------------------------
--- 5) Prédictions finales (champion + meilleur buteur) & concours
--- ---------------------------------------------------------------------
-
-create table public.tournament_predictions (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  champion_team_id uuid references public.teams(id) on delete set null,
-  top_scorer_id uuid references public.players(id) on delete set null,
-  locked boolean default false not null,
-  created_at timestamptz default timezone('utc', now()) not null,
-  updated_at timestamptz default timezone('utc', now()) not null,
-  unique (user_id)
-);
-
-create trigger tournament_predictions_set_updated_at
-  before update on public.tournament_predictions
-  for each row execute function public.tg_set_updated_at();
-
--- Concours (le règlement légal autorise une participation gratuite)
-create table public.contest_entries (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references auth.users(id) on delete set null,
-  email text not null,
-  champion_team_id uuid references public.teams(id) on delete set null,
-  top_scorer_id uuid references public.players(id) on delete set null,
-  consent_terms_accepted boolean default false not null,
-  consent_marketing_app boolean default false not null,
-  consent_partner_offers boolean default false not null,
-  ip_address inet,
-  user_agent text,
-  is_winner boolean default false not null,
-  created_at timestamptz default timezone('utc', now()) not null
-);
-
-create index contest_entries_user_id_idx on public.contest_entries (user_id);
-create index contest_entries_email_idx on public.contest_entries (lower(email));
-
--- ---------------------------------------------------------------------
--- 6) Ligues (publique globale + privées payantes)
--- ---------------------------------------------------------------------
-
-create table public.leagues (
-  id uuid primary key default gen_random_uuid(),
-  slug text not null unique,
-  name text not null,
-  -- 'global' (publique gratuite, 1 seule), 'private', 'pro'
-  kind text not null check (kind in ('global', 'private', 'pro')),
-  owner_id uuid references auth.users(id) on delete set null,
-  plan text check (plan in ('global', 'private', 'pro')),
-  max_players integer default 20 not null,
-  invite_code text unique,
-  status text not null default 'active' check (status in ('pending_payment', 'active', 'archived')),
-  paid_at timestamptz,
-  stripe_session_id text,
-  amount_chf numeric(10, 2),
-  settings jsonb default '{}'::jsonb not null,
-  created_at timestamptz default timezone('utc', now()) not null,
-  updated_at timestamptz default timezone('utc', now()) not null
-);
-
-create index leagues_owner_id_idx on public.leagues (owner_id);
-create index leagues_kind_idx on public.leagues (kind);
-
-create trigger leagues_set_updated_at
-  before update on public.leagues
-  for each row execute function public.tg_set_updated_at();
-
--- Une seule ligue globale, créée d'office
-insert into public.leagues (slug, name, kind, plan, max_players, status, settings)
-values (
-  'global',
-  'Ligue globale',
-  'global',
-  'global',
-  1000000,
-  'active',
-  jsonb_build_object('cards_enabled', false, 'is_public', true)
-);
-
--- Membres
-create table public.league_members (
-  league_id uuid not null references public.leagues(id) on delete cascade,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  role text not null default 'member' check (role in ('owner', 'member')),
-  points integer default 0 not null,
-  joined_at timestamptz default timezone('utc', now()) not null,
-  primary key (league_id, user_id)
-);
-
-create index league_members_user_id_idx on public.league_members (user_id);
-create index league_members_league_points_idx on public.league_members (league_id, points desc);
-
--- ---------------------------------------------------------------------
--- 7) Matchs
--- ---------------------------------------------------------------------
-
-create table public.matches (
-  id uuid primary key default gen_random_uuid(),
-  home_team_id uuid not null references public.teams(id) on delete restrict,
-  away_team_id uuid not null references public.teams(id) on delete restrict,
-  kickoff_at timestamptz not null,
-  stage text not null default 'group',
-  status text not null default 'scheduled'
-    check (status in ('scheduled', 'live', 'finished', 'cancelled')),
-  home_score integer,
-  away_score integer,
-  winner text check (winner in ('home', 'away', 'draw')),
-  locked_at timestamptz,
-  created_at timestamptz default timezone('utc', now()) not null,
-  updated_at timestamptz default timezone('utc', now()) not null,
-  check (home_team_id <> away_team_id)
-);
-
-create index matches_kickoff_at_idx on public.matches (kickoff_at);
-create index matches_status_idx on public.matches (status);
-
-create trigger matches_set_updated_at
-  before update on public.matches
-  for each row execute function public.tg_set_updated_at();
-
--- ---------------------------------------------------------------------
--- 8) Pronostics sur les matchs
--- ---------------------------------------------------------------------
-
-create table public.predictions (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  league_id uuid references public.leagues(id) on delete cascade,
-  match_id uuid not null references public.matches(id) on delete cascade,
-  predicted_home_score integer not null check (predicted_home_score >= 0),
-  predicted_away_score integer not null check (predicted_away_score >= 0),
-  predicted_winner text check (predicted_winner in ('home', 'away', 'draw')),
-  points integer default 0 not null,
-  joker_x2 boolean default false not null,
-  locked_at timestamptz,
-  created_at timestamptz default timezone('utc', now()) not null,
-  updated_at timestamptz default timezone('utc', now()) not null,
-  -- Un seul pronostic par user/match/league (league_id nullable pour global)
-  unique (user_id, match_id, league_id)
-);
-
-create index predictions_match_id_idx on public.predictions (match_id);
-create index predictions_user_id_idx on public.predictions (user_id);
-create index predictions_league_id_idx on public.predictions (league_id);
-
-create trigger predictions_set_updated_at
-  before update on public.predictions
-  for each row execute function public.tg_set_updated_at();
-
--- Historique de scoring (audit + recalculs)
-create table public.scoring_events (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references auth.users(id) on delete set null,
-  league_id uuid references public.leagues(id) on delete set null,
-  match_id uuid references public.matches(id) on delete set null,
-  prediction_id uuid references public.predictions(id) on delete set null,
-  points integer not null,
-  reason text not null,
-  created_at timestamptz default timezone('utc', now()) not null
-);
-
-create index scoring_events_user_idx on public.scoring_events (user_id);
-create index scoring_events_league_idx on public.scoring_events (league_id);
-
--- ---------------------------------------------------------------------
--- 9) Cartes (uniquement dans ligues privées)
--- ---------------------------------------------------------------------
-
-create table public.cards (
-  id text primary key,                      -- 'joker_x2', 'vol_score', etc.
-  name text not null,
-  description text not null,
-  rarity text not null default 'common',
-  icon text,
-  enabled boolean default true not null
-);
-
-insert into public.cards (id, name, description, rarity, icon) values
-  ('joker_x2',     'Joker x2',     'Double les points obtenus sur ce match.', 'epic',   'sparkles'),
-  ('vol_score',    'Vol de score', 'Copie le pronostic d''un autre joueur ciblé avant verrouillage.', 'rare', 'swap'),
-  ('carton_rouge', 'Carton rouge', 'Empêche un joueur ciblé de modifier son prono après activation.', 'rare', 'card'),
-  ('tacle_glisse', 'Tacle glissé', 'Si tu fais plus de points que la cible sur ce match, tu lui voles 2 points.', 'rare', 'tackle'),
-  ('var',          'VAR',          'Permet de modifier ton prono jusqu''à une limite spéciale (15 min après kickoff).', 'epic', 'video'),
-  ('bus_gare',     'Bus garé',     'Bonus si tu pronostiques un match nul et que le résultat est nul.', 'common', 'bus'),
-  ('hold_up',      'Hold-up',      'Bonus si l''équipe choisie gagne avec exactement un but d''écart.', 'rare', 'heist'),
-  ('outsider',     'Outsider',     'Bonus si tu pronostiques correctement une victoire d''une équipe outsider.', 'epic', 'underdog');
-
--- Inventaire des cartes par joueur (par ligue)
-create table public.card_inventory (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  league_id uuid not null references public.leagues(id) on delete cascade,
-  card_id text not null references public.cards(id) on delete restrict,
-  quantity integer not null default 0 check (quantity >= 0),
-  created_at timestamptz default timezone('utc', now()) not null,
-  updated_at timestamptz default timezone('utc', now()) not null,
-  unique (user_id, league_id, card_id)
-);
-
-create index card_inventory_user_league_idx on public.card_inventory (user_id, league_id);
-
-create trigger card_inventory_set_updated_at
-  before update on public.card_inventory
-  for each row execute function public.tg_set_updated_at();
-
--- Cartes jouées
-create table public.card_plays (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  league_id uuid not null references public.leagues(id) on delete cascade,
-  match_id uuid not null references public.matches(id) on delete cascade,
-  card_id text not null references public.cards(id) on delete restrict,
-  target_user_id uuid references auth.users(id) on delete set null,
-  payload jsonb default '{}'::jsonb not null,
-  status text not null default 'active' check (status in ('active', 'cancelled', 'consumed')),
-  played_at timestamptz default timezone('utc', now()) not null,
-  -- Max 1 carte jouée par user/match/league
-  unique (user_id, match_id, league_id)
-);
-
-create index card_plays_league_match_idx on public.card_plays (league_id, match_id);
-create index card_plays_target_idx on public.card_plays (target_user_id);
-
--- ---------------------------------------------------------------------
--- 10) Paiements (Stripe one-time pour créer une ligue privée)
--- ---------------------------------------------------------------------
-
-create table public.payments (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references auth.users(id) on delete set null,
-  league_id uuid references public.leagues(id) on delete set null,
-  stripe_session_id text unique,
-  stripe_payment_intent_id text,
-  amount_chf numeric(10, 2) not null,
-  currency text not null default 'CHF',
-  plan text not null check (plan in ('private', 'pro')),
-  status text not null default 'pending'
-    check (status in ('pending', 'paid', 'failed', 'refunded')),
-  raw jsonb,
-  created_at timestamptz default timezone('utc', now()) not null,
-  updated_at timestamptz default timezone('utc', now()) not null
-);
-
-create index payments_user_idx on public.payments (user_id);
-create index payments_status_idx on public.payments (status);
-
-create trigger payments_set_updated_at
-  before update on public.payments
-  for each row execute function public.tg_set_updated_at();
-
--- ---------------------------------------------------------------------
--- 11) RLS — Row Level Security
--- ---------------------------------------------------------------------
-
-alter table public.profiles               enable row level security;
-alter table public.teams                  enable row level security;
-alter table public.players                enable row level security;
-alter table public.app_settings           enable row level security;
-alter table public.tournament_predictions enable row level security;
-alter table public.contest_entries        enable row level security;
-alter table public.leagues                enable row level security;
-alter table public.league_members         enable row level security;
-alter table public.matches                enable row level security;
-alter table public.predictions            enable row level security;
-alter table public.scoring_events         enable row level security;
-alter table public.cards                  enable row level security;
-alter table public.card_inventory         enable row level security;
-alter table public.card_plays             enable row level security;
-alter table public.payments               enable row level security;
-
--- Helper : is_admin pour le user courant
+-- Helper RLS : utilisateur courant admin ?
 create or replace function public.is_admin()
 returns boolean
 language sql
@@ -446,76 +151,451 @@ as $$
   );
 $$;
 
--- Helper : user est-il membre d'une ligue ?
-create or replace function public.is_league_member(p_league uuid)
+-- ---------------------------------------------------------------------
+-- 5) App settings (kv simple)
+-- ---------------------------------------------------------------------
+
+create table public.app_settings (
+  key text primary key,
+  value jsonb not null default '{}'::jsonb,
+  updated_at timestamptz default timezone('utc', now()) not null
+);
+
+create trigger app_settings_set_updated_at
+  before update on public.app_settings
+  for each row execute function public.tg_set_updated_at();
+
+insert into public.app_settings(key, value) values
+  ('tournament', jsonb_build_object(
+    'name', 'Tournoi mondial de foot 2026',
+    'season', '2026'
+  ))
+on conflict do nothing;
+
+-- ---------------------------------------------------------------------
+-- 6) Groupes du tournoi (A à L)
+-- ---------------------------------------------------------------------
+
+create table public.groups (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  display_order integer not null default 0,
+  created_at timestamptz default timezone('utc', now()) not null
+);
+
+-- ---------------------------------------------------------------------
+-- 7) Équipes
+-- ---------------------------------------------------------------------
+
+create table public.teams (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  slug text unique,
+  country_code text,
+  flag_emoji text,
+  group_name text references public.groups(name) on delete set null,
+  display_order integer default 0 not null,
+  is_outsider boolean default false not null,
+  is_active boolean default true not null,
+  created_at timestamptz default timezone('utc', now()) not null,
+  updated_at timestamptz default timezone('utc', now()) not null
+);
+
+create index teams_group_idx on public.teams(group_name);
+create index teams_country_code_idx on public.teams(country_code);
+
+create trigger teams_set_updated_at
+  before update on public.teams
+  for each row execute function public.tg_set_updated_at();
+
+-- ---------------------------------------------------------------------
+-- 8) Matchs
+-- ---------------------------------------------------------------------
+
+create table public.matches (
+  id uuid primary key default gen_random_uuid(),
+  match_number integer unique,
+  home_team_id uuid references public.teams(id) on delete set null,
+  away_team_id uuid references public.teams(id) on delete set null,
+  home_placeholder text,
+  away_placeholder text,
+  stage text not null default 'group',
+  group_name text references public.groups(name) on delete set null,
+  venue text,
+  city text,
+  country text,
+  kickoff_at timestamptz not null,
+  locked_at timestamptz not null,
+  status text not null default 'scheduled', -- scheduled, live, finished, postponed
+  home_score integer,
+  away_score integer,
+  winner_team_id uuid references public.teams(id) on delete set null,
+  is_draw boolean default false not null,
+  created_at timestamptz default timezone('utc', now()) not null,
+  updated_at timestamptz default timezone('utc', now()) not null
+);
+
+create index matches_kickoff_idx on public.matches(kickoff_at);
+create index matches_status_idx on public.matches(status);
+create index matches_stage_idx on public.matches(stage);
+
+create trigger matches_set_updated_at
+  before update on public.matches
+  for each row execute function public.tg_set_updated_at();
+
+-- ---------------------------------------------------------------------
+-- 9) Ligues
+-- ---------------------------------------------------------------------
+
+create table public.leagues (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null unique,
+  name text not null,
+  kind text not null default 'private', -- global, private, pro
+  owner_id uuid references auth.users(id) on delete set null,
+  plan text, -- 'private' | 'pro' (nullable pour la ligue globale)
+  max_players integer default 20 not null,
+  invite_code text unique,
+  status text default 'active' not null, -- pending, active, archived
+  paid_at timestamptz,
+  stripe_session_id text,
+  amount_chf numeric(10,2),
+  settings jsonb default '{}'::jsonb not null,
+  created_at timestamptz default timezone('utc', now()) not null,
+  updated_at timestamptz default timezone('utc', now()) not null
+);
+
+create index leagues_owner_idx on public.leagues(owner_id);
+create index leagues_kind_idx on public.leagues(kind);
+create index leagues_invite_code_idx on public.leagues(invite_code);
+
+create trigger leagues_set_updated_at
+  before update on public.leagues
+  for each row execute function public.tg_set_updated_at();
+
+-- Ligue globale unique
+insert into public.leagues (slug, name, kind, status, max_players)
+values ('global', 'Ligue générale', 'global', 'active', 1000000)
+on conflict (slug) do nothing;
+
+-- ---------------------------------------------------------------------
+-- 10) Membres de ligues
+-- ---------------------------------------------------------------------
+
+create table public.league_members (
+  id uuid primary key default gen_random_uuid(),
+  league_id uuid not null references public.leagues(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  role text default 'member' not null, -- member, owner
+  points integer default 0 not null,
+  joined_at timestamptz default timezone('utc', now()) not null,
+  unique(league_id, user_id)
+);
+
+create index league_members_league_idx on public.league_members(league_id);
+create index league_members_user_idx on public.league_members(user_id);
+create index league_members_points_idx on public.league_members(league_id, points desc);
+
+-- Helper RLS : utilisateur membre d'une ligue ?
+create or replace function public.is_league_member(p_league_id uuid)
 returns boolean
 language sql
 stable
 security definer
 set search_path = public
 as $$
-  select exists (
+  select exists(
     select 1 from public.league_members
-    where league_id = p_league and user_id = auth.uid()
+    where league_id = p_league_id and user_id = auth.uid()
   );
 $$;
 
--- ----- profiles : chacun lit/écrit le sien ; lecture publique en lecture seule pour pseudo/points
-create policy "profiles_read_self_or_public_fields"
+-- ---------------------------------------------------------------------
+-- 11) Pronostics
+-- ---------------------------------------------------------------------
+
+create table public.predictions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  league_id uuid references public.leagues(id) on delete cascade,
+  match_id uuid not null references public.matches(id) on delete cascade,
+  predicted_home_score integer not null,
+  predicted_away_score integer not null,
+  predicted_winner_team_id uuid references public.teams(id) on delete set null,
+  predicted_is_draw boolean default false not null,
+  joker_x2 boolean default false not null,
+  points integer default 0 not null,
+  exact_score boolean default false not null,
+  correct_winner boolean default false not null,
+  correct_goal_difference boolean default false not null,
+  is_locked boolean default false not null,
+  locked_at timestamptz,
+  created_at timestamptz default timezone('utc', now()) not null,
+  updated_at timestamptz default timezone('utc', now()) not null,
+  unique (user_id, league_id, match_id)
+);
+
+-- Pour les pronostics globaux (league_id NULL), un seul par user/match
+create unique index predictions_user_match_global_idx
+  on public.predictions(user_id, match_id)
+  where league_id is null;
+
+create index predictions_match_idx on public.predictions(match_id);
+create index predictions_league_idx on public.predictions(league_id);
+create index predictions_user_idx on public.predictions(user_id);
+
+create trigger predictions_set_updated_at
+  before update on public.predictions
+  for each row execute function public.tg_set_updated_at();
+
+-- ---------------------------------------------------------------------
+-- 12) Évènements de scoring (audit)
+-- ---------------------------------------------------------------------
+
+create table public.scoring_events (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  league_id uuid references public.leagues(id) on delete cascade,
+  match_id uuid references public.matches(id) on delete cascade,
+  prediction_id uuid references public.predictions(id) on delete cascade,
+  points integer not null,
+  reason text not null,
+  created_at timestamptz default timezone('utc', now()) not null
+);
+
+create index scoring_events_user_idx on public.scoring_events(user_id);
+create index scoring_events_match_idx on public.scoring_events(match_id);
+create index scoring_events_league_idx on public.scoring_events(league_id);
+
+-- ---------------------------------------------------------------------
+-- 13) Cartes (catalogue)
+-- ---------------------------------------------------------------------
+
+create table public.cards (
+  id text primary key, -- slug stable (joker_x2, vol_score, ...)
+  name text not null,
+  description text not null,
+  effect_type text not null, -- self, target, locked_target, defensive...
+  rarity text default 'common' not null,
+  icon text default 'card' not null,
+  is_active boolean default true not null,
+  created_at timestamptz default timezone('utc', now()) not null
+);
+
+insert into public.cards (id, name, description, effect_type, rarity, icon, is_active) values
+  ('joker_x2',     'Joker x2',     'Double tes points sur ce match.',                                'self',           'common',   'spark',  true),
+  ('vol_score',    'Vol de score', 'Copie le pronostic d''un autre joueur avant verrouillage.',     'target',         'rare',     'swap',   true),
+  ('carton_rouge', 'Carton rouge', 'Empêche un joueur ciblé de modifier son prono.',                'target',         'epic',     'card',   true),
+  ('tacle_glisse', 'Tacle glissé', 'Vole 2 points à un joueur si tu finis avec plus de points que lui sur ce match.', 'target', 'rare', 'tackle', true),
+  ('var',          'VAR',          'Te permet de modifier ton prono jusqu''à une limite spéciale après le coup d''envoi.', 'self', 'legendary', 'eye', true),
+  ('bus_gare',     'Bus garé',     'Bonus si tu pronostiques un match nul et que le résultat est bien nul.', 'self',    'common',   'shield', false),
+  ('hold_up',      'Hold-up',      'Bonus si l''équipe choisie gagne avec exactement un but d''écart.', 'self',         'common',   'crown',  false),
+  ('outsider',    'Outsider',      'Bonus si tu pronostiques correctement la victoire d''un outsider.', 'self',          'common',   'star',   false)
+on conflict (id) do nothing;
+
+-- ---------------------------------------------------------------------
+-- 14) Inventaire de cartes
+-- ---------------------------------------------------------------------
+
+create table public.card_inventory (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  league_id uuid not null references public.leagues(id) on delete cascade,
+  card_id text not null references public.cards(id) on delete cascade,
+  quantity integer default 0 not null,
+  created_at timestamptz default timezone('utc', now()) not null,
+  updated_at timestamptz default timezone('utc', now()) not null,
+  unique (user_id, league_id, card_id)
+);
+
+create index card_inventory_user_league_idx
+  on public.card_inventory(user_id, league_id);
+
+create trigger card_inventory_set_updated_at
+  before update on public.card_inventory
+  for each row execute function public.tg_set_updated_at();
+
+-- ---------------------------------------------------------------------
+-- 15) Plays (journal des cartes jouées)
+-- ---------------------------------------------------------------------
+
+create table public.card_plays (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  league_id uuid not null references public.leagues(id) on delete cascade,
+  match_id uuid not null references public.matches(id) on delete cascade,
+  card_id text not null references public.cards(id) on delete cascade,
+  target_user_id uuid references auth.users(id) on delete set null,
+  payload jsonb default '{}'::jsonb not null,
+  status text default 'played' not null, -- played, applied, refunded
+  played_at timestamptz default timezone('utc', now()) not null
+);
+
+create unique index card_plays_one_per_match_idx
+  on public.card_plays(user_id, league_id, match_id);
+
+create index card_plays_match_idx on public.card_plays(match_id);
+create index card_plays_league_idx on public.card_plays(league_id);
+
+-- ---------------------------------------------------------------------
+-- 16) Paiements Stripe (one-time)
+-- ---------------------------------------------------------------------
+
+create table public.payments (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete set null,
+  league_id uuid references public.leagues(id) on delete set null,
+  stripe_session_id text unique,
+  stripe_payment_intent_id text,
+  amount_chf numeric(10,2),
+  currency text default 'CHF' not null,
+  plan text,
+  status text default 'pending' not null, -- pending, paid, failed, refunded
+  raw jsonb,
+  created_at timestamptz default timezone('utc', now()) not null,
+  updated_at timestamptz default timezone('utc', now()) not null
+);
+
+create index payments_user_idx on public.payments(user_id);
+create index payments_status_idx on public.payments(status);
+
+create trigger payments_set_updated_at
+  before update on public.payments
+  for each row execute function public.tg_set_updated_at();
+
+-- ---------------------------------------------------------------------
+-- 17) Concours global : paramètres + résultats
+-- ---------------------------------------------------------------------
+
+create table public.contest_settings (
+  id uuid primary key default gen_random_uuid(),
+  prize_title text default 'Maillot de football au choix' not null,
+  prize_description text default 'Maillot ou bon équivalent. Valeur maximale CHF 120.' not null,
+  prize_value_chf integer default 120 not null,
+  starts_at timestamptz,
+  ends_at timestamptz,
+  is_active boolean default true not null,
+  rules_url text,
+  tie_break_rules jsonb default jsonb_build_array(
+    'exact_scores_count',
+    'correct_winners_count',
+    'predictions_count',
+    'manual_draw'
+  ) not null,
+  created_at timestamptz default timezone('utc', now()) not null,
+  updated_at timestamptz default timezone('utc', now()) not null
+);
+
+create trigger contest_settings_set_updated_at
+  before update on public.contest_settings
+  for each row execute function public.tg_set_updated_at();
+
+-- Une seule ligne par défaut
+insert into public.contest_settings (id) values (gen_random_uuid())
+on conflict do nothing;
+
+create table public.contest_results (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  global_points integer default 0 not null,
+  exact_scores_count integer default 0 not null,
+  correct_winners_count integer default 0 not null,
+  predictions_count integer default 0 not null,
+  rank integer,
+  is_winner boolean default false not null,
+  winner_selected_manually boolean default false not null,
+  created_at timestamptz default timezone('utc', now()) not null,
+  updated_at timestamptz default timezone('utc', now()) not null,
+  unique(user_id)
+);
+
+create index contest_results_rank_idx on public.contest_results(rank);
+create index contest_results_winner_idx on public.contest_results(is_winner);
+
+create trigger contest_results_set_updated_at
+  before update on public.contest_results
+  for each row execute function public.tg_set_updated_at();
+
+-- ---------------------------------------------------------------------
+-- 18) RLS — Activation
+-- ---------------------------------------------------------------------
+
+alter table public.profiles enable row level security;
+alter table public.app_settings enable row level security;
+alter table public.groups enable row level security;
+alter table public.teams enable row level security;
+alter table public.matches enable row level security;
+alter table public.leagues enable row level security;
+alter table public.league_members enable row level security;
+alter table public.predictions enable row level security;
+alter table public.scoring_events enable row level security;
+alter table public.cards enable row level security;
+alter table public.card_inventory enable row level security;
+alter table public.card_plays enable row level security;
+alter table public.payments enable row level security;
+alter table public.contest_settings enable row level security;
+alter table public.contest_results enable row level security;
+
+-- ---------- profiles ----------
+create policy "profiles self read"
   on public.profiles for select
+  using (auth.uid() = id or public.is_admin());
+
+create policy "profiles public minimal read"
+  on public.profiles for select
+  using (auth.role() = 'authenticated');
+
+create policy "profiles self update"
+  on public.profiles for update
+  using (auth.uid() = id);
+
+create policy "profiles admin all"
+  on public.profiles for all
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- ---------- app_settings ----------
+create policy "app_settings read auth"
+  on public.app_settings for select
+  using (auth.role() = 'authenticated' or auth.role() = 'anon');
+
+create policy "app_settings admin write"
+  on public.app_settings for all
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- ---------- groups ----------
+create policy "groups read all"
+  on public.groups for select
   using (true);
 
-create policy "profiles_update_self"
-  on public.profiles for update
-  using (auth.uid() = id)
-  with check (auth.uid() = id);
+create policy "groups admin write"
+  on public.groups for all
+  using (public.is_admin())
+  with check (public.is_admin());
 
-create policy "profiles_insert_self"
-  on public.profiles for insert
-  with check (auth.uid() = id);
+-- ---------- teams ----------
+create policy "teams read all"
+  on public.teams for select
+  using (true);
 
--- ----- teams / players / cards / app_settings : lecture publique, écriture admin
-create policy "teams_read_all"          on public.teams          for select using (true);
-create policy "teams_write_admin"       on public.teams          for all    using (public.is_admin()) with check (public.is_admin());
+create policy "teams admin write"
+  on public.teams for all
+  using (public.is_admin())
+  with check (public.is_admin());
 
-create policy "players_read_all"        on public.players        for select using (true);
-create policy "players_write_admin"     on public.players        for all    using (public.is_admin()) with check (public.is_admin());
+-- ---------- matches ----------
+create policy "matches read all"
+  on public.matches for select
+  using (true);
 
-create policy "cards_read_all"          on public.cards          for select using (true);
-create policy "cards_write_admin"       on public.cards          for all    using (public.is_admin()) with check (public.is_admin());
+create policy "matches admin write"
+  on public.matches for all
+  using (public.is_admin())
+  with check (public.is_admin());
 
-create policy "app_settings_read_all"   on public.app_settings   for select using (true);
-create policy "app_settings_write_admin" on public.app_settings  for all    using (public.is_admin()) with check (public.is_admin());
-
--- ----- matches : lecture publique, écriture admin
-create policy "matches_read_all"        on public.matches        for select using (true);
-create policy "matches_write_admin"     on public.matches        for all    using (public.is_admin()) with check (public.is_admin());
-
--- ----- tournament_predictions : chacun voit ses prédictions (lecture admin pour stats)
-create policy "tp_read_self_or_admin"
-  on public.tournament_predictions for select
-  using (auth.uid() = user_id or public.is_admin());
-
-create policy "tp_upsert_self"
-  on public.tournament_predictions for insert
-  with check (auth.uid() = user_id);
-
-create policy "tp_update_self_unlocked"
-  on public.tournament_predictions for update
-  using (auth.uid() = user_id and locked = false)
-  with check (auth.uid() = user_id);
-
--- ----- contest_entries : insertion publique (concours gratuit), lecture admin uniquement
-create policy "contest_insert_anyone"
-  on public.contest_entries for insert
-  with check (true);
-
-create policy "contest_read_admin"
-  on public.contest_entries for select
-  using (public.is_admin());
-
--- ----- leagues : lecture des ligues publiques + ligues où l'on est membre ; owner peut update
-create policy "leagues_read_public_or_member"
+-- ---------- leagues ----------
+create policy "leagues read members or global"
   on public.leagues for select
   using (
     kind = 'global'
@@ -524,16 +604,18 @@ create policy "leagues_read_public_or_member"
     or public.is_admin()
   );
 
-create policy "leagues_update_owner"
+create policy "leagues owner update"
   on public.leagues for update
   using (owner_id = auth.uid() or public.is_admin())
   with check (owner_id = auth.uid() or public.is_admin());
 
--- (création des ligues : passe par API serveur après paiement → service role bypass RLS)
--- pas de policy insert publique pour bloquer les triches
+create policy "leagues admin all"
+  on public.leagues for all
+  using (public.is_admin())
+  with check (public.is_admin());
 
--- ----- league_members : un user voit sa propre ligne + les autres membres de ses ligues
-create policy "lm_read_member_or_admin"
+-- ---------- league_members ----------
+create policy "league_members read members"
   on public.league_members for select
   using (
     user_id = auth.uid()
@@ -541,20 +623,17 @@ create policy "lm_read_member_or_admin"
     or public.is_admin()
   );
 
--- Insertion uniquement via API serveur (service role) pour contrôler invite_code etc.
--- On laisse cependant une porte pour rejoindre la ligue globale soi-même :
-create policy "lm_join_global_self"
+create policy "league_members self insert"
   on public.league_members for insert
-  with check (
-    user_id = auth.uid()
-    and exists (
-      select 1 from public.leagues l
-      where l.id = league_id and l.kind = 'global'
-    )
-  );
+  with check (user_id = auth.uid());
 
--- ----- predictions : chaque user gère les siennes, lecture autorisée aux membres de la ligue
-create policy "predictions_read_self_or_league"
+create policy "league_members admin all"
+  on public.league_members for all
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- ---------- predictions ----------
+create policy "predictions self read"
   on public.predictions for select
   using (
     user_id = auth.uid()
@@ -562,47 +641,175 @@ create policy "predictions_read_self_or_league"
     or public.is_admin()
   );
 
-create policy "predictions_insert_self"
+create policy "predictions self insert"
   on public.predictions for insert
   with check (user_id = auth.uid());
 
-create policy "predictions_update_self_open"
+create policy "predictions self update"
   on public.predictions for update
-  using (
-    user_id = auth.uid()
-    and (locked_at is null or locked_at > now())
-  )
+  using (user_id = auth.uid())
   with check (user_id = auth.uid());
 
-create policy "predictions_delete_self_open"
-  on public.predictions for delete
-  using (
-    user_id = auth.uid()
-    and (locked_at is null or locked_at > now())
-  );
+create policy "predictions admin all"
+  on public.predictions for all
+  using (public.is_admin())
+  with check (public.is_admin());
 
--- ----- scoring_events : lecture admin + lecture du user concerné
-create policy "scoring_read_self_or_admin"
+-- ---------- scoring_events ----------
+create policy "scoring_events self read"
   on public.scoring_events for select
   using (user_id = auth.uid() or public.is_admin());
 
--- ----- card_inventory : chaque user voit son inventaire + admin
-create policy "ci_read_self_or_admin"
+create policy "scoring_events admin write"
+  on public.scoring_events for all
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- ---------- cards (catalogue) ----------
+create policy "cards read all"
+  on public.cards for select
+  using (true);
+
+create policy "cards admin write"
+  on public.cards for all
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- ---------- card_inventory ----------
+create policy "card_inventory self read"
   on public.card_inventory for select
   using (user_id = auth.uid() or public.is_admin());
 
--- Pas de modification client : tout passe par API (service role)
+create policy "card_inventory admin write"
+  on public.card_inventory for all
+  using (public.is_admin())
+  with check (public.is_admin());
 
--- ----- card_plays : visibles par les membres de la ligue + admin
-create policy "cp_read_league_member_or_admin"
+-- ---------- card_plays ----------
+create policy "card_plays read members"
   on public.card_plays for select
-  using (public.is_league_member(league_id) or public.is_admin());
+  using (
+    user_id = auth.uid()
+    or public.is_league_member(league_id)
+    or public.is_admin()
+  );
 
--- ----- payments : lecture uniquement par le propriétaire et admin
-create policy "payments_read_self_or_admin"
+create policy "card_plays self insert"
+  on public.card_plays for insert
+  with check (user_id = auth.uid());
+
+create policy "card_plays admin write"
+  on public.card_plays for all
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- ---------- payments ----------
+create policy "payments self read"
   on public.payments for select
   using (user_id = auth.uid() or public.is_admin());
 
--- =====================================================================
--- Fin de la migration init Prono Clash
--- =====================================================================
+create policy "payments admin write"
+  on public.payments for all
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- ---------- contest_settings ----------
+create policy "contest_settings read all"
+  on public.contest_settings for select
+  using (true);
+
+create policy "contest_settings admin write"
+  on public.contest_settings for all
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- ---------- contest_results ----------
+create policy "contest_results self read"
+  on public.contest_results for select
+  using (user_id = auth.uid() or public.is_admin());
+
+create policy "contest_results public top read"
+  on public.contest_results for select
+  using (auth.role() = 'authenticated');
+
+create policy "contest_results admin write"
+  on public.contest_results for all
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- ---------------------------------------------------------------------
+-- 19) Seed des 12 groupes
+-- ---------------------------------------------------------------------
+
+insert into public.groups (name, display_order) values
+  ('A', 1), ('B', 2), ('C', 3), ('D', 4),
+  ('E', 5), ('F', 6), ('G', 7), ('H', 8),
+  ('I', 9), ('J', 10), ('K', 11), ('L', 12)
+on conflict (name) do nothing;
+
+-- ---------------------------------------------------------------------
+-- 20) Seed des 48 équipes du tournoi mondial 2026
+-- ---------------------------------------------------------------------
+
+insert into public.teams (name, slug, country_code, flag_emoji, group_name, display_order, is_active) values
+  -- Group A
+  ('Mexico', 'mexico', 'MEX', '🇲🇽', 'A', 1, true),
+  ('South Africa', 'south-africa', 'RSA', '🇿🇦', 'A', 2, true),
+  ('Korea Republic', 'korea-republic', 'KOR', '🇰🇷', 'A', 3, true),
+  ('Czechia', 'czechia', 'CZE', '🇨🇿', 'A', 4, true),
+  -- Group B
+  ('Canada', 'canada', 'CAN', '🇨🇦', 'B', 1, true),
+  ('Switzerland', 'switzerland', 'SUI', '🇨🇭', 'B', 2, true),
+  ('Qatar', 'qatar', 'QAT', '🇶🇦', 'B', 3, true),
+  ('Bosnia and Herzegovina', 'bosnia-and-herzegovina', 'BIH', '🇧🇦', 'B', 4, true),
+  -- Group C
+  ('Brazil', 'brazil', 'BRA', '🇧🇷', 'C', 1, true),
+  ('Morocco', 'morocco', 'MAR', '🇲🇦', 'C', 2, true),
+  ('Haiti', 'haiti', 'HAI', '🇭🇹', 'C', 3, true),
+  ('Scotland', 'scotland', 'SCO', '🏴', 'C', 4, true),
+  -- Group D
+  ('United States', 'united-states', 'USA', '🇺🇸', 'D', 1, true),
+  ('Australia', 'australia', 'AUS', '🇦🇺', 'D', 2, true),
+  ('Paraguay', 'paraguay', 'PAR', '🇵🇾', 'D', 3, true),
+  ('Türkiye', 'turkiye', 'TUR', '🇹🇷', 'D', 4, true),
+  -- Group E
+  ('Germany', 'germany', 'GER', '🇩🇪', 'E', 1, true),
+  ('Côte d''Ivoire', 'cote-divoire', 'CIV', '🇨🇮', 'E', 2, true),
+  ('Ecuador', 'ecuador', 'ECU', '🇪🇨', 'E', 3, true),
+  ('Curaçao', 'curacao', 'CUW', '🇨🇼', 'E', 4, true),
+  -- Group F
+  ('Netherlands', 'netherlands', 'NED', '🇳🇱', 'F', 1, true),
+  ('Japan', 'japan', 'JPN', '🇯🇵', 'F', 2, true),
+  ('Sweden', 'sweden', 'SWE', '🇸🇪', 'F', 3, true),
+  ('Tunisia', 'tunisia', 'TUN', '🇹🇳', 'F', 4, true),
+  -- Group G
+  ('Belgium', 'belgium', 'BEL', '🇧🇪', 'G', 1, true),
+  ('IR Iran', 'ir-iran', 'IRN', '🇮🇷', 'G', 2, true),
+  ('New Zealand', 'new-zealand', 'NZL', '🇳🇿', 'G', 3, true),
+  ('Egypt', 'egypt', 'EGY', '🇪🇬', 'G', 4, true),
+  -- Group H
+  ('Uruguay', 'uruguay', 'URU', '🇺🇾', 'H', 1, true),
+  ('Spain', 'spain', 'ESP', '🇪🇸', 'H', 2, true),
+  ('Saudi Arabia', 'saudi-arabia', 'KSA', '🇸🇦', 'H', 3, true),
+  ('Cabo Verde', 'cabo-verde', 'CPV', '🇨🇻', 'H', 4, true),
+  -- Group I
+  ('France', 'france', 'FRA', '🇫🇷', 'I', 1, true),
+  ('Senegal', 'senegal', 'SEN', '🇸🇳', 'I', 2, true),
+  ('Iraq', 'iraq', 'IRQ', '🇮🇶', 'I', 3, true),
+  ('Norway', 'norway', 'NOR', '🇳🇴', 'I', 4, true),
+  -- Group J
+  ('Argentina', 'argentina', 'ARG', '🇦🇷', 'J', 1, true),
+  ('Algeria', 'algeria', 'ALG', '🇩🇿', 'J', 2, true),
+  ('Austria', 'austria', 'AUT', '🇦🇹', 'J', 3, true),
+  ('Jordan', 'jordan', 'JOR', '🇯🇴', 'J', 4, true),
+  -- Group K
+  ('Portugal', 'portugal', 'POR', '🇵🇹', 'K', 1, true),
+  ('DR Congo', 'dr-congo', 'COD', '🇨🇩', 'K', 2, true),
+  ('Uzbekistan', 'uzbekistan', 'UZB', '🇺🇿', 'K', 3, true),
+  ('Colombia', 'colombia', 'COL', '🇨🇴', 'K', 4, true),
+  -- Group L
+  ('England', 'england', 'ENG', '🏴', 'L', 1, true),
+  ('Croatia', 'croatia', 'CRO', '🇭🇷', 'L', 2, true),
+  ('Ghana', 'ghana', 'GHA', '🇬🇭', 'L', 3, true),
+  ('Panama', 'panama', 'PAN', '🇵🇦', 'L', 4, true)
+on conflict (slug) do nothing;

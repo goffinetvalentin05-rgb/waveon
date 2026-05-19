@@ -17,8 +17,8 @@ export function FinalCtaSection() {
             <Link href="/signup?next=create-league" className={ui.btnPrimaryLg}>
               Créer ma ligue
             </Link>
-            <Link href="/signup?next=contest" className={ui.btnSecondary}>
-              Tenter le concours gratuit
+            <Link href="/signup" className={ui.btnSecondary}>
+              Rejoindre la ligue gratuite
             </Link>
           </div>
         </div>

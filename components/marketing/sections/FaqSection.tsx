@@ -6,27 +6,35 @@ import { ui } from "@/lib/design/tokens";
 const ITEMS = [
   {
     q: "Est-ce une application de paris ?",
-    a: "Non. Prono Clash est un jeu de pronostics entre amis. Il n'y a aucune mise d'argent entre joueurs, ni gain d'argent. Le seul lot existant (le concours gratuit) est un objet physique offert.",
+    a: "Non. Prono Clash est un jeu de pronostics entre potes. Il n'y a aucune mise d'argent entre joueurs ni gain d'argent. Le seul lot existant (concours gratuit) est un objet physique offert.",
   },
   {
-    q: "Faut-il payer pour participer au concours ?",
-    a: "Non. Le concours est 100% gratuit, il suffit de ton email et de tes prédictions (champion + meilleur buteur). Aucun achat n'augmente tes chances de gagner.",
+    q: "Faut-il payer pour participer au concours global ?",
+    a: "Non. Le concours est 100% gratuit. Il te suffit de t'inscrire et de pronostiquer les matchs de la ligue générale.",
+  },
+  {
+    q: "Peut-on gagner le concours sans payer ?",
+    a: "Oui. Le gagnant est tout simplement le premier du classement général à la fin du tournoi. Aucun achat n'augmente tes chances.",
+  },
+  {
+    q: "À quoi sert le paiement, alors ?",
+    a: "À créer une ligue privée et débloquer le mode jeu avec cartes : Joker x2, Vol de score, Carton rouge, Tacle, VAR. Tu joues ces cartes uniquement dans ta ligue privée, et elles n'influencent pas le classement général ni le concours.",
+  },
+  {
+    q: "Peut-on rejoindre une ligue privée gratuitement ?",
+    a: "Oui. Seule la création est payante. Si un pote a créé une ligue, il peut t'inviter par lien WhatsApp et tu y entres gratuitement.",
   },
   {
     q: "Peut-on créer une ligue gratuitement ?",
-    a: "Non. La création d'une ligue privée est payante (paiement unique). Mais tu peux rejoindre la ligue publique globale gratuitement pour pronostiquer et apparaître au classement.",
+    a: "Non. La création d'une ligue privée est premium. Mais tu peux toujours jouer dans la ligue générale, qui est gratuite et ouverte à tous.",
   },
   {
-    q: "Le paiement sert à quoi exactement ?",
-    a: "À créer une ligue privée et à débloquer le mode jeu avec cartes (Joker x2, Vol de score, etc.). Le paiement n'augmente jamais tes chances au concours et ne donne aucun avantage compétitif au classement global.",
+    q: "Je peux modifier mes pronostics ?",
+    a: "Oui, jusqu'au coup d'envoi du match. Après le coup d'envoi, ton pronostic est verrouillé.",
   },
   {
-    q: "Êtes-vous affiliés à la FIFA ou à la Coupe du Monde ?",
-    a: "Non. Aucune affiliation officielle. Les noms d'équipes et de joueurs sont utilisés à titre purement éditorial, et les marques restent la propriété de leurs détenteurs.",
-  },
-  {
-    q: "Je peux modifier mes prédictions ?",
-    a: "Tu peux modifier tes prédictions champion + meilleur buteur jusqu'à une deadline (fixée avant le début du tournoi). Pour chaque match, tu peux modifier ton pronostic jusqu'au coup d'envoi.",
+    q: "Êtes-vous affiliés à la FIFA ou aux fédérations ?",
+    a: "Non. Aucune affiliation officielle avec la FIFA, la Coupe du Monde, les fédérations, les équipes ou les marques sportives. Les marques citées restent la propriété de leurs détenteurs.",
   },
 ];
 
