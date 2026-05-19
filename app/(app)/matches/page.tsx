@@ -1,18 +1,18 @@
 import { createServerComponentSupabase } from "@/lib/supabase/server-component";
-import { ui } from "@/lib/design/tokens";
+import { MATCH_SELECT_WITH_TEAMS } from "@/lib/pronoclash/match-display";
 import { MatchesClient } from "./MatchesClient";
 
 export default async function MatchesPage() {
   const supabase = await createServerComponentSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const [matchesRes, predictionsRes, leaguesRes] = await Promise.all([
-    supabase
-      .from("matches")
-      .select(
-        "id, match_number, kickoff_at, locked_at, status, stage, group_name, venue, city, country, home_score, away_score, home_placeholder, away_placeholder, home:home_team_id(id, name, country_code, flag_emoji), away:away_team_id(id, name, country_code, flag_emoji)"
-      )
-      .order("kickoff_at"),
+  const [profileRes, matchesRes, predictionsRes, leaguesRes] = await Promise.all([
+    user
+      ? supabase.from("profiles").select("username").eq("id", user.id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase.from("matches").select(MATCH_SELECT_WITH_TEAMS).order("kickoff_at"),
     user
       ? supabase
           .from("predictions")
@@ -63,31 +63,14 @@ export default async function MatchesPage() {
   const leagues = (leaguesRes.data ?? []) as unknown as RawLeague[];
 
   return (
-    <div className="space-y-6">
-      <header>
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-300/80">Matchs</p>
-        <h1 className="mt-2 font-display text-3xl font-semibold text-white sm:text-4xl">
-          Tes pronostics
-        </h1>
-        <p className="mt-2 text-sm text-white/55">
-          Score exact = +5 pts. Bon vainqueur ou bon nul = +3 pts. Bon écart de buts = +1 bonus.
-          Tu peux modifier ton prono jusqu&apos;au coup d&apos;envoi.
-        </p>
-      </header>
-
-      {matches.length === 0 ? (
-        <div className={`${ui.glassCard} p-8 text-center text-sm text-white/60`}>
-          Aucun match programmé pour le moment. L&apos;admin va en ajouter dans /admin/tournament/matches.
-        </div>
-      ) : (
-        <MatchesClient
-          matches={matches}
-          predictions={predictions}
-          leagues={leagues
-            .map((l) => l.leagues)
-            .filter((l): l is { id: string; slug: string; name: string; kind: string } => !!l)}
-        />
-      )}
-    </div>
+    <MatchesClient
+      username={profileRes.data?.username}
+      email={user?.email}
+      matches={matches}
+      predictions={predictions}
+      leagues={leagues
+        .map((l) => l.leagues)
+        .filter((l): l is { id: string; slug: string; name: string; kind: string } => !!l)}
+    />
   );
 }

@@ -37,13 +37,17 @@ export function AppShell({ profile, children }: AppShellProps) {
     router.replace("/");
   };
 
-  const isDashboardHome = pathname === "/dashboard";
+  const isPronoClashShell =
+    pathname === "/dashboard" ||
+    pathname === "/matches" ||
+    pathname === "/global/leaderboard" ||
+    pathname === "/leaderboard";
 
   return (
     <div
-      className={`relative min-h-screen ${isDashboardHome ? "bg-[#0b0e14] pb-24 lg:pb-8" : "pb-20 sm:pb-0"}`}
+      className={`relative min-h-screen ${isPronoClashShell ? "bg-[#0b0e14] pb-24 lg:pb-8" : "pb-20 sm:pb-0"}`}
     >
-      {!isDashboardHome ? (
+      {!isPronoClashShell ? (
       <header className="sticky top-0 z-30 border-b border-white/5 bg-black/40 backdrop-blur-xl">
         <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
@@ -101,7 +105,7 @@ export function AppShell({ profile, children }: AppShellProps) {
 
       <main
         className={
-          isDashboardHome
+          isPronoClashShell
             ? "mx-auto w-full max-w-7xl p-0"
             : "mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8"
         }
@@ -112,7 +116,7 @@ export function AppShell({ profile, children }: AppShellProps) {
       {/* Bottom nav mobile — style glass flottant */}
       <nav
         className={`fixed inset-x-0 bottom-0 z-30 lg:hidden ${
-          isDashboardHome
+          isPronoClashShell
             ? "mx-3 mb-3 rounded-2xl border border-white/10 bg-[#0b0e14]/80 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl"
             : "border-t border-white/5 bg-black/70 backdrop-blur-xl"
         }`}
@@ -133,6 +137,9 @@ export function AppShell({ profile, children }: AppShellProps) {
 function isActive(pathname: string | null, href: string) {
   if (!pathname) return false;
   if (href === "/dashboard") return pathname === "/dashboard";
+  if (href === "/leaderboard") {
+    return pathname === "/leaderboard" || pathname === "/global/leaderboard";
+  }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

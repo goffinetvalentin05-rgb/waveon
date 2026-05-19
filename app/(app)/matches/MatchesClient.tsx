@@ -2,7 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ui } from "@/lib/design/tokens";
+import { IconBallFootball } from "@tabler/icons-react";
+import { PronoClashShell } from "@/components/dashboard/PronoClashShell";
+import { longStageLabel } from "@/lib/pronoclash/match-display";
 
 type TeamSide = {
   id: string;
@@ -41,12 +43,14 @@ type Prediction = {
 type League = { id: string; slug: string; name: string; kind: string };
 
 type Props = {
+  username?: string | null;
+  email?: string | null;
   matches: Match[];
   predictions: Prediction[];
   leagues: League[];
 };
 
-export function MatchesClient({ matches, predictions, leagues }: Props) {
+export function MatchesClient({ username, email, matches, predictions, leagues }: Props) {
   const router = useRouter();
   const [activeLeague, setActiveLeague] = useState<string | null>(null);
 
@@ -63,52 +67,64 @@ export function MatchesClient({ matches, predictions, leagues }: Props) {
   const finished = matches.filter((m) => m.status === "finished");
 
   return (
-    <div className="space-y-6">
-      <LeagueTabs leagues={leagues} active={activeLeague} onChange={setActiveLeague} />
+    <PronoClashShell pageTitle="Matchs" username={username} email={email}>
+      <p className="pc-body-text">
+        Score exact = +5 pts. Bon vainqueur ou bon nul = +3 pts. Bon écart de buts = +1 bonus. Tu peux
+        modifier ton prono jusqu&apos;au coup d&apos;envoi.
+      </p>
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-widest text-white/50">
-          À venir
-        </h2>
-        {upcoming.length === 0 ? (
-          <div className={`${ui.glassCard} p-6 text-center text-sm text-white/55`}>
-            Aucun match à venir.
+      {matches.length === 0 ? (
+        <div className="pc-empty pc-glass">
+          <IconBallFootball size={28} stroke={1.5} className="pc-empty-icon" />
+          <p>Les matchs du tournoi seront bientôt disponibles.</p>
+        </div>
+      ) : (
+        <>
+          <LeagueTabs leagues={leagues} active={activeLeague} onChange={setActiveLeague} />
+
+          <div className="pc-section-head" style={{ marginTop: 8 }}>
+            <h2 className="pc-section-title">À venir</h2>
           </div>
-        ) : (
-          <ul className="space-y-3">
-            {upcoming.map((m) => (
-              <MatchRow
-                key={m.id}
-                match={m}
-                prediction={predByKey.get(`${m.id}::${activeLeague ?? "global"}`)}
-                leagueId={activeLeague}
-                onSaved={() => router.refresh()}
-              />
-            ))}
-          </ul>
-        )}
-      </section>
+          {upcoming.length === 0 ? (
+            <div className="pc-empty pc-glass">
+              <p>Aucun match à venir pour le moment.</p>
+            </div>
+          ) : (
+            <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+              {upcoming.map((m) => (
+                <MatchRow
+                  key={m.id}
+                  match={m}
+                  prediction={predByKey.get(`${m.id}::${activeLeague ?? "global"}`)}
+                  leagueId={activeLeague}
+                  onSaved={() => router.refresh()}
+                />
+              ))}
+            </ul>
+          )}
 
-      {finished.length > 0 ? (
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-white/50">
-            Terminés
-          </h2>
-          <ul className="space-y-3">
-            {finished.map((m) => (
-              <MatchRow
-                key={m.id}
-                match={m}
-                prediction={predByKey.get(`${m.id}::${activeLeague ?? "global"}`)}
-                leagueId={activeLeague}
-                readonly
-                onSaved={() => router.refresh()}
-              />
-            ))}
-          </ul>
-        </section>
-      ) : null}
-    </div>
+          {finished.length > 0 ? (
+            <>
+              <div className="pc-section-head">
+                <h2 className="pc-section-title">Terminés</h2>
+              </div>
+              <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                {finished.map((m) => (
+                  <MatchRow
+                    key={m.id}
+                    match={m}
+                    prediction={predByKey.get(`${m.id}::${activeLeague ?? "global"}`)}
+                    leagueId={activeLeague}
+                    readonly
+                    onSaved={() => router.refresh()}
+                  />
+                ))}
+              </ul>
+            </>
+          ) : null}
+        </>
+      )}
+    </PronoClashShell>
   );
 }
 
@@ -122,39 +138,27 @@ function LeagueTabs({
   onChange: (id: string | null) => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <TabBtn
-        label="Ligue générale"
-        active={active === null}
+    <div className="pc-league-tabs">
+      <button
+        type="button"
+        className={`pc-league-tab${active === null ? " active" : ""}`}
         onClick={() => onChange(null)}
-      />
+      >
+        Ligue générale
+      </button>
       {leagues
         .filter((l) => l.kind !== "global")
         .map((l) => (
-          <TabBtn
+          <button
             key={l.id}
-            label={l.name}
-            active={active === l.id}
+            type="button"
+            className={`pc-league-tab${active === l.id ? " active" : ""}`}
             onClick={() => onChange(l.id)}
-          />
+          >
+            {l.name}
+          </button>
         ))}
     </div>
-  );
-}
-
-function TabBtn({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
-        active
-          ? "bg-gradient-to-r from-blue-500 to-violet-500 text-white shadow-[0_10px_25px_-10px_rgba(99,102,241,0.7)]"
-          : "border border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
-      }`}
-    >
-      {label}
-    </button>
   );
 }
 
@@ -171,8 +175,8 @@ function MatchRow({
   readonly?: boolean;
   onSaved: () => void;
 }) {
-  const [home, setHome] = useState<number>(prediction?.predicted_home_score ?? 1);
-  const [away, setAway] = useState<number>(prediction?.predicted_away_score ?? 1);
+  const [home, setHome] = useState<number>(prediction?.predicted_home_score ?? 0);
+  const [away, setAway] = useState<number>(prediction?.predicted_away_score ?? 0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
@@ -180,7 +184,8 @@ function MatchRow({
   const kickoffPast = new Date(match.kickoff_at).getTime() <= Date.now();
   const lockedPast = new Date(match.locked_at).getTime() <= Date.now();
   const hasTeams = !!match.home && !!match.away;
-  const locked = readonly || kickoffPast || lockedPast || match.status !== "scheduled" || !hasTeams;
+  const locked =
+    readonly || kickoffPast || lockedPast || match.status !== "scheduled" || !hasTeams;
 
   const save = async () => {
     setSaving(true);
@@ -210,99 +215,122 @@ function MatchRow({
     }
   };
 
-  const stageLabel = match.group_name
-    ? `Groupe ${match.group_name}`
-    : prettyStage(match.stage);
+  const stageLabel = longStageLabel(match.stage, match.group_name);
+  const statusLabel =
+    match.status === "live"
+      ? "LIVE"
+      : match.status === "finished"
+        ? "Terminé"
+        : match.status === "postponed"
+          ? "Reporté"
+          : "À venir";
 
   return (
-    <li className={`${ui.glassCard} p-4 sm:p-5`}>
-      <div className="flex items-center justify-between text-xs text-white/45">
-        <span className="flex items-center gap-2">
-          {match.match_number ? (
-            <span className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] font-semibold text-white/60">
-              #{match.match_number}
-            </span>
-          ) : null}
-          <span>
-            {new Date(match.kickoff_at).toLocaleString("fr-CH", {
-              weekday: "short",
-              day: "numeric",
-              month: "short",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-            {" · "}
-            {stageLabel}
-          </span>
+    <li className="pc-match-card pc-glass">
+      <div className="pc-match-card-head">
+        <span>
+          {match.match_number ? `#${match.match_number} · ` : ""}
+          {new Date(match.kickoff_at).toLocaleString("fr-CH", {
+            weekday: "short",
+            day: "numeric",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+          {" · "}
+          {stageLabel}
         </span>
-        {locked ? (
-          <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-white/60">
-            verrouillé
-          </span>
-        ) : null}
+        <span
+          className={`pc-status-pill ${
+            match.status === "live" ? "live" : "upcoming"
+          }`}
+          style={
+            match.status === "finished"
+              ? { background: "rgba(255,255,255,0.08)", border: "1px solid var(--pc-border)", color: "#94a3b8" }
+              : undefined
+          }
+        >
+          {match.status === "live" ? <span className="pc-live-dot" /> : null}
+          {statusLabel}
+        </span>
       </div>
 
       {match.venue || match.city ? (
-        <div className="mt-1 text-[11px] text-white/35">
+        <div style={{ fontSize: 11, color: "var(--pc-muted)", marginBottom: 12 }}>
           {[match.venue, match.city, match.country].filter(Boolean).join(" — ")}
         </div>
       ) : null}
 
-      <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-6">
+      <div className="pc-featured-teams" style={{ margin: "0 0 12px" }}>
         <TeamView team={match.home} placeholder={match.home_placeholder} align="left" />
-        <div className="text-xs uppercase tracking-widest text-white/30">vs</div>
+        <span style={{ fontSize: 11, color: "var(--pc-muted)", textTransform: "uppercase" }}>vs</span>
         <TeamView team={match.away} placeholder={match.away_placeholder} align="right" />
       </div>
 
-      {match.status === "finished" ? (
-        <div className="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-500/5 px-4 py-3 text-center">
-          <div className="text-[10px] uppercase tracking-widest text-emerald-200/70">Score final</div>
-          <div className="mt-1 font-display text-2xl font-bold text-white">
+      {match.status === "finished" &&
+      match.home_score !== null &&
+      match.away_score !== null ? (
+        <div
+          style={{
+            textAlign: "center",
+            padding: "12px",
+            borderRadius: 12,
+            border: "1px solid rgba(52, 211, 153, 0.25)",
+            background: "rgba(52, 211, 153, 0.08)",
+            marginBottom: 12,
+          }}
+        >
+          <div style={{ fontSize: 10, textTransform: "uppercase", color: "#6ee7b7" }}>
+            Score final
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>
             {match.home_score} – {match.away_score}
           </div>
         </div>
       ) : !hasTeams ? (
-        <div className="mt-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-xs text-white/45">
+        <p style={{ fontSize: 12, color: "var(--pc-muted)", textAlign: "center", margin: "0 0 12px" }}>
           Équipes pas encore qualifiées
+        </p>
+      ) : match.status === "live" &&
+        match.home_score !== null &&
+        match.away_score !== null ? (
+        <div style={{ textAlign: "center", marginBottom: 12, fontSize: 24, fontWeight: 800 }}>
+          {match.home_score} – {match.away_score}
         </div>
       ) : (
-        <div className="mt-4 grid grid-cols-2 items-center gap-3">
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
           <ScoreInput value={home} onChange={setHome} disabled={locked} />
           <ScoreInput value={away} onChange={setAway} disabled={locked} />
         </div>
       )}
 
-      {!locked ? (
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-[11px] text-white/40">
+      {!locked && hasTeams && match.status === "scheduled" ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <span style={{ fontSize: 11, color: "var(--pc-muted)" }}>
             {savedAt ? "Pronostic enregistré ✓" : "Modifiable jusqu'au coup d'envoi"}
           </span>
-          <button type="button" onClick={save} disabled={saving} className={ui.btnPrimary}>
+          <button type="button" onClick={save} disabled={saving} className="pc-btn primary">
             {saving ? "Enregistrement…" : prediction ? "Mettre à jour" : "Verrouiller mon prono"}
           </button>
         </div>
       ) : null}
 
       {error ? (
-        <p className="mt-2 rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
+        <p
+          style={{
+            marginTop: 8,
+            fontSize: 12,
+            color: "#fca5a5",
+            padding: "8px 10px",
+            borderRadius: 8,
+            background: "rgba(244, 63, 94, 0.1)",
+          }}
+        >
           {error}
         </p>
       ) : null}
     </li>
   );
-}
-
-function prettyStage(stage: string): string {
-  const map: Record<string, string> = {
-    group: "Phase de groupes",
-    round_of_32: "16es de finale",
-    round_of_16: "8es de finale",
-    quarter_final: "Quart de finale",
-    semi_final: "Demi-finale",
-    third_place: "Match pour la 3ème place",
-    final: "Finale",
-  };
-  return map[stage] ?? stage;
 }
 
 function TeamView({
@@ -316,20 +344,26 @@ function TeamView({
 }) {
   if (!team) {
     return (
-      <div className={`flex items-center gap-3 ${align === "right" ? "flex-row-reverse text-right" : ""}`}>
-        <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-dashed border-white/15 bg-white/[0.02] text-xs text-white/40">
+      <div
+        className="pc-featured-team"
+        style={align === "right" ? { alignItems: "flex-end" } : undefined}
+      >
+        <span className="pc-team-badge" style={{ width: 40, height: 40, fontSize: 12 }}>
           ?
         </span>
-        <span className="truncate text-xs italic text-white/45">{placeholder ?? "À déterminer"}</span>
+        <span style={{ fontSize: 11, color: "var(--pc-muted)" }}>{placeholder ?? "À déterminer"}</span>
       </div>
     );
   }
   return (
-    <div className={`flex items-center gap-3 ${align === "right" ? "flex-row-reverse text-right" : ""}`}>
-      <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/30 to-violet-500/30 text-lg">
+    <div
+      className="pc-featured-team"
+      style={align === "right" ? { alignItems: "flex-end" } : undefined}
+    >
+      <span className="pc-team-badge" style={{ width: 40, height: 40, fontSize: 18 }}>
         {team.flag_emoji ?? "🏳️"}
       </span>
-      <span className="truncate text-sm font-semibold text-white">{team.name}</span>
+      <span style={{ fontSize: 12, fontWeight: 600 }}>{team.name}</span>
     </div>
   );
 }
@@ -346,21 +380,33 @@ function ScoreInput({
   const dec = () => onChange(Math.max(0, value - 1));
   const inc = () => onChange(Math.min(20, value + 1));
   return (
-    <div className="flex items-center justify-between rounded-xl border border-white/10 bg-black/30 px-2 py-2">
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "8px",
+        borderRadius: 12,
+        border: "1px solid var(--pc-border)",
+        background: "rgba(0,0,0,0.25)",
+      }}
+    >
       <button
         type="button"
         onClick={dec}
         disabled={disabled}
-        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-lg text-white disabled:opacity-40"
+        className="pc-icon-btn sm"
+        style={{ width: 36, height: 36 }}
       >
         −
       </button>
-      <span className="font-display text-2xl font-bold text-white tabular-nums">{value}</span>
+      <span style={{ fontSize: 24, fontWeight: 800 }}>{value}</span>
       <button
         type="button"
         onClick={inc}
         disabled={disabled}
-        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-lg text-white disabled:opacity-40"
+        className="pc-icon-btn sm"
+        style={{ width: 36, height: 36 }}
       >
         +
       </button>

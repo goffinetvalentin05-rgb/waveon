@@ -1,9 +1,11 @@
 import { createServerComponentSupabase } from "@/lib/supabase/server-component";
 import {
   DashboardView,
+  type DashboardFeaturedMatch,
   type DashboardLeague,
   type DashboardUpcomingMatch,
 } from "@/components/dashboard/DashboardView";
+import { shortStageLabel, teamCode } from "@/lib/pronoclash/match-display";
 
 function kindLabel(kind: string | undefined) {
   if (kind === "global") return "Générale";
@@ -17,24 +19,64 @@ function leagueHref(kind: string | undefined, slug: string | undefined) {
   return `/leagues/${slug}`;
 }
 
-function shortStageLabel(stage: string, groupName: string | null) {
-  if (groupName) return `G ${groupName}`;
-  const map: Record<string, string> = {
-    group: "Grp",
-    round_of_32: "1/16",
-    round_of_16: "1/8",
-    quarter_final: "1/4",
-    semi_final: "1/2",
-    third_place: "3e",
-    final: "Finale",
-  };
-  return map[stage] ?? stage;
+type TeamRow = {
+  name: string | null;
+  country_code: string | null;
+  flag_emoji: string | null;
+} | null;
+
+type MatchRow = {
+  id: string;
+  match_number: number | null;
+  kickoff_at: string;
+  status: string;
+  stage: string;
+  group_name: string | null;
+  home_score: number | null;
+  away_score: number | null;
+  home_placeholder: string | null;
+  away_placeholder: string | null;
+  home: TeamRow;
+  away: TeamRow;
+};
+
+const MATCH_SELECT =
+  "id, match_number, kickoff_at, status, stage, group_name, home_score, away_score, home_placeholder, away_placeholder, home:home_team_id(name, country_code, flag_emoji), away:away_team_id(name, country_code, flag_emoji)";
+
+function teamDisplayName(team: TeamRow, placeholder: string | null) {
+  if (team?.name) return team.name;
+  if (placeholder) return placeholder;
+  return "À déterminer";
 }
 
-function teamCode(name: string | null | undefined, countryCode: string | null | undefined) {
-  if (countryCode) return countryCode.toUpperCase().slice(0, 3);
-  if (name) return name.slice(0, 2).toUpperCase();
-  return "—";
+function toUpcoming(m: MatchRow): DashboardUpcomingMatch {
+  return {
+    id: m.id,
+    kickoffAt: m.kickoff_at,
+    compLabel: shortStageLabel(m.stage, m.group_name),
+    homeName: teamDisplayName(m.home, m.home_placeholder),
+    awayName: teamDisplayName(m.away, m.away_placeholder),
+    homeEmoji: m.home?.flag_emoji,
+    awayEmoji: m.away?.flag_emoji,
+  };
+}
+
+function toFeatured(m: MatchRow): DashboardFeaturedMatch {
+  return {
+    id: m.id,
+    status: m.status === "live" ? "live" : "scheduled",
+    kickoffAt: m.kickoff_at,
+    stage: m.stage,
+    groupName: m.group_name,
+    homeName: teamDisplayName(m.home, m.home_placeholder),
+    awayName: teamDisplayName(m.away, m.away_placeholder),
+    homeCode: teamCode(m.home?.name, m.home?.country_code),
+    awayCode: teamCode(m.away?.name, m.away?.country_code),
+    homeEmoji: m.home?.flag_emoji,
+    awayEmoji: m.away?.flag_emoji,
+    homeScore: m.home_score,
+    awayScore: m.away_score,
+  };
 }
 
 export default async function DashboardPage() {
@@ -44,7 +86,11 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [profileRes, leaguesRes, pendingOwnedRes, upcomingRes, contestRes] =
+  const now = new Date();
+  const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+  const nowIso = now.toISOString();
+
+  const [profileRes, leaguesRes, pendingOwnedRes, contestRes, matchesCountRes, liveRes, upcoming24Res, upcomingListRes] =
     await Promise.all([
       supabase
         .from("profiles")
@@ -61,19 +107,34 @@ export default async function DashboardPage() {
         .eq("owner_id", user.id)
         .in("status", ["pending_payment", "cancelled"]),
       supabase
-        .from("matches")
-        .select(
-          "id, match_number, kickoff_at, status, stage, group_name, home:home_team_id(name, country_code, flag_emoji), away:away_team_id(name, country_code, flag_emoji)"
-        )
-        .eq("status", "scheduled")
-        .gt("kickoff_at", new Date().toISOString())
-        .order("kickoff_at")
-        .limit(5),
-      supabase
         .from("contest_settings")
         .select("prize_title, prize_value_chf, ends_at, is_active")
         .limit(1)
         .maybeSingle(),
+      supabase.from("matches").select("id", { count: "exact", head: true }),
+      supabase
+        .from("matches")
+        .select(MATCH_SELECT)
+        .eq("status", "live")
+        .order("kickoff_at")
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("matches")
+        .select(MATCH_SELECT)
+        .eq("status", "scheduled")
+        .gte("kickoff_at", nowIso)
+        .lte("kickoff_at", in24h)
+        .order("kickoff_at")
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("matches")
+        .select(MATCH_SELECT)
+        .eq("status", "scheduled")
+        .gt("kickoff_at", nowIso)
+        .order("kickoff_at")
+        .limit(8),
     ]);
 
   const profile = profileRes.data;
@@ -83,17 +144,16 @@ export default async function DashboardPage() {
     leagues: { id: string; slug: string; name: string; kind: string; max_players: number } | null;
   }>;
 
-  type MatchRow = {
-    id: string;
-    match_number: number | null;
-    kickoff_at: string;
-    status: string;
-    stage: string;
-    group_name: string | null;
-    home: { name: string | null; country_code: string | null; flag_emoji: string | null } | null;
-    away: { name: string | null; country_code: string | null; flag_emoji: string | null } | null;
-  };
-  const upcoming = (upcomingRes.data ?? []) as unknown as MatchRow[];
+  const upcomingRows = (upcomingListRes.data ?? []) as unknown as MatchRow[];
+  const liveRow = liveRes.data as MatchRow | null;
+  const upcoming24Row = upcoming24Res.data as MatchRow | null;
+  const featuredSource = liveRow ?? upcoming24Row;
+  const featuredMatch = featuredSource ? toFeatured(featuredSource) : null;
+  const featuredId = featuredMatch?.id;
+
+  const upcomingMatches: DashboardUpcomingMatch[] = upcomingRows
+    .filter((m) => m.id !== featuredId)
+    .map(toUpcoming);
 
   const cs = contestRes.data as
     | { prize_title: string; prize_value_chf: number; ends_at: string | null; is_active: boolean }
@@ -120,7 +180,7 @@ export default async function DashboardPage() {
   const dashboardLeagues: DashboardLeague[] = [
     ...leagues
       .filter((m) => m.leagues)
-      .map((m, i) => ({
+      .map((m) => ({
         key: `member-${m.leagues!.id}`,
         name: m.leagues!.name,
         kindLabel: kindLabel(m.leagues!.kind),
@@ -139,21 +199,10 @@ export default async function DashboardPage() {
     })),
   ];
 
-  const upcomingMatches: DashboardUpcomingMatch[] = upcoming.map((m) => ({
-    id: m.id,
-    kickoffAt: m.kickoff_at,
-    compLabel: shortStageLabel(m.stage, m.group_name),
-    homeName: m.home?.name ?? "—",
-    awayName: m.away?.name ?? "—",
-    homeCode: teamCode(m.home?.name, m.home?.country_code),
-    awayCode: teamCode(m.away?.name, m.away?.country_code),
-    homeEmoji: m.home?.flag_emoji,
-    awayEmoji: m.away?.flag_emoji,
-  }));
-
-  const contestTitle = cs
-    ? `${cs.prize_title} · jusqu'à CHF ${cs.prize_value_chf}`
-    : "Maillot de foot à gagner · jusqu'à CHF 120";
+  const contestTitle =
+    cs && cs.is_active !== false
+      ? `${cs.prize_title} · jusqu'à CHF ${cs.prize_value_chf}`
+      : null;
 
   const leaguesEmptyHint =
     privateLeagues.length === 0 && pendingOwned.length === 0
@@ -162,14 +211,19 @@ export default async function DashboardPage() {
 
   return (
     <DashboardView
-      username={profile?.username ?? "Joueur"}
+      username={profile?.username}
+      email={user.email}
       totalPoints={profile?.total_points ?? 0}
       rank={rank}
       contestTitle={contestTitle}
-      contestSubtitle="Tu participes automatiquement au classement général"
+      contestSubtitle={
+        contestTitle ? "Tu participes automatiquement au classement général" : undefined
+      }
       leagues={dashboardLeagues}
       leaguesEmptyHint={leaguesEmptyHint}
       upcomingMatches={upcomingMatches}
+      featuredMatch={featuredMatch}
+      hasAnyMatchesInDb={(matchesCountRes.count ?? 0) > 0}
     />
   );
 }
