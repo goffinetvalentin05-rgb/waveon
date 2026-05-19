@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createServerComponentSupabase } from "@/lib/supabase/server-component";
+import { getAppBaseUrl } from "@/lib/brand/config";
 import { Avatar } from "@/components/app/Avatar";
 import { ui } from "@/lib/design/tokens";
 
@@ -21,6 +22,12 @@ export default async function LeaguePage(props: { params: Promise<RouteParams> }
 
   if (!league) notFound();
 
+  const isOwner = league.owner_id === user.id;
+  if (league.status === "pending_payment" || league.status === "cancelled") {
+    if (!isOwner) notFound();
+    redirect(`/leagues/checkout/cancelled?league_id=${league.id}`);
+  }
+
   // Membres + classement
   const { data: members } = await supabase
     .from("league_members")
@@ -35,9 +42,13 @@ export default async function LeaguePage(props: { params: Promise<RouteParams> }
     profiles: { username: string | null; avatar_color: string | null } | null;
   };
   const sortedMembers = (members ?? []) as unknown as Member[];
-  const isOwner = league.owner_id === user.id;
   const isMember = sortedMembers.some((m) => m.user_id === user.id);
   const isPrivate = league.kind !== "global";
+  const baseUrl = getAppBaseUrl();
+  const inviteUrl =
+    league.invite_code && isPrivate
+      ? `${baseUrl}/leagues/join/${league.invite_code}`
+      : null;
 
   return (
     <div className="space-y-6">
@@ -61,9 +72,15 @@ export default async function LeaguePage(props: { params: Promise<RouteParams> }
             <p className="mt-1 text-sm text-white/55">
               {sortedMembers.length} membre{sortedMembers.length > 1 ? "s" : ""}
               {league.kind !== "global" ? ` · max ${league.max_players}` : ""}
+              {league.status === "active" ? " · active" : ""}
             </p>
+            {isOwner && league.status === "active" && isPrivate ? (
+              <p className="mt-2 text-sm font-medium text-emerald-300/90">
+                Ta ligue est prête — invite tes potes pour commencer.
+              </p>
+            ) : null}
           </div>
-          {isPrivate ? (
+          {isPrivate && league.status === "active" ? (
             <div className="flex flex-wrap gap-2">
               <Link href={`/leagues/${league.slug}/invite`} className={ui.btnPrimary}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="mr-2">
@@ -148,6 +165,24 @@ export default async function LeaguePage(props: { params: Promise<RouteParams> }
               </Link>
             ) : null}
           </section>
+
+          {isOwner && league.status === "active" && inviteUrl ? (
+            <section className={`${ui.glassCard} p-6`}>
+              <h2 className="text-lg font-semibold text-white">Invitation</h2>
+              <p className="mt-2 text-sm text-white/55">
+                Partage ce lien à tes potes pour qu&apos;ils rejoignent la ligue.
+              </p>
+              <p className="mt-3 break-all rounded-lg border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-white/80">
+                {inviteUrl}
+              </p>
+              <Link
+                href={`/leagues/${league.slug}/invite`}
+                className={`${ui.btnSecondary} mt-4 w-full justify-center`}
+              >
+                Message WhatsApp
+              </Link>
+            </section>
+          ) : null}
 
           {isMember ? (
             <section className={`${ui.glassCard} p-6`}>

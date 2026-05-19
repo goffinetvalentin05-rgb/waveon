@@ -8,7 +8,8 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [profileRes, leaguesRes, upcomingRes, contestRes, recentPredsRes] = await Promise.all([
+  const [profileRes, leaguesRes, pendingOwnedRes, upcomingRes, contestRes, recentPredsRes] =
+    await Promise.all([
     supabase
       .from("profiles")
       .select("id, username, avatar_color, total_points")
@@ -18,6 +19,11 @@ export default async function DashboardPage() {
       .from("league_members")
       .select("role, points, leagues(id, slug, name, kind, max_players)")
       .eq("user_id", user.id),
+    supabase
+      .from("leagues")
+      .select("id, slug, name, kind, plan, status, max_players")
+      .eq("owner_id", user.id)
+      .in("status", ["pending_payment", "cancelled"]),
     supabase
       .from("matches")
       .select(
@@ -87,6 +93,16 @@ export default async function DashboardPage() {
   const rank = (aheadCount ?? 0) + 1;
 
   const ownsAnyLeague = leagues.some((l) => l.role === "owner");
+  const pendingOwned = (pendingOwnedRes.data ?? []) as Array<{
+    id: string;
+    slug: string;
+    name: string;
+    kind: string;
+    plan: string | null;
+    status: string;
+    max_players: number;
+  }>;
+
   const privateLeagues = leagues.filter((l) => l.leagues?.kind !== "global");
 
   return (
@@ -195,8 +211,27 @@ export default async function DashboardPage() {
                 ) : null}
               </li>
             ))}
+            {pendingOwned.map((l) => (
+              <li
+                key={l.id}
+                className="flex items-center justify-between gap-3 rounded-xl border border-amber-400/20 bg-amber-500/5 px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <span className="truncate text-sm font-semibold text-white">{l.name}</span>
+                  <p className="text-xs text-amber-200/80">
+                    Paiement en attente · {l.plan === "pro" ? "Pro" : "Private"} League
+                  </p>
+                </div>
+                <Link
+                  href={`/leagues/checkout/cancelled?league_id=${l.id}`}
+                  className="shrink-0 text-xs font-medium text-amber-200 hover:text-amber-100"
+                >
+                  Payer →
+                </Link>
+              </li>
+            ))}
           </ul>
-          {privateLeagues.length === 0 ? (
+          {privateLeagues.length === 0 && pendingOwned.length === 0 ? (
             <p className="mt-4 text-xs text-white/50">
               Tu n&apos;es pas encore dans une ligue privée. Crée la tienne pour jouer
               avec des cartes et saboter tes potes.

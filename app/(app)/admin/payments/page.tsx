@@ -6,7 +6,7 @@ export default async function AdminPaymentsPage() {
   const { data: payments } = await supabase
     .from("payments")
     .select(
-      "id, amount_chf, plan, status, currency, stripe_session_id, created_at, profiles:user_id(username, email)"
+      "id, amount_chf, plan, status, currency, stripe_checkout_session_id, created_at, profiles:user_id(username, email)"
     )
     .order("created_at", { ascending: false })
     .limit(500);
@@ -17,7 +17,7 @@ export default async function AdminPaymentsPage() {
     plan: string | null;
     status: string;
     currency: string;
-    stripe_session_id: string | null;
+    stripe_checkout_session_id: string | null;
     created_at: string;
     profiles: { username: string | null; email: string | null } | null;
   };
@@ -78,7 +78,9 @@ export default async function AdminPaymentsPage() {
                     </span>
                   </td>
                   <td className="px-3 py-2 text-[11px] font-mono text-white/40">
-                    {p.stripe_session_id ? p.stripe_session_id.slice(0, 18) + "…" : "—"}
+                    {p.stripe_checkout_session_id
+                      ? p.stripe_checkout_session_id.slice(0, 18) + "…"
+                      : "—"}
                   </td>
                 </tr>
               ))}

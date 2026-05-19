@@ -4,10 +4,7 @@
  * Modèle économique :
  *  - Le concours est gratuit et n'a JAMAIS besoin de Stripe.
  *  - Le paiement Stripe sert UNIQUEMENT à créer une ligue privée (one-time
- *    payment, pas de subscription).
- *
- * Plans extensibles (les price IDs Stripe peuvent être ajoutés au fur et à
- * mesure dans les variables d'environnement).
+ *    payment, pas de subscription). 1 paiement = 1 ligue.
  */
 
 export type LeaguePlanId = "private" | "pro";
@@ -29,7 +26,7 @@ export const LEAGUE_PLANS: Record<LeaguePlanId, LeaguePlan> = {
     name: "Private League",
     priceChf: 9.9,
     maxPlayers: 20,
-    envKey: "STRIPE_PRICE_ID_LEAGUE_PRIVATE",
+    envKey: "STRIPE_PRICE_PRIVATE_LEAGUE",
     features: [
       "Jusqu'à 20 joueurs",
       "Cartes spéciales",
@@ -42,7 +39,7 @@ export const LEAGUE_PLANS: Record<LeaguePlanId, LeaguePlan> = {
     name: "Pro League",
     priceChf: 14.9,
     maxPlayers: 50,
-    envKey: "STRIPE_PRICE_ID_LEAGUE_PRO",
+    envKey: "STRIPE_PRICE_PRO_LEAGUE",
     highlight: true,
     features: [
       "Jusqu'à 50 joueurs",

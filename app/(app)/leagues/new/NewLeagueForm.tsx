@@ -28,10 +28,10 @@ export function NewLeagueForm({ plans }: { plans: LeaguePlan[] }) {
     }
     setLoading(true);
     try {
-      const res = await fetch("/api/stripe/checkout", {
+      const res = await fetch("/api/stripe/create-league-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, leagueName: name.trim() }),
+        body: JSON.stringify({ plan, league_name: name.trim() }),
       });
       const j = (await res.json().catch(() => null)) as { url?: string; error?: string } | null;
       if (!res.ok || !j?.url) {
@@ -116,11 +116,13 @@ export function NewLeagueForm({ plans }: { plans: LeaguePlan[] }) {
       ) : null}
 
       <button type="submit" disabled={loading} className={`${ui.btnPrimaryLg} w-full justify-center`}>
-        {loading ? "Redirection vers Stripe…" : "Payer et créer ma ligue"}
+        {loading ? "Redirection vers Stripe…" : "Continuer vers le paiement"}
       </button>
       <p className="text-center text-[11px] text-white/40">
-        Tu seras redirigé vers Stripe Checkout (paiement sécurisé). Aucune
-        information bancaire ne transite par Prono Clash.
+        Chaque pack crée <strong className="text-white/60">une seule</strong> ligue privée.
+        Pour une 2<sup>e</sup> ligue, un nouveau paiement est nécessaire.
+        <br />
+        Paiement sécurisé via Stripe Checkout.
       </p>
     </form>
   );
