@@ -126,9 +126,8 @@ export default async function DashboardPage() {
         kindLabel: kindLabel(m.leagues!.kind),
         points: m.points,
         href: leagueHref(m.leagues!.kind, m.leagues!.slug),
-        iconVariant: ((i % 2) + 1) as 1 | 2,
       })),
-    ...pendingOwned.map((l, i) => ({
+    ...pendingOwned.map((l) => ({
       key: `pending-${l.id}`,
       name: l.name,
       kindLabel: kindLabel(l.kind),
@@ -137,7 +136,6 @@ export default async function DashboardPage() {
       pending: true,
       pendingLabel: `Paiement en attente · ${l.plan === "pro" ? "Pro" : "Private"} League`,
       payHref: `/leagues/checkout/cancelled?league_id=${l.id}`,
-      iconVariant: (((leagues.length + i) % 2) + 1) as 1 | 2,
     })),
   ];
 
@@ -149,6 +147,8 @@ export default async function DashboardPage() {
     awayName: m.away?.name ?? "—",
     homeCode: teamCode(m.home?.name, m.home?.country_code),
     awayCode: teamCode(m.away?.name, m.away?.country_code),
+    homeEmoji: m.home?.flag_emoji,
+    awayEmoji: m.away?.flag_emoji,
   }));
 
   const contestTitle = cs

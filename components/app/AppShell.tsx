@@ -37,9 +37,13 @@ export function AppShell({ profile, children }: AppShellProps) {
     router.replace("/");
   };
 
+  const isDashboardHome = pathname === "/dashboard";
+
   return (
-    <div className="relative min-h-screen pb-20 sm:pb-0">
-      {/* Top bar */}
+    <div
+      className={`relative min-h-screen ${isDashboardHome ? "bg-[#0b0e14] pb-24 lg:pb-8" : "pb-20 sm:pb-0"}`}
+    >
+      {!isDashboardHome ? (
       <header className="sticky top-0 z-30 border-b border-white/5 bg-black/40 backdrop-blur-xl">
         <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
@@ -93,11 +97,26 @@ export function AppShell({ profile, children }: AppShellProps) {
           </div>
         </div>
       </header>
+      ) : null}
 
-      <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">{children}</main>
+      <main
+        className={
+          isDashboardHome
+            ? "mx-auto w-full max-w-7xl p-0"
+            : "mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8"
+        }
+      >
+        {children}
+      </main>
 
-      {/* Bottom nav mobile */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/5 bg-black/70 backdrop-blur-xl lg:hidden">
+      {/* Bottom nav mobile — style glass flottant */}
+      <nav
+        className={`fixed inset-x-0 bottom-0 z-30 lg:hidden ${
+          isDashboardHome
+            ? "mx-3 mb-3 rounded-2xl border border-white/10 bg-[#0b0e14]/80 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl"
+            : "border-t border-white/5 bg-black/70 backdrop-blur-xl"
+        }`}
+      >
         <div className="mx-auto flex max-w-md items-stretch justify-around px-2 py-2">
           {NAV.map((n) => (
             <BottomLink key={n.href} {...n} active={isActive(pathname, n.href)} />

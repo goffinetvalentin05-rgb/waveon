@@ -1,18 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { isToday, isTomorrow, format } from "date-fns";
+import { usePathname, useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase/client";
+import { format, isToday, isTomorrow } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   IconBallFootball,
-  IconBolt,
-  IconCalendar,
-  IconChartBar,
+  IconBell,
   IconChevronRight,
   IconHome,
+  IconLogout,
   IconPlus,
-  IconShield,
   IconTrophy,
   IconUsers,
 } from "@tabler/icons-react";
@@ -26,7 +25,7 @@ export type DashboardLeague = {
   pending?: boolean;
   pendingLabel?: string;
   payHref?: string;
-  iconVariant: 1 | 2;
+  rank?: number;
 };
 
 export type DashboardUpcomingMatch = {
@@ -37,8 +36,8 @@ export type DashboardUpcomingMatch = {
   awayName: string;
   homeCode: string;
   awayCode: string;
-  homeFlagClass?: "pcd-team-fr" | "pcd-team-br" | null;
-  awayFlagClass?: "pcd-team-fr" | "pcd-team-br" | null;
+  homeEmoji?: string | null;
+  awayEmoji?: string | null;
 };
 
 export type DashboardViewProps = {
@@ -63,12 +62,30 @@ function leagueInitials(name: string) {
   return name.slice(0, 2).toUpperCase() || "LG";
 }
 
-function formatKickoffLabel(iso: string) {
+function formatMatchTime(iso: string) {
+  return format(new Date(iso), "HH:mm", { locale: fr });
+}
+
+function formatDateGroup(iso: string) {
   const d = new Date(iso);
-  const time = format(d, "HH:mm", { locale: fr });
-  if (isToday(d)) return `AUJ. · ${time}`;
-  if (isTomorrow(d)) return `DEMAIN · ${time}`;
-  return format(d, "EEE d MMM · HH:mm", { locale: fr }).toUpperCase();
+  if (isToday(d)) return "Aujourd'hui";
+  if (isTomorrow(d)) return "Demain";
+  return format(d, "EEEE d MMMM", { locale: fr });
+}
+
+function groupMatchesByDate(matches: DashboardUpcomingMatch[]) {
+  const map = new Map<string, DashboardUpcomingMatch[]>();
+  for (const m of matches) {
+    const key = format(new Date(m.kickoffAt), "yyyy-MM-dd");
+    const list = map.get(key) ?? [];
+    list.push(m);
+    map.set(key, list);
+  }
+  return Array.from(map.entries()).map(([dateKey, items]) => ({
+    dateKey,
+    label: formatDateGroup(items[0].kickoffAt),
+    items,
+  }));
 }
 
 function navActive(pathname: string | null, href: string) {
@@ -88,530 +105,492 @@ export function DashboardView({
   upcomingMatches,
 }: DashboardViewProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const letter = avatarLetter(username);
 
+  const logout = async () => {
+    await supabase.auth.signOut();
+    router.replace("/");
+  };
+  const handle = `@${username.toLowerCase().replace(/\s+/g, "")}`;
+  const matchGroups = groupMatchesByDate(upcomingMatches);
+
   return (
-    <div className="pcd-wrap">
-      <div className="pcd-inner">
-        <div className="pcd-topbar">
-          <div className="pcd-logo">
-            <div className="pcd-logo-icon">
-              <IconBolt size={18} stroke={2.2} />
+    <div className="pc-wrap">
+      <div className="pc-inner">
+        {/* Header type référence : avatar + pill username */}
+        <header className="pc-header">
+          <div className="pc-header-left">
+            <div className="pc-avatar">{letter}</div>
+            <div className="pc-user-pill">
+              <span className="pc-user-handle">{handle}</span>
             </div>
-            <span>Prono Clash</span>
           </div>
-          <nav className="pcd-nav">
-            <Link
-              href="/dashboard"
-              className={`pcd-nav-item${navActive(pathname, "/dashboard") ? " active" : ""}`}
-            >
-              <IconHome size={16} stroke={2} />
-              <span>Accueil</span>
+          <div className="pc-header-actions">
+            <Link href="/matches" className="pc-icon-btn" aria-label="Matchs">
+              <IconBell size={18} stroke={1.8} />
             </Link>
-            <Link
-              href="/matches"
-              className={`pcd-nav-item${navActive(pathname, "/matches") ? " active" : ""}`}
-            >
-              <IconBallFootball size={16} stroke={2} />
-              <span>Matchs</span>
-            </Link>
-            <Link
-              href="/leaderboard"
-              className={`pcd-nav-item${navActive(pathname, "/leaderboard") ? " active" : ""}`}
-            >
-              <IconTrophy size={16} stroke={2} />
-              <span>Classement</span>
-            </Link>
-          </nav>
-          <div className="pcd-avatar" aria-hidden>
-            {letter}
+            <button type="button" className="pc-icon-btn" onClick={logout} aria-label="Se déconnecter">
+              <IconLogout size={18} stroke={1.8} />
+            </button>
           </div>
-        </div>
+        </header>
 
-        <div className="pcd-hero">
-          <div className="pcd-hero-avatar">{letter}</div>
-          <div className="pcd-hero-text">
-            <div className="pcd-hero-label">Salut</div>
-            <div className="pcd-hero-name">{username}</div>
-            <div className="pcd-hero-sub">
-              Bienvenue dans ton QG · Tournoi mondial 2026
-            </div>
-          </div>
-          <div className="pcd-hero-stats">
-            <div className="pcd-stat">
-              <div className="pcd-stat-label">Points</div>
-              <div className="pcd-stat-value">{totalPoints}</div>
-            </div>
-            <div className="pcd-stat pcd-stat-rank">
-              <div className="pcd-stat-label">Rang</div>
-              <div className="pcd-stat-value">#{rank}</div>
-            </div>
-          </div>
-        </div>
+        <h1 className="pc-page-title">Accueil</h1>
 
-        <div className="pcd-concours">
-          <div className="pcd-concours-icon">
-            <IconTrophy size={22} stroke={2} />
-          </div>
-          <div className="pcd-concours-text">
-            <div className="pcd-concours-label">Concours gratuit</div>
-            <div className="pcd-concours-title">{contestTitle}</div>
-            <div className="pcd-concours-sub">{contestSubtitle}</div>
-          </div>
-          <Link href="/global/leaderboard" className="pcd-btn pcd-btn-ghost">
+        {/* Tabs style référence */}
+        <nav className="pc-tabs" aria-label="Navigation principale">
+          <Link
+            href="/dashboard"
+            className={`pc-tab${navActive(pathname, "/dashboard") ? " active" : ""}`}
+          >
+            Explorer
+          </Link>
+          <Link
+            href="/matches"
+            className={`pc-tab${navActive(pathname, "/matches") ? " active" : ""}`}
+          >
+            Matchs
+          </Link>
+          <Link
+            href="/leaderboard"
+            className={`pc-tab${navActive(pathname, "/leaderboard") ? " active" : ""}`}
+          >
             Classement
           </Link>
-          <Link href="/matches" className="pcd-btn pcd-btn-primary">
-            Pronostiquer
+        </nav>
+
+        {/* Stats utilisateur */}
+        <div className="pc-stats-row">
+          <div className="pc-stat-card glass">
+            <span className="pc-stat-label">Points</span>
+            <span className="pc-stat-value">{totalPoints}</span>
+          </div>
+          <div className="pc-stat-card glass pc-stat-card-accent">
+            <span className="pc-stat-label">Rang global</span>
+            <span className="pc-stat-value pc-stat-gradient">#{rank}</span>
+          </div>
+        </div>
+
+        {/* Bandeau concours */}
+        <div className="pc-contest glass">
+          <div className="pc-contest-icon">
+            <IconTrophy size={20} stroke={1.8} />
+          </div>
+          <div className="pc-contest-body">
+            <span className="pc-contest-tag">Concours gratuit</span>
+            <p className="pc-contest-title">{contestTitle}</p>
+            <p className="pc-contest-sub">{contestSubtitle}</p>
+          </div>
+          <div className="pc-contest-actions">
+            <Link href="/global/leaderboard" className="pc-btn ghost">
+              Classement
+            </Link>
+            <Link href="/matches" className="pc-btn primary">
+              Pronostiquer
+            </Link>
+          </div>
+        </div>
+
+        {/* Match à la une — hero card */}
+        <div className="pc-section-head">
+          <h2 className="pc-section-title">Match à la une</h2>
+          <Link href="/matches" className="pc-link">
+            Tout voir
+            <IconChevronRight size={14} />
           </Link>
         </div>
 
-        <div className="pcd-section-head">
-          <div className="pcd-section-title">Match à la une</div>
-          <Link href="/matches" className="pcd-section-link">
-            Tous les matchs →
-          </Link>
-        </div>
-
-        {/* TODO: brancher données matchs (match live / à la une depuis Supabase) */}
-        <div className="pcd-match-featured">
-          <div className="pcd-match-bg" />
-          <div className="pcd-stadium-lines" />
-          <div className="pcd-match-content">
-            <div className="pcd-match-top">
-              <div className="pcd-match-meta">
-                <div className="pcd-badge-live">
-                  <span className="pcd-live-dot" />
-                  LIVE
-                </div>
-                <span className="pcd-match-comp">Quart de finale · 22:31</span>
+        {/* TODO: brancher données matchs (live / featured depuis Supabase) */}
+        <div className="pc-featured">
+          <div className="pc-featured-bg" />
+          <div className="pc-featured-glow pc-featured-glow-left" />
+          <div className="pc-featured-glow pc-featured-glow-right" />
+          <div className="pc-featured-content">
+            <div className="pc-featured-top">
+              <span className="pc-featured-badge">MATCH DAY</span>
+              <span className="pc-live-pill">
+                <span className="pc-live-dot" />
+                LIVE
+              </span>
+            </div>
+            <p className="pc-featured-date">Quart de finale · 21:00</p>
+            <div className="pc-featured-teams">
+              <div className="pc-featured-team">
+                <div className="pc-team-badge">FR</div>
+                <span>France</span>
               </div>
-              <div className="pcd-match-joker">
-                <IconBolt size={12} stroke={2.5} />
-                Joker x2 activé
+              <div className="pc-featured-score">
+                <span>2</span>
+                <em>:</em>
+                <span>1</span>
+              </div>
+              <div className="pc-featured-team pc-featured-team-right">
+                <div className="pc-team-badge pc-team-badge-alt">BR</div>
+                <span>Brésil</span>
               </div>
             </div>
-            <div className="pcd-match-teams">
-              <div className="pcd-team">
-                <div className="pcd-team-flag pcd-team-fr">FR</div>
-                <div className="pcd-team-name">France</div>
-              </div>
-              <div className="pcd-match-score">
-                <span className="pcd-score-num">2</span>
-                <span className="pcd-score-sep">VS</span>
-                <span className="pcd-score-num">1</span>
-              </div>
-              <div className="pcd-team">
-                <div className="pcd-team-flag pcd-team-br">BR</div>
-                <div className="pcd-team-name">Brésil</div>
-              </div>
-            </div>
-            <div className="pcd-match-bottom">
-              <Link href="/matches" className="pcd-match-btn pcd-match-btn-ghost">
-                Voir le détail
+            <div className="pc-featured-actions">
+              <Link href="/matches" className="pc-btn ghost light">
+                Détail
               </Link>
-              <Link href="/matches" className="pcd-match-btn pcd-match-btn-primary">
+              <Link href="/matches" className="pc-btn primary light">
                 Verrouiller mon prono
               </Link>
             </div>
           </div>
         </div>
 
-        <div className="pcd-grid">
-          <div className="pcd-card">
-            <div className="pcd-card-head">
-              <div className="pcd-card-title">Mes ligues</div>
-              <div className="pcd-card-actions">
-                <Link href="/leagues/new" className="pcd-icon-btn" aria-label="Créer une ligue">
-                  <IconPlus size={14} stroke={2.5} />
-                </Link>
-                <Link href="/leagues/join" className="pcd-icon-btn" aria-label="Rejoindre une ligue">
-                  <IconUsers size={14} stroke={2} />
-                </Link>
-              </div>
-            </div>
-
-            {leagues.length === 0 && leaguesEmptyHint ? (
-              <p className="pcd-leagues-empty">{leaguesEmptyHint}</p>
-            ) : null}
-
-            {leagues.map((ligue) => (
-              <div
-                key={ligue.key}
-                className={`pcd-ligue-item${ligue.pending ? " pending" : ""}`}
-              >
-                <div
-                  className={`pcd-ligue-icon pcd-ligue-icon-${ligue.iconVariant}`}
-                >
-                  {leagueInitials(ligue.name)}
-                </div>
-                <div className="pcd-ligue-info">
-                  <div className="pcd-ligue-name">{ligue.name}</div>
-                  <div className="pcd-ligue-meta">
-                    {ligue.pending && ligue.pendingLabel
-                      ? ligue.pendingLabel
-                      : `${ligue.kindLabel} · ${ligue.points} pts`}
-                  </div>
-                </div>
-                {ligue.pending && ligue.payHref ? (
-                  <Link href={ligue.payHref} className="pcd-ligue-action pay">
-                    Payer →
-                  </Link>
-                ) : (
-                  <Link href={ligue.href} className="pcd-ligue-action">
-                    Ouvrir →
-                  </Link>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <div className="pcd-card">
-            <div className="pcd-card-title pcd-card-title-spaced">Raccourcis</div>
-            <div className="pcd-shortcuts">
-              <Link href="/matches" className="pcd-shortcut">
-                <div className="pcd-shortcut-ic">
-                  <IconCalendar size={14} stroke={2} />
-                </div>
-                <span className="pcd-shortcut-text">Pronostiquer</span>
-                <IconChevronRight size={16} className="pcd-shortcut-arrow" stroke={2} />
-              </Link>
-              <Link href="/global/leaderboard" className="pcd-shortcut">
-                <div className="pcd-shortcut-ic">
-                  <IconChartBar size={14} stroke={2} />
-                </div>
-                <span className="pcd-shortcut-text">Classement</span>
-                <IconChevronRight size={16} className="pcd-shortcut-arrow" stroke={2} />
-              </Link>
-              <Link href="/legal/contest-rules" className="pcd-shortcut">
-                <div className="pcd-shortcut-ic">
-                  <IconShield size={14} stroke={2} />
-                </div>
-                <span className="pcd-shortcut-text">Règlement</span>
-                <IconChevronRight size={16} className="pcd-shortcut-arrow" stroke={2} />
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        <div className="pcd-section-head">
-          <div className="pcd-section-title">Prochains matchs</div>
-          <Link href="/matches" className="pcd-section-link">
-            Tout voir →
+        {/* Prochains matchs — groupés par date */}
+        <div className="pc-section-head">
+          <h2 className="pc-section-title">Prochains matchs</h2>
+          <Link href="/matches" className="pc-link">
+            Tout voir
+            <IconChevronRight size={14} />
           </Link>
         </div>
 
-        <div className="pcd-scroll-row">
-          {upcomingMatches.length > 0 ? (
-            upcomingMatches.map((m) => (
-              <Link key={m.id} href="/matches" className="pcd-mini-match">
-                <div className="pcd-mini-head">
-                  <span className="pcd-mini-date">{formatKickoffLabel(m.kickoffAt)}</span>
-                  <span className="pcd-mini-comp">{m.compLabel}</span>
-                </div>
-                <div className="pcd-mini-teams">
-                  <div className="pcd-mini-team">
-                    <div
-                      className={`pcd-mini-flag${m.homeFlagClass ? ` ${m.homeFlagClass}` : ""}`}
-                    >
-                      {m.homeCode}
+        {matchGroups.length > 0 ? (
+          matchGroups.map((group) => (
+            <section key={group.dateKey} className="pc-date-block">
+              <h3 className="pc-date-label">{group.label}</h3>
+              <div className="pc-match-list glass">
+                {group.items.map((m, idx) => (
+                  <Link
+                    key={m.id}
+                    href="/matches"
+                    className={`pc-match-row${idx < group.items.length - 1 ? " bordered" : ""}`}
+                  >
+                    <div className="pc-match-side">
+                      <span className="pc-match-emoji">{m.homeEmoji ?? "🏳️"}</span>
+                      <span className="pc-match-name">{m.homeName}</span>
                     </div>
-                    <span className="pcd-mini-name">{m.homeName}</span>
-                  </div>
-                  <span className="pcd-mini-vs">VS</span>
-                  <div className="pcd-mini-team pcd-mini-team-end">
-                    <span className="pcd-mini-name">{m.awayName}</span>
-                    <div
-                      className={`pcd-mini-flag${m.awayFlagClass ? ` ${m.awayFlagClass}` : ""}`}
-                    >
-                      {m.awayCode}
+                    <div className="pc-match-center">
+                      <span className="pc-match-time">{formatMatchTime(m.kickoffAt)}</span>
+                      <span className="pc-match-stage">{m.compLabel}</span>
                     </div>
-                  </div>
-                </div>
-              </Link>
-            ))
-          ) : (
-            /* TODO: brancher données matchs — affichage vide */
-            <div className="pcd-mini-match pcd-mini-match-placeholder">
-              <div className="pcd-mini-head">
-                <span className="pcd-mini-date">—</span>
-                <span className="pcd-mini-comp">—</span>
+                    <div className="pc-match-side pc-match-side-right">
+                      <span className="pc-match-name">{m.awayName}</span>
+                      <span className="pc-match-emoji">{m.awayEmoji ?? "🏳️"}</span>
+                    </div>
+                  </Link>
+                ))}
               </div>
-              <p className="pcd-mini-empty">Aucun match programmé pour le moment.</p>
-            </div>
+            </section>
+          ))
+        ) : (
+          <div className="pc-empty glass">
+            <IconBallFootball size={28} stroke={1.5} className="pc-empty-icon" />
+            <p>Aucun match programmé pour le moment.</p>
+            <Link href="/matches" className="pc-link">
+              Voir les matchs
+              <IconChevronRight size={14} />
+            </Link>
+          </div>
+        )}
+
+        {/* Mes ligues — tableau type standings */}
+        <div className="pc-section-head">
+          <h2 className="pc-section-title">Mes ligues</h2>
+          <div className="pc-section-actions">
+            <Link href="/leagues/new" className="pc-icon-btn sm" aria-label="Créer une ligue">
+              <IconPlus size={16} stroke={2} />
+            </Link>
+            <Link href="/leagues/join" className="pc-icon-btn sm" aria-label="Rejoindre">
+              <IconUsers size={16} stroke={1.8} />
+            </Link>
+          </div>
+        </div>
+
+        {leaguesEmptyHint ? <p className="pc-hint">{leaguesEmptyHint}</p> : null}
+
+        <div className="pc-standings glass">
+          <div className="pc-standings-head">
+            <span className="col-rank">#</span>
+            <span className="col-team">Ligue</span>
+            <span className="col-type">Type</span>
+            <span className="col-pts">Pts</span>
+            <span className="col-go" />
+          </div>
+          {leagues.length === 0 ? (
+            <p className="pc-standings-empty">Rejoins ou crée une ligue pour jouer avec tes potes.</p>
+          ) : (
+            leagues.map((ligue, i) => (
+              <div
+                key={ligue.key}
+                className={`pc-standings-row${ligue.pending ? " pending" : ""}`}
+              >
+                <span className="col-rank">{i + 1}</span>
+                <span className="col-team">
+                  <span className="pc-league-badge">{leagueInitials(ligue.name)}</span>
+                  <span className="pc-league-name">{ligue.name}</span>
+                </span>
+                <span className="col-type">{ligue.pending ? "—" : ligue.kindLabel}</span>
+                <span className="col-pts">{ligue.pending ? "—" : ligue.points}</span>
+                <span className="col-go">
+                  {ligue.pending && ligue.payHref ? (
+                    <Link href={ligue.payHref} className="pc-row-link warn">
+                      Payer
+                    </Link>
+                  ) : (
+                    <Link href={ligue.href} className="pc-row-link">
+                      <IconChevronRight size={16} />
+                    </Link>
+                  )}
+                </span>
+              </div>
+            ))
           )}
+        </div>
+
+        {/* Raccourcis */}
+        <div className="pc-shortcuts">
+          <Link href="/matches" className="pc-shortcut glass">
+            <IconHome size={18} stroke={1.8} />
+            <span>Pronostiquer</span>
+            <IconChevronRight size={16} className="pc-shortcut-arrow" />
+          </Link>
+          <Link href="/global/leaderboard" className="pc-shortcut glass">
+            <IconTrophy size={18} stroke={1.8} />
+            <span>Classement général</span>
+            <IconChevronRight size={16} className="pc-shortcut-arrow" />
+          </Link>
+          <Link href="/legal/contest-rules" className="pc-shortcut glass">
+            <IconBallFootball size={18} stroke={1.8} />
+            <span>Règlement du concours</span>
+            <IconChevronRight size={16} className="pc-shortcut-arrow" />
+          </Link>
         </div>
       </div>
 
       <style jsx>{`
-        @keyframes pcd-pulse {
+        @keyframes pc-pulse {
           0%,
           100% {
             opacity: 1;
           }
           50% {
-            opacity: 0.5;
+            opacity: 0.45;
           }
         }
-        @keyframes pcd-shine {
-          0% {
-            transform: translateX(-120%) skewX(-20deg);
-          }
-          100% {
-            transform: translateX(220%) skewX(-20deg);
-          }
-        }
-        @keyframes pcd-orb-float {
+        @keyframes pc-glow-drift {
           0%,
           100% {
-            transform: translate(0, 0);
+            transform: translate(0, 0) scale(1);
           }
           50% {
-            transform: translate(20px, -15px);
+            transform: translate(12px, -8px) scale(1.08);
           }
         }
 
-        .pcd-wrap {
-          background: linear-gradient(180deg, #0a0e1a 0%, #0f1424 50%, #0a0e1a 100%);
-          min-height: calc(100vh - 4rem);
-          padding: 20px;
+        .pc-wrap {
+          --pc-bg: #0b0e14;
+          --pc-surface: rgba(255, 255, 255, 0.04);
+          --pc-border: rgba(255, 255, 255, 0.08);
+          --pc-text: #f8fafc;
+          --pc-muted: #94a3b8;
+          --pc-cyan: #22d3ee;
+          --pc-violet: #a78bfa;
+          --pc-pink: #f472b6;
+
+          background: var(--pc-bg);
+          min-height: calc(100dvh - 5rem);
+          padding: 12px 16px 32px;
           position: relative;
-          overflow: hidden;
-          font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          color: var(--pc-text);
           width: 100vw;
           max-width: 100vw;
           margin-left: calc(50% - 50vw);
           margin-right: calc(50% - 50vw);
           box-sizing: border-box;
         }
-        .pcd-wrap::before {
+        .pc-wrap::before {
           content: "";
           position: absolute;
-          top: -100px;
-          right: -100px;
-          width: 400px;
-          height: 400px;
+          top: -80px;
+          right: -60px;
+          width: 320px;
+          height: 320px;
           border-radius: 50%;
-          background: #6366f1;
-          filter: blur(120px);
-          opacity: 0.2;
-          animation: pcd-orb-float 10s ease-in-out infinite;
+          background: radial-gradient(circle, rgba(34, 211, 238, 0.18) 0%, transparent 70%);
+          pointer-events: none;
+          animation: pc-glow-drift 12s ease-in-out infinite;
         }
-        .pcd-wrap::after {
+        .pc-wrap::after {
           content: "";
           position: absolute;
-          bottom: -100px;
-          left: -100px;
-          width: 400px;
-          height: 400px;
+          bottom: 20%;
+          left: -80px;
+          width: 280px;
+          height: 280px;
           border-radius: 50%;
-          background: #a855f7;
-          filter: blur(120px);
-          opacity: 0.15;
-          animation: pcd-orb-float 12s ease-in-out infinite reverse;
+          background: radial-gradient(circle, rgba(167, 139, 250, 0.14) 0%, transparent 70%);
+          pointer-events: none;
+          animation: pc-glow-drift 14s ease-in-out infinite reverse;
         }
-        .pcd-inner {
+        .pc-inner {
           position: relative;
           z-index: 1;
-          max-width: 1200px;
+          max-width: 520px;
           margin: 0 auto;
         }
 
-        .pcd-topbar {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 24px;
-        }
-        .pcd-logo {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          color: #fff;
-          font-weight: 700;
-          font-size: 16px;
-        }
-        .pcd-logo-icon {
-          width: 32px;
-          height: 32px;
-          border-radius: 8px;
-          background: linear-gradient(135deg, #06b6d4, #3b82f6);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #fff;
-        }
-        .pcd-nav {
-          display: flex;
-          gap: 4px;
-          background: rgba(255, 255, 255, 0.04);
-          padding: 4px;
-          border-radius: 12px;
-          border: 1px solid rgba(255, 255, 255, 0.06);
-        }
-        .pcd-nav-item {
-          padding: 8px 16px;
-          border-radius: 8px;
-          color: #9ca3af;
-          font-size: 13px;
-          font-weight: 500;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          cursor: pointer;
-          text-decoration: none;
-        }
-        .pcd-nav-item.active {
-          background: linear-gradient(
-            135deg,
-            rgba(99, 102, 241, 0.25),
-            rgba(168, 85, 247, 0.2)
-          );
-          color: #fff;
-          box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
-        }
-        .pcd-avatar {
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #06b6d4, #0ea5e9);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #fff;
-          font-weight: 600;
-          font-size: 13px;
-          border: 2px solid rgba(255, 255, 255, 0.1);
+        .glass {
+          background: var(--pc-surface);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border: 1px solid var(--pc-border);
+          border-radius: 20px;
         }
 
-        .pcd-hero {
-          background: linear-gradient(
-            135deg,
-            rgba(99, 102, 241, 0.12) 0%,
-            rgba(168, 85, 247, 0.08) 100%
-          );
-          border: 1px solid rgba(99, 102, 241, 0.2);
-          border-radius: 20px;
-          padding: 20px;
-          margin-bottom: 16px;
-          position: relative;
-          overflow: hidden;
+        .pc-header {
           display: flex;
           align-items: center;
-          gap: 16px;
+          justify-content: space-between;
+          margin-bottom: 20px;
         }
-        .pcd-hero::before {
-          content: "";
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 25%;
-          height: 100%;
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(255, 255, 255, 0.06),
-            transparent
-          );
-          animation: pcd-shine 5s ease-in-out infinite;
+        .pc-header-left {
+          display: flex;
+          align-items: center;
+          gap: 10px;
         }
-        .pcd-hero-avatar {
-          width: 56px;
-          height: 56px;
-          border-radius: 16px;
-          background: linear-gradient(135deg, #06b6d4, #0ea5e9);
+        .pc-avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, var(--pc-cyan), #3b82f6);
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #fff;
           font-weight: 700;
-          font-size: 20px;
+          font-size: 15px;
+          color: #fff;
+          border: 2px solid rgba(255, 255, 255, 0.12);
           flex-shrink: 0;
         }
-        .pcd-hero-text {
-          flex: 1;
+        .pc-user-pill {
+          padding: 8px 14px;
+          border-radius: 999px;
+          background: rgba(15, 23, 42, 0.85);
+          border: 1px solid var(--pc-border);
+          backdrop-filter: blur(12px);
         }
-        .pcd-hero-label {
-          color: #6366f1;
-          font-size: 10px;
+        .pc-user-handle {
+          font-size: 13px;
           font-weight: 600;
-          letter-spacing: 1.5px;
-          text-transform: uppercase;
+          color: var(--pc-text);
         }
-        .pcd-hero-name {
-          color: #fff;
-          font-size: 22px;
-          font-weight: 700;
-          margin: 2px 0;
-          letter-spacing: -0.5px;
-        }
-        .pcd-hero-sub {
-          color: #9ca3af;
-          font-size: 12px;
-        }
-        .pcd-hero-stats {
-          display: flex;
-          gap: 10px;
-          flex-shrink: 0;
-        }
-        .pcd-stat {
-          background: rgba(255, 255, 255, 0.04);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+        .pc-icon-btn {
+          width: 40px;
+          height: 40px;
           border-radius: 12px;
-          padding: 10px 14px;
-          min-width: 75px;
-          text-align: center;
+          background: var(--pc-surface);
+          border: 1px solid var(--pc-border);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--pc-muted);
+          text-decoration: none;
+          backdrop-filter: blur(12px);
         }
-        .pcd-stat-label {
-          color: #6b7280;
-          font-size: 9px;
-          font-weight: 600;
-          letter-spacing: 1px;
-          text-transform: uppercase;
+        .pc-icon-btn.sm {
+          width: 32px;
+          height: 32px;
+          border-radius: 10px;
         }
-        .pcd-stat-value {
-          color: #fff;
-          font-size: 22px;
+        .pc-header-actions {
+          display: flex;
+          gap: 8px;
+        }
+        button.pc-icon-btn {
+          cursor: pointer;
+          font: inherit;
+        }
+
+        .pc-page-title {
+          font-size: 28px;
           font-weight: 700;
-          line-height: 1.1;
-          margin-top: 2px;
+          letter-spacing: -0.03em;
+          margin: 0 0 16px;
         }
-        .pcd-stat-rank {
+
+        .pc-tabs {
+          display: flex;
+          gap: 20px;
+          margin-bottom: 20px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+          padding-bottom: 0;
+        }
+        .pc-tab {
+          padding: 10px 2px 12px;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: var(--pc-muted);
+          text-decoration: none;
+          border-bottom: 2px solid transparent;
+          margin-bottom: -1px;
+          transition: color 0.2s, border-color 0.2s;
+        }
+        .pc-tab.active {
+          color: var(--pc-text);
+          border-bottom-color: var(--pc-cyan);
+        }
+
+        .pc-stats-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          margin-bottom: 14px;
+        }
+        .pc-stat-card {
+          padding: 14px 16px;
+          border-radius: 18px;
+        }
+        .pc-stat-card-accent {
           background: linear-gradient(
             135deg,
-            rgba(168, 85, 247, 0.2),
-            rgba(99, 102, 241, 0.15)
+            rgba(34, 211, 238, 0.08),
+            rgba(167, 139, 250, 0.1)
           );
-          border-color: rgba(168, 85, 247, 0.3);
         }
-        .pcd-stat-rank .pcd-stat-value {
-          background: linear-gradient(135deg, #a855f7, #6366f1);
+        .pc-stat-label {
+          display: block;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: var(--pc-muted);
+        }
+        .pc-stat-value {
+          display: block;
+          font-size: 26px;
+          font-weight: 800;
+          letter-spacing: -0.03em;
+          margin-top: 4px;
+        }
+        .pc-stat-gradient {
+          background: linear-gradient(90deg, var(--pc-cyan), var(--pc-violet));
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
         }
 
-        .pcd-concours {
-          background: linear-gradient(
-            135deg,
-            rgba(250, 204, 21, 0.08),
-            rgba(168, 85, 247, 0.08)
-          );
-          border: 1px solid rgba(250, 204, 21, 0.2);
-          border-radius: 16px;
-          padding: 14px 18px;
-          margin-bottom: 20px;
+        .pc-contest {
           display: flex;
-          align-items: center;
-          gap: 14px;
-          position: relative;
-          overflow: hidden;
           flex-wrap: wrap;
+          align-items: center;
+          gap: 12px;
+          padding: 14px 16px;
+          margin-bottom: 22px;
+          border-radius: 18px;
         }
-        .pcd-concours-icon {
-          width: 40px;
-          height: 40px;
-          border-radius: 10px;
+        .pc-contest-icon {
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
           background: linear-gradient(135deg, #fbbf24, #f59e0b);
           display: flex;
           align-items: center;
@@ -619,507 +598,440 @@ export function DashboardView({
           color: #fff;
           flex-shrink: 0;
         }
-        .pcd-concours-text {
+        .pc-contest-body {
           flex: 1;
-          min-width: 180px;
+          min-width: 160px;
         }
-        .pcd-concours-label {
-          color: #fbbf24;
+        .pc-contest-tag {
           font-size: 9px;
-          font-weight: 600;
-          letter-spacing: 1.5px;
+          font-weight: 700;
+          letter-spacing: 0.14em;
           text-transform: uppercase;
+          color: #fbbf24;
         }
-        .pcd-concours-title {
-          color: #fff;
-          font-size: 14px;
+        .pc-contest-title {
+          margin: 4px 0 0;
+          font-size: 13px;
           font-weight: 600;
-          margin-top: 2px;
+          line-height: 1.35;
         }
-        .pcd-concours-sub {
-          color: #9ca3af;
+        .pc-contest-sub {
+          margin: 2px 0 0;
           font-size: 11px;
-          margin-top: 1px;
+          color: var(--pc-muted);
         }
-        .pcd-btn {
-          padding: 9px 16px;
+        .pc-contest-actions {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .pc-btn {
+          padding: 9px 14px;
           border-radius: 10px;
           font-size: 12px;
           font-weight: 600;
-          cursor: pointer;
-          white-space: nowrap;
-          border: none;
           text-decoration: none;
           display: inline-flex;
           align-items: center;
           justify-content: center;
+          border: none;
+          cursor: pointer;
+          white-space: nowrap;
         }
-        .pcd-btn-primary {
-          background: linear-gradient(135deg, #6366f1, #a855f7);
-          color: #fff;
+        .pc-btn.primary {
+          background: linear-gradient(135deg, #22d3ee, #6366f1);
+          color: #0b0e14;
         }
-        .pcd-btn-ghost {
+        .pc-btn.ghost {
           background: rgba(255, 255, 255, 0.06);
+          color: var(--pc-text);
+          border: 1px solid var(--pc-border);
+        }
+        .pc-btn.ghost.light {
+          background: rgba(255, 255, 255, 0.12);
           color: #fff;
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 255, 255, 0.2);
+        }
+        .pc-btn.primary.light {
+          background: #fff;
+          color: #0f172a;
         }
 
-        .pcd-section-head {
+        .pc-section-head {
           display: flex;
-          justify-content: space-between;
           align-items: center;
-          margin: 24px 0 12px;
+          justify-content: space-between;
+          margin: 22px 0 12px;
         }
-        .pcd-section-title {
-          color: #fff;
-          font-size: 16px;
-          font-weight: 600;
+        .pc-section-title {
+          font-size: 15px;
+          font-weight: 700;
+          margin: 0;
         }
-        .pcd-section-link {
-          color: #6366f1;
+        .pc-section-actions {
+          display: flex;
+          gap: 6px;
+        }
+        .pc-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 2px;
           font-size: 12px;
-          font-weight: 500;
-          cursor: pointer;
+          font-weight: 600;
+          color: var(--pc-cyan);
           text-decoration: none;
         }
-
-        .pcd-match-featured {
-          position: relative;
-          border-radius: 20px;
-          margin-bottom: 14px;
-          overflow: hidden;
-          min-height: 200px;
-          background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 50%, #581c87 100%);
-          border: 1px solid rgba(99, 102, 241, 0.3);
+        .pc-hint {
+          font-size: 12px;
+          color: var(--pc-muted);
+          margin: 0 0 10px;
+          line-height: 1.5;
         }
-        .pcd-match-bg {
+
+        .pc-featured {
+          position: relative;
+          border-radius: 24px;
+          overflow: hidden;
+          min-height: 240px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          margin-bottom: 8px;
+        }
+        .pc-featured-bg {
           position: absolute;
           inset: 0;
-          background:
-            radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.4) 0%, transparent 50%),
-            radial-gradient(circle at 80% 20%, rgba(168, 85, 247, 0.3) 0%, transparent 50%),
-            linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.5) 100%);
-        }
-        .pcd-stadium-lines {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: 80px;
-          background:
-            linear-gradient(
-              90deg,
-              transparent 0%,
-              rgba(255, 255, 255, 0.04) 50%,
-              transparent 100%
+          background: linear-gradient(
+              160deg,
+              rgba(15, 23, 42, 0.3) 0%,
+              rgba(15, 23, 42, 0.85) 55%,
+              rgba(11, 14, 20, 0.95) 100%
             ),
-            repeating-linear-gradient(
-              90deg,
-              transparent,
-              transparent 40px,
-              rgba(255, 255, 255, 0.03) 40px,
-              rgba(255, 255, 255, 0.03) 41px
-            );
+            linear-gradient(135deg, #1e3a5f 0%, #312e81 45%, #581c87 100%);
         }
-        .pcd-match-content {
+        .pc-featured-glow {
+          position: absolute;
+          width: 140px;
+          height: 140px;
+          border-radius: 50%;
+          filter: blur(40px);
+          opacity: 0.5;
+          pointer-events: none;
+        }
+        .pc-featured-glow-left {
+          top: 20%;
+          left: 5%;
+          background: var(--pc-cyan);
+        }
+        .pc-featured-glow-right {
+          top: 10%;
+          right: 5%;
+          background: var(--pc-violet);
+        }
+        .pc-featured-content {
           position: relative;
           z-index: 2;
-          padding: 18px 20px;
-          height: 100%;
+          padding: 20px;
           display: flex;
           flex-direction: column;
+          min-height: 240px;
           justify-content: space-between;
-          min-height: 200px;
         }
-        .pcd-match-top {
+        .pc-featured-top {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
         }
-        .pcd-match-meta {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          flex-wrap: wrap;
+        .pc-featured-badge {
+          font-size: 22px;
+          font-weight: 900;
+          font-style: italic;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          transform: skewX(-6deg);
+          text-shadow: 0 2px 20px rgba(34, 211, 238, 0.4);
         }
-        .pcd-badge-live {
+        .pc-live-pill {
           display: flex;
           align-items: center;
           gap: 5px;
-          background: rgba(239, 68, 68, 0.15);
-          border: 1px solid rgba(239, 68, 68, 0.3);
-          color: #ef4444;
-          padding: 4px 10px;
-          border-radius: 6px;
+          padding: 5px 10px;
+          border-radius: 8px;
+          background: rgba(239, 68, 68, 0.2);
+          border: 1px solid rgba(239, 68, 68, 0.35);
+          color: #fca5a5;
           font-size: 10px;
-          font-weight: 600;
+          font-weight: 700;
+          letter-spacing: 0.08em;
         }
-        .pcd-live-dot {
+        .pc-live-dot {
           width: 6px;
           height: 6px;
           border-radius: 50%;
           background: #ef4444;
-          animation: pcd-pulse 1.2s infinite;
+          animation: pc-pulse 1.2s infinite;
         }
-        .pcd-match-comp {
-          color: rgba(255, 255, 255, 0.7);
+        .pc-featured-date {
+          margin: 8px 0 0;
           font-size: 11px;
+          color: rgba(255, 255, 255, 0.65);
           font-weight: 500;
         }
-        .pcd-match-joker {
-          background: rgba(168, 85, 247, 0.2);
-          border: 1px solid rgba(168, 85, 247, 0.4);
-          color: #d8b4fe;
-          padding: 4px 10px;
-          border-radius: 6px;
-          font-size: 10px;
-          font-weight: 600;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-
-        .pcd-match-teams {
+        .pc-featured-teams {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin: 8px 0;
+          margin: 16px 0;
         }
-        .pcd-team {
+        .pc-featured-team {
           display: flex;
           flex-direction: column;
           align-items: center;
+          gap: 8px;
           flex: 1;
+          font-size: 12px;
+          font-weight: 600;
         }
-        .pcd-team-flag {
-          width: 48px;
-          height: 48px;
-          border-radius: 14px;
+        .pc-featured-team-right {
+          text-align: right;
+        }
+        .pc-team-badge {
+          width: 52px;
+          height: 52px;
+          border-radius: 16px;
+          background: linear-gradient(135deg, #3b82f6, #1d4ed8);
           display: flex;
           align-items: center;
           justify-content: center;
           font-size: 14px;
-          font-weight: 700;
-          color: #fff;
-          margin-bottom: 8px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-        .pcd-team-fr {
-          background: linear-gradient(135deg, #3b82f6, #1e40af);
-        }
-        .pcd-team-br {
-          background: linear-gradient(135deg, #10b981, #fbbf24);
-        }
-        .pcd-team-name {
-          color: #fff;
-          font-size: 13px;
-          font-weight: 600;
-        }
-        .pcd-match-score {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 0 12px;
-        }
-        .pcd-score-num {
-          color: #fff;
-          font-size: 36px;
           font-weight: 800;
-          letter-spacing: -1px;
-          line-height: 1;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
         }
-        .pcd-score-sep {
-          color: rgba(255, 255, 255, 0.4);
-          font-size: 18px;
+        .pc-team-badge-alt {
+          background: linear-gradient(135deg, #10b981, #ca8a04);
+        }
+        .pc-featured-score {
+          display: flex;
+          align-items: baseline;
+          gap: 6px;
+          font-size: 40px;
+          font-weight: 900;
+          letter-spacing: -0.04em;
+        }
+        .pc-featured-score em {
+          font-style: normal;
+          font-size: 22px;
+          color: rgba(255, 255, 255, 0.35);
           font-weight: 500;
         }
-
-        .pcd-match-bottom {
+        .pc-featured-actions {
           display: flex;
           gap: 8px;
         }
-        .pcd-match-btn {
+        .pc-featured-actions .pc-btn {
           flex: 1;
-          padding: 11px;
-          border-radius: 12px;
-          font-size: 12px;
-          font-weight: 600;
-          text-align: center;
-          cursor: pointer;
-          border: none;
-          text-decoration: none;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .pcd-match-btn-primary {
-          background: #fff;
-          color: #111827;
-        }
-        .pcd-match-btn-ghost {
-          background: rgba(255, 255, 255, 0.1);
-          color: #fff;
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          backdrop-filter: blur(10px);
         }
 
-        .pcd-grid {
-          display: grid;
-          grid-template-columns: 1.4fr 1fr;
-          gap: 14px;
+        .pc-date-block {
           margin-bottom: 14px;
         }
-
-        .pcd-card {
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          border-radius: 18px;
-          padding: 16px;
-        }
-        .pcd-card-head {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 12px;
-        }
-        .pcd-card-title {
-          color: #fff;
-          font-size: 14px;
-          font-weight: 600;
-        }
-        .pcd-card-title-spaced {
-          margin-bottom: 12px;
-        }
-        .pcd-card-actions {
-          display: flex;
-          gap: 6px;
-        }
-        .pcd-icon-btn {
-          width: 28px;
-          height: 28px;
-          border-radius: 8px;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #9ca3af;
-          cursor: pointer;
-          text-decoration: none;
-        }
-        .pcd-leagues-empty {
-          color: #6b7280;
-          font-size: 11px;
-          margin-bottom: 10px;
-          line-height: 1.5;
-        }
-
-        .pcd-ligue-item {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 10px;
-          background: rgba(255, 255, 255, 0.02);
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          border-radius: 12px;
-          margin-bottom: 8px;
-        }
-        .pcd-ligue-item.pending {
-          background: linear-gradient(90deg, rgba(250, 204, 21, 0.08), transparent);
-          border-color: rgba(250, 204, 21, 0.2);
-        }
-        .pcd-ligue-icon {
-          width: 36px;
-          height: 36px;
-          border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #fff;
-          font-size: 13px;
-          font-weight: 700;
-          flex-shrink: 0;
-        }
-        .pcd-ligue-icon-1 {
-          background: linear-gradient(135deg, #06b6d4, #3b82f6);
-        }
-        .pcd-ligue-icon-2 {
-          background: linear-gradient(135deg, #fbbf24, #f59e0b);
-        }
-        .pcd-ligue-info {
-          flex: 1;
-          min-width: 0;
-        }
-        .pcd-ligue-name {
-          color: #fff;
-          font-size: 13px;
-          font-weight: 600;
-        }
-        .pcd-ligue-meta {
-          color: #6b7280;
-          font-size: 10px;
-          margin-top: 1px;
-        }
-        .pcd-ligue-action {
-          color: #9ca3af;
-          font-size: 11px;
-          font-weight: 500;
-          padding: 5px 10px;
-          border-radius: 6px;
-          background: rgba(255, 255, 255, 0.04);
-          cursor: pointer;
-          text-decoration: none;
-          white-space: nowrap;
-        }
-        .pcd-ligue-action.pay {
-          color: #fbbf24;
-          background: rgba(250, 204, 21, 0.1);
-        }
-
-        .pcd-shortcuts {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-        .pcd-shortcut {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 10px 12px;
-          background: rgba(255, 255, 255, 0.02);
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          border-radius: 12px;
-          color: #fff;
+        .pc-date-label {
           font-size: 12px;
-          font-weight: 500;
-          cursor: pointer;
-          text-decoration: none;
-        }
-        .pcd-shortcut-ic {
-          width: 28px;
-          height: 28px;
-          border-radius: 8px;
-          background: rgba(99, 102, 241, 0.15);
-          border: 1px solid rgba(99, 102, 241, 0.25);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #6366f1;
-        }
-        .pcd-shortcut-text {
-          flex: 1;
-        }
-        .pcd-shortcut :global(.pcd-shortcut-arrow) {
-          color: #6b7280;
-        }
-
-        .pcd-scroll-row {
-          display: flex;
-          gap: 10px;
-          overflow-x: auto;
-          padding-bottom: 4px;
-        }
-        .pcd-mini-match {
-          min-width: 200px;
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          border-radius: 14px;
-          padding: 12px;
-          flex-shrink: 0;
-          text-decoration: none;
-          display: block;
-          color: inherit;
-        }
-        .pcd-mini-head {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 10px;
-        }
-        .pcd-mini-date {
-          color: #6366f1;
-          font-size: 10px;
           font-weight: 600;
-          letter-spacing: 0.5px;
+          color: var(--pc-muted);
+          text-transform: capitalize;
+          margin: 0 0 8px 4px;
         }
-        .pcd-mini-comp {
-          color: #6b7280;
-          font-size: 9px;
+        .pc-match-list {
+          overflow: hidden;
+          padding: 0;
         }
-        .pcd-mini-teams {
-          display: flex;
+        .pc-match-row {
+          display: grid;
+          grid-template-columns: 1fr auto 1fr;
           align-items: center;
-          justify-content: space-between;
           gap: 8px;
+          padding: 14px 16px;
+          text-decoration: none;
+          color: inherit;
+          transition: background 0.15s;
         }
-        .pcd-mini-team {
+        .pc-match-row:hover {
+          background: rgba(255, 255, 255, 0.03);
+        }
+        .pc-match-row.bordered {
+          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .pc-match-side {
           display: flex;
           align-items: center;
-          gap: 6px;
-          flex: 1;
+          gap: 8px;
           min-width: 0;
         }
-        .pcd-mini-team-end {
+        .pc-match-side-right {
           justify-content: flex-end;
+          text-align: right;
         }
-        .pcd-mini-flag {
-          width: 24px;
-          height: 24px;
-          border-radius: 6px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 8px;
-          font-weight: 700;
-          color: #fff;
+        .pc-match-emoji {
+          font-size: 20px;
+          line-height: 1;
           flex-shrink: 0;
-          background: rgba(255, 255, 255, 0.12);
         }
-        .pcd-mini-flag.pcd-team-fr {
-          background: linear-gradient(135deg, #3b82f6, #1e40af);
-        }
-        .pcd-mini-flag.pcd-team-br {
-          background: linear-gradient(135deg, #10b981, #fbbf24);
-        }
-        .pcd-mini-name {
-          color: #fff;
-          font-size: 11px;
-          font-weight: 500;
+        .pc-match-name {
+          font-size: 13px;
+          font-weight: 600;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
-        .pcd-mini-vs {
-          color: #4b5563;
-          font-size: 9px;
-          padding: 0 4px;
+        .pc-match-center {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 2px;
         }
-        .pcd-mini-empty {
-          color: #6b7280;
-          font-size: 11px;
-          margin: 0;
+        .pc-match-time {
+          font-size: 15px;
+          font-weight: 800;
+          color: var(--pc-cyan);
+        }
+        .pc-match-stage {
+          font-size: 9px;
+          font-weight: 600;
+          color: var(--pc-muted);
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
         }
 
-        @media (max-width: 768px) {
-          .pcd-grid {
-            grid-template-columns: 1fr;
+        .pc-empty {
+          padding: 28px 20px;
+          text-align: center;
+          margin-bottom: 8px;
+        }
+        .pc-empty :global(.pc-empty-icon) {
+          color: var(--pc-muted);
+          margin-bottom: 10px;
+          opacity: 0.6;
+        }
+        .pc-empty p {
+          margin: 0 0 12px;
+          font-size: 13px;
+          color: var(--pc-muted);
+        }
+
+        .pc-standings {
+          overflow: hidden;
+          margin-bottom: 16px;
+        }
+        .pc-standings-head,
+        .pc-standings-row {
+          display: grid;
+          grid-template-columns: 28px 1fr 72px 44px 36px;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 14px;
+          font-size: 12px;
+        }
+        .pc-standings-head {
+          color: var(--pc-muted);
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .pc-standings-row {
+          border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .pc-standings-row:last-child {
+          border-bottom: none;
+        }
+        .pc-standings-row.pending {
+          background: rgba(251, 191, 36, 0.06);
+        }
+        .pc-standings-empty {
+          padding: 20px 14px;
+          margin: 0;
+          font-size: 12px;
+          color: var(--pc-muted);
+          text-align: center;
+        }
+        .col-team {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 0;
+        }
+        .pc-league-badge {
+          width: 28px;
+          height: 28px;
+          border-radius: 8px;
+          background: linear-gradient(135deg, var(--pc-cyan), #3b82f6);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 10px;
+          font-weight: 800;
+          flex-shrink: 0;
+        }
+        .pc-league-name {
+          font-weight: 600;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .col-type {
+          color: var(--pc-muted);
+          font-size: 11px;
+        }
+        .col-pts {
+          font-weight: 700;
+          text-align: right;
+          color: var(--pc-cyan);
+        }
+        .col-go {
+          display: flex;
+          justify-content: flex-end;
+        }
+        .pc-row-link {
+          color: var(--pc-muted);
+          text-decoration: none;
+          display: flex;
+          align-items: center;
+        }
+        .pc-row-link.warn {
+          font-size: 11px;
+          font-weight: 600;
+          color: #fbbf24;
+        }
+
+        .pc-shortcuts {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          margin-top: 8px;
+        }
+        .pc-shortcut {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 14px 16px;
+          text-decoration: none;
+          color: var(--pc-text);
+          font-size: 13px;
+          font-weight: 600;
+          border-radius: 16px;
+        }
+        .pc-shortcut :global(.pc-shortcut-arrow) {
+          margin-left: auto;
+          color: var(--pc-muted);
+        }
+
+        @media (min-width: 640px) {
+          .pc-inner {
+            max-width: 640px;
           }
-          .pcd-hero {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-          .pcd-hero-stats {
-            width: 100%;
-          }
-          .pcd-stat {
-            flex: 1;
-          }
-          .pcd-concours {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-          .pcd-nav-item span {
-            display: none;
+          .pc-contest {
+            flex-wrap: nowrap;
           }
         }
       `}</style>
