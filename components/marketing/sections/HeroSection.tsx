@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ui } from "@/lib/design/tokens";
-import { HeroPhoneMockup } from "@/components/marketing/HeroPhoneMockup";
+import { PhoneMockup } from "@/components/landing/PhoneMockup";
 
 export function HeroSection() {
   return (
@@ -40,8 +40,10 @@ export function HeroSection() {
               <Trust label="Concours gratuit · lot jusqu'à CHF 120" />
             </div>
           </div>
-          <div className="relative">
-            <HeroPhoneMockup />
+          <div className="relative flex justify-center overflow-visible lg:justify-end">
+            <div className="origin-center scale-[0.72] sm:scale-[0.85] lg:scale-100">
+              <PhoneMockup />
+            </div>
           </div>
         </div>
       </div>
