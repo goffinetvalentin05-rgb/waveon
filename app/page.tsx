@@ -1,35 +1,29 @@
-import { LandingHeader } from "@/components/landing/LandingHeader";
-import { LandingHero } from "@/components/landing/LandingHero";
-import { LandingIntro } from "@/components/landing/LandingIntro";
-import { LandingDaily } from "@/components/landing/LandingDaily";
-import { LandingScrollStory } from "@/components/landing/LandingScrollStory";
-import { LandingProduct } from "@/components/landing/LandingProduct";
-import { LandingPricing } from "@/components/landing/LandingPricing";
-import { LandingBrandImage } from "@/components/landing/LandingBrandImage";
-import { LandingFinalCta } from "@/components/landing/LandingFinalCta";
-import { LandingFaq } from "@/components/landing/LandingFaq";
-import { LandingFooter } from "@/components/landing/LandingFooter";
-import { landingContent } from "@/lib/landing/config";
+import { MarketingHeader } from "@/components/marketing/MarketingHeader";
+import { MarketingFooter } from "@/components/marketing/MarketingFooter";
+import { HeroSection } from "@/components/marketing/sections/HeroSection";
+import { HowItWorksSection } from "@/components/marketing/sections/HowItWorksSection";
+import { ContestSection } from "@/components/marketing/sections/ContestSection";
+import { CardsSection } from "@/components/marketing/sections/CardsSection";
+import { WhatsappSection } from "@/components/marketing/sections/WhatsappSection";
+import { PricingSection } from "@/components/marketing/sections/PricingSection";
+import { FaqSection } from "@/components/marketing/sections/FaqSection";
+import { FinalCtaSection } from "@/components/marketing/sections/FinalCtaSection";
 
-export default function Home() {
-  const { brand, header, hero, intro, daily, scrollStory, product, pricing, brandImage, finalCta, faq, footer } =
-    landingContent;
-
+export default function HomePage() {
   return (
-    <div className="relative min-h-screen overflow-x-clip bg-white font-sans text-neutral-950 antialiased selection:bg-neutral-200/80">
-      <LandingHeader brand={brand} header={header} />
+    <div className="relative min-h-screen overflow-x-clip">
+      <MarketingHeader />
       <main>
-        <LandingHero content={hero} />
-        <LandingIntro content={intro} />
-        <LandingDaily content={daily} />
-        <LandingScrollStory content={scrollStory} />
-        <LandingProduct content={product} />
-        <LandingPricing content={pricing} />
-        <LandingBrandImage content={brandImage} />
-        <LandingFinalCta content={finalCta} />
-        <LandingFaq content={faq} />
+        <HeroSection />
+        <HowItWorksSection />
+        <ContestSection />
+        <CardsSection />
+        <WhatsappSection />
+        <PricingSection />
+        <FaqSection />
+        <FinalCtaSection />
       </main>
-      <LandingFooter brand={brand} footer={footer} />
+      <MarketingFooter />
     </div>
   );
 }

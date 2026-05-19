@@ -3,22 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BrandLogoLink } from "@/components/landing/BrandLogoLink";
-import {
-  authAlertConfig,
-  authBtnPrimaryWide,
-  authCard,
-  authFooter,
-  authFooterLink,
-  authInput,
-  authLabel,
-  authMain,
-  authMessage,
-  authScreen,
-  authSubtitle,
-  authTitle,
-} from "@/components/auth/auth-ui";
-import { landingContent } from "@/lib/landing/config";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { ui } from "@/lib/design/tokens";
 import { supabase } from "@/lib/supabase/client";
 
 const hasSupabaseConfig = Boolean(
@@ -35,22 +21,12 @@ export default function UpdatePasswordPage() {
 
   useEffect(() => {
     let cancelled = false;
-
-    const readSession = () => {
+    const read = () =>
       void supabase.auth.getSession().then(({ data: { session } }) => {
-        if (cancelled) return;
-        if (session) setHasSession(true);
+        if (!cancelled && session) setHasSession(true);
       });
-    };
-
-    readSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      readSession();
-    });
-
+    read();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(read);
     return () => {
       cancelled = true;
       subscription.unsubscribe();
@@ -60,14 +36,10 @@ export default function UpdatePasswordPage() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setMessage(null);
-
     if (!hasSupabaseConfig) {
-      setMessage(
-        "Configuration Supabase manquante. Vérifiez NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY."
-      );
+      setMessage("Configuration Supabase manquante.");
       return;
     }
-
     if (password.length < 6) {
       setMessage("Le mot de passe doit contenir au moins 6 caractères.");
       return;
@@ -76,119 +48,72 @@ export default function UpdatePasswordPage() {
       setMessage("Les mots de passe ne correspondent pas.");
       return;
     }
-
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
-
     if (error) {
       setMessage(error.message);
       return;
     }
-
     router.replace("/dashboard");
   };
 
-  if (!hasSupabaseConfig) {
-    return (
-      <div className={authScreen}>
-        <div className={authMain}>
-          <div className={authCard}>
-            <BrandLogoLink brand={landingContent.brand} variant="header" />
-            <h1 className={authTitle}>Nouveau mot de passe</h1>
-            <p className={`mt-4 ${authAlertConfig}`}>
-              Configuration Supabase manquante. Ajoutez NEXT_PUBLIC_SUPABASE_URL et
-              NEXT_PUBLIC_SUPABASE_ANON_KEY.
-            </p>
-            <div className={`mt-7 ${authFooter}`}>
-              <Link href="/login" className={authFooterLink}>
-                Retour à la connexion
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (!hasSession) {
     return (
-      <div className={authScreen}>
-        <div className={authMain}>
-          <div className={authCard}>
-            <BrandLogoLink brand={landingContent.brand} variant="header" />
-            <h1 className={authTitle}>Lien invalide ou expiré</h1>
-            <p className={authSubtitle}>
-              Ce lien de réinitialisation n’est plus valide. Demande un nouveau lien depuis
-              la page de connexion.
-            </p>
-            <div className={`mt-7 ${authFooter}`}>
-              <Link href="/login" className={authFooterLink}>
-                Retour à la connexion
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AuthShell
+        title="Lien invalide ou expiré"
+        subtitle="Ce lien de réinitialisation n'est plus valide. Demande un nouveau lien depuis la page de connexion."
+      >
+        <Link href="/login" className={`${ui.btnPrimary} w-full justify-center`}>
+          Retour à la connexion
+        </Link>
+      </AuthShell>
     );
   }
 
   return (
-    <div className={authScreen}>
-      <div className={authMain}>
-        <div className={authCard}>
-          <div className="mb-6">
-            <BrandLogoLink brand={landingContent.brand} variant="header" />
-            <h1 className={authTitle}>Nouveau mot de passe</h1>
-            <p className={authSubtitle}>Choisis un mot de passe sécurisé pour ton compte.</p>
-          </div>
-
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div>
-              <label className={authLabel} htmlFor="reset-password">
-                Mot de passe
-              </label>
-              <input
-                id="reset-password"
-                className={authInput}
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                minLength={6}
-                required
-                disabled={loading}
-              />
-            </div>
-            <div>
-              <label className={authLabel} htmlFor="reset-password-confirm">
-                Confirmer le mot de passe
-              </label>
-              <input
-                id="reset-password-confirm"
-                className={authInput}
-                type="password"
-                placeholder="••••••••"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                minLength={6}
-                required
-                disabled={loading}
-              />
-            </div>
-            {message ? <p className={authMessage}>{message}</p> : null}
-            <button className={authBtnPrimaryWide} type="submit" disabled={loading}>
-              {loading ? "Enregistrement…" : "Enregistrer le mot de passe"}
-            </button>
-          </form>
-
-          <div className={authFooter}>
-            <Link href="/login" className={authFooterLink}>
-              Retour à la connexion
-            </Link>
-          </div>
+    <AuthShell
+      title="Nouveau mot de passe"
+      subtitle="Choisis un mot de passe sécurisé pour ton compte."
+    >
+      <form className="space-y-4" onSubmit={handleSubmit}>
+        <div>
+          <label className={ui.label} htmlFor="reset-pw">Mot de passe</label>
+          <input
+            id="reset-pw"
+            type="password"
+            className={ui.input}
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            minLength={6}
+            required
+            disabled={loading}
+          />
         </div>
-      </div>
-    </div>
+        <div>
+          <label className={ui.label} htmlFor="reset-pw2">Confirmer</label>
+          <input
+            id="reset-pw2"
+            type="password"
+            className={ui.input}
+            placeholder="••••••••"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            minLength={6}
+            required
+            disabled={loading}
+          />
+        </div>
+        {message ? (
+          <p className="rounded-xl border border-amber-300/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+            {message}
+          </p>
+        ) : null}
+        <button type="submit" className={`${ui.btnPrimary} w-full`} disabled={loading}>
+          {loading ? "Enregistrement…" : "Enregistrer le mot de passe"}
+        </button>
+      </form>
+    </AuthShell>
   );
 }

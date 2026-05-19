@@ -3,24 +3,8 @@
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { BrandLogoLink } from "@/components/landing/BrandLogoLink";
-import {
-  authAlertConfig,
-  authBtnPrimaryWide,
-  authCard,
-  authFooter,
-  authFooterLink,
-  authInlineLink,
-  authInput,
-  authLabel,
-  authMain,
-  authMessage,
-  authMessageSuccess,
-  authScreen,
-  authSubtitle,
-  authTitle,
-} from "@/components/auth/auth-ui";
-import { landingContent } from "@/lib/landing/config";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { ui } from "@/lib/design/tokens";
 import { supabase } from "@/lib/supabase/client";
 
 const hasSupabaseConfig = Boolean(
@@ -38,96 +22,59 @@ function LoginPageContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
-  const [messageTone, setMessageTone] = useState<"neutral" | "success">("neutral");
+  const [messageTone, setMessageTone] = useState<"error" | "success">("error");
   const [loading, setLoading] = useState(false);
   const [forgotView, setForgotView] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
 
-  const isReady = hasSupabaseConfig;
-
   const afterAuthPath = safeInternalPath(searchParams.get("redirect"));
 
   useEffect(() => {
     if (!hasSupabaseConfig) return;
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        router.replace(afterAuthPath);
-      }
-    };
-    checkSession();
+    void supabase.auth.getSession().then(({ data }) => {
+      if (data.session) router.replace(afterAuthPath);
+    });
   }, [router, afterAuthPath]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!hasSupabaseConfig) {
-      setMessage(
-        "Configuration Supabase manquante. Vérifiez NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY."
-      );
+      setMessage("Configuration Supabase manquante.");
+      setMessageTone("error");
       return;
     }
     setLoading(true);
     setMessage(null);
-    setMessageTone("neutral");
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setMessage(error.message);
+      setMessageTone("error");
       setLoading(false);
       return;
-    }
-    if (data.user) {
-      const { error: profileError } = await supabase
-        .from("users")
-        .upsert(
-          { id: data.user.id, email: data.user.email },
-          { onConflict: "id" }
-        );
-      if (profileError && process.env.NODE_ENV !== "production") {
-        console.warn(
-          "[Supabase] Impossible de synchroniser le profil user:",
-          profileError.message
-        );
-      }
     }
     router.replace(afterAuthPath);
     setLoading(false);
   };
 
-  const handleForgotSubmit = async (event: React.FormEvent) => {
+  const handleForgot = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!hasSupabaseConfig) {
-      setMessage(
-        "Configuration Supabase manquante. Vérifiez NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY."
-      );
-      setMessageTone("neutral");
-      return;
-    }
     const trimmed = forgotEmail.trim().toLowerCase();
     if (!trimmed) {
       setMessage("Indique une adresse email valide.");
-      setMessageTone("neutral");
+      setMessageTone("error");
       return;
     }
-
     setForgotLoading(true);
     setMessage(null);
     const redirectTo = `${window.location.origin}/update-password`;
-    const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
-      redirectTo,
-    });
+    const { error } = await supabase.auth.resetPasswordForEmail(trimmed, { redirectTo });
     setForgotLoading(false);
-
     if (error) {
       setMessage(error.message);
-      setMessageTone("neutral");
+      setMessageTone("error");
       return;
     }
-
     setMessage(
       "Si un compte existe pour cette adresse, tu recevras un email avec un lien pour choisir un nouveau mot de passe."
     );
@@ -135,141 +82,111 @@ function LoginPageContent() {
   };
 
   return (
-    <div className={authScreen}>
-      <div className={authMain}>
-        <div className={authCard}>
-          <div className="mb-6">
-            <BrandLogoLink brand={landingContent.brand} variant="header" />
-            <h1 className={authTitle}>
-              {forgotView ? "Mot de passe oublié" : "Connexion"}
-            </h1>
-            <p className={authSubtitle}>
-              {forgotView
-                ? "Saisis ton email : nous t’envoyons un lien pour définir un nouveau mot de passe."
-                : "Connecte-toi pour gérer tes réservations et ton agenda."}
-            </p>
-            {!hasSupabaseConfig ? (
-              <p className={`mt-4 ${authAlertConfig}`}>
-                Configuration Supabase manquante. Ajoutez NEXT_PUBLIC_SUPABASE_URL
-                et NEXT_PUBLIC_SUPABASE_ANON_KEY.
-              </p>
-            ) : null}
+    <AuthShell
+      title={forgotView ? "Mot de passe oublié" : "Connexion"}
+      subtitle={
+        forgotView
+          ? "Saisis ton email : on t'envoie un lien de réinitialisation."
+          : "Connecte-toi pour rejoindre ta ligue et jouer tes cartes."
+      }
+      footer={
+        forgotView ? null : (
+          <>
+            Pas encore de compte ?{" "}
+            <Link href="/signup" className="font-semibold text-white hover:underline">
+              S&apos;inscrire
+            </Link>
+          </>
+        )
+      }
+    >
+      {forgotView ? (
+        <form className="space-y-4" onSubmit={handleForgot}>
+          <div>
+            <label htmlFor="forgot-email" className={ui.label}>Email</label>
+            <input
+              id="forgot-email"
+              type="email"
+              placeholder="ton@email.com"
+              className={ui.input}
+              value={forgotEmail}
+              onChange={(e) => setForgotEmail(e.target.value)}
+              required
+              disabled={forgotLoading}
+            />
           </div>
-
-          {forgotView ? (
-            <form className="space-y-4" onSubmit={handleForgotSubmit}>
-              <div>
-                <label className={authLabel} htmlFor="forgot-email">
-                  Email
-                </label>
-                <input
-                  id="forgot-email"
-                  className={authInput}
-                  type="email"
-                  placeholder="ton@email.com"
-                  value={forgotEmail}
-                  onChange={(event) => setForgotEmail(event.target.value)}
-                  required
-                  disabled={forgotLoading || !isReady}
-                />
-              </div>
-              {message ? (
-                <p
-                  className={
-                    messageTone === "success" ? authMessageSuccess : authMessage
-                  }
-                >
-                  {message}
-                </p>
-              ) : null}
+          {message ? <MessageBox tone={messageTone}>{message}</MessageBox> : null}
+          <button type="submit" className={`${ui.btnPrimary} w-full`} disabled={forgotLoading}>
+            {forgotLoading ? "Envoi…" : "Envoyer le lien"}
+          </button>
+          <button
+            type="button"
+            className="block w-full text-center text-xs text-white/50 hover:text-white"
+            onClick={() => {
+              setForgotView(false);
+              setMessage(null);
+              setEmail(forgotEmail);
+            }}
+          >
+            Retour à la connexion
+          </button>
+        </form>
+      ) : (
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div>
+            <label htmlFor="login-email" className={ui.label}>Email</label>
+            <input
+              id="login-email"
+              type="email"
+              placeholder="ton@email.com"
+              className={ui.input}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <div className="flex items-end justify-between">
+              <label htmlFor="login-password" className={ui.label}>Mot de passe</label>
               <button
-                className={authBtnPrimaryWide}
-                type="submit"
-                disabled={forgotLoading || !isReady}
+                type="button"
+                className="mb-2 text-xs text-white/55 hover:text-white"
+                onClick={() => {
+                  setForgotView(true);
+                  setMessage(null);
+                  setForgotEmail(email);
+                }}
               >
-                {forgotLoading ? "Envoi…" : "Envoyer le lien"}
+                Mot de passe oublié ?
               </button>
-              <div className="text-center">
-                <button
-                  type="button"
-                  className={authInlineLink}
-                  onClick={() => {
-                    setForgotView(false);
-                    setMessage(null);
-                    setEmail(forgotEmail);
-                  }}
-                >
-                  Retour à la connexion
-                </button>
-              </div>
-            </form>
-          ) : (
-            <form className="space-y-4" onSubmit={handleSubmit}>
-              <div>
-                <label className={authLabel} htmlFor="login-email">
-                  Email
-                </label>
-                <input
-                  id="login-email"
-                  className={authInput}
-                  type="email"
-                  placeholder="ton@email.com"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  required
-                  disabled={!isReady}
-                />
-              </div>
-              <div>
-                <div className="flex items-end justify-between gap-3">
-                  <label className={authLabel} htmlFor="login-password">
-                    Mot de passe
-                  </label>
-                  <button
-                    type="button"
-                    className={`${authInlineLink} shrink-0 pb-0.5`}
-                    onClick={() => {
-                      setForgotView(true);
-                      setMessage(null);
-                      setForgotEmail(email);
-                    }}
-                  >
-                    Mot de passe oublié ?
-                  </button>
-                </div>
-                <input
-                  id="login-password"
-                  className={authInput}
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  required
-                  disabled={!isReady}
-                />
-              </div>
-              {message ? <p className={authMessage}>{message}</p> : null}
-              <button
-                className={authBtnPrimaryWide}
-                type="submit"
-                disabled={loading || !isReady}
-              >
-                {loading ? "Chargement..." : "Se connecter"}
-              </button>
-            </form>
-          )}
-
-          {!forgotView ? (
-            <div className={authFooter}>
-              Pas encore de compte ?{" "}
-              <Link href="/signup" className={authFooterLink}>
-                S&apos;inscrire
-              </Link>
             </div>
-          ) : null}
-        </div>
-      </div>
-    </div>
+            <input
+              id="login-password"
+              type="password"
+              placeholder="••••••••"
+              className={ui.input}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          {message ? <MessageBox tone={messageTone}>{message}</MessageBox> : null}
+          <button type="submit" className={`${ui.btnPrimary} w-full`} disabled={loading}>
+            {loading ? "Connexion…" : "Se connecter"}
+          </button>
+        </form>
+      )}
+    </AuthShell>
+  );
+}
+
+function MessageBox({ tone, children }: { tone: "error" | "success"; children: React.ReactNode }) {
+  const tones = {
+    error: "border-rose-400/30 bg-rose-500/10 text-rose-200",
+    success: "border-emerald-400/30 bg-emerald-500/10 text-emerald-200",
+  } as const;
+  return (
+    <p className={`rounded-xl border px-3 py-2 text-xs ${tones[tone]}`}>{children}</p>
   );
 }
 
@@ -277,13 +194,9 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className={authScreen}>
-          <div className={authMain}>
-            <div className={authCard}>
-              <p className="text-sm text-neutral-500">Chargement…</p>
-            </div>
-          </div>
-        </div>
+        <AuthShell title="Connexion">
+          <p className="text-sm text-white/60">Chargement…</p>
+        </AuthShell>
       }
     >
       <LoginPageContent />

@@ -1,40 +1,74 @@
 /**
- * Configuration facturation Waevon (Stripe).
- * Les price IDs viennent du Dashboard Stripe (mode test ou live).
+ * Configuration Stripe Prono Clash.
+ *
+ * Modèle économique :
+ *  - Le concours est gratuit et n'a JAMAIS besoin de Stripe.
+ *  - Le paiement Stripe sert UNIQUEMENT à créer une ligue privée (one-time
+ *    payment, pas de subscription).
+ *
+ * Plans extensibles (les price IDs Stripe peuvent être ajoutés au fur et à
+ * mesure dans les variables d'environnement).
  */
 
-export type BillingPlanId = "starter" | "pro";
+export type LeaguePlanId = "private" | "pro";
 
-export const PLAN_LABELS: Record<BillingPlanId, string> = {
-  starter: "Starter",
-  pro: "Pro",
+export type LeaguePlan = {
+  id: LeaguePlanId;
+  name: string;
+  priceChf: number;
+  maxPlayers: number;
+  /** Variable d'env contenant le price_id Stripe (one-time). */
+  envKey: string;
+  features: string[];
+  highlight?: boolean;
 };
 
-/** Prix affichés (CHF / mois) — alignés sur les produits Stripe. */
-export const PLAN_MONTHLY_PRICE_CHF: Record<BillingPlanId, number> = {
-  starter: 20,
-  pro: 35,
+export const LEAGUE_PLANS: Record<LeaguePlanId, LeaguePlan> = {
+  private: {
+    id: "private",
+    name: "Private League",
+    priceChf: 9.9,
+    maxPlayers: 20,
+    envKey: "STRIPE_PRICE_ID_LEAGUE_PRIVATE",
+    features: [
+      "Jusqu'à 20 joueurs",
+      "Cartes spéciales",
+      "Classement privé",
+      "Lien d'invitation WhatsApp",
+    ],
+  },
+  pro: {
+    id: "pro",
+    name: "Pro League",
+    priceChf: 14.9,
+    maxPlayers: 50,
+    envKey: "STRIPE_PRICE_ID_LEAGUE_PRO",
+    highlight: true,
+    features: [
+      "Jusqu'à 50 joueurs",
+      "Toutes les cartes spéciales",
+      "Résumés fun après chaque match",
+      "Badges et visuels partageables",
+    ],
+  },
 };
 
-export function getStripePriceIdForPlan(plan: BillingPlanId): string {
-  const key =
-    plan === "starter" ? "STRIPE_PRICE_ID_STARTER" : "STRIPE_PRICE_ID_PRO";
-  const id = process.env[key]?.trim();
+export function isLeaguePlanId(value: unknown): value is LeaguePlanId {
+  return value === "private" || value === "pro";
+}
+
+export function getStripePriceIdForLeaguePlan(plan: LeaguePlanId): string {
+  const cfg = LEAGUE_PLANS[plan];
+  const id = process.env[cfg.envKey]?.trim();
   if (!id) {
-    throw new Error(`Variable d'environnement ${key} manquante.`);
+    throw new Error(`Variable d'environnement ${cfg.envKey} manquante.`);
   }
   return id;
 }
 
-export function planFromStripePriceId(priceId: string | null | undefined): BillingPlanId | null {
-  if (!priceId) return null;
-  const starter = process.env.STRIPE_PRICE_ID_STARTER?.trim();
-  const pro = process.env.STRIPE_PRICE_ID_PRO?.trim();
-  if (priceId === starter) return "starter";
-  if (priceId === pro) return "pro";
+export function planFromAmountChf(amount: number | null | undefined): LeaguePlanId | null {
+  if (amount == null) return null;
+  if (Math.abs(amount - LEAGUE_PLANS.private.priceChf) < 0.01) return "private";
+  if (Math.abs(amount - LEAGUE_PLANS.pro.priceChf) < 0.01) return "pro";
   return null;
-}
-
-export function isBillingPlanId(value: unknown): value is BillingPlanId {
-  return value === "starter" || value === "pro";
 }

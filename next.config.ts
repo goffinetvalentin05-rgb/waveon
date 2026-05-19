@@ -1,18 +1,17 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["@react-pdf/renderer"],
   images: (() => {
-    // Allow Next/Image to display Supabase Storage public URLs.
-    // Public URLs are served from: https://<project-ref>.supabase.co/storage/v1/object/public/...
     const raw = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const hostname = raw ? (() => {
-      try {
-        return new URL(raw).hostname;
-      } catch {
-        return null;
-      }
-    })() : null;
+    const hostname = raw
+      ? (() => {
+          try {
+            return new URL(raw).hostname;
+          } catch {
+            return null;
+          }
+        })()
+      : null;
 
     return hostname
       ? {

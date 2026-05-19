@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
+import { brand } from "@/lib/brand/config";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -12,17 +13,44 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
+const display = Space_Grotesk({
+  variable: "--font-display",
   subsets: ["latin"],
-  weight: ["400"],
+  weight: ["500", "600", "700"],
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Waevon",
-  description:
-    "Prise de rendez-vous en ligne pour prestataires. Starter 20 CHF/mois, Pro 35 CHF/mois. Abonnement via Stripe.",
+  title: {
+    default: `${brand.name} — ${brand.tagline}`,
+    template: `%s · ${brand.name}`,
+  },
+  description: brand.description,
+  applicationName: brand.name,
+  manifest: undefined,
+  openGraph: {
+    title: `${brand.name} — ${brand.tagline}`,
+    description: brand.description,
+    type: "website",
+    locale: "fr_CH",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${brand.name} — ${brand.tagline}`,
+    description: brand.description,
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#05060a",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  colorScheme: "dark",
 };
 
 export default function RootLayout({
@@ -33,7 +61,7 @@ export default function RootLayout({
   return (
     <html lang="fr" className="scroll-smooth motion-reduce:scroll-auto">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${display.variable} antialiased`}
       >
         {children}
       </body>

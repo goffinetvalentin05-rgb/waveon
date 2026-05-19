@@ -1,7 +1,12 @@
 import { createServerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-export async function createRouteHandlerSupabase() {
+/**
+ * Client Supabase pour les Route Handlers (App Router).
+ * Synchronise la session via cookies.
+ */
+export async function createRouteHandlerSupabase(): Promise<SupabaseClient> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
   if (!supabaseUrl || !supabaseAnonKey) {
@@ -19,8 +24,7 @@ export async function createRouteHandlerSupabase() {
             cookieStore.set(name, value, options);
           });
         } catch {
-          // Rafraîchissement de session depuis un Route Handler : `cookies().set` peut échouer.
-          // Le middleware continue de synchroniser la session sur les navigations /api ciblées.
+          /* lecture seule dans certains contextes */
         }
       },
     },
