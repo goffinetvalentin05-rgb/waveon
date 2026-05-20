@@ -84,65 +84,251 @@ textarea::placeholder {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: radial-gradient(
-    ellipse 90% 50% at 50% 100%,
-    rgba(59, 130, 246, 0.12) 0%,
-    transparent 55%
+  background:
+    radial-gradient(ellipse 100% 55% at 50% 110%, rgba(59, 130, 246, 0.18) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(59, 130, 246, 0.06) 0%, transparent 60%);
+}
+
+/* Titres de section — 2 lignes type référence */
+.pc-section-heading {
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(2.25rem, 5vw, 4rem);
+  font-weight: 600;
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+}
+
+/* Glass cards */
+.pc-glass-card {
+  position: relative;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 0 60px rgba(59, 130, 246, 0.06);
+}
+
+.pc-glass-card-interactive {
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s ease,
+    border-color 0.35s ease;
+}
+
+.pc-glass-card-interactive:hover {
+  transform: translateY(-4px);
+  border-color: rgba(59, 130, 246, 0.28);
+  box-shadow:
+    0 0 80px rgba(59, 130, 246, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 60px rgba(59, 130, 246, 0.12);
+}
+
+/* Bento — carte + zone visuelle interne */
+.pc-bento-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 80px rgba(59, 130, 246, 0.05);
+  transition:
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.4s ease,
+    box-shadow 0.4s ease;
+}
+
+.pc-bento-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    180deg,
+    rgba(96, 165, 250, 0.35) 0%,
+    rgba(255, 255, 255, 0.04) 18%,
+    transparent 42%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.pc-bento-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(59, 130, 246, 0.22);
+  box-shadow:
+    0 24px 80px -20px rgba(59, 130, 246, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 80px rgba(59, 130, 246, 0.1);
+}
+
+.pc-bento-canvas {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background:
+    radial-gradient(ellipse 80% 70% at 50% 100%, rgba(59, 130, 246, 0.12) 0%, transparent 65%),
+    rgba(0, 0, 0, 0.35);
+  min-height: 160px;
+}
+
+/* Pricing — lumière top-down sur chaque carte */
+.pc-pricing-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 1.75rem;
+  overflow: hidden;
+  box-shadow: inset 0 0 60px rgba(59, 130, 246, 0.06);
+}
+
+.pc-pricing-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
+  background: linear-gradient(
+    180deg,
+    rgba(59, 130, 246, 0.35) 0%,
+    rgba(59, 130, 246, 0.08) 40%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.pc-pricing-card-highlight {
+  border-color: rgba(59, 130, 246, 0.35);
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow:
+    0 0 120px rgba(59, 130, 246, 0.35),
+    inset 0 0 80px rgba(59, 130, 246, 0.1);
+}
+
+.pc-pricing-card-highlight::before {
+  height: 160px;
+  background: linear-gradient(
+    180deg,
+    rgba(96, 165, 250, 0.5) 0%,
+    rgba(59, 130, 246, 0.15) 50%,
+    transparent 100%
   );
 }
 
-.pc-section-halo {
+.pc-pricing-glow-behind {
   position: absolute;
   left: 50%;
-  bottom: -15%;
+  bottom: -30%;
   width: 140%;
-  height: 75%;
+  height: 80%;
   transform: translateX(-50%);
   pointer-events: none;
   z-index: 0;
   background: radial-gradient(
     ellipse 80% 50% at 50% 100%,
-    rgba(59, 130, 246, 0.45) 0%,
-    rgba(59, 130, 246, 0.15) 30%,
+    rgba(59, 130, 246, 0.55) 0%,
+    rgba(59, 130, 246, 0.2) 35%,
     transparent 70%
+  );
+  filter: blur(8px);
+}
+
+.pc-section-halo {
+  position: absolute;
+  left: 50%;
+  bottom: -20%;
+  width: 160%;
+  height: 85%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    ellipse 80% 50% at 50% 100%,
+    rgba(59, 130, 246, 0.5) 0%,
+    rgba(59, 130, 246, 0.18) 32%,
+    transparent 72%
   );
 }
 
 .pc-section-halo-intense {
-  bottom: -25%;
-  height: 90%;
+  bottom: -30%;
+  height: 100%;
+  width: 180%;
   background: radial-gradient(
     ellipse 85% 55% at 50% 100%,
-    rgba(59, 130, 246, 0.5) 0%,
-    rgba(59, 130, 246, 0.2) 28%,
+    rgba(59, 130, 246, 0.58) 0%,
+    rgba(59, 130, 246, 0.22) 28%,
     transparent 68%
+  );
+}
+
+.pc-section-halo-wide {
+  bottom: -10%;
+  height: 110%;
+  width: 200%;
+  background: radial-gradient(
+    ellipse 70% 45% at 50% 80%,
+    rgba(59, 130, 246, 0.55) 0%,
+    rgba(59, 130, 246, 0.2) 38%,
+    transparent 72%
+  );
+}
+
+.pc-section-halo-pricing {
+  bottom: -25%;
+  height: 95%;
+  width: 170%;
+  background: radial-gradient(
+    ellipse 75% 50% at 50% 100%,
+    rgba(59, 130, 246, 0.48) 0%,
+    rgba(59, 130, 246, 0.16) 35%,
+    transparent 70%
   );
 }
 
 .pc-section-halo-gold-blue {
   background:
     radial-gradient(
-      ellipse 70% 45% at 30% 100%,
-      rgba(251, 191, 36, 0.22) 0%,
+      ellipse 70% 45% at 25% 100%,
+      rgba(251, 191, 36, 0.28) 0%,
       transparent 55%
     ),
     radial-gradient(
       ellipse 80% 50% at 50% 100%,
-      rgba(59, 130, 246, 0.42) 0%,
-      rgba(59, 130, 246, 0.14) 32%,
+      rgba(59, 130, 246, 0.48) 0%,
+      rgba(59, 130, 246, 0.16) 32%,
       transparent 70%
     );
 }
 
 .pc-section-halo-mega {
-  bottom: -40%;
-  height: 120%;
-  width: 180%;
+  bottom: -50%;
+  height: 140%;
+  width: 220%;
   background: radial-gradient(
     ellipse 75% 55% at 50% 100%,
-    rgba(59, 130, 246, 0.55) 0%,
-    rgba(59, 130, 246, 0.22) 25%,
-    transparent 65%
+    rgba(59, 130, 246, 0.65) 0%,
+    rgba(59, 130, 246, 0.28) 22%,
+    transparent 62%
   );
 }
 
@@ -150,14 +336,23 @@ textarea::placeholder {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 9999px;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 12px;
   vertical-align: middle;
-  background: linear-gradient(135deg, var(--pc-blue), var(--pc-blue-deep));
+  background: linear-gradient(145deg, #3b82f6 0%, #1d4ed8 100%);
   box-shadow:
-    0 0 24px rgba(59, 130, 246, 0.55),
-    inset 0 0 12px rgba(255, 255, 255, 0.12);
+    0 0 32px rgba(59, 130, 246, 0.65),
+    0 4px 12px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.pc-header-glass {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(5, 6, 10, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 1px 0 rgba(59, 130, 246, 0.08);
 }
 
 .pc-steps-line {

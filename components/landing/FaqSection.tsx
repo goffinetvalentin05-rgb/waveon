@@ -4,8 +4,6 @@ import { useState } from "react";
 import { IconHelpCircle } from "@tabler/icons-react";
 import { Reveal } from "@/components/landing/Reveal";
 import { SectionShell, SectionTitle } from "@/components/landing/SectionChrome";
-import { landing } from "@/components/landing/landing-styles";
-
 const ITEMS = [
   {
     q: "Est-ce une application de paris ?",
@@ -68,10 +66,10 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 
   return (
     <div
-      className={`rounded-[24px] border backdrop-blur-[20px] transition-[border-color,box-shadow] duration-300 ${
+      className={`pc-glass-card transition-[border-color,box-shadow] duration-300 ${
         open
-          ? "border-blue-500/30 bg-white/[0.04] shadow-[0_0_60px_rgba(59,130,246,0.2),inset_0_0_40px_rgba(59,130,246,0.1)]"
-          : `${landing.glass}`
+          ? "!border-blue-500/30 shadow-[0_0_60px_rgba(59,130,246,0.2),inset_0_0_40px_rgba(59,130,246,0.1)]"
+          : ""
       }`}
     >
       <button

@@ -18,7 +18,7 @@ export function MarketingHeader() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#05060a]/60 backdrop-blur-[20px]">
+    <header className="pc-header-glass sticky top-0 z-40">
       <div className={`${landing.container} flex h-16 items-center justify-between gap-4`}>
         <Logo />
         <nav className="hidden items-center gap-6 lg:flex">

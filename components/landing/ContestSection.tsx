@@ -18,7 +18,7 @@ export function ContestSection() {
         />
       </Reveal>
       <Reveal delayMs={100}>
-        <div className={`${landing.glass} mt-14 overflow-hidden p-8 sm:p-12 lg:p-14`}>
+        <div className="pc-bento-card mt-16 overflow-hidden !min-h-0 p-8 sm:p-12 lg:p-14">
           <div className="grid items-center gap-10 lg:grid-cols-2">
             <div>
               <span className={landing.badge}>Concours gratuit · sans achat requis</span>

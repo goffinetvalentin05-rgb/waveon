@@ -4,17 +4,20 @@ import { landing } from "@/components/landing/landing-styles";
 
 export function FinalCtaSection() {
   return (
-    <section className="relative overflow-hidden pb-28 pt-20 sm:pb-36 sm:pt-24">
+    <section className="relative overflow-hidden pb-32 pt-24 sm:pb-40 sm:pt-28">
       <div className="pc-section-halo pc-section-halo-mega" aria-hidden />
       <div className={`relative z-[1] ${landing.container} text-center`}>
         <Reveal>
-          <h2 className="mx-auto max-w-3xl font-[family-name:var(--font-display)] text-[clamp(2rem,5vw,3.5rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-white">
-            Arrête de juste regarder les matchs.
+          <h2 className="pc-section-heading mx-auto max-w-4xl">
+            <span className="block text-white">Arrête de juste regarder</span>
+            <span className="mt-2 block">
+              <span className="text-blue-400 drop-shadow-[0_0_32px_rgba(59,130,246,0.45)]">les matchs.</span>
+            </span>
           </h2>
-          <p className="mx-auto mt-5 max-w-xl text-sm text-[#9ca3af] sm:text-base">
+          <p className="mx-auto mt-6 max-w-lg text-sm text-[#9ca3af] sm:text-base">
             Crée ta ligue et fais souffrir tes potes pendant tout le tournoi.
           </p>
-          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link href="/signup?next=create-league" className={landing.btnPrimaryLg}>
               Créer ma ligue
             </Link>
