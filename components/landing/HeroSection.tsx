@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { IconArrowRight } from "@tabler/icons-react";
-import { DashboardMockup } from "@/components/landing/DashboardMockup";
+import { HeroShowcase } from "@/components/landing/HeroShowcase";
 import { landing } from "@/components/landing/landing-styles";
 
 export function HeroSection() {
@@ -23,14 +23,12 @@ export function HeroSection() {
 
             <h1 className="pc-lp-hero-title">
               <span className="pc-lp-hero-title-line">La Coupe du monde arrive.</span>
-              <span className="pc-lp-hero-title-accent">
-                Ton groupe WhatsApp n&apos;est pas prêt.
-              </span>
+              <span className="pc-lp-hero-title-accent">Ton groupe n&apos;est pas prêt.</span>
             </h1>
 
             <p className="pc-lp-hero-subtitle">
-              Pronostique les matchs, grimpe dans la ligue générale, crée ta ligue privée et joue
-              des cartes d&apos;attaque pour saboter tes potes pendant tout le tournoi.
+              Pronostique les matchs, crée ta ligue privée et défie tes potes avec des cartes
+              d&apos;attaque — tout le tournoi, en direct.
             </p>
 
             <div className="pc-lp-hero-actions">
@@ -52,7 +50,7 @@ export function HeroSection() {
           </div>
 
           <div className="pc-lp-hero-showcase">
-            <DashboardMockup />
+            <HeroShowcase />
           </div>
         </div>
       </div>
