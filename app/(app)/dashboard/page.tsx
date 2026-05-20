@@ -94,7 +94,7 @@ export default async function DashboardPage() {
     await Promise.all([
       supabase
         .from("profiles")
-        .select("id, username, avatar_color, total_points")
+        .select("id, username, avatar_color, total_points, is_admin")
         .eq("id", user.id)
         .maybeSingle(),
       supabase
@@ -224,6 +224,7 @@ export default async function DashboardPage() {
       upcomingMatches={upcomingMatches}
       featuredMatch={featuredMatch}
       hasAnyMatchesInDb={(matchesCountRes.count ?? 0) > 0}
+      isAdmin={Boolean(profile?.is_admin)}
     />
   );
 }

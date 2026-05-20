@@ -150,6 +150,12 @@ export async function runFootballSync(
     const football = createFootballProvider();
     const fixtures = await football.fetchCompetitionMatches();
 
+    if (fixtures.length === 0) {
+      throw new Error(
+        "Sportmonks a répondu mais 0 match normalisable — vérifiez FOOTBALL_COMPETITION_ID et FOOTBALL_COMPETITION_FILTER (season vs league)."
+      );
+    }
+
     for (const m of fixtures) {
       const homeTeamId = m.homeTeamExternalId
         ? await resolveTeamId(
@@ -271,6 +277,8 @@ export async function runFootballSync(
         points_recalculated: pointsRecalculated,
         raw_summary: {
           fixturesFetched: fixtures.length,
+          competitionFilter: cfg.competitionFilter,
+          competitionId: cfg.competitionId,
           matchIdsRecalculated,
         },
       })
@@ -287,23 +295,35 @@ export async function runFootballSync(
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Erreur sync";
+    const hint =
+      message.includes("sync_log insert") || message.includes("relation")
+        ? " — migration 20260521120000_football_api_sync.sql peut être absente."
+        : message.includes("match insert") || message.includes("column")
+          ? " — colonnes API football absentes sur matches/teams ?"
+          : "";
+    const fullMessage = message + hint;
     await admin
       .from("sync_logs")
       .update({
         status: "error",
         finished_at: new Date().toISOString(),
-        error_message: message,
+        error_message: fullMessage,
         matches_imported: matchesImported,
         matches_updated: matchesUpdated,
         scores_updated: scoresUpdated,
         points_recalculated: pointsRecalculated,
+        raw_summary: {
+          competitionFilter: cfg.competitionFilter,
+          competitionId: cfg.competitionId,
+          failed: true,
+        },
       })
       .eq("id", logId);
 
     return {
       ok: false,
       logId,
-      error: message,
+      error: fullMessage,
       matchesImported,
       matchesUpdated,
       scoresUpdated,

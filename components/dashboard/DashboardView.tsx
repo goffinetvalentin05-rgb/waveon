@@ -63,6 +63,7 @@ export type DashboardViewProps = {
   upcomingMatches: DashboardUpcomingMatch[];
   featuredMatch?: DashboardFeaturedMatch | null;
   hasAnyMatchesInDb: boolean;
+  isAdmin?: boolean;
 };
 
 function leagueInitials(name: string) {
@@ -168,6 +169,7 @@ export function DashboardView({
   upcomingMatches,
   featuredMatch,
   hasAnyMatchesInDb,
+  isAdmin = false,
 }: DashboardViewProps) {
   const matchGroups = groupMatchesByDate(upcomingMatches);
   const showContest = Boolean(contestTitle);
@@ -186,6 +188,16 @@ export function DashboardView({
           <span className="pc-stat-value pc-stat-gradient">#{rank}</span>
         </div>
       </div>
+
+      {isAdmin ? (
+        <Link
+          href="/admin/tournament/matches"
+          className="pc-btn primary"
+          style={{ display: "inline-flex", width: "100%", justifyContent: "center", marginBottom: 4 }}
+        >
+          Admin matchs
+        </Link>
+      ) : null}
 
       {showContest ? (
         <div className="pc-contest pc-glass">
