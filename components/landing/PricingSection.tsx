@@ -115,7 +115,9 @@ function PricingCard({
   highlight?: boolean;
 }) {
   return (
-    <article className={`pc-pricing-card h-full ${highlight ? "pc-pricing-card-highlight" : ""}`}>
+    <article
+      className={`pc-pricing-card pc-lp-interactive h-full ${highlight ? "pc-pricing-card-highlight" : ""}`}
+    >
       <span
         className={`relative z-[1] w-fit rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${
           highlight

@@ -56,7 +56,7 @@ export function CardsShowcase() {
         {CARDS.map((c, i) => (
           <Reveal key={c.id} delayMs={i * 70}>
             <article
-              className={`pc-lp-game-card pc-glass-card pc-glass-card-interactive ${
+              className={`pc-lp-game-card pc-lp-interactive pc-glass-card pc-glass-card-interactive ${
                 c.rarity === "Épique" ? "epic" : "rare"
               }`}
             >
