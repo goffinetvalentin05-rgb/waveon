@@ -27,10 +27,10 @@ export function HeroSection() {
               </span>
 
               <h1 className="pc-hero-headline mt-7 text-white">
-                <span className="block">La Coupe du monde arrive.</span>
+                <span className="block">Le terrain. La passion.</span>
                 <span className="mt-2 block">
-                  Ton groupe WhatsApp{" "}
-                  <span className="pc-hero-accent">n&apos;est pas prêt.</span>
+                  Et tes potes{" "}
+                  <span className="pc-hero-accent">à humilier.</span>
                 </span>
               </h1>
 
