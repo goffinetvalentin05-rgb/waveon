@@ -20,7 +20,7 @@ export default async function GlobalLeaguePage() {
         .is("league_id", null),
       supabase
         .from("contest_settings")
-        .select("prize_title, prize_value_chf, ends_at, is_active")
+        .select("ends_at, is_active")
         .limit(1)
         .maybeSingle(),
       user
@@ -33,7 +33,7 @@ export default async function GlobalLeaguePage() {
     ]);
 
   const cs = contestSettingsRes.data as
-    | { prize_title: string; prize_value_chf: number; ends_at: string | null; is_active: boolean }
+    | { ends_at: string | null; is_active: boolean }
     | null;
 
   return (
@@ -47,8 +47,7 @@ export default async function GlobalLeaguePage() {
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-white/55">
           Tout le monde joue dans la même ligue générale du tournoi mondial 2026. Pronostique
-          les matchs, marque des points, et tente de finir n°1 pour gagner le lot du concours
-          gratuit.
+          les matchs, marque des points, et tente de finir n°1 pour remporter un maillot.
         </p>
       </header>
 
@@ -66,12 +65,11 @@ export default async function GlobalLeaguePage() {
         {cs ? (
           <>
             <h2 className="mt-2 font-display text-2xl font-bold text-white">
-              {cs.prize_title}
+              Un maillot pour le meilleur pronostiqueur
             </h2>
             <p className="mt-2 max-w-xl text-sm text-white/70">
-              Valeur maximale CHF {cs.prize_value_chf}. Termine premier du classement final
-              de la ligue générale pour tenter de gagner. Participation gratuite, aucun achat
-              nécessaire.
+              Termine premier du classement final de la ligue générale et tente de remporter un
+              maillot. Participation gratuite, aucun achat nécessaire.
             </p>
             {cs.ends_at ? (
               <p className="mt-2 text-xs text-white/45">

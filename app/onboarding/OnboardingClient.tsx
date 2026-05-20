@@ -243,7 +243,7 @@ function ConsentsStep({
           checked={consentContestRules}
           onChange={setConsentContestRules}
           title="J'accepte le règlement du concours"
-          body="Participation gratuite, basée sur le classement final de la ligue générale. Lot : maillot ou bon équivalent valeur max CHF 120. Aucune affiliation officielle."
+          body="Participation gratuite, basée sur le classement final de la ligue générale. Lot : un maillot de football à gagner. Détails dans le règlement du concours."
         />
         <Consent
           checked={consentMarketingApp}

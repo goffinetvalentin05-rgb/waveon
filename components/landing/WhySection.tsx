@@ -37,7 +37,7 @@ export function WhySection() {
         </Reveal>
 
         <Reveal delayMs={240} className="lg:col-span-7">
-          <BentoCard title="Concours gratuit" subtitle="Maillot à gagner jusqu'à CHF 120" tall>
+          <BentoCard title="Concours gratuit" subtitle="Un maillot pour le meilleur pronostiqueur" tall>
             <TrophyVisual />
           </BentoCard>
         </Reveal>
@@ -167,7 +167,7 @@ function TrophyVisual() {
         </svg>
       </div>
       <div className="grid w-full max-w-md grid-cols-3 gap-2 sm:max-w-lg">
-        {["Prono", "Classement", "Lot CHF 120"].map((label, i) => (
+        {["Prono", "Classement", "Maillot"].map((label, i) => (
           <div
             key={label}
             className={`rounded-xl border px-3 py-4 text-center ${

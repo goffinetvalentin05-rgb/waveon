@@ -10,11 +10,10 @@ export function ContestSection() {
     <SectionShell id="concours" halo="gold-blue">
       <Reveal>
         <SectionTitle
-          line1="Termine premier du classement."
-          line2Before="Gagne un "
-          line2After="."
+          line1="Termine premier de la ligue générale"
+          line2Accent="et tente de remporter un maillot"
           icon={IconTrophy}
-          subtitle="Concours 100 % gratuit sur la ligue générale — sans achat requis."
+          subtitle="Concours 100 % gratuit — sans achat requis."
         />
       </Reveal>
       <Reveal delayMs={100}>
@@ -23,10 +22,9 @@ export function ContestSection() {
             <div>
               <span className={landing.badge}>Concours gratuit · sans achat requis</span>
               <p className="mt-5 text-sm leading-relaxed text-[#9ca3af] sm:text-base">
-                Tout le monde joue dans la même ligue générale. Termine premier à la fin du
-                tournoi mondial 2026 pour gagner un maillot de football ou un bon équivalent
-                d&apos;une valeur maximale de{" "}
-                <span className="font-semibold text-amber-300">CHF 120</span>.
+                Tout le monde joue dans la même ligue générale. Grimpe au classement général,
+                fais tes pronos et tente de gagner le maillot de ton choix à la fin du tournoi
+                mondial 2026.
               </p>
               <ul className="mt-6 space-y-2.5 text-sm text-[#9ca3af]">
                 <Bullet>Pronostics classiques sur tous les matchs</Bullet>
@@ -38,7 +36,8 @@ export function ContestSection() {
                 Rejoindre la ligue gratuite
               </Link>
               <p className="mt-3 text-xs text-[#9ca3af]/80">
-                Aucun pari d&apos;argent. Aucune affiliation FIFA, Coupe du Monde ou marques sportives.
+                Aucun pari d&apos;argent. Jeu indépendant, sans affiliation officielle avec une
+                compétition ou une marque sportive.
               </p>
             </div>
             <div className="relative">
@@ -54,9 +53,9 @@ export function ContestSection() {
                 <div className="mt-5 rounded-2xl border border-amber-400/30 bg-gradient-to-r from-amber-500/15 to-blue-500/10 p-4 text-center shadow-[inset_0_0_40px_rgba(251,191,36,0.08)]">
                   <p className="text-[11px] uppercase tracking-widest text-amber-200/90">Lot pour le n°1</p>
                   <p className="mt-1 font-[family-name:var(--font-display)] text-xl font-semibold text-white">
-                    Maillot ou bon équivalent
+                    Un maillot à gagner
                   </p>
-                  <p className="text-sm text-amber-200/80">jusqu&apos;à CHF 120</p>
+                  <p className="text-sm text-amber-200/80">Tente de gagner le maillot de ton choix</p>
                 </div>
               </div>
             </div>

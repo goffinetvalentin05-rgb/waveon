@@ -57,10 +57,9 @@ export default function ContestRulesPage() {
 
       <h2>5. Lot</h2>
       <p>
-        Le lot est <strong>un maillot de football au choix du gagnant ou un bon
-        équivalent</strong>, d&apos;une valeur maximale de <strong>CHF 120</strong>. Le
-        maillot devra être choisi parmi des modèles commercialement disponibles ;
-        aucun équivalent en espèces ne sera versé.
+        Le lot consiste en <strong>un maillot de football</strong>, selon disponibilité.
+        L&apos;organisateur se réserve le droit de proposer un lot équivalent si le maillot
+        demandé n&apos;est pas disponible. Aucun équivalent en espèces ne sera versé.
       </p>
 
       <h2>6. Conditions de participation</h2>

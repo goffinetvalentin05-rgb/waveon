@@ -25,8 +25,8 @@ export function GeneralLeagueSection() {
                 Concours gratuit
               </span>
               <p className={`${landing.body} mt-6`}>
-                Tout le monde commence dans la ligue générale. Fais tes pronos, marque des points
-                et tente de finir numéro 1.
+                Tout le monde joue dans la ligue générale. Fais tes pronos, marque des points et
+                tente de finir numéro 1 pour remporter un maillot.
               </p>
               <ul className="mt-6 space-y-3 text-sm text-[var(--pc-muted)]">
                 <Bullet>Pronostics classiques sur tous les matchs</Bullet>
@@ -59,9 +59,9 @@ export function GeneralLeagueSection() {
                     Lot · 1er du classement
                   </p>
                   <p className="mt-1 font-[family-name:var(--pc-font-display)] text-lg font-semibold text-white">
-                    Maillot ou bon équivalent
+                    Un maillot à gagner
                   </p>
-                  <p className="text-sm text-amber-200/80">jusqu&apos;à CHF 120</p>
+                  <p className="text-sm text-amber-200/80">Le premier remporte un maillot</p>
                 </div>
               </div>
             </div>

@@ -27,6 +27,10 @@ const ITEMS = [
     q: "Les cartes influencent-elles le concours global ?",
     a: "Non. Les cartes (Joker, Vol de score, VAR…) n'agissent que dans les ligues privées, jamais sur le classement général.",
   },
+  {
+    q: "Qu'est-ce qu'on peut gagner ?",
+    a: "Le meilleur du classement général tente de remporter un maillot de football. Les détails exacts sont précisés dans le règlement du concours.",
+  },
 ];
 
 export function FaqSection() {
