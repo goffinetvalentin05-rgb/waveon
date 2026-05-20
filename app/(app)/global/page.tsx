@@ -6,13 +6,8 @@ export default async function GlobalLeaguePage() {
   const supabase = await createServerComponentSupabase();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const [globalLeagueRes, totalUsersRes, totalPredictionsRes, contestSettingsRes, myPredCountRes] =
+  const [totalUsersRes, totalPredictionsRes, contestSettingsRes, myPredCountRes] =
     await Promise.all([
-      supabase
-        .from("leagues")
-        .select("id, name")
-        .eq("kind", "global")
-        .maybeSingle(),
       supabase.from("profiles").select("id", { count: "exact", head: true }),
       supabase
         .from("predictions")

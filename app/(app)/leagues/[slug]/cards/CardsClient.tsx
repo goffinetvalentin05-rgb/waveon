@@ -57,12 +57,15 @@ export function CardsClient({ leagueId, inventory, cards, matches, members }: Pr
           targetUserId: needsTarget ? targetUserId : null,
         }),
       });
-      const j = (await res.json().catch(() => null)) as { error?: string } | null;
+      const j = (await res.json().catch(() => null)) as {
+        error?: string;
+        message?: string;
+      } | null;
       if (!res.ok) {
         setFeedback({ tone: "error", message: j?.error ?? "Erreur." });
         return;
       }
-      setFeedback({ tone: "success", message: "Carte jouée ✓" });
+      setFeedback({ tone: "success", message: j?.message ?? "Carte jouée" });
       router.refresh();
     } catch {
       setFeedback({ tone: "error", message: "Erreur réseau." });
@@ -77,6 +80,9 @@ export function CardsClient({ leagueId, inventory, cards, matches, members }: Pr
         <h2 className="text-sm font-semibold uppercase tracking-widest text-white/50">
           Mon inventaire
         </h2>
+        {owned.length === 0 ? (
+          <p className="mt-3 text-sm text-white/55">Aucune carte restante</p>
+        ) : (
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {owned.map((c) => (
             <button
@@ -99,6 +105,7 @@ export function CardsClient({ leagueId, inventory, cards, matches, members }: Pr
             </button>
           ))}
         </div>
+        )}
       </section>
 
       <section className={`${ui.glassCard} space-y-4 p-6`}>

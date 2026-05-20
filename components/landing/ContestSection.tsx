@@ -23,7 +23,7 @@ export function ContestSection() {
               <span className={landing.badge}>Concours gratuit · sans achat requis</span>
               <p className="mt-5 text-sm leading-relaxed text-[#9ca3af] sm:text-base">
                 Tout le monde joue dans la même ligue générale. Grimpe au classement général,
-                fais tes pronos et tente de gagner le maillot de ton choix à la fin du tournoi
+                fais tes pronos et tente de gagner un maillot à la fin du tournoi
                 mondial 2026.
               </p>
               <ul className="mt-6 space-y-2.5 text-sm text-[#9ca3af]">
@@ -55,7 +55,7 @@ export function ContestSection() {
                   <p className="mt-1 font-[family-name:var(--font-display)] text-xl font-semibold text-white">
                     Un maillot à gagner
                   </p>
-                  <p className="text-sm text-amber-200/80">Tente de gagner le maillot de ton choix</p>
+                  <p className="text-sm text-amber-200/80">Un maillot à gagner pour le n°1</p>
                 </div>
               </div>
             </div>

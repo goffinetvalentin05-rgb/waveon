@@ -4,6 +4,7 @@ import {
   scorePrediction,
   type MatchOutcome,
 } from "@/lib/pronoclash/scoring";
+import { computeTacleSteal } from "@/lib/pronoclash/card-effects";
 
 /**
  * Recalcule les points de tous les pronostics d'un match terminé.
@@ -138,7 +139,7 @@ export async function recalculateMatchPoints(
     .from("card_plays")
     .select("user_id, league_id, card_id")
     .eq("match_id", matchId)
-    .eq("status", "played");
+    .in("status", ["played", "active"]);
   type Play = { user_id: string; league_id: string; card_id: string };
   const playsList = (plays ?? []) as Play[];
   const playKey = (userId: string, leagueId: string, cardId: string) =>
@@ -186,13 +187,13 @@ export async function recalculateMatchPoints(
 
     const cardBonuses = isPrivate
       ? {
-          joker_x2: Boolean(p.joker_x2) || usesCard("joker_x2"),
-          bus_gare: usesCard("bus_gare"),
-          hold_up: usesCard("hold_up"),
-          outsider_team: usesCard("outsider") ? outsiderSide : null,
+          joker_x2: usesCard("joker_x2"),
+          bus_gare: false,
+          hold_up: false,
+          outsider_team: null,
         }
       : {
-          joker_x2: Boolean(p.joker_x2),
+          joker_x2: false,
         };
 
     const result = scorePrediction(
@@ -272,12 +273,11 @@ async function applyTacleGlisseEffects(
 ): Promise<void> {
   const { data: tacles } = await admin
     .from("card_plays")
-    .select("id, user_id, league_id, target_user_id")
+    .select("user_id, league_id, target_user_id")
     .eq("match_id", matchId)
     .eq("card_id", "tacle_glisse")
-    .eq("status", "played");
+    .in("status", ["played", "active"]);
   type Tacle = {
-    id: string;
     user_id: string;
     league_id: string;
     target_user_id: string | null;
@@ -290,65 +290,85 @@ async function applyTacleGlisseEffects(
     const [authorPredRes, targetPredRes] = await Promise.all([
       admin
         .from("predictions")
-        .select("points")
+        .select("id, points")
         .eq("match_id", matchId)
         .eq("user_id", t.user_id)
         .eq("league_id", t.league_id)
         .maybeSingle(),
       admin
         .from("predictions")
-        .select("points")
+        .select("id, points")
         .eq("match_id", matchId)
         .eq("user_id", t.target_user_id)
         .eq("league_id", t.league_id)
         .maybeSingle(),
     ]);
-    const aPts = authorPredRes.data?.points ?? 0;
-    const tPts = targetPredRes.data?.points ?? 0;
-    if (aPts > tPts) {
-      const { data: lmT } = await admin
-        .from("league_members")
-        .select("points")
-        .eq("league_id", t.league_id)
-        .eq("user_id", t.target_user_id)
-        .maybeSingle();
-      const stolen = Math.min(2, lmT?.points ?? 0);
-      if (stolen <= 0) continue;
+    const authorPred = authorPredRes.data;
+    const targetPred = targetPredRes.data;
+    if (!authorPred || !targetPred) continue;
+
+    const aPts = authorPred.points ?? 0;
+    const tPts = targetPred.points ?? 0;
+    const { stolen, authorDelta, targetDelta } = computeTacleSteal(aPts, tPts);
+    if (stolen <= 0) continue;
+
+    const newAuthorPts = aPts + authorDelta;
+    const newTargetPts = Math.max(0, tPts + targetDelta);
+
+    await admin
+      .from("predictions")
+      .update({ points: newAuthorPts })
+      .eq("id", authorPred.id);
+    await admin
+      .from("predictions")
+      .update({ points: newTargetPts })
+      .eq("id", targetPred.id);
+
+    const { data: lmT } = await admin
+      .from("league_members")
+      .select("points")
+      .eq("league_id", t.league_id)
+      .eq("user_id", t.target_user_id)
+      .maybeSingle();
+    const { data: lmA } = await admin
+      .from("league_members")
+      .select("points")
+      .eq("league_id", t.league_id)
+      .eq("user_id", t.user_id)
+      .maybeSingle();
+
+    if (lmT) {
       await admin
         .from("league_members")
-        .update({ points: (lmT?.points ?? 0) - stolen })
+        .update({ points: Math.max(0, (lmT.points ?? 0) + targetDelta) })
         .eq("league_id", t.league_id)
         .eq("user_id", t.target_user_id);
-
-      const { data: lmA } = await admin
-        .from("league_members")
-        .select("points")
-        .eq("league_id", t.league_id)
-        .eq("user_id", t.user_id)
-        .maybeSingle();
+    }
+    if (lmA) {
       await admin
         .from("league_members")
-        .update({ points: (lmA?.points ?? 0) + stolen })
+        .update({ points: (lmA.points ?? 0) + authorDelta })
         .eq("league_id", t.league_id)
         .eq("user_id", t.user_id);
-
-      await admin.from("scoring_events").insert([
-        {
-          user_id: t.user_id,
-          league_id: t.league_id,
-          match_id: matchId,
-          points: stolen,
-          reason: "tacle_glisse_steal",
-        },
-        {
-          user_id: t.target_user_id,
-          league_id: t.league_id,
-          match_id: matchId,
-          points: -stolen,
-          reason: "tacle_glisse_stolen",
-        },
-      ]);
     }
-    await admin.from("card_plays").update({ status: "applied" }).eq("id", t.id);
+
+    await admin.from("scoring_events").insert([
+      {
+        user_id: t.user_id,
+        league_id: t.league_id,
+        match_id: matchId,
+        prediction_id: authorPred.id,
+        points: authorDelta,
+        reason: "tacle_glisse_steal",
+      },
+      {
+        user_id: t.target_user_id,
+        league_id: t.league_id,
+        match_id: matchId,
+        prediction_id: targetPred.id,
+        points: targetDelta,
+        reason: "tacle_glisse_stolen",
+      },
+    ]);
   }
 }

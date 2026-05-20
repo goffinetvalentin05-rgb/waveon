@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createServerComponentSupabase } from "@/lib/supabase/server-component";
 import { ui } from "@/lib/design/tokens";
+import { V1_CARD_IDS } from "@/lib/pronoclash/card-messages";
 import { CardsClient } from "./CardsClient";
 
 type RouteParams = { slug: string };
@@ -8,15 +9,18 @@ type RouteParams = { slug: string };
 export default async function LeagueCardsPage(props: { params: Promise<RouteParams> }) {
   const params = await props.params;
   const supabase = await createServerComponentSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
   const { data: league } = await supabase
     .from("leagues")
-    .select("id, slug, name, kind")
+    .select("id, slug, name, kind, status")
     .eq("slug", params.slug)
     .maybeSingle();
   if (!league || league.kind === "global") notFound();
+  if (league.status !== "active") notFound();
 
   const [invRes, cardsRes, matchesRes, membersRes] = await Promise.all([
     supabase
@@ -24,10 +28,14 @@ export default async function LeagueCardsPage(props: { params: Promise<RoutePara
       .select("card_id, quantity")
       .eq("league_id", league.id)
       .eq("user_id", user.id),
-    supabase.from("cards").select("id, name, description, rarity").eq("enabled", true),
+    supabase
+      .from("cards")
+      .select("id, name, description, rarity")
+      .in("id", [...V1_CARD_IDS])
+      .eq("is_active", true),
     supabase
       .from("matches")
-      .select("id, kickoff_at, home:home_team_id(name), away:away_team_id(name)")
+      .select("id, kickoff_at, locked_at, home:home_team_id(name), away:away_team_id(name)")
       .eq("status", "scheduled")
       .gt("kickoff_at", new Date().toISOString())
       .order("kickoff_at")
@@ -40,6 +48,7 @@ export default async function LeagueCardsPage(props: { params: Promise<RoutePara
 
   type Inv = { card_id: string; quantity: number };
   const inventory = (invRes.data ?? []) as Inv[];
+  const totalQty = inventory.reduce((s, i) => s + (i.quantity ?? 0), 0);
   type Card = { id: string; name: string; description: string; rarity: string };
   const cards = (cardsRes.data ?? []) as Card[];
   type Match = {
@@ -66,9 +75,9 @@ export default async function LeagueCardsPage(props: { params: Promise<RoutePara
         </p>
       </header>
 
-      {inventory.length === 0 ? (
+      {totalQty === 0 ? (
         <div className={`${ui.glassCard} p-6 text-sm text-white/55`}>
-          Aucune carte dans ton inventaire. Demande à l&apos;owner ou attends le prochain pack.
+          Aucune carte restante
         </div>
       ) : (
         <CardsClient

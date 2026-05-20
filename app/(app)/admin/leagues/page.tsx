@@ -16,7 +16,10 @@ export default async function AdminLeaguesPage() {
       <header>
         <h1 className="font-display text-3xl font-semibold text-white">Ligues privées</h1>
         <p className="mt-2 text-sm text-white/55">
-          Toutes les ligues privées créées via paiement Stripe.
+          Toutes les ligues privées créées via paiement Stripe.{" "}
+          <a href="/admin/cards" className="text-violet-300 hover:underline">
+            Debug cartes
+          </a>
         </p>
       </header>
 

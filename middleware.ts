@@ -20,6 +20,7 @@ const PROTECTED_PREFIXES = [
   "/leagues",
   "/matches",
   "/leaderboard",
+  "/global",
   "/admin",
 ];
 
@@ -90,6 +91,7 @@ export const config = {
     "/leagues/:path*",
     "/matches/:path*",
     "/leaderboard/:path*",
+    "/global/:path*",
     "/admin/:path*",
     "/login",
     "/signup",

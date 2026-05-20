@@ -186,7 +186,7 @@ export default async function DashboardPage() {
     .map((m) => m.leagues!.id)
     .filter((id, i, arr) => arr.indexOf(id) === i);
 
-  let membersByLeague = new Map<string, Array<{ user_id: string; points: number }>>();
+  const membersByLeague = new Map<string, Array<{ user_id: string; points: number }>>();
   if (privateLeagueIds.length > 0) {
     const { data: allMembers } = await supabase
       .from("league_members")

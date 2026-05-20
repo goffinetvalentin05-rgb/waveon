@@ -12,6 +12,7 @@ import {
   isPredictionLocked,
   PREDICTION_LOCKED_MESSAGE,
 } from "@/lib/pronoclash/prediction-lock";
+import { MatchCardsPanel } from "@/components/pronoclash/MatchCardsPanel";
 import {
   leagueContextFromParam,
   leagueContextToParam,
@@ -57,33 +58,46 @@ type Prediction = {
 
 type League = { id: string; slug: string; name: string; kind: string };
 
+type CardInv = { league_id: string; card_id: string; quantity: number };
+type CardPlay = { league_id: string; match_id: string; card_id: string };
+type CardCatalog = { id: string; name: string; description: string };
+type LeagueMember = { user_id: string; username: string | null };
+
 type Props = {
   username?: string | null;
   email?: string | null;
   matches: Match[];
   predictions: Prediction[];
   leagues: League[];
+  userId?: string | null;
+  cardsCatalog?: CardCatalog[];
+  cardInventory?: CardInv[];
+  cardPlays?: CardPlay[];
+  membersByLeague?: Record<string, LeagueMember[]>;
 };
 
-export function MatchesClient({ username, email, matches, predictions, leagues }: Props) {
+export function MatchesClient({
+  username,
+  email,
+  matches,
+  predictions,
+  leagues,
+  userId = null,
+  cardsCatalog = [],
+  cardInventory = [],
+  cardPlays = [],
+  membersByLeague = {},
+}: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const paramLeague = searchParams.get("league");
-  const initialLeague = leagueContextFromParam(paramLeague);
   const validIds = useMemo(
     () => new Set(leagues.filter((l) => l.kind !== "global").map((l) => l.id)),
     [leagues]
   );
-  const resolvedInitial: LeagueContextId =
-    initialLeague && validIds.has(initialLeague) ? initialLeague : null;
 
-  const [activeLeague, setActiveLeague] = useState<LeagueContextId>(resolvedInitial);
-
-  useEffect(() => {
+  const activeLeague = useMemo((): LeagueContextId => {
     const fromUrl = leagueContextFromParam(searchParams.get("league"));
-    const next =
-      fromUrl && validIds.has(fromUrl) ? fromUrl : null;
-    setActiveLeague(next);
+    return fromUrl && validIds.has(fromUrl) ? fromUrl : null;
   }, [searchParams, validIds]);
 
   const leagueOptions: LeagueContextOption[] = useMemo(
@@ -101,7 +115,6 @@ export function MatchesClient({ username, email, matches, predictions, leagues }
   );
 
   const handleLeagueChange = (id: LeagueContextId) => {
-    setActiveLeague(id);
     const params = new URLSearchParams(searchParams.toString());
     params.set("league", leagueContextToParam(id));
     router.replace(`/matches?${params.toString()}`, { scroll: false });
@@ -118,16 +131,41 @@ export function MatchesClient({ username, email, matches, predictions, leagues }
   const activeLabel =
     leagueOptions.find((o) => o.id === activeLeague)?.name ?? "Ligue générale";
 
-  const isLocked = (m: Match) =>
+  const varPlaysForLeague = useMemo(() => {
+    const set = new Set<string>();
+    if (!activeLeague) return set;
+    for (const p of cardPlays) {
+      if (p.league_id === activeLeague && p.card_id === "var") set.add(p.match_id);
+    }
+    return set;
+  }, [cardPlays, activeLeague]);
+
+  const isLocked = (m: Match, varActive = false) =>
     m.status !== "scheduled" ||
-    isPredictionLocked(m.locked_at, m.kickoff_at);
+    isPredictionLocked(m.locked_at, m.kickoff_at, new Date(), { varActive });
+
+  const leagueInventory = useMemo(() => {
+    if (!activeLeague) return [];
+    return cardInventory.filter((i) => i.league_id === activeLeague);
+  }, [cardInventory, activeLeague]);
+
+  const playedMatchIds = useMemo(() => {
+    if (!activeLeague) return new Set<string>();
+    return new Set(
+      cardPlays.filter((p) => p.league_id === activeLeague).map((p) => p.match_id)
+    );
+  }, [cardPlays, activeLeague]);
   const finished = matches.filter((m) => m.status === "finished");
   const locked = matches.filter(
-    (m) => m.status !== "finished" && m.status !== "postponed" && isLocked(m)
+    (m) =>
+      m.status !== "finished" &&
+      m.status !== "postponed" &&
+      isLocked(m, varPlaysForLeague.has(m.id))
   );
   const upcoming = matches.filter(
     (m) =>
-      (m.status === "scheduled" || m.status === "live") && !isLocked(m)
+      (m.status === "scheduled" || m.status === "live") &&
+      !isLocked(m, varPlaysForLeague.has(m.id))
   );
 
   return (
@@ -168,6 +206,15 @@ export function MatchesClient({ username, email, matches, predictions, leagues }
                   prediction={predByKey.get(predictionMapKey(m.id, activeLeague))}
                   leagueId={activeLeague}
                   leagueLabel={activeLabel}
+                  varActive={varPlaysForLeague.has(m.id)}
+                  showCards={!!activeLeague}
+                  cardsCatalog={cardsCatalog}
+                  leagueInventory={leagueInventory}
+                  leagueMembers={
+                    activeLeague ? (membersByLeague[activeLeague] ?? []) : []
+                  }
+                  playedOnMatch={playedMatchIds.has(m.id)}
+                  currentUserId={userId}
                   onSaved={() => router.refresh()}
                 />
               ))}
@@ -187,6 +234,7 @@ export function MatchesClient({ username, email, matches, predictions, leagues }
                     prediction={predByKey.get(predictionMapKey(m.id, activeLeague))}
                     leagueId={activeLeague}
                     leagueLabel={activeLabel}
+                    varActive={varPlaysForLeague.has(m.id)}
                     readonly
                     onSaved={() => router.refresh()}
                   />
@@ -227,6 +275,13 @@ function MatchRow({
   leagueId,
   leagueLabel,
   readonly = false,
+  varActive = false,
+  showCards = false,
+  cardsCatalog = [],
+  leagueInventory = [],
+  leagueMembers = [],
+  playedOnMatch = false,
+  currentUserId = null,
   onSaved,
 }: {
   match: Match;
@@ -234,6 +289,13 @@ function MatchRow({
   leagueId: LeagueContextId;
   leagueLabel: string;
   readonly?: boolean;
+  varActive?: boolean;
+  showCards?: boolean;
+  cardsCatalog?: CardCatalog[];
+  leagueInventory?: CardInv[];
+  leagueMembers?: LeagueMember[];
+  playedOnMatch?: boolean;
+  currentUserId?: string | null;
   onSaved: () => void;
 }) {
   const [home, setHome] = useState<number | null>(
@@ -249,7 +311,7 @@ function MatchRow({
   const locked =
     readonly ||
     match.status !== "scheduled" ||
-    isPredictionLocked(match.locked_at, match.kickoff_at) ||
+    isPredictionLocked(match.locked_at, match.kickoff_at, new Date(), { varActive }) ||
     !hasTeams;
 
   useEffect(() => {
@@ -423,6 +485,21 @@ function MatchRow({
 
       {error ? (
         <p className="pc-inline-error">{error}</p>
+      ) : null}
+
+      {showCards && leagueId && currentUserId ? (
+        <MatchCardsPanel
+          leagueId={leagueId}
+          matchId={match.id}
+          kickoffAt={match.kickoff_at}
+          lockedAt={match.locked_at}
+          matchStatus={match.status}
+          inventory={leagueInventory}
+          cards={cardsCatalog}
+          members={leagueMembers}
+          playedOnMatch={playedOnMatch}
+          currentUserId={currentUserId}
+        />
       ) : null}
     </li>
   );

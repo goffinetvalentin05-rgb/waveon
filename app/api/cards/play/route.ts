@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import {
+  CARD_MESSAGES,
+  isV1CardId,
+} from "@/lib/pronoclash/card-messages";
+import { isPredictionLocked } from "@/lib/pronoclash/prediction-lock";
 
 export const runtime = "nodejs";
 
@@ -16,16 +21,12 @@ function bad(message: string, status = 400) {
 }
 
 const CARDS_NEEDING_TARGET = new Set(["vol_score", "carton_rouge", "tacle_glisse"]);
-const VAR_MAX_DELAY_MINUTES = 15;
 
 /**
  * POST /api/cards/play
- *  - vérifie l'inventaire
- *  - applique les contraintes (max 1 carte par match/user/league, cible requise…)
- *  - décrémente l'inventaire et écrit card_plays
- *  - effets immédiats : vol_score (copie le prono), VAR (assouplit le verrou)
- *  - effets différés : joker_x2, bus_gare, hold_up, outsider, tacle_glisse
- *    (appliqués à la finalisation du match)
+ *  - ligue privée active uniquement
+ *  - max 1 carte par match / joueur / ligue
+ *  - avant verrouillage du match (locked_at ou kickoff)
  */
 export async function POST(req: Request) {
   let body: Payload;
@@ -47,27 +48,39 @@ export async function POST(req: Request) {
     return bad("Paramètres manquants.");
   }
 
+  if (!isV1CardId(cardId)) {
+    return bad("Carte inconnue ou désactivée.");
+  }
+
   const supabase = await createRouteHandlerSupabase();
-  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authErr,
+  } = await supabase.auth.getUser();
   if (authErr || !user) return bad("Non authentifié.", 401);
 
   const admin = createAdminSupabaseClient();
 
-  // Vérifier carte
-  const { data: cardRow } = await admin.from("cards").select("id, enabled").eq("id", cardId).maybeSingle();
-  if (!cardRow || cardRow.enabled === false) return bad("Carte inconnue ou désactivée.");
+  const { data: cardRow } = await admin
+    .from("cards")
+    .select("id, is_active")
+    .eq("id", cardId)
+    .maybeSingle();
+  if (!cardRow || cardRow.is_active === false) {
+    return bad("Carte inconnue ou désactivée.");
+  }
 
-  // Vérifier ligue (must be private)
   const { data: league } = await admin
     .from("leagues")
     .select("id, kind, status")
     .eq("id", leagueId)
     .maybeSingle();
   if (!league) return bad("Ligue introuvable.", 404);
-  if (league.kind === "global") return bad("Les cartes ne sont pas disponibles dans la ligue globale.", 403);
+  if (league.kind === "global") {
+    return bad(CARD_MESSAGES.privateOnly, 403);
+  }
   if (league.status !== "active") return bad("Ligue inactive.", 403);
 
-  // Vérifier appartenance + cible appartient à la ligue
   const { data: mShip } = await admin
     .from("league_members")
     .select("user_id")
@@ -88,31 +101,20 @@ export async function POST(req: Request) {
     if (!tShip) return bad("La cible n'est pas membre de cette ligue.");
   }
 
-  // Vérifier match + verrouillage selon carte
   const { data: match } = await admin
     .from("matches")
-    .select("id, kickoff_at, status")
+    .select("id, kickoff_at, locked_at, status, home_team_id, away_team_id")
     .eq("id", matchId)
     .maybeSingle();
   if (!match) return bad("Match introuvable.", 404);
   if (match.status === "finished" || match.status === "cancelled") {
-    return bad("Match terminé.", 409);
+    return bad(CARD_MESSAGES.locked, 409);
   }
 
-  const kickoffMs = new Date(match.kickoff_at as string).getTime();
-  const nowMs = Date.now();
-  if (cardId === "var") {
-    // VAR permet jusqu'à kickoff + 15 min
-    if (nowMs > kickoffMs + VAR_MAX_DELAY_MINUTES * 60_000) {
-      return bad(`La VAR n'est plus utilisable (limite +${VAR_MAX_DELAY_MINUTES} min après kickoff).`, 409);
-    }
-  } else {
-    if (nowMs >= kickoffMs) {
-      return bad("Le coup d'envoi est passé : carte refusée.", 409);
-    }
+  if (isPredictionLocked(match.locked_at, match.kickoff_at)) {
+    return bad(CARD_MESSAGES.locked, 409);
   }
 
-  // Max 1 carte par user/match/league
   const { data: alreadyPlayed } = await admin
     .from("card_plays")
     .select("id")
@@ -120,9 +122,8 @@ export async function POST(req: Request) {
     .eq("league_id", leagueId)
     .eq("match_id", matchId)
     .maybeSingle();
-  if (alreadyPlayed) return bad("Tu as déjà joué une carte sur ce match.", 409);
+  if (alreadyPlayed) return bad(CARD_MESSAGES.alreadyPlayed, 409);
 
-  // Vérifier inventaire
   const { data: inv } = await admin
     .from("card_inventory")
     .select("id, quantity")
@@ -130,10 +131,8 @@ export async function POST(req: Request) {
     .eq("league_id", leagueId)
     .eq("card_id", cardId)
     .maybeSingle();
-  if (!inv || (inv.quantity ?? 0) <= 0) return bad("Tu n'as pas cette carte.", 409);
+  if (!inv || (inv.quantity ?? 0) <= 0) return bad(CARD_MESSAGES.noCard, 409);
 
-  // Si carton_rouge sur cible : la cible ne peut plus modifier son prono.
-  // On marque locked_at = now sur sa prediction existante.
   if (cardId === "carton_rouge" && targetUserId) {
     await admin
       .from("predictions")
@@ -143,7 +142,6 @@ export async function POST(req: Request) {
       .eq("league_id", leagueId);
   }
 
-  // Si vol_score : copie le pronostic de la cible (s'il existe) dans le mien.
   if (cardId === "vol_score" && targetUserId) {
     const { data: targetPred } = await admin
       .from("predictions")
@@ -152,53 +150,57 @@ export async function POST(req: Request) {
       .eq("user_id", targetUserId)
       .eq("league_id", leagueId)
       .maybeSingle();
-    if (!targetPred) return bad("La cible n'a pas encore pronostiqué : vol impossible.", 409);
-    const winner =
-      targetPred.predicted_home_score > targetPred.predicted_away_score
-        ? "home"
-        : targetPred.predicted_away_score > targetPred.predicted_home_score
-          ? "away"
-          : "draw";
-    await admin
-      .from("predictions")
-      .upsert(
-        {
-          user_id: user.id,
-          league_id: leagueId,
-          match_id: matchId,
-          predicted_home_score: targetPred.predicted_home_score,
-          predicted_away_score: targetPred.predicted_away_score,
-          predicted_winner: winner,
-        },
-        { onConflict: "user_id,match_id,league_id" }
-      );
-  }
+    if (!targetPred) return bad(CARD_MESSAGES.targetNoProno, 409);
 
-  // Si joker_x2 : on marque le flag sur la prediction (en plus de l'event card_plays)
-  if (cardId === "joker_x2") {
-    await admin
+    const isDraw =
+      targetPred.predicted_home_score === targetPred.predicted_away_score;
+    const predictedWinnerTeamId = isDraw
+      ? null
+      : targetPred.predicted_home_score > targetPred.predicted_away_score
+        ? match.home_team_id
+        : match.away_team_id;
+
+    const { data: existingMine } = await admin
       .from("predictions")
-      .upsert(
-        {
-          user_id: user.id,
-          league_id: leagueId,
-          match_id: matchId,
-          predicted_home_score: 0,
-          predicted_away_score: 0,
-          joker_x2: true,
-        },
-        { onConflict: "user_id,match_id,league_id", ignoreDuplicates: false }
-      );
-    // si la ligne existait déjà, on met juste joker_x2 = true
-    await admin
-      .from("predictions")
-      .update({ joker_x2: true })
+      .select("id")
+      .eq("match_id", matchId)
       .eq("user_id", user.id)
       .eq("league_id", leagueId)
-      .eq("match_id", matchId);
+      .maybeSingle();
+
+    const row = {
+      user_id: user.id,
+      league_id: leagueId,
+      match_id: matchId,
+      predicted_home_score: targetPred.predicted_home_score,
+      predicted_away_score: targetPred.predicted_away_score,
+      predicted_winner_team_id: predictedWinnerTeamId,
+      predicted_is_draw: isDraw,
+    };
+
+    if (existingMine) {
+      await admin.from("predictions").update(row).eq("id", existingMine.id);
+    } else {
+      await admin.from("predictions").insert(row);
+    }
   }
 
-  // Décrémenter inventaire + enregistrer play
+  if (cardId === "joker_x2") {
+    const { data: mine } = await admin
+      .from("predictions")
+      .select("id")
+      .eq("match_id", matchId)
+      .eq("user_id", user.id)
+      .eq("league_id", leagueId)
+      .maybeSingle();
+    if (mine) {
+      await admin
+        .from("predictions")
+        .update({ joker_x2: true })
+        .eq("id", mine.id);
+    }
+  }
+
   await admin
     .from("card_inventory")
     .update({ quantity: Math.max(0, (inv.quantity ?? 0) - 1) })
@@ -210,8 +212,8 @@ export async function POST(req: Request) {
     match_id: matchId,
     card_id: cardId,
     target_user_id: targetUserId,
-    status: "active",
+    status: "played",
   });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, message: CARD_MESSAGES.played });
 }

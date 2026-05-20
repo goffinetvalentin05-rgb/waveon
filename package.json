@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "npx tsx --test lib/pronoclash/cards-v1.test.ts"
   },
   "dependencies": {
     "@react-email/components": "^1.0.12",

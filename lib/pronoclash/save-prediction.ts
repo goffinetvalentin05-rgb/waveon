@@ -3,6 +3,7 @@ import {
   isPredictionLocked,
   PREDICTION_LOCKED_MESSAGE,
 } from "@/lib/pronoclash/prediction-lock";
+import { CARD_MESSAGES } from "@/lib/pronoclash/card-messages";
 
 type MatchRow = {
   id: string;
@@ -30,7 +31,7 @@ export async function findUserPrediction(
 ) {
   let q = supabase
     .from("predictions")
-    .select("id")
+    .select("id, locked_at")
     .eq("user_id", userId)
     .eq("match_id", matchId);
 
@@ -42,13 +43,66 @@ export async function findUserPrediction(
 
   const { data, error } = await q.maybeSingle();
   if (error) throw new PredictionSaveError("Impossible de charger le pronostic.", 500);
-  return data as { id: string } | null;
+  return data as { id: string; locked_at: string | null } | null;
 }
 
-export function assertMatchOpenForPrediction(match: MatchRow, now = new Date()) {
+async function userHasVarPlay(
+  supabase: SupabaseClient,
+  userId: string,
+  matchId: string,
+  leagueId: string
+): Promise<boolean> {
+  const { data } = await supabase
+    .from("card_plays")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("league_id", leagueId)
+    .eq("match_id", matchId)
+    .eq("card_id", "var")
+    .maybeSingle();
+  return !!data;
+}
+
+async function userHasCartonRouge(
+  supabase: SupabaseClient,
+  userId: string,
+  matchId: string,
+  leagueId: string
+): Promise<boolean> {
+  const { data } = await supabase
+    .from("card_plays")
+    .select("id")
+    .eq("target_user_id", userId)
+    .eq("league_id", leagueId)
+    .eq("match_id", matchId)
+    .eq("card_id", "carton_rouge")
+    .maybeSingle();
+  return !!data;
+}
+
+export async function assertMatchOpenForPrediction(
+  supabase: SupabaseClient,
+  match: MatchRow,
+  userId: string,
+  leagueId: string | null,
+  now = new Date()
+) {
   if (match.status !== "scheduled") {
     throw new PredictionSaveError(PREDICTION_LOCKED_MESSAGE, 409);
   }
+
+  if (leagueId) {
+    const carton = await userHasCartonRouge(supabase, userId, match.id, leagueId);
+    if (carton) {
+      throw new PredictionSaveError(CARD_MESSAGES.cartonBlocked, 409);
+    }
+    const varActive = await userHasVarPlay(supabase, userId, match.id, leagueId);
+    if (isPredictionLocked(match.locked_at, match.kickoff_at, now, { varActive })) {
+      throw new PredictionSaveError(PREDICTION_LOCKED_MESSAGE, 409);
+    }
+    return;
+  }
+
   if (isPredictionLocked(match.locked_at, match.kickoff_at, now)) {
     throw new PredictionSaveError(PREDICTION_LOCKED_MESSAGE, 409);
   }
@@ -65,7 +119,7 @@ export async function saveUserPrediction(
   }
 ): Promise<{ created: boolean; message: string }> {
   const { userId, match, leagueId, home, away } = params;
-  assertMatchOpenForPrediction(match);
+  await assertMatchOpenForPrediction(supabase, match, userId, leagueId);
 
   const homeTeamId = match.home_team_id;
   const awayTeamId = match.away_team_id;
@@ -87,6 +141,12 @@ export async function saveUserPrediction(
   const existing = await findUserPrediction(supabase, userId, match.id, leagueId);
 
   if (existing) {
+    if (
+      existing.locked_at &&
+      isPredictionLocked(existing.locked_at, undefined, new Date())
+    ) {
+      throw new PredictionSaveError(CARD_MESSAGES.cartonBlocked, 409);
+    }
     const { error } = await supabase
       .from("predictions")
       .update(scores)
