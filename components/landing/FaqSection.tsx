@@ -5,38 +5,27 @@ import { IconHelpCircle } from "@tabler/icons-react";
 import { brand } from "@/lib/brand/config";
 import { Reveal } from "@/components/landing/Reveal";
 import { SectionShell, SectionTitle } from "@/components/landing/SectionChrome";
+
 const ITEMS = [
   {
-    q: "Est-ce une application de paris ?",
-    a: `Non. ${brand.name} est un jeu de pronostics entre potes. Il n'y a aucune mise d'argent entre joueurs ni gain d'argent. Le seul lot existant (concours gratuit) est un objet physique offert.`,
+    q: "Est-ce une app de paris ?",
+    a: `Non. ${brand.name} est un jeu de pronostics entre potes. Il n'y a aucun pari d'argent entre joueurs ni gain d'argent direct.`,
   },
   {
-    q: "Faut-il payer pour participer au concours global ?",
-    a: "Non. Le concours est 100% gratuit. Il te suffit de t'inscrire et de pronostiquer les matchs de la ligue générale.",
+    q: "Faut-il payer pour jouer ?",
+    a: "Non. La ligue générale est gratuite : tu t'inscris, tu pronostiques et tu participes au concours global.",
   },
   {
-    q: "Peut-on gagner le concours sans payer ?",
-    a: "Oui. Le gagnant est le premier du classement général à la fin du tournoi. Aucun achat n'augmente tes chances.",
-  },
-  {
-    q: "À quoi sert le paiement, alors ?",
-    a: "À créer une ligue privée et débloquer le mode jeu avec cartes : Joker x2, Vol de score, Carton rouge, Tacle, VAR. Ces cartes n'influencent pas le concours global.",
+    q: "À quoi sert le paiement ?",
+    a: "À créer une ligue privée avec cartes d'attaque, classement privé et invitation WhatsApp. Un pack = une ligue.",
   },
   {
     q: "Peut-on rejoindre une ligue privée gratuitement ?",
-    a: "Oui. Seule la création est payante. Si un pote a créé une ligue, il peut t'inviter par lien WhatsApp.",
+    a: "Oui, si quelqu'un t'invite par lien. Seule la création de ligue privée est payante.",
   },
   {
-    q: "Peut-on créer une ligue gratuitement ?",
-    a: "Non pour une ligue privée. Tu peux toujours jouer dans la ligue générale, gratuite et ouverte à tous.",
-  },
-  {
-    q: "Je peux modifier mes pronostics ?",
-    a: "Oui, jusqu'au coup d'envoi du match. Après, ton pronostic est verrouillé.",
-  },
-  {
-    q: "Êtes-vous affiliés à la FIFA ou aux fédérations ?",
-    a: "Non. Aucune affiliation officielle avec la FIFA, la Coupe du Monde, les fédérations, les équipes ou les marques sportives.",
+    q: "Les cartes influencent-elles le concours global ?",
+    a: "Non. Les cartes (Joker, Vol de score, VAR…) n'agissent que dans les ligues privées, jamais sur le classement général.",
   },
 ];
 
@@ -45,9 +34,8 @@ export function FaqSection() {
     <SectionShell id="faq">
       <Reveal>
         <SectionTitle
-          line1="Toutes les bonnes"
-          line2Before=""
-          line2After=" questions."
+          line1="Questions"
+          line2Accent="fréquentes"
           icon={IconHelpCircle}
         />
       </Reveal>
@@ -68,9 +56,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   return (
     <div
       className={`pc-glass-card transition-[border-color,box-shadow] duration-300 ${
-        open
-          ? "!border-blue-500/30 shadow-[0_0_60px_rgba(59,130,246,0.2),inset_0_0_40px_rgba(59,130,246,0.1)]"
-          : ""
+        open ? "!border-violet-500/30 shadow-[0_0_40px_rgba(168,85,247,0.2)]" : ""
       }`}
     >
       <button
@@ -82,7 +68,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
         <span>{q}</span>
         <span
           className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 transition-transform duration-300 ${
-            open ? "rotate-45 border-blue-500/30 bg-blue-500/15" : ""
+            open ? "rotate-45 border-violet-500/30 bg-violet-500/15" : ""
           }`}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4}>
@@ -91,7 +77,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
         </span>
       </button>
       {open ? (
-        <div className="px-5 pb-5 text-sm leading-relaxed text-[#9ca3af] sm:px-6">{a}</div>
+        <div className="px-5 pb-5 text-sm leading-relaxed text-[var(--pc-muted)] sm:px-6">{a}</div>
       ) : null}
     </div>
   );

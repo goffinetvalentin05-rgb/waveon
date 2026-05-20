@@ -1,32 +1,30 @@
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
-import { CustomCursor } from "@/components/landing/CustomCursor";
 import { HeroSection } from "@/components/landing/HeroSection";
-import { WhySection } from "@/components/landing/WhySection";
-import { ContestSection } from "@/components/landing/ContestSection";
 import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
+import { GeneralLeagueSection } from "@/components/landing/GeneralLeagueSection";
+import { PrivateLeaguesSection } from "@/components/landing/PrivateLeaguesSection";
 import { CardsShowcase } from "@/components/landing/CardsShowcase";
-import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
+import { WhatsAppSection } from "@/components/landing/WhatsAppSection";
 import { PricingSection } from "@/components/landing/PricingSection";
 import { FaqSection } from "@/components/landing/FaqSection";
-import { FinalCtaSection } from "@/components/landing/FinalCtaSection";
+import "@/components/dashboard/pronoclash-dashboard.css";
+import "@/components/landing/pronoclash-landing.css";
 
 export function LandingPage() {
   return (
-    <div className="pc-landing-page relative min-h-screen overflow-x-clip font-[family-name:var(--font-inter)]">
+    <div className="pc-landing-page relative min-h-screen overflow-x-clip">
       <div className="pc-landing-glow-fixed" aria-hidden />
-      <CustomCursor />
       <MarketingHeader />
       <main>
         <HeroSection />
-        <WhySection />
-        <ContestSection />
         <HowItWorksSection />
+        <GeneralLeagueSection />
+        <PrivateLeaguesSection />
         <CardsShowcase />
-        <TestimonialsSection />
+        <WhatsAppSection />
         <PricingSection />
         <FaqSection />
-        <FinalCtaSection />
       </main>
       <MarketingFooter />
     </div>
