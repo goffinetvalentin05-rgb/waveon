@@ -205,7 +205,7 @@ export async function runFootballSync(
         city: m.city ?? null,
         country: m.country ?? null,
         kickoff_at: m.kickoffAt,
-        locked_at: m.lockedAt,
+        locked_at: m.lockedAt ?? m.kickoffAt,
         status: m.status,
         home_score: m.homeScore,
         away_score: m.awayScore,

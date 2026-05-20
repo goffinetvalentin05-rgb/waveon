@@ -130,14 +130,7 @@ export function scorePrediction(
   };
 }
 
-/** Helper : un pronostic est-il verrouillé (locked_at) à la date donnée ? */
-export function isPredictionLocked(
-  lockedAt: string | null | undefined,
-  kickoffAt: string | null | undefined,
-  now: Date = new Date()
-): boolean {
-  const t = now.getTime();
-  if (lockedAt && new Date(lockedAt).getTime() <= t) return true;
-  if (kickoffAt && new Date(kickoffAt).getTime() <= t) return true;
-  return false;
-}
+export {
+  isPredictionLocked,
+  PREDICTION_LOCKED_MESSAGE,
+} from "@/lib/pronoclash/prediction-lock";

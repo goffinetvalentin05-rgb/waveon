@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { IconBallFootball } from "@tabler/icons-react";
 import { PronoClashShell } from "@/components/dashboard/PronoClashShell";
 import { longStageLabel } from "@/lib/pronoclash/match-display";
+import {
+  isPredictionLocked,
+  PREDICTION_LOCKED_MESSAGE,
+} from "@/lib/pronoclash/prediction-lock";
 
 type TeamSide = {
   id: string;
@@ -65,9 +69,9 @@ export function MatchesClient({ username, email, matches, predictions, leagues }
     return map;
   }, [predictions]);
 
-  const now = Date.now();
   const isLocked = (m: Match) =>
-    new Date(m.locked_at).getTime() <= now || new Date(m.kickoff_at).getTime() <= now;
+    m.status !== "scheduled" ||
+    isPredictionLocked(m.locked_at, m.kickoff_at);
   const finished = matches.filter((m) => m.status === "finished");
   const locked = matches.filter(
     (m) => m.status !== "finished" && m.status !== "postponed" && isLocked(m)
@@ -210,17 +214,18 @@ function MatchRow({
   const [away, setAway] = useState<number>(prediction?.predicted_away_score ?? 0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [savedAt, setSavedAt] = useState<number | null>(null);
-
-  const kickoffPast = new Date(match.kickoff_at).getTime() <= Date.now();
-  const lockedPast = new Date(match.locked_at).getTime() <= Date.now();
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const hasTeams = !!match.home && !!match.away;
   const locked =
-    readonly || kickoffPast || lockedPast || match.status !== "scheduled" || !hasTeams;
+    readonly ||
+    match.status !== "scheduled" ||
+    isPredictionLocked(match.locked_at, match.kickoff_at) ||
+    !hasTeams;
 
   const save = async () => {
     setSaving(true);
     setError(null);
+    setSuccessMsg(null);
     try {
       const res = await fetch("/api/predictions", {
         method: "POST",
@@ -232,12 +237,15 @@ function MatchRow({
           awayScore: away,
         }),
       });
-      const j = (await res.json().catch(() => null)) as { error?: string } | null;
+      const j = (await res.json().catch(() => null)) as {
+        error?: string;
+        message?: string;
+      } | null;
       if (!res.ok) {
         setError(j?.error ?? "Erreur d'enregistrement.");
         return;
       }
-      setSavedAt(Date.now());
+      setSuccessMsg(j?.message ?? (prediction ? "Pronostic mis à jour" : "Pronostic enregistré"));
       onSaved();
     } catch {
       setError("Erreur réseau.");
@@ -361,14 +369,18 @@ function MatchRow({
       {!locked && hasTeams && match.status === "scheduled" ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <span style={{ fontSize: 11, color: "var(--pc-muted)" }}>
-            {savedAt ? "Pronostic enregistré ✓" : "Modifiable jusqu'au coup d'envoi"}
+            Modifiable jusqu&apos;au coup d&apos;envoi
           </span>
           <button type="button" onClick={save} disabled={saving} className="pc-btn primary">
-            {saving ? "Enregistrement…" : prediction ? "Mettre à jour" : "Verrouiller mon prono"}
+            {saving ? "Enregistrement…" : prediction ? "Mettre à jour" : "Enregistrer"}
           </button>
         </div>
       ) : locked && !prediction ? (
-        <p style={{ fontSize: 12, color: "var(--pc-muted)" }}>Pronostic verrouillé — aucun prono enregistré.</p>
+        <p style={{ fontSize: 12, color: "var(--pc-muted)" }}>{PREDICTION_LOCKED_MESSAGE}</p>
+      ) : null}
+
+      {successMsg && !locked ? (
+        <p style={{ marginTop: 8, fontSize: 12, color: "#6ee7b7" }}>{successMsg}</p>
       ) : null}
 
       {error ? (

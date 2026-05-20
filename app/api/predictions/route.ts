@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { createRouteHandlerSupabase } from "@/lib/supabase/route-handler";
-import { isPredictionLocked } from "@/lib/pronoclash/scoring";
+import {
+  PredictionSaveError,
+  saveUserPrediction,
+} from "@/lib/pronoclash/save-prediction";
 
 export const runtime = "nodejs";
 
@@ -17,10 +20,8 @@ function bad(message: string, status = 400) {
 
 /**
  * POST /api/predictions
- *  → enregistre un pronostic pour un match.
- *  - leagueId null = ligue générale (un seul pronostic global par user / match)
- *  - leagueId fourni = ligue privée (vérifie l'appartenance)
- *  - verrouille au coup d'envoi (kickoff_at) ou à locked_at
+ *  → enregistre ou met à jour un pronostic (ligue générale : league_id null).
+ *  → verrouillé côté serveur dès locked_at (défaut = kickoff_at).
  */
 export async function POST(req: Request) {
   let body: Payload;
@@ -41,7 +42,10 @@ export async function POST(req: Request) {
   if (!Number.isInteger(away) || away < 0 || away > 20) return bad("Score extérieur invalide.");
 
   const supabase = await createRouteHandlerSupabase();
-  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authErr,
+  } = await supabase.auth.getUser();
   if (authErr || !user) return bad("Non authentifié.", 401);
 
   const { data: match } = await supabase
@@ -50,14 +54,6 @@ export async function POST(req: Request) {
     .eq("id", matchId)
     .maybeSingle();
   if (!match) return bad("Match introuvable.", 404);
-  if (match.status === "finished" || match.status === "postponed") {
-    return bad("Match indisponible : impossible de pronostiquer.", 409);
-  }
-  if (
-    isPredictionLocked(match.locked_at as string | null, match.kickoff_at as string)
-  ) {
-    return bad("Le pronostic est verrouillé.", 409);
-  }
 
   if (leagueId) {
     const { data: membership } = await supabase
@@ -69,33 +65,27 @@ export async function POST(req: Request) {
     if (!membership) return bad("Tu n'es pas membre de cette ligue.", 403);
   }
 
-  const homeTeamId = (match as { home_team_id: string | null }).home_team_id;
-  const awayTeamId = (match as { away_team_id: string | null }).away_team_id;
-  const isDraw = home === away;
-  const predictedWinnerTeamId = isDraw
-    ? null
-    : home > away
-      ? homeTeamId
-      : awayTeamId;
-
-  const upsertPayload = {
-    user_id: user.id,
-    match_id: matchId,
-    league_id: leagueId,
-    predicted_home_score: home,
-    predicted_away_score: away,
-    predicted_winner_team_id: predictedWinnerTeamId,
-    predicted_is_draw: isDraw,
-  };
-
-  const { error: upErr } = await supabase
-    .from("predictions")
-    .upsert(upsertPayload, { onConflict: "user_id,match_id,league_id" });
-
-  if (upErr) {
-    console.error("[predictions] upsert", upErr);
-    return bad(upErr.message, 500);
+  try {
+    const result = await saveUserPrediction(supabase, {
+      userId: user.id,
+      match: match as {
+        id: string;
+        kickoff_at: string;
+        locked_at: string | null;
+        status: string;
+        home_team_id: string | null;
+        away_team_id: string | null;
+      },
+      leagueId,
+      home,
+      away,
+    });
+    return NextResponse.json({ ok: true, created: result.created, message: result.message });
+  } catch (err) {
+    if (err instanceof PredictionSaveError) {
+      return bad(err.message, err.status);
+    }
+    console.error("[predictions]", err);
+    return bad("Erreur serveur.", 500);
   }
-
-  return NextResponse.json({ ok: true });
 }
