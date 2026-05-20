@@ -1,5 +1,16 @@
--- Cartes ligue privée V1 : catalogue, normalisation, pack de départ
--- Schéma déjà dans 20260519180000_pronoclash_init.sql (cards, card_inventory, card_plays)
+-- =====================================================================
+-- Cartes ligue privée V1 — migration ADDITIVE UNIQUEMENT
+--
+-- SÉCURITÉ :
+--   - Aucune donnée existante supprimée
+--   - Pas de DROP / TRUNCATE / DELETE sur matches, teams, profiles, leagues, payments
+--   - Pas de modification de is_admin
+--   - UPDATE limité à card_plays.status ('active' → 'played')
+--
+-- Contenu :
+--   - Catalogue cards (UPSERT métadonnées)
+--   - Pack starter card_inventory (INSERT si absent)
+-- =====================================================================
 
 -- ---------------------------------------------------------------------
 -- 1) Catalogue V1 (5 cartes actives, autres désactivées)
@@ -23,7 +34,7 @@ on conflict (id) do update set
   is_active = excluded.is_active;
 
 -- ---------------------------------------------------------------------
--- 2) Statuts card_plays (ancien code utilisait "active")
+-- 2) Statuts card_plays (ancien code utilisait "active") — cartes uniquement
 -- ---------------------------------------------------------------------
 
 update public.card_plays
@@ -31,7 +42,7 @@ set status = 'played'
 where status = 'active';
 
 -- ---------------------------------------------------------------------
--- 3) Pack de départ pour membres de ligues privées actives sans inventaire
+-- 3) Pack de départ : membres ligue privée active sans inventaire
 -- ---------------------------------------------------------------------
 
 insert into public.card_inventory (user_id, league_id, card_id, quantity)
@@ -57,7 +68,7 @@ where l.kind is distinct from 'global'
 on conflict (user_id, league_id, card_id) do nothing;
 
 -- ---------------------------------------------------------------------
--- 4) VAR manquante (anciens packs sans var, inventaire déjà partiel)
+-- 4) VAR manquante (inventaire partiel legacy)
 -- ---------------------------------------------------------------------
 
 insert into public.card_inventory (user_id, league_id, card_id, quantity)

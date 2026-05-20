@@ -6,6 +6,7 @@ import { Logo } from "@/components/brand/Logo";
 import { brand } from "@/lib/brand/config";
 import { AVATAR_COLORS, type AvatarColorId } from "@/lib/pronoclash/avatar-colors";
 import { ui } from "@/lib/design/tokens";
+import "@/components/dashboard/pronoclash-dashboard.css";
 
 type OnboardingClientProps = {
   nextHint: string | null;

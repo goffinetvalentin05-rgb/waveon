@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { isLeaguePlanId, type LeaguePlanId } from "@/lib/stripe/config";
-import { ui } from "@/lib/design/tokens";
+import { GradientButton } from "@/components/pronoclash/ui/GradientButton";
 
 export function RetryPaymentButton({
   leagueId,
@@ -45,17 +45,10 @@ export function RetryPaymentButton({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={retry}
-        disabled={loading}
-        className={`${ui.btnPrimary} w-full justify-center`}
-      >
+      <GradientButton type="button" onClick={retry} disabled={loading} block large>
         {loading ? "Redirection…" : "Réessayer le paiement"}
-      </button>
-      {error ? (
-        <p className="text-xs text-rose-300">{error}</p>
-      ) : null}
+      </GradientButton>
+      {error ? <p className="pc-alert error">{error}</p> : null}
     </>
   );
 }

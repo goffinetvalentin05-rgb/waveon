@@ -1,6 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { createServerComponentSupabase } from "@/lib/supabase/server-component";
 import { getAppBaseUrl } from "@/lib/brand/config";
+import { AppSecondaryPage } from "@/components/pronoclash/AppSecondaryPage";
+import { fetchAppShellProfile } from "@/lib/pronoclash/app-shell-profile";
 import { InviteCard } from "./InviteCard";
 
 type RouteParams = { slug: string };
@@ -28,20 +30,20 @@ export default async function InvitePage(props: { params: Promise<RouteParams> }
     ? `${baseUrl}/leagues/join/${league.invite_code}`
     : `${baseUrl}/leagues/${league.slug}`;
 
+  const shell = await fetchAppShellProfile();
+
   return (
-    <div className="mx-auto max-w-xl space-y-6">
-      <header>
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-300/80">
-          Inviter ta ligue
-        </p>
-        <h1 className="mt-2 font-display text-3xl font-semibold text-white sm:text-4xl">
-          Lance ton groupe WhatsApp
-        </h1>
-        <p className="mt-2 text-sm text-white/55">
-          Un clic, un lien, et tes potes rejoignent {league.name}.
-        </p>
-      </header>
+    <AppSecondaryPage
+      pageTitle="Inviter ta ligue"
+      username={shell.username}
+      email={shell.email}
+      isAdmin={shell.isAdmin}
+    >
+      <p className="pc-eyebrow">WhatsApp</p>
+      <p className="pc-body-text" style={{ marginTop: 0 }}>
+        Un clic, un lien, et tes potes rejoignent <strong style={{ color: "var(--pc-text)" }}>{league.name}</strong>.
+      </p>
       <InviteCard leagueName={league.name} inviteUrl={inviteUrl} />
-    </div>
+    </AppSecondaryPage>
   );
 }

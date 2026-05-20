@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
+import "@/components/dashboard/pronoclash-dashboard.css";
 
 type AuthShellProps = {
   title: string;
@@ -18,7 +19,7 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
       </header>
       <main className="relative z-10 flex flex-1 items-center justify-center px-5 pb-10 sm:px-8">
         <div className="w-full max-w-md">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-7 backdrop-blur-xl shadow-[0_25px_80px_-30px_rgba(99,102,241,0.5)] sm:p-9">
+          <div className="pc-glass pc-glass-glow-violet rounded-2xl p-7 sm:p-9">
             <h1 className="font-display text-2xl font-semibold text-white sm:text-3xl">
               {title}
             </h1>

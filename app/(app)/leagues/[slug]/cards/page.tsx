@@ -1,7 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { createServerComponentSupabase } from "@/lib/supabase/server-component";
-import { ui } from "@/lib/design/tokens";
 import { V1_CARD_IDS } from "@/lib/pronoclash/card-messages";
+import { AppSecondaryPage } from "@/components/pronoclash/AppSecondaryPage";
+import { fetchAppShellProfile } from "@/lib/pronoclash/app-shell-profile";
 import { CardsClient } from "./CardsClient";
 
 type RouteParams = { slug: string };
@@ -61,22 +62,22 @@ export default async function LeagueCardsPage(props: { params: Promise<RoutePara
   type Member = { user_id: string; profiles: { username: string | null } | null };
   const members = (membersRes.data ?? []) as unknown as Member[];
 
+  const shell = await fetchAppShellProfile();
+
   return (
-    <div className="space-y-6">
-      <header>
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-300/80">
-          Cartes
-        </p>
-        <h1 className="mt-2 font-display text-3xl font-semibold text-white sm:text-4xl">
-          {league.name}
-        </h1>
-        <p className="mt-2 text-sm text-white/55">
-          Joue 1 carte par match. Choisis ton match, ta carte, ta cible si besoin.
-        </p>
-      </header>
+    <AppSecondaryPage
+      pageTitle={`${league.name} · cartes`}
+      username={shell.username}
+      email={shell.email}
+      isAdmin={shell.isAdmin}
+    >
+      <p className="pc-eyebrow">Cartes</p>
+      <p className="pc-body-text" style={{ marginTop: 0 }}>
+        Joue 1 carte par match. Choisis ton match, ta carte, ta cible si besoin.
+      </p>
 
       {totalQty === 0 ? (
-        <div className={`${ui.glassCard} p-6 text-sm text-white/55`}>
+        <div className="pc-glass pc-form-card pc-body-text" style={{ marginTop: 16 }}>
           Aucune carte restante
         </div>
       ) : (
@@ -88,6 +89,6 @@ export default async function LeagueCardsPage(props: { params: Promise<RoutePara
           members={members.filter((m) => m.user_id !== user.id)}
         />
       )}
-    </div>
+    </AppSecondaryPage>
   );
 }

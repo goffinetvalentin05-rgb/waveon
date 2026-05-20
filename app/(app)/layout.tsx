@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createServerComponentSupabase } from "@/lib/supabase/server-component";
 import { AppShell } from "@/components/app/AppShell";
+import "@/components/dashboard/pronoclash-dashboard.css";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createServerComponentSupabase();

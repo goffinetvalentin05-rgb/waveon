@@ -3,7 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { createServerComponentSupabase } from "@/lib/supabase/server-component";
 import { getAppBaseUrl } from "@/lib/brand/config";
 import { Avatar } from "@/components/app/Avatar";
-import { ui } from "@/lib/design/tokens";
+import { AppSecondaryPage } from "@/components/pronoclash/AppSecondaryPage";
+import { fetchAppShellProfile } from "@/lib/pronoclash/app-shell-profile";
 
 type RouteParams = { slug: string };
 
@@ -50,10 +51,17 @@ export default async function LeaguePage(props: { params: Promise<RouteParams> }
       ? `${baseUrl}/leagues/join/${league.invite_code}`
       : null;
 
+  const shell = await fetchAppShellProfile();
+
   return (
+    <AppSecondaryPage
+      pageTitle={league.name}
+      username={shell.username}
+      email={shell.email}
+      isAdmin={shell.isAdmin}
+    >
     <div className="space-y-6">
-      <header className={`${ui.glassCard} relative overflow-hidden p-6 sm:p-8`}>
-        <div className="pc-aurora opacity-40" />
+      <header className="pc-glass pc-glass-glow-violet relative overflow-hidden p-6 sm:p-8">
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
@@ -82,7 +90,7 @@ export default async function LeaguePage(props: { params: Promise<RouteParams> }
           </div>
           {isPrivate && league.status === "active" ? (
             <div className="flex flex-wrap gap-2">
-              <Link href={`/leagues/${league.slug}/invite`} className={ui.btnPrimary}>
+              <Link href={`/leagues/${league.slug}/invite`} className="pc-btn primary">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="mr-2">
                   <path d="M20.5 3.5A11 11 0 0 0 3.6 17l-1.6 5 5.1-1.5A11 11 0 0 0 20.5 3.5Z"/>
                 </svg>
@@ -94,7 +102,7 @@ export default async function LeaguePage(props: { params: Promise<RouteParams> }
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-        <section className={`${ui.glassCard} p-6`}>
+        <section className="pc-glass p-6">
           <h2 className="text-lg font-semibold text-white">Classement</h2>
           <ul className="mt-4 space-y-2">
             {sortedMembers.length === 0 ? (
@@ -152,7 +160,7 @@ export default async function LeaguePage(props: { params: Promise<RouteParams> }
         </section>
 
         <aside className="space-y-6">
-          <section className={`${ui.glassCard} p-6`}>
+          <section className="pc-glass p-6">
             <h2 className="text-lg font-semibold text-white">Cartes</h2>
             <p className="mt-2 text-sm text-white/55">
               {isPrivate
@@ -160,14 +168,14 @@ export default async function LeaguePage(props: { params: Promise<RouteParams> }
                 : "Les cartes ne sont disponibles que dans les ligues privées."}
             </p>
             {isPrivate ? (
-              <Link href={`/matches`} className={`${ui.btnSecondary} mt-4 w-full justify-center`}>
+              <Link href="/matches" className="pc-btn ghost block" style={{ marginTop: 16 }}>
                 Voir les matchs
               </Link>
             ) : null}
           </section>
 
           {isOwner && league.status === "active" && inviteUrl ? (
-            <section className={`${ui.glassCard} p-6`}>
+            <section className="pc-glass p-6">
               <h2 className="text-lg font-semibold text-white">Invitation</h2>
               <p className="mt-2 text-sm text-white/55">
                 Partage ce lien à tes potes pour qu&apos;ils rejoignent la ligue.
@@ -177,7 +185,8 @@ export default async function LeaguePage(props: { params: Promise<RouteParams> }
               </p>
               <Link
                 href={`/leagues/${league.slug}/invite`}
-                className={`${ui.btnSecondary} mt-4 w-full justify-center`}
+                className="pc-btn ghost block"
+                style={{ marginTop: 16 }}
               >
                 Message WhatsApp
               </Link>
@@ -185,7 +194,7 @@ export default async function LeaguePage(props: { params: Promise<RouteParams> }
           ) : null}
 
           {isMember ? (
-            <section className={`${ui.glassCard} p-6`}>
+            <section className="pc-glass p-6">
               <h2 className="text-lg font-semibold text-white">Tu en es</h2>
               <p className="mt-2 text-sm text-white/55">
                 Tes pronostics dans cette ligue comptent pour le classement ci-contre.
@@ -195,5 +204,6 @@ export default async function LeaguePage(props: { params: Promise<RouteParams> }
         </aside>
       </div>
     </div>
+    </AppSecondaryPage>
   );
 }

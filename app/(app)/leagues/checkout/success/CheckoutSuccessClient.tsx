@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ui } from "@/lib/design/tokens";
+import { GlassPanel } from "@/components/pronoclash/ui/GlassPanel";
+import { GradientButton } from "@/components/pronoclash/ui/GradientButton";
+import { SecondaryButton } from "@/components/pronoclash/ui/SecondaryButton";
 
 type Props = {
   sessionId: string;
@@ -28,10 +30,10 @@ export function CheckoutSuccessClient({
 
   useEffect(() => {
     if (ready) {
-      const t = setTimeout(() => router.replace(`/leagues/${slug}`), 2500);
+      const t = setTimeout(() => router.replace(`/leagues/${slug}`), 2200);
       return () => clearTimeout(t);
     }
-    if (attempts >= 12) return;
+    if (attempts >= 24) return;
 
     const timer = setTimeout(async () => {
       const res = await fetch(
@@ -53,43 +55,56 @@ export function CheckoutSuccessClient({
 
   if (ready) {
     return (
-      <div className={`${ui.glowCard} p-8 text-center`}>
-        <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 text-white">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
-            <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+      <GlassPanel glow="violet" className="pc-state-card pc-animate-in">
+        <div className="pc-state-icon success" aria-hidden>
+          ✓
         </div>
-        <h1 className="mt-5 font-display text-3xl font-semibold text-white">Ta ligue est prête</h1>
-        <p className="mt-2 text-sm text-white/65">
-          <span className="font-semibold text-white">{name}</span> est active. Redirection…
+        <h1 className="pc-state-title">Ta ligue est prête</h1>
+        <p className="pc-state-text">
+          {name ? (
+            <>
+              <strong style={{ color: "var(--pc-text)" }}>{name}</strong> est active. Redirection
+              vers ta ligue…
+            </>
+          ) : (
+            "Ta ligue est active. Redirection…"
+          )}
         </p>
-        <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <Link href={`/leagues/${slug}`} className={ui.btnPrimary}>
+        <div className="pc-state-actions">
+          <Link href={`/leagues/${slug}`} className="pc-btn primary lg block">
             Ouvrir ma ligue
           </Link>
-          <Link href={`/leagues/${slug}/invite`} className={ui.btnSecondary}>
+          <SecondaryButton href={`/leagues/${slug}/invite`} block>
             Inviter sur WhatsApp
-          </Link>
+          </SecondaryButton>
         </div>
-      </div>
+      </GlassPanel>
     );
   }
 
   return (
-    <div className={`${ui.glassCard} p-8 text-center`}>
-      <h1 className="font-display text-2xl font-semibold text-white">Paiement reçu</h1>
-      <p className="mt-3 text-sm text-white/65">
-        Création de ta ligue en cours… Le webhook Stripe active ta ligue en quelques secondes.
+    <GlassPanel glow="violet" className="pc-state-card pc-animate-in">
+      <div className="pc-state-icon" aria-hidden>
+        ⏳
+      </div>
+      <h1 className="pc-state-title">Paiement reçu</h1>
+      <p className="pc-state-text">
+        Activation de ta ligue en cours… Cette page se met à jour automatiquement dès que Stripe a
+        confirmé le paiement.
       </p>
-      <div className="mt-6 flex flex-col items-center gap-3">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-blue-400" />
-        <button type="button" onClick={() => window.location.reload()} className={ui.btnGhost}>
+      <div className="pc-state-spinner" role="status" aria-label="Chargement" />
+      <div className="pc-state-actions">
+        <button
+          type="button"
+          className="pc-btn ghost block"
+          onClick={() => window.location.reload()}
+        >
           Recharger la page
         </button>
-        <Link href="/dashboard" className="text-xs text-white/50 hover:text-white/70">
-          Retour au dashboard
-        </Link>
+        <SecondaryButton href="/dashboard" block>
+          Retour à l&apos;arène
+        </SecondaryButton>
       </div>
-    </div>
+    </GlassPanel>
   );
 }

@@ -1,6 +1,7 @@
--- Optionnel : corriger les anciens packs (2× joker_x2 → 1×)
--- À lancer manuellement en SQL Editor si des comptes de test ont l'ancien pack.
--- Ne modifie pas les inventaires où une carte a déjà été jouée (card_plays).
+-- OPTIONNEL — à lancer manuellement dans le SQL Editor si besoin
+-- Ne pas inclure dans db push automatique.
+-- Corrige joker_x2 quantity 2 → 1 uniquement si la carte n'a jamais été jouée.
+-- N'affecte pas matches, profiles.is_admin, payments, leagues.
 
 update public.card_inventory ci
 set quantity = 1,

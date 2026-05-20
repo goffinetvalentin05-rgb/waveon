@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createServerComponentSupabase } from "@/lib/supabase/server-component";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { ui } from "@/lib/design/tokens";
+import { fetchAppShellProfile } from "@/lib/pronoclash/app-shell-profile";
+import { CheckoutSuccessPageClient } from "./CheckoutSuccessPageClient";
 
 type SearchParams = { [k: string]: string | string[] | undefined };
 
@@ -19,41 +19,28 @@ export default async function LeagueCheckoutSuccessPage(props: {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  const shell = await fetchAppShellProfile();
   const admin = createAdminSupabaseClient();
+  const { data: league } = await admin
+    .from("leagues")
+    .select("slug, status, name")
+    .eq("stripe_checkout_session_id", sessionId)
+    .eq("owner_id", user.id)
+    .maybeSingle();
 
-  for (let i = 0; i < 24; i++) {
-    const res = await admin
-      .from("leagues")
-      .select("slug, status")
-      .eq("stripe_checkout_session_id", sessionId)
-      .maybeSingle();
-    if (res.data?.status === "active") {
-      redirect(`/leagues/${res.data.slug}`);
-    }
-    await new Promise((r) => setTimeout(r, 500));
+  if (league?.status === "active" && league.slug) {
+    redirect(`/leagues/${league.slug}`);
   }
 
   return (
-    <div className="mx-auto max-w-xl space-y-6">
-      <div className={`${ui.glowCard} p-8 text-center`}>
-        <div className="mx-auto inline-flex h-14 w-14 animate-pulse items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-blue-500 text-white">
-          <span className="text-2xl" aria-hidden>
-            ⏳
-          </span>
-        </div>
-        <h1 className="mt-5 font-display text-2xl font-semibold text-white">
-          Paiement reçu
-        </h1>
-        <p className="mt-3 text-sm text-white/65">
-          On active ta ligue… Cette page se mettra à jour dans quelques secondes.
-        </p>
-        <Link
-          href="/dashboard"
-          className={`${ui.btnSecondary} mt-6 inline-flex`}
-        >
-          Retour au dashboard
-        </Link>
-      </div>
-    </div>
+    <CheckoutSuccessPageClient
+      sessionId={sessionId}
+      initialSlug={league?.slug ?? null}
+      initialStatus={league?.status ?? null}
+      initialName={league?.name ?? null}
+      username={shell.username}
+      email={shell.email}
+      isAdmin={shell.isAdmin}
+    />
   );
 }

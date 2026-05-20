@@ -1,5 +1,6 @@
--- Accorde is_admin à un compte existant (Prono Clash).
--- À exécuter dans le SQL Editor Supabase (production) une fois le user inscrit.
+-- Accorde is_admin à UN compte existant (Prono Clash).
+-- MANUEL UNIQUEMENT — SQL Editor production. Jamais dans une migration automatique.
+-- Ne met jamais is_admin = false en masse.
 
 update public.profiles p
 set is_admin = true

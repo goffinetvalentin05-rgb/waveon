@@ -1112,6 +1112,122 @@ button.pc-icon-btn {
   margin-bottom: 16px;
 }
 
+/* Pages d'état (checkout, confirmations) */
+.pc-state-page {
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 4px 0 28px;
+}
+
+.pc-state-card {
+  padding: 28px 22px;
+  text-align: center;
+}
+
+.pc-state-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.35), rgba(168, 85, 247, 0.25));
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  box-shadow: 0 0 32px -8px rgba(168, 85, 247, 0.5);
+}
+
+.pc-state-icon.success {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.35), rgba(34, 211, 238, 0.2));
+  border-color: rgba(52, 211, 153, 0.4);
+  box-shadow: 0 0 32px -8px rgba(52, 211, 153, 0.45);
+}
+
+.pc-state-icon.warn {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.3), rgba(168, 85, 247, 0.2));
+  border-color: rgba(249, 115, 22, 0.35);
+  box-shadow: 0 0 32px -8px rgba(249, 115, 22, 0.4);
+}
+
+.pc-state-title {
+  font-family: var(--pc-font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 10px;
+  color: var(--pc-text);
+}
+
+.pc-state-text {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--pc-muted);
+  margin: 0;
+}
+
+.pc-state-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.pc-state-spinner {
+  width: 36px;
+  height: 36px;
+  margin: 18px auto 0;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-top-color: var(--pc-violet);
+  animation: pc-spin 0.85s linear infinite;
+}
+
+@keyframes pc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pc-admin-wrap {
+  display: grid;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (min-width: 960px) {
+  .pc-admin-wrap {
+    grid-template-columns: 220px 1fr;
+  }
+}
+
+.pc-admin-wrap .pc-glass {
+  border-radius: var(--pc-radius-md);
+  padding: 14px;
+}
+
+.pc-admin-nav-link {
+  display: block;
+  border-radius: 12px;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--pc-muted);
+  text-decoration: none;
+  transition: background 0.2s var(--pc-ease), color 0.2s var(--pc-ease);
+}
+
+.pc-admin-nav-link:hover {
+  background: var(--pc-surface-hover);
+  color: var(--pc-text);
+}
+
+.pc-admin-nav-link.active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.1));
+  color: var(--pc-text);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+}
+
 .pc-plan-grid {
   display: grid;
   gap: 10px;

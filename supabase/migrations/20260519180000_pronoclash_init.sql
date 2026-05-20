@@ -1,77 +1,15 @@
 -- =====================================================================
 --  Prono Clash — Migration d'initialisation (v2, tournoi mondial 2026)
---  Objectif : remplacer le schéma SaaS Waevon (réservations) par le
---             schéma jeu de pronostics Prono Clash.
 --
---  Cette migration :
---    1. supprime proprement les anciennes tables wavon_* et structures
---       métier liées (réservations, services, clients, factures, etc.)
---    2. supprime toute version précédente de Prono Clash si existante
---    3. recrée un schéma propre dédié à Prono Clash v2
---    4. active RLS et définit les policies
---    5. seed 12 groupes + 48 équipes du tournoi mondial 2026
+--  SÉCURITÉ DONNÉES (production) :
+--    - AUCUN DROP TABLE / TRUNCATE / DELETE sur données métier
+--    - Ne modifie jamais is_admin sur les profils existants
+--    - Ne touche pas aux matchs importés (Sportmonks) ni aux paiements
+--    - CREATE TABLE / INDEX IF NOT EXISTS uniquement
+--    - Seeds groupes/équipes : ON CONFLICT DO NOTHING uniquement
 --
---  ATTENTION : destructive. Pas de rollback automatique des données.
+--  Ne pas utiliser `supabase db reset` sur la base de production.
 -- =====================================================================
-
--- ---------------------------------------------------------------------
--- 1) Nettoyage de l'ancien schéma Waevon
--- ---------------------------------------------------------------------
-
-drop trigger if exists on_auth_user_created on auth.users;
-drop trigger if exists on_auth_user_created_init on auth.users;
-drop function if exists public.handle_new_user() cascade;
-drop function if exists public.init_new_user() cascade;
-drop function if exists public.wavon_init_new_user() cascade;
-
-drop table if exists public.wavon_email_delivery_logs cascade;
-drop table if exists public.wavon_email_logs cascade;
-drop table if exists public.wavon_email_templates cascade;
-drop table if exists public.wavon_email_settings cascade;
-drop table if exists public.wavon_invoice_items cascade;
-drop table if exists public.wavon_invoices cascade;
-drop table if exists public.wavon_invoice_settings cascade;
-drop table if exists public.wavon_invoice_counters cascade;
-drop table if exists public.wavon_blocked_slots cascade;
-drop table if exists public.wavon_availability_segments cascade;
-drop table if exists public.wavon_availability cascade;
-drop table if exists public.wavon_reservations cascade;
-drop table if exists public.wavon_clients cascade;
-drop table if exists public.wavon_services cascade;
-drop table if exists public.wavon_employees cascade;
-drop table if exists public.wavon_businesses cascade;
-drop table if exists public.wavon_profiles cascade;
-drop table if exists public.dashboard_whatsapp_messages cascade;
-drop table if exists public.dashboard_whatsapp_threads cascade;
-drop table if exists public.wheel_pool cascade;
-drop table if exists public.participations cascade;
-
--- ---------------------------------------------------------------------
--- 2) Nettoyage de toute version Prono Clash existante (idempotence)
--- ---------------------------------------------------------------------
-
-drop function if exists public.is_admin() cascade;
-drop function if exists public.is_league_member(uuid) cascade;
-drop function if exists public.tg_set_updated_at() cascade;
-
-drop table if exists public.card_plays cascade;
-drop table if exists public.card_inventory cascade;
-drop table if exists public.cards cascade;
-drop table if exists public.scoring_events cascade;
-drop table if exists public.predictions cascade;
-drop table if exists public.tournament_predictions cascade;
-drop table if exists public.contest_entries cascade;
-drop table if exists public.contest_results cascade;
-drop table if exists public.contest_settings cascade;
-drop table if exists public.payments cascade;
-drop table if exists public.league_members cascade;
-drop table if exists public.leagues cascade;
-drop table if exists public.matches cascade;
-drop table if exists public.players cascade;
-drop table if exists public.teams cascade;
-drop table if exists public.groups cascade;
-drop table if exists public.app_settings cascade;
-drop table if exists public.profiles cascade;
 
 -- ---------------------------------------------------------------------
 -- 3) Utilitaires
@@ -93,7 +31,7 @@ $$;
 -- 4) Profils (étend auth.users)
 -- ---------------------------------------------------------------------
 
-create table public.profiles (
+create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text,
   username text unique,
@@ -111,8 +49,8 @@ create table public.profiles (
   updated_at timestamptz default timezone('utc', now()) not null
 );
 
-create index profiles_username_idx on public.profiles(username);
-create index profiles_total_points_idx on public.profiles(total_points desc);
+create index if not exists profiles_username_idx on public.profiles(username);
+create index if not exists profiles_total_points_idx on public.profiles(total_points desc);
 
 create trigger profiles_set_updated_at
   before update on public.profiles
@@ -133,6 +71,7 @@ begin
 end;
 $$;
 
+drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
@@ -155,7 +94,7 @@ $$;
 -- 5) App settings (kv simple)
 -- ---------------------------------------------------------------------
 
-create table public.app_settings (
+create table if not exists public.app_settings (
   key text primary key,
   value jsonb not null default '{}'::jsonb,
   updated_at timestamptz default timezone('utc', now()) not null
@@ -176,7 +115,7 @@ on conflict do nothing;
 -- 6) Groupes du tournoi (A à L)
 -- ---------------------------------------------------------------------
 
-create table public.groups (
+create table if not exists public.groups (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,
   display_order integer not null default 0,
@@ -187,7 +126,7 @@ create table public.groups (
 -- 7) Équipes
 -- ---------------------------------------------------------------------
 
-create table public.teams (
+create table if not exists public.teams (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   slug text unique,
@@ -201,8 +140,8 @@ create table public.teams (
   updated_at timestamptz default timezone('utc', now()) not null
 );
 
-create index teams_group_idx on public.teams(group_name);
-create index teams_country_code_idx on public.teams(country_code);
+create index if not exists teams_group_idx on public.teams(group_name);
+create index if not exists teams_country_code_idx on public.teams(country_code);
 
 create trigger teams_set_updated_at
   before update on public.teams
@@ -212,7 +151,7 @@ create trigger teams_set_updated_at
 -- 8) Matchs
 -- ---------------------------------------------------------------------
 
-create table public.matches (
+create table if not exists public.matches (
   id uuid primary key default gen_random_uuid(),
   match_number integer unique,
   home_team_id uuid references public.teams(id) on delete set null,
@@ -235,9 +174,9 @@ create table public.matches (
   updated_at timestamptz default timezone('utc', now()) not null
 );
 
-create index matches_kickoff_idx on public.matches(kickoff_at);
-create index matches_status_idx on public.matches(status);
-create index matches_stage_idx on public.matches(stage);
+create index if not exists matches_kickoff_idx on public.matches(kickoff_at);
+create index if not exists matches_status_idx on public.matches(status);
+create index if not exists matches_stage_idx on public.matches(stage);
 
 create trigger matches_set_updated_at
   before update on public.matches
@@ -247,7 +186,7 @@ create trigger matches_set_updated_at
 -- 9) Ligues
 -- ---------------------------------------------------------------------
 
-create table public.leagues (
+create table if not exists public.leagues (
   id uuid primary key default gen_random_uuid(),
   slug text not null unique,
   name text not null,
@@ -265,9 +204,9 @@ create table public.leagues (
   updated_at timestamptz default timezone('utc', now()) not null
 );
 
-create index leagues_owner_idx on public.leagues(owner_id);
-create index leagues_kind_idx on public.leagues(kind);
-create index leagues_invite_code_idx on public.leagues(invite_code);
+create index if not exists leagues_owner_idx on public.leagues(owner_id);
+create index if not exists leagues_kind_idx on public.leagues(kind);
+create index if not exists leagues_invite_code_idx on public.leagues(invite_code);
 
 create trigger leagues_set_updated_at
   before update on public.leagues
@@ -282,7 +221,7 @@ on conflict (slug) do nothing;
 -- 10) Membres de ligues
 -- ---------------------------------------------------------------------
 
-create table public.league_members (
+create table if not exists public.league_members (
   id uuid primary key default gen_random_uuid(),
   league_id uuid not null references public.leagues(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -292,9 +231,9 @@ create table public.league_members (
   unique(league_id, user_id)
 );
 
-create index league_members_league_idx on public.league_members(league_id);
-create index league_members_user_idx on public.league_members(user_id);
-create index league_members_points_idx on public.league_members(league_id, points desc);
+create index if not exists league_members_league_idx on public.league_members(league_id);
+create index if not exists league_members_user_idx on public.league_members(user_id);
+create index if not exists league_members_points_idx on public.league_members(league_id, points desc);
 
 -- Helper RLS : utilisateur membre d'une ligue ?
 create or replace function public.is_league_member(p_league_id uuid)
@@ -314,7 +253,7 @@ $$;
 -- 11) Pronostics
 -- ---------------------------------------------------------------------
 
-create table public.predictions (
+create table if not exists public.predictions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   league_id uuid references public.leagues(id) on delete cascade,
@@ -336,13 +275,13 @@ create table public.predictions (
 );
 
 -- Pour les pronostics globaux (league_id NULL), un seul par user/match
-create unique index predictions_user_match_global_idx
+create unique index if not exists predictions_user_match_global_idx
   on public.predictions(user_id, match_id)
   where league_id is null;
 
-create index predictions_match_idx on public.predictions(match_id);
-create index predictions_league_idx on public.predictions(league_id);
-create index predictions_user_idx on public.predictions(user_id);
+create index if not exists predictions_match_idx on public.predictions(match_id);
+create index if not exists predictions_league_idx on public.predictions(league_id);
+create index if not exists predictions_user_idx on public.predictions(user_id);
 
 create trigger predictions_set_updated_at
   before update on public.predictions
@@ -352,7 +291,7 @@ create trigger predictions_set_updated_at
 -- 12) Évènements de scoring (audit)
 -- ---------------------------------------------------------------------
 
-create table public.scoring_events (
+create table if not exists public.scoring_events (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   league_id uuid references public.leagues(id) on delete cascade,
@@ -363,15 +302,15 @@ create table public.scoring_events (
   created_at timestamptz default timezone('utc', now()) not null
 );
 
-create index scoring_events_user_idx on public.scoring_events(user_id);
-create index scoring_events_match_idx on public.scoring_events(match_id);
-create index scoring_events_league_idx on public.scoring_events(league_id);
+create index if not exists scoring_events_user_idx on public.scoring_events(user_id);
+create index if not exists scoring_events_match_idx on public.scoring_events(match_id);
+create index if not exists scoring_events_league_idx on public.scoring_events(league_id);
 
 -- ---------------------------------------------------------------------
 -- 13) Cartes (catalogue)
 -- ---------------------------------------------------------------------
 
-create table public.cards (
+create table if not exists public.cards (
   id text primary key, -- slug stable (joker_x2, vol_score, ...)
   name text not null,
   description text not null,
@@ -397,7 +336,7 @@ on conflict (id) do nothing;
 -- 14) Inventaire de cartes
 -- ---------------------------------------------------------------------
 
-create table public.card_inventory (
+create table if not exists public.card_inventory (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   league_id uuid not null references public.leagues(id) on delete cascade,
@@ -408,7 +347,7 @@ create table public.card_inventory (
   unique (user_id, league_id, card_id)
 );
 
-create index card_inventory_user_league_idx
+create index if not exists card_inventory_user_league_idx
   on public.card_inventory(user_id, league_id);
 
 create trigger card_inventory_set_updated_at
@@ -419,7 +358,7 @@ create trigger card_inventory_set_updated_at
 -- 15) Plays (journal des cartes jouées)
 -- ---------------------------------------------------------------------
 
-create table public.card_plays (
+create table if not exists public.card_plays (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   league_id uuid not null references public.leagues(id) on delete cascade,
@@ -431,17 +370,17 @@ create table public.card_plays (
   played_at timestamptz default timezone('utc', now()) not null
 );
 
-create unique index card_plays_one_per_match_idx
+create unique index if not exists card_plays_one_per_match_idx
   on public.card_plays(user_id, league_id, match_id);
 
-create index card_plays_match_idx on public.card_plays(match_id);
-create index card_plays_league_idx on public.card_plays(league_id);
+create index if not exists card_plays_match_idx on public.card_plays(match_id);
+create index if not exists card_plays_league_idx on public.card_plays(league_id);
 
 -- ---------------------------------------------------------------------
 -- 16) Paiements Stripe (one-time)
 -- ---------------------------------------------------------------------
 
-create table public.payments (
+create table if not exists public.payments (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete set null,
   league_id uuid references public.leagues(id) on delete set null,
@@ -456,8 +395,8 @@ create table public.payments (
   updated_at timestamptz default timezone('utc', now()) not null
 );
 
-create index payments_user_idx on public.payments(user_id);
-create index payments_status_idx on public.payments(status);
+create index if not exists payments_user_idx on public.payments(user_id);
+create index if not exists payments_status_idx on public.payments(status);
 
 create trigger payments_set_updated_at
   before update on public.payments
@@ -467,7 +406,7 @@ create trigger payments_set_updated_at
 -- 17) Concours global : paramètres + résultats
 -- ---------------------------------------------------------------------
 
-create table public.contest_settings (
+create table if not exists public.contest_settings (
   id uuid primary key default gen_random_uuid(),
   prize_title text default 'Maillot de football au choix' not null,
   prize_description text default 'Maillot ou bon équivalent. Valeur maximale CHF 120.' not null,
@@ -494,7 +433,7 @@ create trigger contest_settings_set_updated_at
 insert into public.contest_settings (id) values (gen_random_uuid())
 on conflict do nothing;
 
-create table public.contest_results (
+create table if not exists public.contest_results (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   global_points integer default 0 not null,
@@ -509,8 +448,8 @@ create table public.contest_results (
   unique(user_id)
 );
 
-create index contest_results_rank_idx on public.contest_results(rank);
-create index contest_results_winner_idx on public.contest_results(is_winner);
+create index if not exists contest_results_rank_idx on public.contest_results(rank);
+create index if not exists contest_results_winner_idx on public.contest_results(is_winner);
 
 create trigger contest_results_set_updated_at
   before update on public.contest_results
