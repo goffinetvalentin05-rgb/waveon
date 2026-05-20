@@ -1,38 +1,42 @@
 "use client";
 
 import Link from "next/link";
-import { format, isToday, isTomorrow } from "date-fns";
+import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   IconBallFootball,
   IconChevronRight,
-  IconHome,
   IconPlus,
   IconTrophy,
   IconUsers,
 } from "@tabler/icons-react";
 import { PronoClashShell } from "@/components/dashboard/PronoClashShell";
+import {
+  DashboardUpcomingSection,
+  matchesPageHref,
+} from "@/components/dashboard/DashboardClient";
+import type {
+  DashboardPrediction,
+  DashboardPreviewMatch,
+} from "@/components/dashboard/DashboardClient";
+import { TeamDisplay } from "@/components/pronoclash/TeamDisplay";
 import { longStageLabel } from "@/lib/pronoclash/match-display";
+import type { LeagueContextOption } from "@/components/pronoclash/LeagueContextSelector";
 
-export type DashboardLeague = {
+export type DashboardLeagueCard = {
   key: string;
+  leagueContextId: string | null;
   name: string;
-  kindLabel: string;
+  typeLabel: string;
+  type: "general" | "private" | "pro";
   points: number;
-  href: string;
+  rank: number | null;
+  memberCount?: number;
   pending?: boolean;
   pendingLabel?: string;
   payHref?: string;
-};
-
-export type DashboardUpcomingMatch = {
-  id: string;
-  kickoffAt: string;
-  compLabel: string;
-  homeName: string;
-  awayName: string;
-  homeEmoji?: string | null;
-  awayEmoji?: string | null;
+  predictHref: string;
+  leaderboardHref: string;
 };
 
 export type DashboardFeaturedMatch = {
@@ -41,12 +45,14 @@ export type DashboardFeaturedMatch = {
   kickoffAt: string;
   stage: string;
   groupName: string | null;
-  homeName: string;
-  awayName: string;
-  homeCode: string;
-  awayCode: string;
-  homeEmoji?: string | null;
-  awayEmoji?: string | null;
+  homeName: string | null;
+  awayName: string | null;
+  homeCountryCode: string | null;
+  awayCountryCode: string | null;
+  homeFlag: string | null;
+  awayFlag: string | null;
+  homePlaceholder: string | null;
+  awayPlaceholder: string | null;
   homeScore: number | null;
   awayScore: number | null;
 };
@@ -58,9 +64,11 @@ export type DashboardViewProps = {
   rank: number;
   contestTitle?: string | null;
   contestSubtitle?: string | null;
-  leagues: DashboardLeague[];
+  leagueCards: DashboardLeagueCard[];
   leaguesEmptyHint?: string;
-  upcomingMatches: DashboardUpcomingMatch[];
+  leagueOptions: LeagueContextOption[];
+  predictions: DashboardPrediction[];
+  upcomingMatches: DashboardPreviewMatch[];
   featuredMatch?: DashboardFeaturedMatch | null;
   hasAnyMatchesInDb: boolean;
   isAdmin?: boolean;
@@ -74,28 +82,6 @@ function leagueInitials(name: string) {
 
 function formatMatchTime(iso: string) {
   return format(new Date(iso), "HH:mm", { locale: fr });
-}
-
-function formatDateGroup(iso: string) {
-  const d = new Date(iso);
-  if (isToday(d)) return "Aujourd'hui";
-  if (isTomorrow(d)) return "Demain";
-  return format(d, "EEEE d MMMM", { locale: fr });
-}
-
-function groupMatchesByDate(matches: DashboardUpcomingMatch[]) {
-  const map = new Map<string, DashboardUpcomingMatch[]>();
-  for (const m of matches) {
-    const key = format(new Date(m.kickoffAt), "yyyy-MM-dd");
-    const list = map.get(key) ?? [];
-    list.push(m);
-    map.set(key, list);
-  }
-  return Array.from(map.entries()).map(([dateKey, items]) => ({
-    dateKey,
-    label: formatDateGroup(items[0].kickoffAt),
-    items,
-  }));
 }
 
 function FeaturedMatchCard({ match }: { match: DashboardFeaturedMatch }) {
@@ -124,10 +110,14 @@ function FeaturedMatchCard({ match }: { match: DashboardFeaturedMatch }) {
         </div>
         <p className="pc-featured-meta">{meta}</p>
         <div className="pc-featured-teams">
-          <div className="pc-featured-team">
-            <div className="pc-team-badge">{match.homeEmoji ?? match.homeCode}</div>
-            <span>{match.homeName}</span>
-          </div>
+          <TeamDisplay
+            name={match.homeName}
+            country_code={match.homeCountryCode}
+            flag_emoji={match.homeFlag}
+            placeholder={match.homePlaceholder}
+            align="center"
+            size="lg"
+          />
           {hasScore ? (
             <div className="pc-featured-score">
               <span>{match.homeScore}</span>
@@ -137,23 +127,83 @@ function FeaturedMatchCard({ match }: { match: DashboardFeaturedMatch }) {
           ) : (
             <span className="pc-featured-time">{formatMatchTime(match.kickoffAt)}</span>
           )}
-          <div className="pc-featured-team pc-featured-team-right">
-            <div className="pc-team-badge pc-team-badge-alt">
-              {match.awayEmoji ?? match.awayCode}
-            </div>
-            <span>{match.awayName}</span>
-          </div>
+          <TeamDisplay
+            name={match.awayName}
+            country_code={match.awayCountryCode}
+            flag_emoji={match.awayFlag}
+            placeholder={match.awayPlaceholder}
+            align="center"
+            size="lg"
+          />
         </div>
         <div className="pc-featured-actions">
           <Link href="/matches" className="pc-btn ghost light">
             Détail
           </Link>
-          <Link href="/matches" className="pc-btn primary light">
-            {isLive ? "Voir le match" : "Verrouiller mon prono"}
+          <Link href={matchesPageHref(null)} className="pc-btn primary light">
+            {isLive ? "Voir le match" : "Pronostiquer (générale)"}
           </Link>
         </div>
       </div>
     </div>
+  );
+}
+
+function LeagueCard({ league }: { league: DashboardLeagueCard }) {
+  return (
+    <article className={`pc-league-card pc-glass${league.pending ? " pending" : ""}`}>
+      <div className="pc-league-card-top">
+        <span className="pc-league-badge">{leagueInitials(league.name)}</span>
+        <div className="pc-league-card-meta">
+          <h3 className="pc-league-card-name">{league.name}</h3>
+          <span className={`pc-type-pill ${league.type}`}>{league.typeLabel}</span>
+        </div>
+        {league.rank !== null ? (
+          <span className="pc-league-card-rank">#{league.rank}</span>
+        ) : null}
+      </div>
+
+      {league.pending && league.pendingLabel ? (
+        <p className="pc-league-card-warn">{league.pendingLabel}</p>
+      ) : (
+        <div className="pc-league-card-stats">
+          <div>
+            <span className="pc-stat-label">Points</span>
+            <span className="pc-league-stat-value">{league.points}</span>
+          </div>
+          {league.memberCount !== undefined ? (
+            <div>
+              <span className="pc-stat-label">Membres</span>
+              <span className="pc-league-stat-value">{league.memberCount}</span>
+            </div>
+          ) : (
+            <div>
+              <span className="pc-stat-label">Rang</span>
+              <span className="pc-league-stat-value">
+                {league.rank !== null ? `#${league.rank}` : "—"}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="pc-league-card-actions">
+        {league.pending && league.payHref ? (
+          <Link href={league.payHref} className="pc-btn primary block">
+            Finaliser le paiement
+          </Link>
+        ) : (
+          <>
+            <Link href={league.predictHref} className="pc-btn primary">
+              Pronostiquer
+            </Link>
+            <Link href={league.leaderboardHref} className="pc-btn ghost">
+              Classement
+            </Link>
+          </>
+        )}
+      </div>
+    </article>
   );
 }
 
@@ -164,42 +214,52 @@ export function DashboardView({
   rank,
   contestTitle,
   contestSubtitle,
-  leagues,
+  leagueCards,
   leaguesEmptyHint,
+  leagueOptions,
+  predictions,
   upcomingMatches,
   featuredMatch,
   hasAnyMatchesInDb,
   isAdmin = false,
 }: DashboardViewProps) {
-  const matchGroups = groupMatchesByDate(upcomingMatches);
-  const showContest = Boolean(contestTitle);
   const showMatchesEmpty =
     !hasAnyMatchesInDb && !featuredMatch && upcomingMatches.length === 0;
 
   return (
-    <PronoClashShell pageTitle="Accueil" username={username} email={email}>
-      <div className="pc-stats-row">
-        <div className="pc-stat-card pc-glass">
-          <span className="pc-stat-label">Points</span>
-          <span className="pc-stat-value">{totalPoints}</span>
+    <PronoClashShell pageTitle="Explorer" username={username} email={email}>
+      <section className="pc-summary-header" aria-label="Résumé">
+        <div className="pc-summary-grid">
+          <div className="pc-stat-card pc-glass">
+            <span className="pc-stat-label">Mes points</span>
+            <span className="pc-stat-value">{totalPoints}</span>
+            <span className="pc-stat-foot">Ligue générale</span>
+          </div>
+          <div className="pc-stat-card pc-glass pc-stat-card-accent">
+            <span className="pc-stat-label">Mon rang global</span>
+            <span className="pc-stat-value pc-stat-gradient">#{rank}</span>
+            <span className="pc-stat-foot">Classement concours</span>
+          </div>
         </div>
-        <div className="pc-stat-card pc-glass pc-stat-card-accent">
-          <span className="pc-stat-label">Rang global</span>
-          <span className="pc-stat-value pc-stat-gradient">#{rank}</span>
+        <div className="pc-cta-row">
+          <Link href="/leagues/new" className="pc-cta-card pc-glass primary">
+            <IconPlus size={20} stroke={2} />
+            <span>
+              <strong>Créer une ligue</strong>
+              <small>Ligue privée payante · tes potes</small>
+            </span>
+          </Link>
+          <Link href="/leagues/join" className="pc-cta-card pc-glass">
+            <IconUsers size={20} stroke={1.8} />
+            <span>
+              <strong>Rejoindre</strong>
+              <small>Code d&apos;invitation</small>
+            </span>
+          </Link>
         </div>
-      </div>
+      </section>
 
-      {isAdmin ? (
-        <Link
-          href="/admin/tournament/matches"
-          className="pc-btn primary"
-          style={{ display: "inline-flex", width: "100%", justifyContent: "center", marginBottom: 4 }}
-        >
-          Admin matchs
-        </Link>
-      ) : null}
-
-      {showContest ? (
+      {contestTitle ? (
         <div className="pc-contest pc-glass">
           <div className="pc-contest-icon">
             <IconTrophy size={20} stroke={1.8} />
@@ -209,21 +269,43 @@ export function DashboardView({
             <p className="pc-contest-title">{contestTitle}</p>
             {contestSubtitle ? <p className="pc-contest-sub">{contestSubtitle}</p> : null}
           </div>
-          <div className="pc-contest-actions">
-            <Link href="/global/leaderboard" className="pc-btn ghost">
-              Classement
-            </Link>
-            <Link href="/matches" className="pc-btn primary">
-              Pronostiquer
-            </Link>
-          </div>
         </div>
       ) : null}
+
+      {isAdmin ? (
+        <Link
+          href="/admin/tournament/matches"
+          className="pc-btn primary block"
+          style={{ marginBottom: 4 }}
+        >
+          Admin matchs
+        </Link>
+      ) : null}
+
+      <div className="pc-section-head">
+        <div>
+          <h2 className="pc-section-title">Mes ligues</h2>
+          <p className="pc-section-desc">
+            La ligue générale et chaque ligue privée ont des pronostics séparés.
+          </p>
+        </div>
+      </div>
+
+      {leaguesEmptyHint ? <p className="pc-hint">{leaguesEmptyHint}</p> : null}
+
+      <div className="pc-league-cards">
+        {leagueCards.map((league) => (
+          <LeagueCard key={league.key} league={league} />
+        ))}
+      </div>
 
       {showMatchesEmpty ? (
         <div className="pc-empty pc-glass">
           <IconBallFootball size={28} stroke={1.5} className="pc-empty-icon" />
           <p>Les matchs du tournoi seront bientôt disponibles.</p>
+          <Link href={matchesPageHref(null)} className="pc-btn primary">
+            Voir les matchs
+          </Link>
         </div>
       ) : null}
 
@@ -231,7 +313,7 @@ export function DashboardView({
         <>
           <div className="pc-section-head">
             <h2 className="pc-section-title">Match à la une</h2>
-            <Link href="/matches" className="pc-link">
+            <Link href={matchesPageHref(null)} className="pc-link">
               Tout voir
               <IconChevronRight size={14} />
             </Link>
@@ -240,102 +322,16 @@ export function DashboardView({
         </>
       ) : null}
 
-      {upcomingMatches.length > 0 ? (
-        <>
-          <div className="pc-section-head">
-            <h2 className="pc-section-title">Prochains matchs</h2>
-            <Link href="/matches" className="pc-link">
-              Tout voir
-              <IconChevronRight size={14} />
-            </Link>
-          </div>
-          {matchGroups.map((group) => (
-            <section key={group.dateKey} className="pc-date-block">
-              <h3 className="pc-date-label">{group.label}</h3>
-              <div className="pc-match-list pc-glass">
-                {group.items.map((m, idx) => (
-                  <Link
-                    key={m.id}
-                    href="/matches"
-                    className={`pc-match-row${idx < group.items.length - 1 ? " bordered" : ""}`}
-                  >
-                    <div className="pc-match-side">
-                      <span className="pc-match-emoji">{m.homeEmoji ?? "🏳️"}</span>
-                      <span className="pc-match-name">{m.homeName}</span>
-                    </div>
-                    <div className="pc-match-center">
-                      <span className="pc-match-time">{formatMatchTime(m.kickoffAt)}</span>
-                      <span className="pc-match-stage">{m.compLabel}</span>
-                    </div>
-                    <div className="pc-match-side pc-match-side-right">
-                      <span className="pc-match-name">{m.awayName}</span>
-                      <span className="pc-match-emoji">{m.awayEmoji ?? "🏳️"}</span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          ))}
-        </>
-      ) : null}
-
-      <div className="pc-section-head">
-        <h2 className="pc-section-title">Mes ligues</h2>
-        <div className="pc-section-actions">
-          <Link href="/leagues/new" className="pc-icon-btn sm" aria-label="Créer une ligue">
-            <IconPlus size={16} stroke={2} />
-          </Link>
-          <Link href="/leagues/join" className="pc-icon-btn sm" aria-label="Rejoindre">
-            <IconUsers size={16} stroke={1.8} />
-          </Link>
-        </div>
-      </div>
-
-      {leaguesEmptyHint ? <p className="pc-hint">{leaguesEmptyHint}</p> : null}
-
-      <div className="pc-standings pc-glass">
-        <div className="pc-standings-head">
-          <span className="col-rank">#</span>
-          <span className="col-team">Ligue</span>
-          <span className="col-type">Type</span>
-          <span className="col-pts">Pts</span>
-          <span className="col-go" />
-        </div>
-        {leagues.length === 0 ? (
-          <p className="pc-standings-empty">Rejoins ou crée une ligue pour jouer avec tes potes.</p>
-        ) : (
-          leagues.map((ligue, i) => (
-            <div
-              key={ligue.key}
-              className={`pc-standings-row${ligue.pending ? " pending" : ""}`}
-            >
-              <span className="col-rank">{i + 1}</span>
-              <span className="col-team">
-                <span className="pc-league-badge">{leagueInitials(ligue.name)}</span>
-                <span className="pc-league-name">{ligue.name}</span>
-              </span>
-              <span className="col-type">{ligue.pending ? "—" : ligue.kindLabel}</span>
-              <span className="col-pts">{ligue.pending ? "—" : ligue.points}</span>
-              <span className="col-go">
-                {ligue.pending && ligue.payHref ? (
-                  <Link href={ligue.payHref} className="pc-row-link warn">
-                    Payer
-                  </Link>
-                ) : (
-                  <Link href={ligue.href} className="pc-row-link">
-                    <IconChevronRight size={16} />
-                  </Link>
-                )}
-              </span>
-            </div>
-          ))
-        )}
-      </div>
+      <DashboardUpcomingSection
+        leagueOptions={leagueOptions}
+        predictions={predictions}
+        upcomingMatches={upcomingMatches}
+      />
 
       <div className="pc-shortcuts">
-        <Link href="/matches" className="pc-shortcut pc-glass">
-          <IconHome size={18} stroke={1.8} />
-          <span>Pronostiquer</span>
+        <Link href={matchesPageHref(null)} className="pc-shortcut pc-glass">
+          <IconBallFootball size={18} stroke={1.8} />
+          <span>Tous les matchs</span>
           <IconChevronRight size={16} className="pc-shortcut-arrow" />
         </Link>
         <Link href="/global/leaderboard" className="pc-shortcut pc-glass">

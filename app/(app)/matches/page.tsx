@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createServerComponentSupabase } from "@/lib/supabase/server-component";
 import { MATCH_SELECT_WITH_TEAMS } from "@/lib/pronoclash/match-display";
 import { MatchesClient } from "./MatchesClient";
@@ -67,14 +68,16 @@ export default async function MatchesPage() {
   const leagues = (leaguesRes.data ?? []) as unknown as RawLeague[];
 
   return (
-    <MatchesClient
-      username={profileRes.data?.username}
-      email={user?.email}
-      matches={matches}
-      predictions={predictions}
-      leagues={leagues
-        .map((l) => l.leagues)
-        .filter((l): l is { id: string; slug: string; name: string; kind: string } => !!l)}
-    />
+    <Suspense fallback={<div className="pc-wrap"><div className="pc-inner"><p className="pc-body-text">Chargement des matchs…</p></div></div>}>
+      <MatchesClient
+        username={profileRes.data?.username}
+        email={user?.email}
+        matches={matches}
+        predictions={predictions}
+        leagues={leagues
+          .map((l) => l.leagues)
+          .filter((l): l is { id: string; slug: string; name: string; kind: string } => !!l)}
+      />
+    </Suspense>
   );
 }

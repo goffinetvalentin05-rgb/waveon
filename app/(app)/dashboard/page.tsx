@@ -2,21 +2,20 @@ import { createServerComponentSupabase } from "@/lib/supabase/server-component";
 import {
   DashboardView,
   type DashboardFeaturedMatch,
-  type DashboardLeague,
-  type DashboardUpcomingMatch,
+  type DashboardLeagueCard,
 } from "@/components/dashboard/DashboardView";
-import { shortStageLabel, teamCode } from "@/lib/pronoclash/match-display";
+import type {
+  DashboardPrediction,
+  DashboardPreviewMatch,
+} from "@/components/dashboard/DashboardClient";
+import type { LeagueContextOption } from "@/components/pronoclash/LeagueContextSelector";
+import { shortStageLabel } from "@/lib/pronoclash/match-display";
+import { matchesPageHref } from "@/lib/pronoclash/league-context-url";
 
-function kindLabel(kind: string | undefined) {
+function typeLabel(kind: string | undefined) {
   if (kind === "global") return "Générale";
   if (kind === "pro") return "Pro";
   return "Privée";
-}
-
-function leagueHref(kind: string | undefined, slug: string | undefined) {
-  if (!slug) return "/dashboard";
-  if (kind === "global") return "/global";
-  return `/leagues/${slug}`;
 }
 
 type TeamRow = {
@@ -44,20 +43,22 @@ const MATCH_SELECT =
   "id, match_number, kickoff_at, status, stage, group_name, home_score, away_score, home_placeholder, away_placeholder, home:home_team_id(name, country_code, flag_emoji), away:away_team_id(name, country_code, flag_emoji)";
 
 function teamDisplayName(team: TeamRow, placeholder: string | null) {
-  if (team?.name) return team.name;
-  if (placeholder) return placeholder;
-  return "À déterminer";
+  return team?.name ?? placeholder ?? null;
 }
 
-function toUpcoming(m: MatchRow): DashboardUpcomingMatch {
+function toPreview(m: MatchRow): DashboardPreviewMatch {
   return {
     id: m.id,
     kickoffAt: m.kickoff_at,
     compLabel: shortStageLabel(m.stage, m.group_name),
     homeName: teamDisplayName(m.home, m.home_placeholder),
     awayName: teamDisplayName(m.away, m.away_placeholder),
-    homeEmoji: m.home?.flag_emoji,
-    awayEmoji: m.away?.flag_emoji,
+    homeCountryCode: m.home?.country_code ?? null,
+    awayCountryCode: m.away?.country_code ?? null,
+    homeFlag: m.home?.flag_emoji ?? null,
+    awayFlag: m.away?.flag_emoji ?? null,
+    homePlaceholder: m.home_placeholder,
+    awayPlaceholder: m.away_placeholder,
   };
 }
 
@@ -70,13 +71,25 @@ function toFeatured(m: MatchRow): DashboardFeaturedMatch {
     groupName: m.group_name,
     homeName: teamDisplayName(m.home, m.home_placeholder),
     awayName: teamDisplayName(m.away, m.away_placeholder),
-    homeCode: teamCode(m.home?.name, m.home?.country_code),
-    awayCode: teamCode(m.away?.name, m.away?.country_code),
-    homeEmoji: m.home?.flag_emoji,
-    awayEmoji: m.away?.flag_emoji,
+    homeCountryCode: m.home?.country_code ?? null,
+    awayCountryCode: m.away?.country_code ?? null,
+    homeFlag: m.home?.flag_emoji ?? null,
+    awayFlag: m.away?.flag_emoji ?? null,
+    homePlaceholder: m.home_placeholder,
+    awayPlaceholder: m.away_placeholder,
     homeScore: m.home_score,
     awayScore: m.away_score,
   };
+}
+
+function computeRankInLeague(
+  members: Array<{ user_id: string; points: number }>,
+  userId: string
+): number {
+  const me = members.find((m) => m.user_id === userId);
+  if (!me) return members.length + 1;
+  const ahead = members.filter((m) => m.points > me.points).length;
+  return ahead + 1;
 }
 
 export default async function DashboardPage() {
@@ -90,52 +103,65 @@ export default async function DashboardPage() {
   const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
   const nowIso = now.toISOString();
 
-  const [profileRes, leaguesRes, pendingOwnedRes, contestRes, matchesCountRes, liveRes, upcoming24Res, upcomingListRes] =
-    await Promise.all([
-      supabase
-        .from("profiles")
-        .select("id, username, avatar_color, total_points, is_admin")
-        .eq("id", user.id)
-        .maybeSingle(),
-      supabase
-        .from("league_members")
-        .select("role, points, leagues(id, slug, name, kind, max_players)")
-        .eq("user_id", user.id),
-      supabase
-        .from("leagues")
-        .select("id, slug, name, kind, plan, status, max_players")
-        .eq("owner_id", user.id)
-        .in("status", ["pending_payment", "cancelled"]),
-      supabase
-        .from("contest_settings")
-        .select("prize_title, prize_value_chf, ends_at, is_active")
-        .limit(1)
-        .maybeSingle(),
-      supabase.from("matches").select("id", { count: "exact", head: true }),
-      supabase
-        .from("matches")
-        .select(MATCH_SELECT)
-        .eq("status", "live")
-        .order("kickoff_at")
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("matches")
-        .select(MATCH_SELECT)
-        .eq("status", "scheduled")
-        .gte("kickoff_at", nowIso)
-        .lte("kickoff_at", in24h)
-        .order("kickoff_at")
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("matches")
-        .select(MATCH_SELECT)
-        .eq("status", "scheduled")
-        .gt("kickoff_at", nowIso)
-        .order("kickoff_at")
-        .limit(8),
-    ]);
+  const [
+    profileRes,
+    leaguesRes,
+    pendingOwnedRes,
+    contestRes,
+    matchesCountRes,
+    liveRes,
+    upcoming24Res,
+    upcomingListRes,
+    predictionsRes,
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, username, avatar_color, total_points, is_admin")
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("league_members")
+      .select("role, points, leagues(id, slug, name, kind, max_players)")
+      .eq("user_id", user.id),
+    supabase
+      .from("leagues")
+      .select("id, slug, name, kind, plan, status, max_players")
+      .eq("owner_id", user.id)
+      .in("status", ["pending_payment", "cancelled"]),
+    supabase
+      .from("contest_settings")
+      .select("prize_title, prize_value_chf, ends_at, is_active")
+      .limit(1)
+      .maybeSingle(),
+    supabase.from("matches").select("id", { count: "exact", head: true }),
+    supabase
+      .from("matches")
+      .select(MATCH_SELECT)
+      .eq("status", "live")
+      .order("kickoff_at")
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("matches")
+      .select(MATCH_SELECT)
+      .eq("status", "scheduled")
+      .gte("kickoff_at", nowIso)
+      .lte("kickoff_at", in24h)
+      .order("kickoff_at")
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("matches")
+      .select(MATCH_SELECT)
+      .eq("status", "scheduled")
+      .gt("kickoff_at", nowIso)
+      .order("kickoff_at")
+      .limit(8),
+    supabase
+      .from("predictions")
+      .select("match_id, league_id, predicted_home_score, predicted_away_score")
+      .eq("user_id", user.id),
+  ]);
 
   const profile = profileRes.data;
   const leagues = (leaguesRes.data ?? []) as unknown as Array<{
@@ -144,6 +170,24 @@ export default async function DashboardPage() {
     leagues: { id: string; slug: string; name: string; kind: string; max_players: number } | null;
   }>;
 
+  const privateMemberships = leagues.filter((m) => m.leagues && m.leagues.kind !== "global");
+  const privateLeagueIds = privateMemberships
+    .map((m) => m.leagues!.id)
+    .filter((id, i, arr) => arr.indexOf(id) === i);
+
+  let membersByLeague = new Map<string, Array<{ user_id: string; points: number }>>();
+  if (privateLeagueIds.length > 0) {
+    const { data: allMembers } = await supabase
+      .from("league_members")
+      .select("league_id, user_id, points")
+      .in("league_id", privateLeagueIds);
+    for (const row of allMembers ?? []) {
+      const list = membersByLeague.get(row.league_id) ?? [];
+      list.push({ user_id: row.user_id, points: row.points ?? 0 });
+      membersByLeague.set(row.league_id, list);
+    }
+  }
+
   const upcomingRows = (upcomingListRes.data ?? []) as unknown as MatchRow[];
   const liveRow = liveRes.data as MatchRow | null;
   const upcoming24Row = upcoming24Res.data as MatchRow | null;
@@ -151,9 +195,11 @@ export default async function DashboardPage() {
   const featuredMatch = featuredSource ? toFeatured(featuredSource) : null;
   const featuredId = featuredMatch?.id;
 
-  const upcomingMatches: DashboardUpcomingMatch[] = upcomingRows
+  const upcomingMatches: DashboardPreviewMatch[] = upcomingRows
     .filter((m) => m.id !== featuredId)
-    .map(toUpcoming);
+    .map(toPreview);
+
+  const predictions = (predictionsRes.data ?? []) as DashboardPrediction[];
 
   const cs = contestRes.data as
     | { prize_title: string; prize_value_chf: number; ends_at: string | null; is_active: boolean }
@@ -163,7 +209,7 @@ export default async function DashboardPage() {
     .from("profiles")
     .select("id", { count: "exact", head: true })
     .gt("total_points", profile?.total_points ?? 0);
-  const rank = (aheadCount ?? 0) + 1;
+  const globalRank = (aheadCount ?? 0) + 1;
 
   const pendingOwned = (pendingOwnedRes.data ?? []) as Array<{
     id: string;
@@ -175,27 +221,58 @@ export default async function DashboardPage() {
     max_players: number;
   }>;
 
-  const privateLeagues = leagues.filter((l) => l.leagues?.kind !== "global");
+  const generalCard: DashboardLeagueCard = {
+    key: "general",
+    leagueContextId: null,
+    name: "Ligue générale",
+    typeLabel: "Générale",
+    type: "general",
+    points: profile?.total_points ?? 0,
+    rank: globalRank,
+    predictHref: matchesPageHref(null),
+    leaderboardHref: "/global/leaderboard",
+  };
 
-  const dashboardLeagues: DashboardLeague[] = [
-    ...leagues
-      .filter((m) => m.leagues)
-      .map((m) => ({
-        key: `member-${m.leagues!.id}`,
-        name: m.leagues!.name,
-        kindLabel: kindLabel(m.leagues!.kind),
-        points: m.points,
-        href: leagueHref(m.leagues!.kind, m.leagues!.slug),
-      })),
-    ...pendingOwned.map((l) => ({
-      key: `pending-${l.id}`,
-      name: l.name,
-      kindLabel: kindLabel(l.kind),
-      points: 0,
-      href: "#",
-      pending: true,
-      pendingLabel: `Paiement en attente · ${l.plan === "pro" ? "Pro" : "Private"} League`,
-      payHref: `/leagues/checkout/cancelled?league_id=${l.id}`,
+  const privateCards: DashboardLeagueCard[] = privateMemberships.map((m) => {
+    const lg = m.leagues!;
+    const members = membersByLeague.get(lg.id) ?? [];
+    return {
+      key: `member-${lg.id}`,
+      leagueContextId: lg.id,
+      name: lg.name,
+      typeLabel: typeLabel(lg.kind),
+      type: lg.kind === "pro" ? "pro" : "private",
+      points: m.points,
+      rank: computeRankInLeague(members, user.id),
+      memberCount: members.length,
+      predictHref: matchesPageHref(lg.id),
+      leaderboardHref: `/leagues/${lg.slug}/leaderboard`,
+    };
+  });
+
+  const pendingCards: DashboardLeagueCard[] = pendingOwned.map((l) => ({
+    key: `pending-${l.id}`,
+    leagueContextId: l.id,
+    name: l.name,
+    typeLabel: typeLabel(l.kind),
+    type: l.kind === "pro" ? "pro" : "private",
+    points: 0,
+    rank: null,
+    pending: true,
+    pendingLabel: `Paiement requis · ${l.plan === "pro" ? "Pro" : "Private"} League`,
+    payHref: `/leagues/checkout/cancelled?league_id=${l.id}`,
+    predictHref: "#",
+    leaderboardHref: "#",
+  }));
+
+  const leagueCards = [generalCard, ...privateCards, ...pendingCards];
+
+  const leagueOptions: LeagueContextOption[] = [
+    { id: null, name: "Ligue générale", kind: "general" },
+    ...privateMemberships.map((m) => ({
+      id: m.leagues!.id as string,
+      name: m.leagues!.name,
+      kind: (m.leagues!.kind === "pro" ? "pro" : "private") as "pro" | "private",
     })),
   ];
 
@@ -205,8 +282,8 @@ export default async function DashboardPage() {
       : null;
 
   const leaguesEmptyHint =
-    privateLeagues.length === 0 && pendingOwned.length === 0
-      ? "Tu n'es pas encore dans une ligue privée. Crée la tienne ou rejoins-en une avec un code."
+    privateMemberships.length === 0 && pendingOwned.length === 0
+      ? "Tu joues déjà dans la ligue générale. Crée ou rejoins une ligue privée pour défier tes potes avec des pronos séparés."
       : undefined;
 
   return (
@@ -214,13 +291,17 @@ export default async function DashboardPage() {
       username={profile?.username}
       email={user.email}
       totalPoints={profile?.total_points ?? 0}
-      rank={rank}
+      rank={globalRank}
       contestTitle={contestTitle}
       contestSubtitle={
-        contestTitle ? "Tu participes automatiquement au classement général" : undefined
+        contestTitle
+          ? "Participation automatique · pronos distincts de tes ligues privées"
+          : undefined
       }
-      leagues={dashboardLeagues}
+      leagueCards={leagueCards}
       leaguesEmptyHint={leaguesEmptyHint}
+      leagueOptions={leagueOptions}
+      predictions={predictions}
       upcomingMatches={upcomingMatches}
       featuredMatch={featuredMatch}
       hasAnyMatchesInDb={(matchesCountRes.count ?? 0) > 0}

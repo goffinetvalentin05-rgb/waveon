@@ -1021,11 +1021,403 @@ button.pc-icon-btn {
   line-height: 1.5;
 }
 
+/* ——— Résumé header ——— */
+.pc-summary-header {
+  margin-bottom: 20px;
+}
+
+.pc-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.pc-stat-foot {
+  display: block;
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--pc-muted);
+}
+
+.pc-cta-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.pc-cta-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  text-decoration: none;
+  color: var(--pc-text);
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.pc-cta-card:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.pc-cta-card.primary {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(168, 85, 247, 0.14));
+  border-color: rgba(168, 85, 247, 0.35);
+}
+
+.pc-cta-card strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pc-cta-card small {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--pc-muted);
+  font-weight: 500;
+}
+
+.pc-section-desc {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: var(--pc-muted);
+  line-height: 1.45;
+  max-width: 280px;
+}
+
+/* ——— Cartes ligues ——— */
+.pc-league-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.pc-league-card {
+  padding: 16px;
+  border-radius: 18px;
+}
+
+.pc-league-card.pending {
+  border-color: rgba(251, 191, 36, 0.25);
+}
+
+.pc-league-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.pc-league-card-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.pc-league-card-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.pc-league-card-rank {
+  font-size: 18px;
+  font-weight: 800;
+  color: #a5b4fc;
+  flex-shrink: 0;
+}
+
+.pc-type-pill {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pc-type-pill.general {
+  background: rgba(99, 102, 241, 0.2);
+  color: #c7d2fe;
+}
+
+.pc-type-pill.private,
+.pc-type-pill.pro {
+  background: rgba(168, 85, 247, 0.18);
+  color: #e9d5ff;
+}
+
+.pc-league-card-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.pc-league-stat-value {
+  display: block;
+  font-size: 20px;
+  font-weight: 800;
+  margin-top: 2px;
+}
+
+.pc-league-card-warn {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: #fde68a;
+  line-height: 1.45;
+}
+
+.pc-league-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pc-league-card-actions .pc-btn {
+  flex: 1;
+  min-width: 120px;
+}
+
+/* ——— Équipes (drapeaux) ——— */
+.pc-team-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.pc-team-display-left {
+  align-items: flex-start;
+}
+
+.pc-team-display-right {
+  align-items: flex-end;
+}
+
+.pc-team-flag {
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  flex-shrink: 0;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.pc-team-labels {
+  display: flex;
+  flex-direction: column;
+  align-items: inherit;
+  gap: 2px;
+  max-width: 100%;
+}
+
+.pc-team-name {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
+}
+
+.pc-team-country {
+  font-size: 10px;
+  color: var(--pc-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
+}
+
+/* ——— Contexte ligue ——— */
+.pc-league-context {
+  margin-bottom: 14px;
+}
+
+.pc-league-context-hint {
+  margin: 0 0 10px;
+  font-size: 11px;
+  color: var(--pc-muted);
+  line-height: 1.45;
+}
+
+.pc-league-tab-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pc-league-tab-dot.general {
+  background: #818cf8;
+}
+
+.pc-league-tab-dot.private {
+  background: #c084fc;
+}
+
+.pc-league-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ——— Aperçu matchs dashboard ——— */
+.pc-match-preview {
+  padding: 14px 16px;
+}
+
+.pc-match-preview.bordered {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pc-match-preview-teams {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.pc-prono-badge {
+  margin-top: 4px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(99, 102, 241, 0.2);
+  color: #c7d2fe;
+}
+
+.pc-prono-badge.empty {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--pc-muted);
+  font-weight: 600;
+}
+
+.pc-match-preview-actions {
+  margin: 12px 0 20px;
+}
+
+.pc-btn.sm {
+  padding: 8px 12px;
+  font-size: 11px;
+}
+
+.pc-match-league-tag {
+  margin: 0 0 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #a5b4fc;
+}
+
+.pc-final-score-box {
+  text-align: center;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  background: rgba(52, 211, 153, 0.08);
+  margin-bottom: 12px;
+}
+
+.pc-final-score-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: #6ee7b7;
+}
+
+.pc-final-score-value {
+  font-size: 28px;
+  font-weight: 800;
+  margin-top: 4px;
+}
+
+.pc-locked-prono {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--pc-border);
+  background: rgba(0, 0, 0, 0.2);
+  font-size: 13px;
+}
+
+.pc-locked-prono-label {
+  color: var(--pc-muted);
+  font-size: 11px;
+}
+
+.pc-locked-prono-score {
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.pc-locked-prono-pts {
+  margin-left: 10px;
+  color: #a5b4fc;
+}
+
+.pc-score-input {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--pc-border);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.pc-score-value {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.pc-score-value.empty {
+  font-size: 20px;
+  color: var(--pc-muted);
+  font-weight: 600;
+}
+
+.pc-inline-error {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #fca5a5;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(244, 63, 94, 0.1);
+}
+
 @media (min-width: 640px) {
   .pc-inner {
     max-width: 640px;
   }
   .pc-contest {
     flex-wrap: nowrap;
+  }
+  .pc-summary-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 10px;
+  }
+  .pc-summary-grid,
+  .pc-cta-row {
+    display: contents;
   }
 }

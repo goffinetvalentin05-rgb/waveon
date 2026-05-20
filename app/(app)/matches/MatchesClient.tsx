@@ -1,14 +1,23 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { IconBallFootball } from "@tabler/icons-react";
 import { PronoClashShell } from "@/components/dashboard/PronoClashShell";
+import { LeagueContextSelector } from "@/components/pronoclash/LeagueContextSelector";
+import type { LeagueContextOption } from "@/components/pronoclash/LeagueContextSelector";
+import { TeamDisplay } from "@/components/pronoclash/TeamDisplay";
 import { longStageLabel } from "@/lib/pronoclash/match-display";
 import {
   isPredictionLocked,
   PREDICTION_LOCKED_MESSAGE,
 } from "@/lib/pronoclash/prediction-lock";
+import {
+  leagueContextFromParam,
+  leagueContextToParam,
+  predictionMapKey,
+  type LeagueContextId,
+} from "@/lib/pronoclash/league-context-url";
 
 type TeamSide = {
   id: string;
@@ -58,16 +67,56 @@ type Props = {
 
 export function MatchesClient({ username, email, matches, predictions, leagues }: Props) {
   const router = useRouter();
-  const [activeLeague, setActiveLeague] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const paramLeague = searchParams.get("league");
+  const initialLeague = leagueContextFromParam(paramLeague);
+  const validIds = useMemo(
+    () => new Set(leagues.filter((l) => l.kind !== "global").map((l) => l.id)),
+    [leagues]
+  );
+  const resolvedInitial: LeagueContextId =
+    initialLeague && validIds.has(initialLeague) ? initialLeague : null;
+
+  const [activeLeague, setActiveLeague] = useState<LeagueContextId>(resolvedInitial);
+
+  useEffect(() => {
+    const fromUrl = leagueContextFromParam(searchParams.get("league"));
+    const next =
+      fromUrl && validIds.has(fromUrl) ? fromUrl : null;
+    setActiveLeague(next);
+  }, [searchParams, validIds]);
+
+  const leagueOptions: LeagueContextOption[] = useMemo(
+    () => [
+      { id: null, name: "Ligue générale", kind: "general" },
+      ...leagues
+        .filter((l) => l.kind !== "global")
+        .map((l) => ({
+          id: l.id,
+          name: l.name,
+          kind: (l.kind === "pro" ? "pro" : "private") as "pro" | "private",
+        })),
+    ],
+    [leagues]
+  );
+
+  const handleLeagueChange = (id: LeagueContextId) => {
+    setActiveLeague(id);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("league", leagueContextToParam(id));
+    router.replace(`/matches?${params.toString()}`, { scroll: false });
+  };
 
   const predByKey = useMemo(() => {
     const map = new Map<string, Prediction>();
     for (const p of predictions) {
-      const key = `${p.match_id}::${p.league_id ?? "global"}`;
-      map.set(key, p);
+      map.set(predictionMapKey(p.match_id, p.league_id), p);
     }
     return map;
   }, [predictions]);
+
+  const activeLabel =
+    leagueOptions.find((o) => o.id === activeLeague)?.name ?? "Ligue générale";
 
   const isLocked = (m: Match) =>
     m.status !== "scheduled" ||
@@ -84,8 +133,9 @@ export function MatchesClient({ username, email, matches, predictions, leagues }
   return (
     <PronoClashShell pageTitle="Matchs" username={username} email={email}>
       <p className="pc-body-text">
-        Score exact = +5 pts. Bon vainqueur ou bon nul = +3 pts. Bon écart de buts = +1 bonus. Tu peux
-        modifier ton prono jusqu&apos;au coup d&apos;envoi.
+        Score exact = +5 pts. Bon vainqueur ou bon nul = +3 pts. Bon écart de buts = +1 bonus. Les
+        pronos de la <strong>ligue générale</strong> et de chaque <strong>ligue privée</strong>{" "}
+        sont indépendants.
       </p>
 
       {matches.length === 0 ? (
@@ -95,7 +145,12 @@ export function MatchesClient({ username, email, matches, predictions, leagues }
         </div>
       ) : (
         <>
-          <LeagueTabs leagues={leagues} active={activeLeague} onChange={setActiveLeague} />
+          <LeagueContextSelector
+            options={leagueOptions}
+            active={activeLeague}
+            onChange={handleLeagueChange}
+            hint={`Contexte actif : ${activeLabel}. Seuls les pronos de cette ligue sont affichés et enregistrés.`}
+          />
 
           <div className="pc-section-head" style={{ marginTop: 8 }}>
             <h2 className="pc-section-title">À venir</h2>
@@ -110,8 +165,9 @@ export function MatchesClient({ username, email, matches, predictions, leagues }
                 <MatchRow
                   key={m.id}
                   match={m}
-                  prediction={predByKey.get(`${m.id}::${activeLeague ?? "global"}`)}
+                  prediction={predByKey.get(predictionMapKey(m.id, activeLeague))}
                   leagueId={activeLeague}
+                  leagueLabel={activeLabel}
                   onSaved={() => router.refresh()}
                 />
               ))}
@@ -128,8 +184,9 @@ export function MatchesClient({ username, email, matches, predictions, leagues }
                   <MatchRow
                     key={m.id}
                     match={m}
-                    prediction={predByKey.get(`${m.id}::${activeLeague ?? "global"}`)}
+                    prediction={predByKey.get(predictionMapKey(m.id, activeLeague))}
                     leagueId={activeLeague}
+                    leagueLabel={activeLabel}
                     readonly
                     onSaved={() => router.refresh()}
                   />
@@ -148,8 +205,9 @@ export function MatchesClient({ username, email, matches, predictions, leagues }
                   <MatchRow
                     key={m.id}
                     match={m}
-                    prediction={predByKey.get(`${m.id}::${activeLeague ?? "global"}`)}
+                    prediction={predByKey.get(predictionMapKey(m.id, activeLeague))}
                     leagueId={activeLeague}
+                    leagueLabel={activeLabel}
                     readonly
                     onSaved={() => router.refresh()}
                   />
@@ -163,55 +221,27 @@ export function MatchesClient({ username, email, matches, predictions, leagues }
   );
 }
 
-function LeagueTabs({
-  leagues,
-  active,
-  onChange,
-}: {
-  leagues: League[];
-  active: string | null;
-  onChange: (id: string | null) => void;
-}) {
-  return (
-    <div className="pc-league-tabs">
-      <button
-        type="button"
-        className={`pc-league-tab${active === null ? " active" : ""}`}
-        onClick={() => onChange(null)}
-      >
-        Ligue générale
-      </button>
-      {leagues
-        .filter((l) => l.kind !== "global")
-        .map((l) => (
-          <button
-            key={l.id}
-            type="button"
-            className={`pc-league-tab${active === l.id ? " active" : ""}`}
-            onClick={() => onChange(l.id)}
-          >
-            {l.name}
-          </button>
-        ))}
-    </div>
-  );
-}
-
 function MatchRow({
   match,
   prediction,
   leagueId,
+  leagueLabel,
   readonly = false,
   onSaved,
 }: {
   match: Match;
   prediction?: Prediction;
-  leagueId: string | null;
+  leagueId: LeagueContextId;
+  leagueLabel: string;
   readonly?: boolean;
   onSaved: () => void;
 }) {
-  const [home, setHome] = useState<number>(prediction?.predicted_home_score ?? 0);
-  const [away, setAway] = useState<number>(prediction?.predicted_away_score ?? 0);
+  const [home, setHome] = useState<number | null>(
+    prediction ? prediction.predicted_home_score : null
+  );
+  const [away, setAway] = useState<number | null>(
+    prediction ? prediction.predicted_away_score : null
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -222,7 +252,29 @@ function MatchRow({
     isPredictionLocked(match.locked_at, match.kickoff_at) ||
     !hasTeams;
 
+  useEffect(() => {
+    if (prediction) {
+      setHome(prediction.predicted_home_score);
+      setAway(prediction.predicted_away_score);
+    } else {
+      setHome(null);
+      setAway(null);
+    }
+    setError(null);
+    setSuccessMsg(null);
+  }, [
+    match.id,
+    leagueId,
+    prediction?.predicted_home_score,
+    prediction?.predicted_away_score,
+    prediction?.id,
+  ]);
+
   const save = async () => {
+    if (home === null || away === null) {
+      setError("Indique un score pour les deux équipes.");
+      return;
+    }
     setSaving(true);
     setError(null);
     setSuccessMsg(null);
@@ -285,7 +337,11 @@ function MatchRow({
           }`}
           style={
             match.status === "finished"
-              ? { background: "rgba(255,255,255,0.08)", border: "1px solid var(--pc-border)", color: "#94a3b8" }
+              ? {
+                  background: "rgba(255,255,255,0.08)",
+                  border: "1px solid var(--pc-border)",
+                  color: "#94a3b8",
+                }
               : undefined
           }
         >
@@ -293,6 +349,8 @@ function MatchRow({
           {statusLabel}
         </span>
       </div>
+
+      <p className="pc-match-league-tag">Prono · {leagueLabel}</p>
 
       {match.venue || match.city ? (
         <div style={{ fontSize: 11, color: "var(--pc-muted)", marginBottom: 12 }}>
@@ -309,20 +367,9 @@ function MatchRow({
       {match.status === "finished" &&
       match.home_score !== null &&
       match.away_score !== null ? (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "12px",
-            borderRadius: 12,
-            border: "1px solid rgba(52, 211, 153, 0.25)",
-            background: "rgba(52, 211, 153, 0.08)",
-            marginBottom: 12,
-          }}
-        >
-          <div style={{ fontSize: 10, textTransform: "uppercase", color: "#6ee7b7" }}>
-            Score final
-          </div>
-          <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>
+        <div className="pc-final-score-box">
+          <div className="pc-final-score-label">Score final</div>
+          <div className="pc-final-score-value">
             {match.home_score} – {match.away_score}
           </div>
         </div>
@@ -344,21 +391,12 @@ function MatchRow({
       )}
 
       {locked && prediction ? (
-        <div
-          style={{
-            marginBottom: 12,
-            padding: "10px 12px",
-            borderRadius: 10,
-            border: "1px solid var(--pc-border)",
-            background: "rgba(0,0,0,0.2)",
-            fontSize: 13,
-          }}
-        >
-          <span style={{ color: "var(--pc-muted)", fontSize: 11 }}>Mon pronostic · verrouillé</span>
-          <div style={{ fontWeight: 700, marginTop: 4 }}>
+        <div className="pc-locked-prono">
+          <span className="pc-locked-prono-label">Mon pronostic · verrouillé</span>
+          <div className="pc-locked-prono-score">
             {prediction.predicted_home_score} – {prediction.predicted_away_score}
             {match.status === "finished" ? (
-              <span style={{ marginLeft: 10, color: "#a5b4fc" }}>
+              <span className="pc-locked-prono-pts">
                 {prediction.points} pt{prediction.points !== 1 ? "s" : ""}
               </span>
             ) : null}
@@ -369,9 +407,9 @@ function MatchRow({
       {!locked && hasTeams && match.status === "scheduled" ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <span style={{ fontSize: 11, color: "var(--pc-muted)" }}>
-            Modifiable jusqu&apos;au coup d&apos;envoi
+            Modifiable jusqu&apos;au coup d&apos;envoi · {leagueLabel}
           </span>
-          <button type="button" onClick={save} disabled={saving} className="pc-btn primary">
+          <button type="button" onClick={save} disabled={saving} className="pc-btn primary block">
             {saving ? "Enregistrement…" : prediction ? "Mettre à jour" : "Enregistrer"}
           </button>
         </div>
@@ -384,18 +422,7 @@ function MatchRow({
       ) : null}
 
       {error ? (
-        <p
-          style={{
-            marginTop: 8,
-            fontSize: 12,
-            color: "#fca5a5",
-            padding: "8px 10px",
-            borderRadius: 8,
-            background: "rgba(244, 63, 94, 0.1)",
-          }}
-        >
-          {error}
-        </p>
+        <p className="pc-inline-error">{error}</p>
       ) : null}
     </li>
   );
@@ -412,27 +439,22 @@ function TeamView({
 }) {
   if (!team) {
     return (
-      <div
-        className="pc-featured-team"
-        style={align === "right" ? { alignItems: "flex-end" } : undefined}
-      >
-        <span className="pc-team-badge" style={{ width: 40, height: 40, fontSize: 12 }}>
-          ?
-        </span>
-        <span style={{ fontSize: 11, color: "var(--pc-muted)" }}>{placeholder ?? "À déterminer"}</span>
-      </div>
+      <TeamDisplay
+        name={null}
+        placeholder={placeholder}
+        align={align}
+        size="md"
+      />
     );
   }
   return (
-    <div
-      className="pc-featured-team"
-      style={align === "right" ? { alignItems: "flex-end" } : undefined}
-    >
-      <span className="pc-team-badge" style={{ width: 40, height: 40, fontSize: 18 }}>
-        {team.flag_emoji ?? "🏳️"}
-      </span>
-      <span style={{ fontSize: 12, fontWeight: 600 }}>{team.name}</span>
-    </div>
+    <TeamDisplay
+      name={team.name}
+      country_code={team.country_code}
+      flag_emoji={team.flag_emoji}
+      align={align}
+      size="md"
+    />
   );
 }
 
@@ -441,34 +463,29 @@ function ScoreInput({
   onChange,
   disabled,
 }: {
-  value: number;
-  onChange: (v: number) => void;
+  value: number | null;
+  onChange: (v: number | null) => void;
   disabled?: boolean;
 }) {
-  const dec = () => onChange(Math.max(0, value - 1));
-  const inc = () => onChange(Math.min(20, value + 1));
+  const dec = () => {
+    if (value === null) return;
+    onChange(Math.max(0, value - 1));
+  };
+  const inc = () => onChange(Math.min(20, (value ?? 0) + 1));
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "8px",
-        borderRadius: 12,
-        border: "1px solid var(--pc-border)",
-        background: "rgba(0,0,0,0.25)",
-      }}
-    >
+    <div className="pc-score-input">
       <button
         type="button"
         onClick={dec}
-        disabled={disabled}
+        disabled={disabled || value === null}
         className="pc-icon-btn sm"
         style={{ width: 36, height: 36 }}
       >
         −
       </button>
-      <span style={{ fontSize: 24, fontWeight: 800 }}>{value}</span>
+      <span className={`pc-score-value${value === null ? " empty" : ""}`}>
+        {value === null ? "—" : value}
+      </span>
       <button
         type="button"
         onClick={inc}
