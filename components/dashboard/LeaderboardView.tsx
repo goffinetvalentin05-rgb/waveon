@@ -9,6 +9,9 @@ export type LeaderboardRow = {
   id: string;
   username: string;
   totalPoints: number;
+  exactScores?: number;
+  correctWinners?: number;
+  predictionsCount?: number;
 };
 
 export type LeaderboardViewProps = {
@@ -71,7 +74,22 @@ export function LeaderboardView({
                   ) : null}
                 </span>
               </div>
-              <span className="pc-leaderboard-pts">{r.totalPoints} pts</span>
+              <div style={{ textAlign: "right" }}>
+                <span className="pc-leaderboard-pts">{r.totalPoints} pts</span>
+                {r.exactScores !== undefined ? (
+                  <div
+                    style={{
+                      fontSize: 10,
+                      color: "var(--pc-muted)",
+                      marginTop: 2,
+                      fontWeight: 400,
+                    }}
+                  >
+                    {r.exactScores} exact · {r.correctWinners ?? 0} vainqueurs ·{" "}
+                    {r.predictionsCount ?? 0} pronos
+                  </div>
+                ) : null}
+              </div>
             </li>
           ))}
         </ol>

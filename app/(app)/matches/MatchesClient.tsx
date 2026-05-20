@@ -38,6 +38,8 @@ type Prediction = {
   league_id: string | null;
   predicted_home_score: number;
   predicted_away_score: number;
+  points: number;
+  is_locked: boolean;
 };
 
 type League = { id: string; slug: string; name: string; kind: string };
@@ -63,8 +65,17 @@ export function MatchesClient({ username, email, matches, predictions, leagues }
     return map;
   }, [predictions]);
 
-  const upcoming = matches.filter((m) => m.status === "scheduled" || m.status === "live");
+  const now = Date.now();
+  const isLocked = (m: Match) =>
+    new Date(m.locked_at).getTime() <= now || new Date(m.kickoff_at).getTime() <= now;
   const finished = matches.filter((m) => m.status === "finished");
+  const locked = matches.filter(
+    (m) => m.status !== "finished" && m.status !== "postponed" && isLocked(m)
+  );
+  const upcoming = matches.filter(
+    (m) =>
+      (m.status === "scheduled" || m.status === "live") && !isLocked(m)
+  );
 
   return (
     <PronoClashShell pageTitle="Matchs" username={username} email={email}>
@@ -102,6 +113,26 @@ export function MatchesClient({ username, email, matches, predictions, leagues }
               ))}
             </ul>
           )}
+
+          {locked.length > 0 ? (
+            <>
+              <div className="pc-section-head">
+                <h2 className="pc-section-title">Pronostics verrouillés</h2>
+              </div>
+              <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                {locked.map((m) => (
+                  <MatchRow
+                    key={m.id}
+                    match={m}
+                    prediction={predByKey.get(`${m.id}::${activeLeague ?? "global"}`)}
+                    leagueId={activeLeague}
+                    readonly
+                    onSaved={() => router.refresh()}
+                  />
+                ))}
+              </ul>
+            </>
+          ) : null}
 
           {finished.length > 0 ? (
             <>
@@ -304,6 +335,29 @@ function MatchRow({
         </div>
       )}
 
+      {locked && prediction ? (
+        <div
+          style={{
+            marginBottom: 12,
+            padding: "10px 12px",
+            borderRadius: 10,
+            border: "1px solid var(--pc-border)",
+            background: "rgba(0,0,0,0.2)",
+            fontSize: 13,
+          }}
+        >
+          <span style={{ color: "var(--pc-muted)", fontSize: 11 }}>Mon pronostic · verrouillé</span>
+          <div style={{ fontWeight: 700, marginTop: 4 }}>
+            {prediction.predicted_home_score} – {prediction.predicted_away_score}
+            {match.status === "finished" ? (
+              <span style={{ marginLeft: 10, color: "#a5b4fc" }}>
+                {prediction.points} pt{prediction.points !== 1 ? "s" : ""}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
       {!locked && hasTeams && match.status === "scheduled" ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <span style={{ fontSize: 11, color: "var(--pc-muted)" }}>
@@ -313,6 +367,8 @@ function MatchRow({
             {saving ? "Enregistrement…" : prediction ? "Mettre à jour" : "Verrouiller mon prono"}
           </button>
         </div>
+      ) : locked && !prediction ? (
+        <p style={{ fontSize: 12, color: "var(--pc-muted)" }}>Pronostic verrouillé — aucun prono enregistré.</p>
       ) : null}
 
       {error ? (

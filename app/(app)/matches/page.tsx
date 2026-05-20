@@ -16,7 +16,9 @@ export default async function MatchesPage() {
     user
       ? supabase
           .from("predictions")
-          .select("id, match_id, league_id, predicted_home_score, predicted_away_score")
+          .select(
+            "id, match_id, league_id, predicted_home_score, predicted_away_score, points, is_locked"
+          )
           .eq("user_id", user.id)
       : Promise.resolve({ data: [] as never[] }),
     user
@@ -53,6 +55,8 @@ export default async function MatchesPage() {
     league_id: string | null;
     predicted_home_score: number;
     predicted_away_score: number;
+    points: number;
+    is_locked: boolean;
   };
   const predictions = (predictionsRes.data ?? []) as RawPrediction[];
 

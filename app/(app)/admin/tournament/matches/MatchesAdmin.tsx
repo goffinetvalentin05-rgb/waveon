@@ -22,11 +22,15 @@ export type AdminMatch = {
   country: string | null;
   kickoff_at: string;
   locked_at: string;
-  status: "scheduled" | "live" | "finished" | "postponed";
+  status: "scheduled" | "live" | "finished" | "postponed" | "cancelled";
   home_score: number | null;
   away_score: number | null;
   home_placeholder: string | null;
   away_placeholder: string | null;
+  external_api_provider: string | null;
+  external_match_id: string | null;
+  last_synced_at: string | null;
+  score_last_synced_at: string | null;
   home: { id: string; name: string; country_code: string | null; flag_emoji: string | null } | null;
   away: { id: string; name: string; country_code: string | null; flag_emoji: string | null } | null;
 };
@@ -136,6 +140,42 @@ export function MatchesAdmin({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ homeScore, awayScore }),
+    });
+    const j = (await res.json().catch(() => null)) as { error?: string } | null;
+    if (!res.ok) {
+      alert(j?.error ?? "Erreur");
+      return;
+    }
+    router.refresh();
+  };
+
+  const recalculate = async (matchId: string) => {
+    const res = await fetch(`/api/admin/matches/${matchId}/recalculate`, {
+      method: "POST",
+    });
+    const j = (await res.json().catch(() => null)) as { error?: string } | null;
+    if (!res.ok) {
+      alert(j?.error ?? "Erreur recalcul");
+      return;
+    }
+    router.refresh();
+  };
+
+  const forceFinished = async (
+    matchId: string,
+    homeScoreStr: string,
+    awayScoreStr: string
+  ) => {
+    const homeScore = Number(homeScoreStr);
+    const awayScore = Number(awayScoreStr);
+    if (!Number.isInteger(homeScore) || !Number.isInteger(awayScore)) {
+      alert("Scores invalides");
+      return;
+    }
+    const res = await fetch(`/api/admin/matches/${matchId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ homeScore, awayScore, status: "finished" }),
     });
     const j = (await res.json().catch(() => null)) as { error?: string } | null;
     if (!res.ok) {
@@ -321,7 +361,14 @@ export function MatchesAdmin({
             </li>
           ) : (
             matches.map((m) => (
-              <MatchAdminRow key={m.id} match={m} onFinalize={finalize} onRemove={remove} />
+              <MatchAdminRow
+                key={m.id}
+                match={m}
+                onFinalize={finalize}
+                onRecalculate={recalculate}
+                onForceFinished={forceFinished}
+                onRemove={remove}
+              />
             ))
           )}
         </ul>
@@ -362,10 +409,14 @@ function TeamSelect({
 function MatchAdminRow({
   match,
   onFinalize,
+  onRecalculate,
+  onForceFinished,
   onRemove,
 }: {
   match: AdminMatch;
   onFinalize: (id: string, h: string, a: string) => Promise<void>;
+  onRecalculate: (id: string) => Promise<void>;
+  onForceFinished: (id: string, h: string, a: string) => Promise<void>;
   onRemove: (id: string) => Promise<void>;
 }) {
   const [hs, setHs] = useState<string>(match.home_score?.toString() ?? "");
@@ -433,6 +484,23 @@ function MatchAdminRow({
           >
             {match.status === "finished" ? "Recalculer" : "Finaliser"}
           </button>
+          {match.status === "finished" ? (
+            <button
+              type="button"
+              onClick={() => onRecalculate(match.id)}
+              className="rounded-lg border border-indigo-400/30 bg-indigo-500/10 px-2 py-1.5 text-xs text-indigo-200"
+            >
+              Points
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onForceFinished(match.id, hs, as)}
+              className="rounded-lg border border-amber-400/30 bg-amber-500/10 px-2 py-1.5 text-xs text-amber-200"
+            >
+              Forcer FT
+            </button>
+          )}
           <button
             type="button"
             onClick={() => onRemove(match.id)}
@@ -442,6 +510,26 @@ function MatchAdminRow({
           </button>
         </div>
       </div>
+      {(match.external_match_id || match.last_synced_at) && (
+        <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-white/35 font-mono">
+          {match.external_api_provider ? (
+            <span className="rounded bg-white/5 px-1.5 py-0.5">{match.external_api_provider}</span>
+          ) : null}
+          {match.external_match_id ? (
+            <span>ext:{match.external_match_id}</span>
+          ) : null}
+          {match.last_synced_at ? (
+            <span>
+              sync {new Date(match.last_synced_at).toLocaleString("fr-CH")}
+            </span>
+          ) : null}
+          {match.score_last_synced_at ? (
+            <span>
+              score {new Date(match.score_last_synced_at).toLocaleString("fr-CH")}
+            </span>
+          ) : null}
+        </div>
+      )}
       {match.venue || match.city ? (
         <div className="mt-1 text-[11px] text-white/35">
           {[match.venue, match.city, match.country].filter(Boolean).join(" — ")}
