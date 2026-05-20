@@ -1803,10 +1803,15 @@ button.pc-icon-btn {
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr;
   gap: 12px;
   padding: 20px 18px 18px;
   align-items: start;
+}
+
+.pc-hero-grid.has-next {
+  grid-template-columns: 1fr auto;
+  align-items: stretch;
 }
 
 .pc-hero-copy {
@@ -1868,52 +1873,116 @@ button.pc-icon-btn {
   color: var(--pc-muted);
 }
 
-.pc-hero-visual {
+.pc-hero-next {
   position: relative;
-  width: 88px;
-  height: 88px;
   flex-shrink: 0;
+  width: min(100%, 196px);
+  padding: 12px 12px 10px;
+  border-radius: var(--pc-radius-md);
+  border: 1px solid rgba(168, 85, 247, 0.22);
+  background: rgba(12, 12, 20, 0.55);
+  backdrop-filter: blur(14px);
+  box-shadow:
+    0 0 28px -8px rgba(99, 102, 241, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
-.pc-hero-orb {
+.pc-hero-next-glow {
   position: absolute;
   inset: 0;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, rgba(99, 102, 241, 0.5), rgba(168, 85, 247, 0.2) 55%, transparent 70%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  animation: pc-orb-pulse 4s ease-in-out infinite;
+  border-radius: inherit;
+  background: radial-gradient(circle at 80% 15%, rgba(168, 85, 247, 0.22) 0%, transparent 55%);
+  pointer-events: none;
 }
 
-.pc-hero-orbit {
-  position: absolute;
-  inset: -6px;
-  border-radius: 50%;
-  border: 1px dashed rgba(168, 85, 247, 0.35);
-  animation: pc-glow-drift 10s linear infinite;
+.pc-hero-next-label {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #c4b5fd;
 }
 
-.pc-hero-ball {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 22px;
-  height: 22px;
-  margin: -11px 0 0 -11px;
-  border-radius: 50%;
-  background: linear-gradient(145deg, #fff 0%, #e2e8f0 40%, #94a3b8 100%);
-  box-shadow: 0 0 16px rgba(255, 255, 255, 0.4);
+.pc-hero-next-teams {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
 }
 
-.pc-hero-field {
-  position: absolute;
-  bottom: 8px;
-  left: 50%;
-  width: 48px;
-  height: 28px;
-  margin-left: -24px;
-  border: 1px solid rgba(52, 211, 153, 0.35);
-  border-radius: 4px;
-  opacity: 0.6;
+.pc-hero-next-teams .pc-team-display {
+  flex: 1;
+  min-width: 0;
+  max-width: 72px;
+}
+
+.pc-hero-next-teams .pc-team-flag {
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 16px !important;
+  border-radius: 10px;
+}
+
+.pc-hero-next-teams .pc-team-name {
+  font-size: 10px;
+  max-width: 72px;
+}
+
+.pc-hero-next-vs {
+  flex-shrink: 0;
+  align-self: center;
+  margin-top: 10px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--pc-muted);
+}
+
+.pc-hero-next-vs em {
+  font-style: normal;
+  margin: 0 1px;
+  color: #a5b4fc;
+}
+
+.pc-hero-next-when {
+  position: relative;
+  z-index: 1;
+  margin: 8px 0 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #e2e8f0;
+  text-align: center;
+  line-height: 1.35;
+}
+
+.pc-hero-next-btn {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin-top: 10px;
+  min-height: 34px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+@media (max-width: 520px) {
+  .pc-hero-grid.has-next {
+    grid-template-columns: 1fr;
+  }
+
+  .pc-hero-next {
+    width: 100%;
+    max-width: none;
+  }
 }
 
 .pc-hero-actions {
@@ -2210,9 +2279,8 @@ button.pc-icon-btn {
   .pc-hero-title {
     font-size: 26px;
   }
-  .pc-hero-visual {
-    width: 100px;
-    height: 100px;
+  .pc-hero-next {
+    width: 210px;
   }
   .pc-stats-grid {
     grid-template-columns: repeat(4, 1fr);

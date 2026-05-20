@@ -92,6 +92,99 @@ function formatMatchTime(iso: string) {
   return format(new Date(iso), "HH:mm", { locale: fr });
 }
 
+function formatHeroMatchWhen(iso: string) {
+  return format(new Date(iso), "d MMMM · HH:mm", { locale: fr });
+}
+
+function previewToFeatured(preview: DashboardPreviewMatch): DashboardFeaturedMatch {
+  return {
+    id: preview.id,
+    status: preview.status === "live" ? "live" : "scheduled",
+    kickoffAt: preview.kickoffAt,
+    stage: preview.compLabel,
+    groupName: null,
+    homeName: preview.homeName,
+    awayName: preview.awayName,
+    homeCountryCode: preview.homeCountryCode,
+    awayCountryCode: preview.awayCountryCode,
+    homeFlag: preview.homeFlag,
+    awayFlag: preview.awayFlag,
+    homePlaceholder: preview.homePlaceholder,
+    awayPlaceholder: preview.awayPlaceholder,
+    homeScore: null,
+    awayScore: null,
+  };
+}
+
+function resolveHeroMatch(
+  featured: DashboardFeaturedMatch | null | undefined,
+  upcoming: DashboardPreviewMatch[]
+): DashboardFeaturedMatch | null {
+  if (featured) return featured;
+  const next = upcoming[0];
+  return next ? previewToFeatured(next) : null;
+}
+
+function HeroNextMatchWidget({ match }: { match: DashboardFeaturedMatch }) {
+  const isLive = match.status === "live";
+  const hasScore =
+    isLive && match.homeScore !== null && match.awayScore !== null;
+
+  return (
+    <aside className="pc-hero-next" aria-label={isLive ? "Match en direct" : "Prochain match"}>
+      <div className="pc-hero-next-glow" aria-hidden />
+      <p className="pc-hero-next-label">
+        {isLive ? (
+          <>
+            <span className="pc-live-dot" />
+            En direct
+          </>
+        ) : (
+          "Prochain duel"
+        )}
+      </p>
+      <div className="pc-hero-next-teams">
+        <TeamDisplay
+          name={match.homeName}
+          country_code={match.homeCountryCode}
+          flag_emoji={match.homeFlag}
+          placeholder={match.homePlaceholder}
+          align="center"
+          size="sm"
+          showCountryName={false}
+        />
+        <span className="pc-hero-next-vs" aria-hidden>
+          {hasScore ? (
+            <>
+              {match.homeScore}
+              <em>:</em>
+              {match.awayScore}
+            </>
+          ) : (
+            "vs"
+          )}
+        </span>
+        <TeamDisplay
+          name={match.awayName}
+          country_code={match.awayCountryCode}
+          flag_emoji={match.awayFlag}
+          placeholder={match.awayPlaceholder}
+          align="center"
+          size="sm"
+          showCountryName={false}
+        />
+      </div>
+      <p className="pc-hero-next-when">{formatHeroMatchWhen(match.kickoffAt)}</p>
+      <Link
+        href={matchesPageHref(null)}
+        className="pc-btn ghost light pc-hero-next-btn"
+      >
+        {isLive ? "Voir le match" : "Pronostiquer"}
+      </Link>
+    </aside>
+  );
+}
+
 function FeaturedMatchCard({ match }: { match: DashboardFeaturedMatch }) {
   const meta = `${longStageLabel(match.stage, match.groupName)} · ${formatMatchTime(match.kickoffAt)}`;
   const isLive = match.status === "live";
@@ -241,6 +334,7 @@ export function DashboardView({
   const showMatchesEmpty =
     !hasAnyMatchesInDb && !featuredMatch && upcomingMatches.length === 0;
   const name = displayName(username);
+  const heroMatch = resolveHeroMatch(featuredMatch, upcomingMatches);
 
   return (
     <PronoClashShell
@@ -251,7 +345,7 @@ export function DashboardView({
     >
       <section className="pc-hero pc-animate-in" aria-label="Bienvenue">
         <div className="pc-hero-bg" aria-hidden />
-        <div className="pc-hero-grid">
+        <div className={`pc-hero-grid${heroMatch ? " has-next" : ""}`}>
           <div className="pc-hero-copy">
             <p className="pc-hero-eyebrow">Bienvenue dans l&apos;arène</p>
             <h1 className="pc-hero-title">
@@ -271,12 +365,7 @@ export function DashboardView({
               </div>
             </div>
           </div>
-          <div className="pc-hero-visual" aria-hidden>
-            <div className="pc-hero-orbit" />
-            <div className="pc-hero-orb" />
-            <div className="pc-hero-field" />
-            <div className="pc-hero-ball" />
-          </div>
+          {heroMatch ? <HeroNextMatchWidget match={heroMatch} /> : null}
         </div>
         <div className="pc-hero-actions">
           <Link href={matchesPageHref(null)} className="pc-btn primary">
