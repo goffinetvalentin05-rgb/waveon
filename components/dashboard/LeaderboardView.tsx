@@ -4,6 +4,7 @@ import { IconTrophy } from "@tabler/icons-react";
 import Link from "next/link";
 import { PronoClashShell } from "@/components/dashboard/PronoClashShell";
 import { getAvatarLetter } from "@/lib/pronoclash/user-display";
+import { CONTEST_COPY } from "@/lib/pronoclash/contest-copy";
 
 export type LeaderboardRow = {
   id: string;
@@ -41,7 +42,7 @@ export function LeaderboardView({
   return (
     <PronoClashShell pageTitle="Classement" username={username} email={email}>
       <p className="pc-body-text">
-        Le premier de ce classement à la fin du tournoi gagne le lot du concours.
+        {CONTEST_COPY.main} {CONTEST_COPY.unlockCondition}
         {myRank !== undefined && myRank >= 0 && myPoints !== undefined
           ? ` Tu es ${myRank + 1}ᵉ avec ${myPoints} pts.`
           : null}

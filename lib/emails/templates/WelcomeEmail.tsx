@@ -31,7 +31,7 @@ export default function WelcomeEmail({
         </Text>
         <ul style={{ paddingLeft: 20, color: "rgba(245,247,255,0.75)", fontSize: "15px", lineHeight: 1.6 }}>
           <li>pronostiquer les prochains matchs de la ligue générale ;</li>
-          <li>grimper au classement et participer au concours gratuit ;</li>
+          <li>grimper au classement et tenter de remporter le maillot du concours (selon règlement) ;</li>
           <li>créer une ligue privée pour inviter tes potes et jouer des cartes.</li>
         </ul>
         <CtaButton href={`${baseUrl}/dashboard`} label="Ouvrir mon dashboard" />

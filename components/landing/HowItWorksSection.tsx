@@ -37,7 +37,7 @@ const STEPS = [
   {
     n: "05",
     title: "Grimpe au classement",
-    text: "Grimpe au classement général et tente de gagner un maillot, ou domine ta ligue privée.",
+    text: "Grimpe au classement général et tente de remporter le maillot du concours, ou domine ta ligue privée.",
     icon: IconRoute,
   },
 ];

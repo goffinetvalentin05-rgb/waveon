@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { AppSecondaryPage } from "@/components/pronoclash/AppSecondaryPage";
 import { GlassPanel } from "@/components/pronoclash/ui/GlassPanel";
+import { CONTEST_COPY } from "@/lib/pronoclash/contest-copy";
 
 type Props = {
   username?: string | null;
@@ -31,8 +32,8 @@ export function GlobalLeagueClient({
     <AppSecondaryPage pageTitle="Ligue générale" username={username} email={email} isAdmin={isAdmin}>
       <p className="pc-eyebrow">Gratuit · ouvert à tous</p>
       <p className="pc-body-text" style={{ marginTop: 0 }}>
-        Tout le monde joue dans la même ligue générale du tournoi mondial 2026. Pronostique les matchs,
-        marque des points, et tente de finir n°1 pour remporter un maillot.
+        Tout le monde joue dans la même ligue générale du tournoi mondial 2026. Pronostique les matchs
+        et marque des points pour grimper au classement général.
       </p>
 
       <div className="pc-stats-row" style={{ marginTop: 16, marginBottom: 16 }}>
@@ -43,15 +44,26 @@ export function GlobalLeagueClient({
 
       <GlassPanel glow="violet" className="pc-form-card pc-animate-in">
         <p className="pc-eyebrow" style={{ marginBottom: 8 }}>
-          Concours gratuit
+          {CONTEST_COPY.communityBadge}
         </p>
         {contest.configured ? (
           <>
             <h2 className="pc-section-title" style={{ fontSize: 20, marginBottom: 8 }}>
-              Un maillot pour le meilleur pronostiqueur
+              {CONTEST_COPY.title}
             </h2>
             <p className="pc-body-text" style={{ marginTop: 0 }}>
-              Termine premier du classement final de la ligue générale et tente de remporter un maillot.
+              {CONTEST_COPY.main}
+            </p>
+            <p className="pc-footnote" style={{ textAlign: "left", marginTop: 10 }}>
+              {CONTEST_COPY.communityGoal}
+            </p>
+            <p className="pc-footnote" style={{ textAlign: "left", marginTop: 6 }}>
+              {CONTEST_COPY.unlockCondition}
+            </p>
+            <p className="pc-footnote" style={{ textAlign: "left", marginTop: 6, opacity: 0.85 }}>
+              {CONTEST_COPY.disclaimer}
+            </p>
+            <p className="pc-footnote" style={{ textAlign: "left", marginTop: 8 }}>
               Participation gratuite, aucun achat nécessaire.
             </p>
             {contest.endsAt ? (

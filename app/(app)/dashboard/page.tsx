@@ -139,11 +139,7 @@ export default async function DashboardPage() {
       .select("id, slug, name, kind, plan, status, max_players")
       .eq("owner_id", user.id)
       .in("status", ["pending_payment", "cancelled"]),
-    supabase
-      .from("contest_settings")
-      .select("prize_title, prize_value_chf, ends_at, is_active")
-      .limit(1)
-      .maybeSingle(),
+    supabase.from("contest_settings").select("is_active").limit(1).maybeSingle(),
     supabase.from("matches").select("id", { count: "exact", head: true }),
     supabase
       .from("matches")
@@ -229,9 +225,7 @@ export default async function DashboardPage() {
   const exactScores = generalPreds.filter((p) => p.exact_score).length;
   const predictionsPlayed = generalPreds.length;
 
-  const cs = contestRes.data as
-    | { prize_title: string; prize_value_chf: number; ends_at: string | null; is_active: boolean }
-    | null;
+  const cs = contestRes.data as { is_active: boolean } | null;
 
   const { count: aheadCount } = await supabase
     .from("profiles")
@@ -304,10 +298,7 @@ export default async function DashboardPage() {
     })),
   ];
 
-  const contestTitle =
-    cs && cs.is_active !== false
-      ? `${cs.prize_title} · jusqu'à CHF ${cs.prize_value_chf}`
-      : null;
+  const contestActive = cs != null && cs.is_active !== false;
 
   const leaguesEmptyHint =
     privateMemberships.length === 0 && pendingOwned.length === 0
@@ -322,12 +313,7 @@ export default async function DashboardPage() {
       rank={globalRank}
       exactScores={exactScores}
       predictionsPlayed={predictionsPlayed}
-      contestTitle={contestTitle}
-      contestSubtitle={
-        contestTitle
-          ? "Participation automatique · pronos distincts de tes ligues privées"
-          : undefined
-      }
+      contestActive={contestActive}
       leagueCards={leagueCards}
       leaguesEmptyHint={leaguesEmptyHint}
       leagueOptions={leagueOptions}

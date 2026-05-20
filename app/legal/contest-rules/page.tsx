@@ -1,5 +1,6 @@
 import { LegalShell } from "@/components/marketing/LegalShell";
 import { brand } from "@/lib/brand/config";
+import { CONTEST_COPY } from "@/lib/pronoclash/contest-copy";
 
 export const metadata = { title: "Règlement du concours" };
 
@@ -55,11 +56,22 @@ export default function ContestRulesPage() {
         </li>
       </ol>
 
-      <h2>5. Lot</h2>
+      <h2>5. Lot et déblocage du prix</h2>
       <p>
-        Le lot consiste en <strong>un maillot de football</strong>, selon disponibilité.
-        L&apos;organisateur se réserve le droit de proposer un lot équivalent si le maillot
-        demandé n&apos;est pas disponible. Aucun équivalent en espèces ne sera versé.
+        Le lot consiste en <strong>un maillot de football</strong> au choix du gagnant, selon
+        disponibilité. L&apos;organisateur se réserve le droit de proposer un lot équivalent si le
+        maillot demandé n&apos;est pas disponible. <strong>Aucun échange en argent</strong> ne sera
+        proposé.
+      </p>
+      <p>
+        {CONTEST_COPY.unlockCondition} Tant que cet objectif n&apos;est pas atteint, le lot n&apos;est pas garanti et aucune
+        obligation de remise du maillot ne s&apos;applique.
+      </p>
+      <p>{CONTEST_COPY.disclaimer}</p>
+      <p>
+        Le gagnant désigné selon les règles du présent règlement pourra{" "}
+        <strong>tenter de remporter</strong> le maillot uniquement si l&apos;objectif communauté
+        est rempli au moment de la clôture du concours.
       </p>
 
       <h2>6. Conditions de participation</h2>

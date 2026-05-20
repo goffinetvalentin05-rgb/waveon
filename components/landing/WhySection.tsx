@@ -37,7 +37,7 @@ export function WhySection() {
         </Reveal>
 
         <Reveal delayMs={240} className="lg:col-span-7">
-          <BentoCard title="Concours gratuit" subtitle="Un maillot pour le meilleur pronostiqueur" tall>
+          <BentoCard title="Maillot à gagner" subtitle="1er de la ligue générale — prix débloqué par la communauté" tall>
             <TrophyVisual />
           </BentoCard>
         </Reveal>

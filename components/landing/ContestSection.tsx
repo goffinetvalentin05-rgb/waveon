@@ -4,14 +4,15 @@ import { IconTrophy } from "@tabler/icons-react";
 import { Reveal } from "@/components/landing/Reveal";
 import { SectionShell, SectionTitle } from "@/components/landing/SectionChrome";
 import { landing } from "@/components/landing/landing-styles";
+import { CONTEST_COPY } from "@/lib/pronoclash/contest-copy";
 
 export function ContestSection() {
   return (
     <SectionShell id="concours" halo="gold-blue">
       <Reveal>
         <SectionTitle
-          line1="Termine premier de la ligue générale"
-          line2Accent="et tente de remporter un maillot"
+          line1="Maillot à gagner"
+          line2Accent="pour le 1er de la ligue générale"
           icon={IconTrophy}
           subtitle="Concours 100 % gratuit — sans achat requis."
         />
@@ -20,12 +21,14 @@ export function ContestSection() {
         <div className="pc-bento-card mt-16 overflow-hidden !min-h-0 p-8 sm:p-12 lg:p-14">
           <div className="grid items-center gap-10 lg:grid-cols-2">
             <div>
-              <span className={landing.badge}>Concours gratuit · sans achat requis</span>
+              <span className={landing.badge}>{CONTEST_COPY.communityBadge}</span>
               <p className="mt-5 text-sm leading-relaxed text-[#9ca3af] sm:text-base">
-                Tout le monde joue dans la même ligue générale. Grimpe au classement général,
-                fais tes pronos et tente de gagner un maillot à la fin du tournoi
-                mondial 2026.
+                {CONTEST_COPY.main}
               </p>
+              <p className="mt-4 text-sm leading-relaxed text-[#9ca3af]">
+                {CONTEST_COPY.unlockCondition}
+              </p>
+              <p className="mt-2 text-xs text-[#9ca3af]/80">{CONTEST_COPY.disclaimer}</p>
               <ul className="mt-6 space-y-2.5 text-sm text-[#9ca3af]">
                 <Bullet>Pronostics classiques sur tous les matchs</Bullet>
                 <Bullet>Classement général en temps réel</Bullet>
@@ -51,11 +54,13 @@ export function ContestSection() {
                 <RankLine rank={2} label="Maxou" pts={329} />
                 <RankLine rank={3} label="LucaB" pts={318} />
                 <div className="mt-5 rounded-2xl border border-amber-400/30 bg-gradient-to-r from-amber-500/15 to-blue-500/10 p-4 text-center shadow-[inset_0_0_40px_rgba(251,191,36,0.08)]">
-                  <p className="text-[11px] uppercase tracking-widest text-amber-200/90">Lot pour le n°1</p>
-                  <p className="mt-1 font-[family-name:var(--font-display)] text-xl font-semibold text-white">
-                    Un maillot à gagner
+                  <p className="text-[11px] uppercase tracking-widest text-amber-200/90">
+                    {CONTEST_COPY.communityBadge}
                   </p>
-                  <p className="text-sm text-amber-200/80">Un maillot à gagner pour le n°1</p>
+                  <p className="mt-1 font-[family-name:var(--font-display)] text-xl font-semibold text-white">
+                    {CONTEST_COPY.title}
+                  </p>
+                  <p className="text-sm text-amber-200/80">{CONTEST_COPY.communityGoal}</p>
                 </div>
               </div>
             </div>

@@ -22,6 +22,7 @@ import type {
 import { matchesPageHref } from "@/lib/pronoclash/league-context-url";
 import { TeamDisplay } from "@/components/pronoclash/TeamDisplay";
 import { longStageLabel } from "@/lib/pronoclash/match-display";
+import { CONTEST_COPY } from "@/lib/pronoclash/contest-copy";
 import type { LeagueContextOption } from "@/components/pronoclash/LeagueContextSelector";
 
 export type DashboardLeagueCard = {
@@ -65,8 +66,7 @@ export type DashboardViewProps = {
   rank: number;
   exactScores?: number;
   predictionsPlayed?: number;
-  contestTitle?: string | null;
-  contestSubtitle?: string | null;
+  contestActive?: boolean;
   leagueCards: DashboardLeagueCard[];
   leaguesEmptyHint?: string;
   leagueOptions: LeagueContextOption[];
@@ -320,8 +320,7 @@ export function DashboardView({
   rank,
   exactScores = 0,
   predictionsPlayed = 0,
-  contestTitle,
-  contestSubtitle,
+  contestActive,
   leagueCards,
   leaguesEmptyHint,
   leagueOptions,
@@ -410,15 +409,18 @@ export function DashboardView({
         </div>
       </div>
 
-      {contestTitle ? (
+      {contestActive ? (
         <div className="pc-contest pc-contest-premium pc-glass pc-animate-in-delay-1">
           <div className="pc-contest-icon">
             <IconTrophy size={20} stroke={1.8} />
           </div>
           <div className="pc-contest-body">
-            <span className="pc-contest-tag">Concours gratuit</span>
-            <p className="pc-contest-title">{contestTitle}</p>
-            {contestSubtitle ? <p className="pc-contest-sub">{contestSubtitle}</p> : null}
+            <span className="pc-contest-tag">{CONTEST_COPY.communityBadge}</span>
+            <p className="pc-contest-title">{CONTEST_COPY.title}</p>
+            <p className="pc-contest-sub">{CONTEST_COPY.main}</p>
+            <p className="pc-contest-goal">{CONTEST_COPY.communityGoal}</p>
+            <p className="pc-contest-condition">{CONTEST_COPY.unlockCondition}</p>
+            <p className="pc-contest-disclaimer">{CONTEST_COPY.disclaimer}</p>
           </div>
         </div>
       ) : null}

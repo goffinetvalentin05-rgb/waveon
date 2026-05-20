@@ -244,7 +244,7 @@ function ConsentsStep({
           checked={consentContestRules}
           onChange={setConsentContestRules}
           title="J'accepte le règlement du concours"
-          body="Participation gratuite, basée sur le classement final de la ligue générale. Lot : un maillot de football à gagner. Détails dans le règlement du concours."
+          body="Participation gratuite, basée sur le classement final de la ligue générale. Le 1er peut tenter de remporter un maillot si l'objectif de 10 ligues privées créées est atteint. Détails dans le règlement du concours."
         />
         <Consent
           checked={consentMarketingApp}

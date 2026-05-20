@@ -28,7 +28,7 @@ export function HeroSection() {
 
             <p className="pc-lp-hero-subtitle">
               Pronostique les matchs, crée ta ligue privée et défie tes potes avec des cartes
-              d&apos;attaque. Grimpe au classement général et tente de gagner un maillot.
+              d&apos;attaque. Grimpe au classement général et tente de remporter le maillot du concours.
             </p>
 
             <div className="pc-lp-hero-actions">

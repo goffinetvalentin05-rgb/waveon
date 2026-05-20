@@ -4,6 +4,7 @@ import { IconTrophy } from "@tabler/icons-react";
 import { Reveal } from "@/components/landing/Reveal";
 import { SectionShell, SectionTitle } from "@/components/landing/SectionChrome";
 import { landing } from "@/components/landing/landing-styles";
+import { CONTEST_COPY } from "@/lib/pronoclash/contest-copy";
 
 export function GeneralLeagueSection() {
   return (
@@ -22,16 +23,15 @@ export function GeneralLeagueSection() {
             <div>
               <span className={landing.badge}>
                 <span className="pc-lp-eyebrow-dot" />
-                Concours gratuit
+                {CONTEST_COPY.communityBadge}
               </span>
-              <p className={`${landing.body} mt-6`}>
-                Tout le monde joue dans la ligue générale. Fais tes pronos, marque des points et
-                tente de finir numéro 1 pour remporter un maillot.
-              </p>
+              <p className={`${landing.body} mt-6`}>{CONTEST_COPY.main}</p>
+              <p className={`${landing.body} mt-4`}>{CONTEST_COPY.unlockCondition}</p>
+              <p className="mt-2 text-xs text-[var(--pc-muted)]">{CONTEST_COPY.disclaimer}</p>
               <ul className="mt-6 space-y-3 text-sm text-[var(--pc-muted)]">
                 <Bullet>Pronostics classiques sur tous les matchs</Bullet>
                 <Bullet>Classement général en temps réel</Bullet>
-                <Bullet>Concours gratuit — lot pour le premier</Bullet>
+                <Bullet>Concours gratuit — participation sans achat</Bullet>
                 <Bullet>Les cartes n&apos;influencent pas ce classement</Bullet>
               </ul>
               <Link href="/signup" className={`${landing.btnPrimary} mt-8`}>
@@ -56,12 +56,12 @@ export function GeneralLeagueSection() {
                 <RankLine rank={3} label="LucaB" pts={318} />
                 <div className="mt-5 rounded-2xl border border-amber-400/30 bg-gradient-to-r from-amber-500/15 to-violet-500/10 p-4 text-center">
                   <p className="text-[11px] uppercase tracking-widest text-amber-200/90">
-                    Lot · 1er du classement
+                    {CONTEST_COPY.communityBadge}
                   </p>
                   <p className="mt-1 font-[family-name:var(--pc-font-display)] text-lg font-semibold text-white">
-                    Un maillot à gagner
+                    {CONTEST_COPY.title}
                   </p>
-                  <p className="text-sm text-amber-200/80">Le premier remporte un maillot</p>
+                  <p className="text-sm text-amber-200/80">{CONTEST_COPY.communityGoal}</p>
                 </div>
               </div>
             </div>

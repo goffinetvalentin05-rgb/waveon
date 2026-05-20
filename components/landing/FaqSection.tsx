@@ -29,7 +29,7 @@ const ITEMS = [
   },
   {
     q: "Qu'est-ce qu'on peut gagner ?",
-    a: "Le meilleur du classement général tente de remporter un maillot de football. Les détails exacts sont précisés dans le règlement du concours.",
+    a: "Le 1er du classement général peut tenter de remporter un maillot de football si 10 ligues privées ont été créées sur Waevon. Maillot soumis à disponibilité, sans échange en argent. Voir le règlement du concours.",
   },
 ];
 
