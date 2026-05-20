@@ -11,14 +11,12 @@ import {
   IconUsers,
 } from "@tabler/icons-react";
 import { PronoClashShell } from "@/components/dashboard/PronoClashShell";
-import {
-  DashboardUpcomingSection,
-  matchesPageHref,
-} from "@/components/dashboard/DashboardClient";
+import { DashboardUpcomingSection } from "@/components/dashboard/DashboardClient";
 import type {
   DashboardPrediction,
   DashboardPreviewMatch,
 } from "@/components/dashboard/DashboardClient";
+import { matchesPageHref } from "@/lib/pronoclash/league-context-url";
 import { TeamDisplay } from "@/components/pronoclash/TeamDisplay";
 import { longStageLabel } from "@/lib/pronoclash/match-display";
 import type { LeagueContextOption } from "@/components/pronoclash/LeagueContextSelector";
