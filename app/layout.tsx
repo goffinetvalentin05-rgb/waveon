@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
+import { Geist, Geist_Mono, Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { brand } from "@/lib/brand/config";
 
@@ -11,6 +11,12 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  display: "swap",
 });
 
 const display = Space_Grotesk({
@@ -61,7 +67,7 @@ export default function RootLayout({
   return (
     <html lang="fr" className="scroll-smooth motion-reduce:scroll-auto">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${display.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${display.variable} antialiased`}
       >
         {children}
       </body>

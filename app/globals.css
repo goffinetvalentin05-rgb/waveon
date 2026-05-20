@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* =========================================================
- * Prono Clash — design system dark / futuriste / gaming
+ * Prono Clash — design system (bleu électrique)
  * ========================================================= */
 
 :root {
@@ -9,18 +9,21 @@
   --background: #05060a;
   --foreground: #f5f7ff;
   --pc-bg: #05060a;
-  --pc-bg-elev: #0b0d18;
+  --pc-bg-elev: #0a0e1a;
   --pc-border: rgba(255, 255, 255, 0.08);
   --pc-text: #f5f7ff;
-  --pc-text-muted: rgba(245, 247, 255, 0.62);
+  --pc-text-muted: #9ca3af;
+  --pc-blue: #3b82f6;
+  --pc-blue-light: #60a5fa;
+  --pc-blue-deep: #1d4ed8;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter), var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-instrument-serif), ui-serif, Georgia, serif;
+  --font-display: var(--font-display), ui-sans-serif, system-ui, sans-serif;
 }
 
 html,
@@ -31,24 +34,10 @@ body {
 }
 
 body {
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), var(--font-geist-sans), Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background:
-    radial-gradient(
-        120% 80% at 50% -20%,
-        rgba(99, 102, 241, 0.18) 0%,
-        rgba(168, 85, 247, 0.08) 35%,
-        transparent 70%
-      )
-      no-repeat fixed,
-    radial-gradient(
-        80% 60% at 100% 100%,
-        rgba(34, 211, 238, 0.08) 0%,
-        transparent 60%
-      )
-      no-repeat fixed,
-    var(--pc-bg);
+  background: linear-gradient(180deg, #05060a 0%, #0a0e1a 100%);
   color: var(--pc-text);
 }
 
@@ -64,20 +53,156 @@ textarea::placeholder {
   color: rgba(245, 247, 255, 0.32);
 }
 
-/* Sélection lumineuse */
 ::selection {
-  background: rgba(99, 102, 241, 0.4);
+  background: rgba(59, 130, 246, 0.4);
   color: #ffffff;
 }
 
-/* Scrollbar discrète */
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 
 /* =========================================================
- * Animations
+ * Landing page — halos, grille, glass, reveal
+ * ========================================================= */
+
+.pc-landing-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+.pc-landing-glow-fixed {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 90% 50% at 50% 100%,
+    rgba(59, 130, 246, 0.12) 0%,
+    transparent 55%
+  );
+}
+
+.pc-section-halo {
+  position: absolute;
+  left: 50%;
+  bottom: -15%;
+  width: 140%;
+  height: 75%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    ellipse 80% 50% at 50% 100%,
+    rgba(59, 130, 246, 0.45) 0%,
+    rgba(59, 130, 246, 0.15) 30%,
+    transparent 70%
+  );
+}
+
+.pc-section-halo-intense {
+  bottom: -25%;
+  height: 90%;
+  background: radial-gradient(
+    ellipse 85% 55% at 50% 100%,
+    rgba(59, 130, 246, 0.5) 0%,
+    rgba(59, 130, 246, 0.2) 28%,
+    transparent 68%
+  );
+}
+
+.pc-section-halo-gold-blue {
+  background:
+    radial-gradient(
+      ellipse 70% 45% at 30% 100%,
+      rgba(251, 191, 36, 0.22) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 80% 50% at 50% 100%,
+      rgba(59, 130, 246, 0.42) 0%,
+      rgba(59, 130, 246, 0.14) 32%,
+      transparent 70%
+    );
+}
+
+.pc-section-halo-mega {
+  bottom: -40%;
+  height: 120%;
+  width: 180%;
+  background: radial-gradient(
+    ellipse 75% 55% at 50% 100%,
+    rgba(59, 130, 246, 0.55) 0%,
+    rgba(59, 130, 246, 0.22) 25%,
+    transparent 65%
+  );
+}
+
+.pc-title-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  vertical-align: middle;
+  background: linear-gradient(135deg, var(--pc-blue), var(--pc-blue-deep));
+  box-shadow:
+    0 0 24px rgba(59, 130, 246, 0.55),
+    inset 0 0 12px rgba(255, 255, 255, 0.12);
+}
+
+.pc-steps-line {
+  position: absolute;
+  top: 50%;
+  left: 3%;
+  right: 3%;
+  height: 2px;
+  transform: translateY(-50%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(59, 130, 246, 0.25) 8%,
+    rgba(59, 130, 246, 0.65) 50%,
+    rgba(59, 130, 246, 0.25) 92%,
+    transparent 100%
+  );
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.35);
+}
+
+.pc-custom-cursor {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.28);
+  border: 1px solid rgba(96, 165, 250, 0.45);
+  transition: transform 200ms ease;
+  mix-blend-mode: screen;
+}
+
+.pc-reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.55s ease,
+    transform 0.55s ease;
+}
+
+.pc-reveal.pc-reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* =========================================================
+ * Animations (dashboard + legacy)
  * ========================================================= */
 
 @keyframes pc-float {
@@ -97,10 +222,10 @@ textarea::placeholder {
 @keyframes pc-pulse-glow {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.5);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5);
   }
   50% {
-    box-shadow: 0 0 0 12px rgba(99, 102, 241, 0);
+    box-shadow: 0 0 0 12px rgba(59, 130, 246, 0);
   }
 }
 
@@ -120,9 +245,9 @@ textarea::placeholder {
 .pc-text-shine {
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.7) 0%,
+    rgba(96, 165, 250, 0.7) 0%,
     #ffffff 50%,
-    rgba(255, 255, 255, 0.7) 100%
+    rgba(96, 165, 250, 0.7) 100%
   );
   background-size: 200% auto;
   -webkit-background-clip: text;
@@ -146,26 +271,13 @@ textarea::placeholder {
   animation: pc-fade-up 0.55s ease-out both;
 }
 
-/* Halo "aurora" décoratif */
 .pc-aurora {
   position: absolute;
   inset: -10%;
   background:
-    radial-gradient(
-      40% 40% at 20% 30%,
-      rgba(99, 102, 241, 0.35) 0%,
-      transparent 60%
-    ),
-    radial-gradient(
-      35% 35% at 80% 20%,
-      rgba(168, 85, 247, 0.3) 0%,
-      transparent 60%
-    ),
-    radial-gradient(
-      30% 30% at 60% 80%,
-      rgba(34, 211, 238, 0.22) 0%,
-      transparent 60%
-    );
+    radial-gradient(40% 40% at 20% 30%, rgba(59, 130, 246, 0.35) 0%, transparent 60%),
+    radial-gradient(35% 35% at 80% 20%, rgba(29, 78, 216, 0.28) 0%, transparent 60%),
+    radial-gradient(30% 30% at 60% 80%, rgba(96, 165, 250, 0.2) 0%, transparent 60%);
   filter: blur(60px);
   pointer-events: none;
   z-index: -1;
@@ -175,7 +287,14 @@ textarea::placeholder {
   .pc-float,
   .pc-pulse-glow,
   .pc-text-shine,
-  .pc-fade-up {
+  .pc-fade-up,
+  .pc-reveal {
     animation: none;
+    transition: none;
+  }
+  .pc-reveal,
+  .pc-reveal.pc-reveal-visible {
+    opacity: 1;
+    transform: none;
   }
 }

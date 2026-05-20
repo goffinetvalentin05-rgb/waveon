@@ -42,10 +42,10 @@ export const ui = {
 
   /** CTA principal gros, lumineux. */
   btnPrimary:
-    "inline-flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_40px_-10px_rgba(99,102,241,0.8)] transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98] sm:text-base",
+    "inline-flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-blue-700 px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_40px_-10px_rgba(59,130,246,0.8)] transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98] sm:text-base",
 
   btnPrimaryLg:
-    "inline-flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 px-7 py-4 text-base font-semibold text-white shadow-[0_12px_50px_-10px_rgba(99,102,241,0.9)] transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98] sm:px-9 sm:py-5 sm:text-lg",
+    "inline-flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-blue-700 px-7 py-4 text-base font-semibold text-white shadow-[0_12px_50px_-10px_rgba(59,130,246,0.9)] transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98] sm:px-9 sm:py-5 sm:text-lg",
 
   /** CTA secondaire (verre). */
   btnSecondary:
@@ -86,9 +86,9 @@ export const ui = {
 /** Liens / gradients utilitaires pour décorations (halos, traits). */
 export const gradients = {
   heroRadial:
-    "absolute inset-0 -z-10 bg-[radial-gradient(60%_60%_at_50%_0%,rgba(99,102,241,0.35)_0%,rgba(168,85,247,0.15)_35%,transparent_70%)]",
-  blueViolet: "bg-gradient-to-br from-blue-500 via-indigo-500 to-violet-500",
-  violetNeon: "bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-400",
+    "absolute inset-0 -z-10 bg-[radial-gradient(60%_60%_at_50%_0%,rgba(59,130,246,0.35)_0%,rgba(29,78,216,0.15)_35%,transparent_70%)]",
+  blueViolet: "bg-gradient-to-br from-blue-500 to-blue-700",
+  violetNeon: "bg-gradient-to-br from-blue-500 via-blue-600 to-blue-400",
   neonLine:
     "h-px w-full bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent",
 } as const;

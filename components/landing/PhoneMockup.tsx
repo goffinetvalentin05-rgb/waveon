@@ -218,7 +218,7 @@ export function PhoneMockup() {
         .pc-orb-1 {
           width: 280px;
           height: 280px;
-          background: #6366f1;
+          background: #3b82f6;
           top: -40px;
           left: -60px;
           animation: pc-bg-orb 8s ease-in-out infinite;
@@ -226,7 +226,7 @@ export function PhoneMockup() {
         .pc-orb-2 {
           width: 240px;
           height: 240px;
-          background: #a855f7;
+          background: #1d4ed8;
           bottom: 40px;
           right: -40px;
           animation: pc-bg-orb 10s ease-in-out infinite reverse;
@@ -286,7 +286,7 @@ export function PhoneMockup() {
           width: 4px;
           height: 4px;
           border-radius: 50%;
-          background: #6366f1;
+          background: #3b82f6;
           opacity: 0.6;
         }
 
@@ -427,7 +427,7 @@ export function PhoneMockup() {
 
         .pc-lock-btn {
           margin-top: 10px;
-          background: linear-gradient(135deg, #6366f1, #a855f7);
+          background: linear-gradient(135deg, #3b82f6, #1d4ed8);
           color: #fff;
           text-align: center;
           padding: 11px;
@@ -467,7 +467,7 @@ export function PhoneMockup() {
           width: 32px;
           height: 32px;
           border-radius: 8px;
-          background: linear-gradient(135deg, #a855f7, #d946ef);
+          background: linear-gradient(135deg, #3b82f6, #1d4ed8);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -553,7 +553,7 @@ export function PhoneMockup() {
           font-weight: 500;
         }
         .pc-me-badge {
-          background: #6366f1;
+          background: #3b82f6;
           color: #fff;
           font-size: 9px;
           font-weight: 600;
