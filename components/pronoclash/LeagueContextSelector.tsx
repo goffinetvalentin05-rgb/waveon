@@ -19,7 +19,7 @@ export function LeagueContextSelector({ options, active, onChange, hint }: Props
   return (
     <div className="pc-league-context">
       {hint ? <p className="pc-league-context-hint">{hint}</p> : null}
-      <div className="pc-league-tabs" role="tablist" aria-label="Contexte de pronostic">
+      <div className="pc-league-tabs pc-league-tabs-premium" role="tablist" aria-label="Contexte de pronostic">
         {options.map((opt) => {
           const isActive =
             (opt.id === null && active === null) || (opt.id !== null && opt.id === active);

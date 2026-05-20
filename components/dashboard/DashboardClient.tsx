@@ -7,8 +7,8 @@ import { fr } from "date-fns/locale";
 import { IconChevronRight } from "@tabler/icons-react";
 import { LeagueContextSelector } from "@/components/pronoclash/LeagueContextSelector";
 import { TeamDisplay } from "@/components/pronoclash/TeamDisplay";
+import { isPredictionLocked } from "@/lib/pronoclash/prediction-lock";
 import {
-  leagueContextToParam,
   matchesPageHref,
   predictionMapKey,
   type LeagueContextId,
@@ -26,6 +26,9 @@ export type DashboardPreviewMatch = {
   id: string;
   kickoffAt: string;
   compLabel: string;
+  status: string;
+  lockedAt: string | null;
+  venueLabel: string | null;
   homeName: string | null;
   awayName: string | null;
   homeCountryCode: string | null;
@@ -68,6 +71,19 @@ function groupMatchesByDate(matches: DashboardPreviewMatch[]) {
   }));
 }
 
+type MatchStatusKey = "upcoming" | "locked" | "finished";
+
+function resolveMatchStatus(m: DashboardPreviewMatch): { key: MatchStatusKey; label: string } {
+  if (m.status === "finished") return { key: "finished", label: "Terminé" };
+  if (
+    m.status === "live" ||
+    isPredictionLocked(m.lockedAt, m.kickoffAt)
+  ) {
+    return { key: "locked", label: "Verrouillé" };
+  }
+  return { key: "upcoming", label: "À venir" };
+}
+
 export function DashboardUpcomingSection({
   leagueOptions,
   predictions,
@@ -92,9 +108,14 @@ export function DashboardUpcomingSection({
   if (upcomingMatches.length === 0) return null;
 
   return (
-    <>
+    <section className="pc-animate-in-delay-3" aria-label="Prochains matchs">
       <div className="pc-section-head">
-        <h2 className="pc-section-title">Prochains matchs</h2>
+        <div>
+          <h2 className="pc-section-title">Prochains duels</h2>
+          <p className="pc-section-desc">
+            Choisis ta ligue, fais ton prono, verrouille ton intuition.
+          </p>
+        </div>
         <Link href={matchesHref} className="pc-link">
           Tout voir
           <IconChevronRight size={14} />
@@ -111,15 +132,25 @@ export function DashboardUpcomingSection({
       {matchGroups.map((group) => (
         <section key={group.dateKey} className="pc-date-block">
           <h3 className="pc-date-label">{group.label}</h3>
-          <div className="pc-match-list pc-glass">
+          <div className="pc-match-cards">
             {group.items.map((m, idx) => {
               const pred = predByKey.get(predictionMapKey(m.id, activeLeague));
+              const status = resolveMatchStatus(m);
+              const isFirst = idx === 0;
               return (
-                <div
+                <article
                   key={m.id}
-                  className={`pc-match-preview${idx < group.items.length - 1 ? " bordered" : ""}`}
+                  className={`pc-match-card-game pc-glass${isFirst ? " spotlight" : ""}`}
                 >
-                  <div className="pc-match-preview-teams">
+                  <div className="pc-match-card-head">
+                    {m.venueLabel ? (
+                      <span className="pc-match-venue">{m.venueLabel}</span>
+                    ) : (
+                      <span className="pc-match-venue">{m.compLabel}</span>
+                    )}
+                    <span className={`pc-match-status ${status.key}`}>{status.label}</span>
+                  </div>
+                  <div className="pc-match-card-teams">
                     <TeamDisplay
                       name={m.homeName}
                       country_code={m.homeCountryCode}
@@ -127,15 +158,15 @@ export function DashboardUpcomingSection({
                       placeholder={m.homePlaceholder}
                       size="sm"
                     />
-                    <div className="pc-match-center">
-                      <span className="pc-match-time">{formatMatchTime(m.kickoffAt)}</span>
-                      <span className="pc-match-stage">{m.compLabel}</span>
+                    <div className="pc-match-card-center">
+                      <span className="pc-match-card-time">{formatMatchTime(m.kickoffAt)}</span>
+                      <span className="pc-match-card-stage">{m.compLabel}</span>
                       {pred ? (
-                        <span className="pc-prono-badge">
+                        <span className="pc-prono-chip">
                           {pred.predicted_home_score} – {pred.predicted_away_score}
                         </span>
                       ) : (
-                        <span className="pc-prono-badge empty">Pas encore de prono</span>
+                        <span className="pc-prono-chip empty">Pas encore de prono</span>
                       )}
                     </div>
                     <TeamDisplay
@@ -149,11 +180,11 @@ export function DashboardUpcomingSection({
                   </div>
                   <Link
                     href={`${matchesHref}&focus=${m.id}`}
-                    className="pc-btn ghost sm block"
+                    className="pc-btn primary block"
                   >
                     {pred ? "Modifier mon prono" : "Pronostiquer"}
                   </Link>
-                </div>
+                </article>
               );
             })}
           </div>
@@ -165,6 +196,6 @@ export function DashboardUpcomingSection({
           Pronostiquer dans {activeLabel}
         </Link>
       </div>
-    </>
+    </section>
   );
 }

@@ -7,8 +7,11 @@ import {
   IconBallFootball,
   IconChevronRight,
   IconPlus,
+  IconTarget,
   IconTrophy,
   IconUsers,
+  IconChartBar,
+  IconMedal,
 } from "@tabler/icons-react";
 import { PronoClashShell } from "@/components/dashboard/PronoClashShell";
 import { DashboardUpcomingSection } from "@/components/dashboard/DashboardClient";
@@ -60,6 +63,8 @@ export type DashboardViewProps = {
   email?: string | null;
   totalPoints: number;
   rank: number;
+  exactScores?: number;
+  predictionsPlayed?: number;
   contestTitle?: string | null;
   contestSubtitle?: string | null;
   leagueCards: DashboardLeagueCard[];
@@ -78,6 +83,11 @@ function leagueInitials(name: string) {
   return name.slice(0, 2).toUpperCase() || "LG";
 }
 
+function displayName(username?: string | null) {
+  const raw = username?.trim().replace(/^@+/, "") ?? "";
+  return raw || "Joueur";
+}
+
 function formatMatchTime(iso: string) {
   return format(new Date(iso), "HH:mm", { locale: fr });
 }
@@ -89,7 +99,7 @@ function FeaturedMatchCard({ match }: { match: DashboardFeaturedMatch }) {
     isLive && match.homeScore !== null && match.awayScore !== null;
 
   return (
-    <div className="pc-featured">
+    <div className="pc-featured pc-animate-in">
       <div className="pc-featured-bg" />
       <div className="pc-featured-glow pc-featured-glow-left" />
       <div className="pc-featured-glow pc-featured-glow-right" />
@@ -139,7 +149,7 @@ function FeaturedMatchCard({ match }: { match: DashboardFeaturedMatch }) {
             Détail
           </Link>
           <Link href={matchesPageHref(null)} className="pc-btn primary light">
-            {isLive ? "Voir le match" : "Pronostiquer (générale)"}
+            {isLive ? "Voir le match" : "Pronostiquer"}
           </Link>
         </div>
       </div>
@@ -149,7 +159,12 @@ function FeaturedMatchCard({ match }: { match: DashboardFeaturedMatch }) {
 
 function LeagueCard({ league }: { league: DashboardLeagueCard }) {
   return (
-    <article className={`pc-league-card pc-glass${league.pending ? " pending" : ""}`}>
+    <article
+      className={`pc-league-card pc-glass ${league.type}${league.pending ? " pending" : ""}`}
+    >
+      {league.pending && league.pendingLabel ? (
+        <span className="pc-payment-badge">Paiement requis</span>
+      ) : null}
       <div className="pc-league-card-top">
         <span className="pc-league-badge">{leagueInitials(league.name)}</span>
         <div className="pc-league-card-meta">
@@ -187,7 +202,7 @@ function LeagueCard({ league }: { league: DashboardLeagueCard }) {
 
       <div className="pc-league-card-actions">
         {league.pending && league.payHref ? (
-          <Link href={league.payHref} className="pc-btn primary block">
+          <Link href={league.payHref} className="pc-btn accent-orange block">
             Finaliser le paiement
           </Link>
         ) : (
@@ -196,7 +211,7 @@ function LeagueCard({ league }: { league: DashboardLeagueCard }) {
               Pronostiquer
             </Link>
             <Link href={league.leaderboardHref} className="pc-btn ghost">
-              Classement
+              Voir le classement
             </Link>
           </>
         )}
@@ -210,6 +225,8 @@ export function DashboardView({
   email,
   totalPoints,
   rank,
+  exactScores = 0,
+  predictionsPlayed = 0,
   contestTitle,
   contestSubtitle,
   leagueCards,
@@ -223,42 +240,89 @@ export function DashboardView({
 }: DashboardViewProps) {
   const showMatchesEmpty =
     !hasAnyMatchesInDb && !featuredMatch && upcomingMatches.length === 0;
+  const name = displayName(username);
 
   return (
-    <PronoClashShell pageTitle="Explorer" username={username} email={email}>
-      <section className="pc-summary-header" aria-label="Résumé">
-        <div className="pc-summary-grid">
-          <div className="pc-stat-card pc-glass">
-            <span className="pc-stat-label">Mes points</span>
-            <span className="pc-stat-value">{totalPoints}</span>
-            <span className="pc-stat-foot">Ligue générale</span>
+    <PronoClashShell
+      username={username}
+      email={email}
+      isAdmin={isAdmin}
+      hidePageTitle
+    >
+      <section className="pc-hero pc-animate-in" aria-label="Bienvenue">
+        <div className="pc-hero-bg" aria-hidden />
+        <div className="pc-hero-grid">
+          <div className="pc-hero-copy">
+            <p className="pc-hero-eyebrow">Bienvenue dans l&apos;arène</p>
+            <h1 className="pc-hero-title">
+              Salut, <span>{name}</span>
+            </h1>
+            <p className="pc-hero-sub">
+              Pronostique, grimpe au classement et défie tes potes.
+            </p>
+            <div className="pc-hero-mini-stats">
+              <div className="pc-hero-mini-stat">
+                <strong>{totalPoints}</strong>
+                <span>Points</span>
+              </div>
+              <div className="pc-hero-mini-stat">
+                <strong>#{rank}</strong>
+                <span>Rang global</span>
+              </div>
+            </div>
           </div>
-          <div className="pc-stat-card pc-glass pc-stat-card-accent">
-            <span className="pc-stat-label">Mon rang global</span>
-            <span className="pc-stat-value pc-stat-gradient">#{rank}</span>
-            <span className="pc-stat-foot">Classement concours</span>
+          <div className="pc-hero-visual" aria-hidden>
+            <div className="pc-hero-orbit" />
+            <div className="pc-hero-orb" />
+            <div className="pc-hero-field" />
+            <div className="pc-hero-ball" />
           </div>
         </div>
-        <div className="pc-cta-row">
-          <Link href="/leagues/new" className="pc-cta-card pc-glass primary">
-            <IconPlus size={20} stroke={2} />
-            <span>
-              <strong>Créer une ligue</strong>
-              <small>Ligue privée payante · tes potes</small>
-            </span>
+        <div className="pc-hero-actions">
+          <Link href={matchesPageHref(null)} className="pc-btn primary">
+            <IconTarget size={16} stroke={2} />
+            Pronostiquer
           </Link>
-          <Link href="/leagues/join" className="pc-cta-card pc-glass">
-            <IconUsers size={20} stroke={1.8} />
-            <span>
-              <strong>Rejoindre</strong>
-              <small>Code d&apos;invitation</small>
-            </span>
+          <Link href="/leagues/new" className="pc-btn ghost">
+            <IconPlus size={16} stroke={2} />
+            Créer une ligue
           </Link>
         </div>
       </section>
 
+      <div className="pc-stats-grid pc-animate-in pc-animate-in-delay-1" aria-label="Statistiques">
+        <div className="pc-stat-tile pc-glass violet">
+          <div className="pc-stat-tile-icon">
+            <IconTrophy size={18} stroke={1.8} />
+          </div>
+          <span className="pc-stat-tile-value">{totalPoints}</span>
+          <span className="pc-stat-tile-label">Points</span>
+        </div>
+        <div className="pc-stat-tile pc-glass blue">
+          <div className="pc-stat-tile-icon">
+            <IconMedal size={18} stroke={1.8} />
+          </div>
+          <span className="pc-stat-tile-value">#{rank}</span>
+          <span className="pc-stat-tile-label">Rang global</span>
+        </div>
+        <div className="pc-stat-tile pc-glass orange">
+          <div className="pc-stat-tile-icon">
+            <IconTarget size={18} stroke={1.8} />
+          </div>
+          <span className="pc-stat-tile-value">{exactScores}</span>
+          <span className="pc-stat-tile-label">Scores exacts</span>
+        </div>
+        <div className="pc-stat-tile pc-glass emerald">
+          <div className="pc-stat-tile-icon">
+            <IconChartBar size={18} stroke={1.8} />
+          </div>
+          <span className="pc-stat-tile-value">{predictionsPlayed}</span>
+          <span className="pc-stat-tile-label">Pronos joués</span>
+        </div>
+      </div>
+
       {contestTitle ? (
-        <div className="pc-contest pc-glass">
+        <div className="pc-contest pc-contest-premium pc-glass pc-animate-in-delay-1">
           <div className="pc-contest-icon">
             <IconTrophy size={20} stroke={1.8} />
           </div>
@@ -270,28 +334,22 @@ export function DashboardView({
         </div>
       ) : null}
 
-      {isAdmin ? (
-        <Link
-          href="/admin/tournament/matches"
-          className="pc-btn primary block"
-          style={{ marginBottom: 4 }}
-        >
-          Admin matchs
-        </Link>
-      ) : null}
-
-      <div className="pc-section-head">
+      <div className="pc-section-head pc-animate-in-delay-2">
         <div>
-          <h2 className="pc-section-title">Mes ligues</h2>
+          <h2 className="pc-section-title">Tes espaces de jeu</h2>
           <p className="pc-section-desc">
-            La ligue générale et chaque ligue privée ont des pronostics séparés.
+            Chaque ligue a ses propres pronos, son classement et sa rivalité.
           </p>
         </div>
+        <Link href="/leagues/join" className="pc-link">
+          Rejoindre
+          <IconChevronRight size={14} />
+        </Link>
       </div>
 
       {leaguesEmptyHint ? <p className="pc-hint">{leaguesEmptyHint}</p> : null}
 
-      <div className="pc-league-cards">
+      <div className="pc-league-cards pc-animate-in-delay-2">
         {leagueCards.map((league) => (
           <LeagueCard key={league.key} league={league} />
         ))}
@@ -326,7 +384,7 @@ export function DashboardView({
         upcomingMatches={upcomingMatches}
       />
 
-      <div className="pc-shortcuts">
+      <div className="pc-shortcuts pc-animate-in-delay-3">
         <Link href={matchesPageHref(null)} className="pc-shortcut pc-glass">
           <IconBallFootball size={18} stroke={1.8} />
           <span>Tous les matchs</span>
@@ -335,6 +393,11 @@ export function DashboardView({
         <Link href="/global/leaderboard" className="pc-shortcut pc-glass">
           <IconTrophy size={18} stroke={1.8} />
           <span>Classement général</span>
+          <IconChevronRight size={16} className="pc-shortcut-arrow" />
+        </Link>
+        <Link href="/leagues/join" className="pc-shortcut pc-glass">
+          <IconUsers size={18} stroke={1.8} />
+          <span>Rejoindre une ligue</span>
           <IconChevronRight size={16} className="pc-shortcut-arrow" />
         </Link>
         <Link href="/legal/contest-rules" className="pc-shortcut pc-glass">

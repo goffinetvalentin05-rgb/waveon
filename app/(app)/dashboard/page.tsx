@@ -28,9 +28,12 @@ type MatchRow = {
   id: string;
   match_number: number | null;
   kickoff_at: string;
+  locked_at: string | null;
   status: string;
   stage: string;
   group_name: string | null;
+  venue: string | null;
+  city: string | null;
   home_score: number | null;
   away_score: number | null;
   home_placeholder: string | null;
@@ -39,8 +42,13 @@ type MatchRow = {
   away: TeamRow;
 };
 
+function venueLabel(m: MatchRow): string | null {
+  const parts = [m.venue, m.city].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
 const MATCH_SELECT =
-  "id, match_number, kickoff_at, status, stage, group_name, home_score, away_score, home_placeholder, away_placeholder, home:home_team_id(name, country_code, flag_emoji), away:away_team_id(name, country_code, flag_emoji)";
+  "id, match_number, kickoff_at, locked_at, status, stage, group_name, venue, city, home_score, away_score, home_placeholder, away_placeholder, home:home_team_id(name, country_code, flag_emoji), away:away_team_id(name, country_code, flag_emoji)";
 
 function teamDisplayName(team: TeamRow, placeholder: string | null) {
   return team?.name ?? placeholder ?? null;
@@ -51,6 +59,9 @@ function toPreview(m: MatchRow): DashboardPreviewMatch {
     id: m.id,
     kickoffAt: m.kickoff_at,
     compLabel: shortStageLabel(m.stage, m.group_name),
+    status: m.status,
+    lockedAt: m.locked_at,
+    venueLabel: venueLabel(m),
     homeName: teamDisplayName(m.home, m.home_placeholder),
     awayName: teamDisplayName(m.away, m.away_placeholder),
     homeCountryCode: m.home?.country_code ?? null,
@@ -159,7 +170,7 @@ export default async function DashboardPage() {
       .limit(8),
     supabase
       .from("predictions")
-      .select("match_id, league_id, predicted_home_score, predicted_away_score")
+      .select("match_id, league_id, predicted_home_score, predicted_away_score, exact_score")
       .eq("user_id", user.id),
   ]);
 
@@ -199,7 +210,24 @@ export default async function DashboardPage() {
     .filter((m) => m.id !== featuredId)
     .map(toPreview);
 
-  const predictions = (predictionsRes.data ?? []) as DashboardPrediction[];
+  const predictionsRaw = (predictionsRes.data ?? []) as Array<{
+    match_id: string;
+    league_id: string | null;
+    predicted_home_score: number;
+    predicted_away_score: number;
+    exact_score?: boolean;
+  }>;
+  const predictions: DashboardPrediction[] = predictionsRaw.map(
+    ({ match_id, league_id, predicted_home_score, predicted_away_score }) => ({
+      match_id,
+      league_id,
+      predicted_home_score,
+      predicted_away_score,
+    })
+  );
+  const generalPreds = predictionsRaw.filter((p) => p.league_id === null);
+  const exactScores = generalPreds.filter((p) => p.exact_score).length;
+  const predictionsPlayed = generalPreds.length;
 
   const cs = contestRes.data as
     | { prize_title: string; prize_value_chf: number; ends_at: string | null; is_active: boolean }
@@ -292,6 +320,8 @@ export default async function DashboardPage() {
       email={user.email}
       totalPoints={profile?.total_points ?? 0}
       rank={globalRank}
+      exactScores={exactScores}
+      predictionsPlayed={predictionsPlayed}
       contestTitle={contestTitle}
       contestSubtitle={
         contestTitle

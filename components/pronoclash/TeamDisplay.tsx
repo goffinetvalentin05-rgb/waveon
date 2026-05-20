@@ -30,7 +30,7 @@ export function TeamDisplay({
       style={align === "right" ? { alignItems: "flex-end", textAlign: "right" } : undefined}
     >
       <span
-        className="pc-team-flag"
+        className="pc-team-flag pc-team-flag-round"
         style={{ width: badgePx, height: badgePx, fontSize: size === "lg" ? 26 : size === "md" ? 22 : 18 }}
         aria-hidden
       >

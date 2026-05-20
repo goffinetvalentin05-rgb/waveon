@@ -42,7 +42,7 @@ export function AppShell({ profile, children }: AppShellProps) {
 
   return (
     <div
-      className={`relative min-h-screen ${isPronoClashShell ? "bg-[#0b0e14] pb-24 lg:pb-8" : "pb-20 sm:pb-0"}`}
+      className={`relative min-h-screen ${isPronoClashShell ? "bg-[#050505] pb-24 lg:pb-8" : "pb-20 sm:pb-0"}`}
     >
       {!isPronoClashShell ? (
       <header className="sticky top-0 z-30 border-b border-white/5 bg-black/40 backdrop-blur-xl">
