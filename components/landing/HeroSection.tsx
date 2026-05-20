@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { IconArrowRight } from "@tabler/icons-react";
-import { HeroShowcase } from "@/components/landing/HeroShowcase";
+import { HeroAnimation } from "@/components/landing/HeroAnimation";
 import { landing } from "@/components/landing/landing-styles";
 
 export function HeroSection() {
@@ -50,7 +50,7 @@ export function HeroSection() {
           </div>
 
           <div className="pc-lp-hero-showcase">
-            <HeroShowcase />
+            <HeroAnimation />
           </div>
         </div>
       </div>
