@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/brand/Logo";
+import { brand } from "@/lib/brand/config";
 import { AVATAR_COLORS, type AvatarColorId } from "@/lib/pronoclash/avatar-colors";
 import { ui } from "@/lib/design/tokens";
 
@@ -247,7 +248,7 @@ function ConsentsStep({
         <Consent
           checked={consentMarketingApp}
           onChange={setConsentMarketingApp}
-          title="Recevoir les actus de Prono Clash"
+          title={`Recevoir les actus de ${brand.name}`}
           body="Quelques emails par tournoi (rappels, résultats du concours, nouveautés). Désinscription en un clic."
         />
         <Consent

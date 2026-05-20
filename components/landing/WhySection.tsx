@@ -1,4 +1,5 @@
 import { IconBolt } from "@tabler/icons-react";
+import { brand } from "@/lib/brand/config";
 import { BentoCard } from "@/components/landing/BentoCard";
 import { Reveal } from "@/components/landing/Reveal";
 import { SectionShell, SectionTitle } from "@/components/landing/SectionChrome";
@@ -8,7 +9,7 @@ export function WhySection() {
     <SectionShell id="pourquoi" halo="intense">
       <Reveal>
         <SectionTitle
-          line1="Pourquoi Prono Clash"
+          line1={`Pourquoi ${brand.name}`}
           line2Before=""
           line2After=" pour ton groupe ?"
           icon={IconBolt}
@@ -117,10 +118,10 @@ function ChatVisual() {
         </div>
         <div className="space-y-2.5">
           <div className="ml-auto max-w-[92%] rounded-2xl rounded-tr-md bg-[#25D366] px-3 py-2 text-[11px] leading-snug text-white shadow-lg">
-            J&apos;ai créé notre ligue Prono Clash 🔥
+            J&apos;ai créé notre ligue {brand.name} 🔥
           </div>
           <div className="max-w-[92%] rounded-2xl rounded-tl-md border border-white/10 bg-white/[0.06] px-3 py-2 text-[11px] text-white/80">
-            pronoclash.app/leagues/sabotards
+            {brand.domain}/leagues/sabotards
           </div>
           <div className="ml-auto max-w-[70%] rounded-2xl rounded-tr-md bg-[#25D366]/90 px-3 py-1.5 text-[10px] text-white">
             Go go go ⚽

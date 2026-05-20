@@ -1,3 +1,5 @@
+import { brand } from "@/lib/brand/config";
+
 /**
  * Utilitaires pour les ligues : génération de slug, invite code, etc.
  */
@@ -53,7 +55,7 @@ export function buildWhatsappInviteMessage(args: {
   inviteUrl: string;
 }): string {
   return (
-    `J'ai créé notre ligue Prono Clash pour le tournoi mondial de foot 2026. ` +
+    `J'ai créé notre ligue ${brand.name} pour le tournoi mondial de foot 2026. ` +
     `Viens pronostiquer, jouer des cartes et saboter le groupe : ${args.inviteUrl}`
   );
 }

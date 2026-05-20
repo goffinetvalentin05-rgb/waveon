@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { IconHelpCircle } from "@tabler/icons-react";
+import { brand } from "@/lib/brand/config";
 import { Reveal } from "@/components/landing/Reveal";
 import { SectionShell, SectionTitle } from "@/components/landing/SectionChrome";
 const ITEMS = [
   {
     q: "Est-ce une application de paris ?",
-    a: "Non. Prono Clash est un jeu de pronostics entre potes. Il n'y a aucune mise d'argent entre joueurs ni gain d'argent. Le seul lot existant (concours gratuit) est un objet physique offert.",
+    a: `Non. ${brand.name} est un jeu de pronostics entre potes. Il n'y a aucune mise d'argent entre joueurs ni gain d'argent. Le seul lot existant (concours gratuit) est un objet physique offert.`,
   },
   {
     q: "Faut-il payer pour participer au concours global ?",

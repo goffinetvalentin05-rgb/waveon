@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { brand } from "@/lib/brand/config";
 import { ui } from "@/lib/design/tokens";
 
 export type ContestSettings = {
@@ -241,7 +242,7 @@ export function ContestAdmin({
       <section className="space-y-3">
         <h2 className="text-lg font-semibold text-white">Participants</h2>
         <p className="text-sm text-white/55">
-          {stats.total} joueurs · {stats.mkt} consentent aux emails de Prono Clash · {stats.partner}{" "}
+          {stats.total} joueurs · {stats.mkt} consentent aux emails de {brand.name} · {stats.partner}{" "}
           aux offres partenaires (séparé).
         </p>
         <div className="flex flex-wrap gap-2">

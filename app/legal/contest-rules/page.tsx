@@ -87,7 +87,7 @@ export default function ContestRulesPage() {
       <p>
         Les données collectées dans le cadre du concours (email, pronostics) sont traitées
         conformément à notre <a href="/legal/privacy">politique de confidentialité</a>. Les
-        consentements marketing (newsletter Prono Clash, offres partenaires) sont demandés
+        consentements marketing (newsletter {brand.name}, offres partenaires) sont demandés
         séparément et sont facultatifs.
       </p>
 

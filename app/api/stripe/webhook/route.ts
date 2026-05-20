@@ -8,7 +8,7 @@ import {
   activateLeagueAfterPayment,
 } from "@/lib/pronoclash/league-activation";
 import { sendLeagueCreatedEmail } from "@/lib/emails/send";
-import { getAppBaseUrl } from "@/lib/brand/config";
+import { brand, getAppBaseUrl } from "@/lib/brand/config";
 
 export const runtime = "nodejs";
 
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
         const userId = meta.user_id;
         const leagueId = meta.league_id;
         const planRaw = meta.plan;
-        const leagueName = meta.league_name?.trim() || "Ma ligue Prono Clash";
+        const leagueName = meta.league_name?.trim() || `Ma ligue ${brand.name}`;
 
         if (!userId || !leagueId || !isLeaguePlanId(planRaw)) {
           console.warn("[stripe/webhook] metadata invalide", meta);
