@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getOrCreateSettings, requireUser } from "@/lib/crm/server";
-import { parseProspectsCsv } from "@/lib/crm/csv";
 
 export async function GET(request: Request) {
   const auth = await requireUser();
@@ -69,68 +68,6 @@ export async function POST(request: Request) {
   if (auth.response) return auth.response;
   const { supabase, user } = auth;
 
-  const contentType = request.headers.get("content-type") ?? "";
-
-  // Import CSV
-  if (contentType.includes("text/csv") || contentType.includes("multipart/form-data")) {
-    let text = "";
-    if (contentType.includes("multipart/form-data")) {
-      const form = await request.formData();
-      const file = form.get("file");
-      if (!(file instanceof File)) {
-        return NextResponse.json({ error: "Fichier manquant" }, { status: 400 });
-      }
-      text = await file.text();
-    } else {
-      text = await request.text();
-    }
-
-    const { rows, errors } = parseProspectsCsv(text);
-    if (!rows.length) {
-      return NextResponse.json(
-        { error: errors[0] ?? "Aucune ligne valide", errors },
-        { status: 400 }
-      );
-    }
-
-    const payload = rows.map((r) => ({
-      user_id: user.id,
-      name: r.club_name,
-      club_name: r.club_name,
-      sport: r.sport,
-      canton: r.canton,
-      contact_name: r.contact_name,
-      phone: r.phone,
-      email: r.email,
-      website: r.website,
-      status: "À contacter",
-      last_action: "Importé",
-      last_action_at: new Date().toISOString(),
-    }));
-
-    const { data, error } = await supabase.from("prospects").insert(payload).select("id, club_name");
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    if (data?.length) {
-      await supabase.from("prospect_activities").insert(
-        data.map((p) => ({
-          user_id: user.id,
-          prospect_id: p.id,
-          action_type: "imported",
-          title: "Prospect importé",
-        }))
-      );
-    }
-
-    return NextResponse.json({
-      imported: data?.length ?? 0,
-      errors,
-    });
-  }
-
-  // Create single prospect
   const body = await request.json();
   const club_name = String(body.club_name ?? "").trim();
   if (!club_name) {

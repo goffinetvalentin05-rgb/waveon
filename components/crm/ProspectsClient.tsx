@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { IconPlus, IconSearch, IconUpload } from "@tabler/icons-react";
 import { StatusBadge } from "@/components/crm/StatusBadge";
+import { ImportProspectsModal } from "@/components/crm/ImportProspectsModal";
 import { PROSPECT_STATUSES, type Prospect } from "@/lib/crm/types";
 import { ui } from "@/lib/design/tokens";
 import { format } from "date-fns";
@@ -38,6 +39,7 @@ export function ProspectsClient({
   const [prospects, setProspects] = useState(initial);
   const [count, setCount] = useState(total);
   const [showCreate, setShowCreate] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [importMsg, setImportMsg] = useState<string | null>(null);
 
   const reload = (opts?: { q?: string; status?: string; sort?: string }) => {
@@ -61,17 +63,12 @@ export function ProspectsClient({
     });
   };
 
-  const onImport = async (file: File) => {
-    setImportMsg(null);
-    const form = new FormData();
-    form.append("file", file);
-    const res = await fetch("/api/prospects", { method: "POST", body: form });
-    const data = await res.json();
-    if (!res.ok) {
-      setImportMsg(data.error ?? "Import échoué");
-      return;
-    }
-    setImportMsg(`${data.imported} prospect(s) importé(s).`);
+  const onImported = (result: { imported: number; updated: number; skipped: number }) => {
+    const parts: string[] = [];
+    if (result.imported > 0) parts.push(`${result.imported} importé${result.imported > 1 ? "s" : ""}`);
+    if (result.updated > 0) parts.push(`${result.updated} mis à jour`);
+    if (result.skipped > 0) parts.push(`${result.skipped} ignoré${result.skipped > 1 ? "s" : ""}`);
+    setImportMsg(parts.length ? `Import réussi : ${parts.join(", ")}.` : "Import terminé.");
     reload();
     router.refresh();
   };
@@ -90,20 +87,17 @@ export function ProspectsClient({
         </div>
         {!clientsOnly ? (
           <div className="flex flex-wrap gap-2">
-            <label className={ui.btnSecondary + " cursor-pointer"}>
+            <button
+              type="button"
+              className={ui.btnSecondary}
+              onClick={() => {
+                setImportMsg(null);
+                setShowImport(true);
+              }}
+            >
               <IconUpload className="h-4 w-4" stroke={1.75} />
               Importer des prospects
-              <input
-                type="file"
-                accept=".csv,text/csv"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) void onImport(f);
-                  e.target.value = "";
-                }}
-              />
-            </label>
+            </button>
             <button type="button" className={ui.btnPrimary} onClick={() => setShowCreate(true)}>
               <IconPlus className="h-4 w-4" stroke={2} />
               Nouveau
@@ -113,7 +107,7 @@ export function ProspectsClient({
       </div>
 
       {importMsg ? (
-        <p className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-2.5 text-sm text-blue-700">
+        <p className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700">
           {importMsg}
         </p>
       ) : null}
@@ -187,7 +181,7 @@ export function ProspectsClient({
             {prospects.length === 0 ? (
               <tr>
                 <td colSpan={10} className="!cursor-default py-12 text-center text-slate-400">
-                  Aucun prospect. Importez un CSV ou créez-en un.
+                  Aucun prospect. Importez un fichier ou créez-en un.
                 </td>
               </tr>
             ) : (
@@ -229,6 +223,14 @@ export function ProspectsClient({
           </tbody>
         </table>
       </div>
+
+      {showImport ? (
+        <ImportProspectsModal
+          open={showImport}
+          onClose={() => setShowImport(false)}
+          onImported={onImported}
+        />
+      ) : null}
 
       {showCreate ? (
         <CreateProspectModal
