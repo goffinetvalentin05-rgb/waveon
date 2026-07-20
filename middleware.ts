@@ -1,27 +1,13 @@
 import { createServerClient } from "@supabase/auth-helpers-nextjs";
 import { type NextRequest, NextResponse } from "next/server";
 
-/**
- * Middleware Prono Clash.
- *
- * Rôle :
- *  - rafraîchir la session Supabase via cookies sur les routes protégées
- *  - rediriger vers /login si on accède au dashboard sans session
- *  - rediriger vers /onboarding si pas encore de pseudo
- *  - rediriger vers /dashboard si déjà connecté et qu'on visite /login ou /signup
- *
- * Pas de billing gate (le paiement ne sert qu'à créer une ligue privée,
- * pas à utiliser l'app).
- */
-
 const PROTECTED_PREFIXES = [
   "/dashboard",
-  "/onboarding",
-  "/leagues",
-  "/matches",
-  "/leaderboard",
-  "/global",
-  "/admin",
+  "/prospects",
+  "/today",
+  "/clients",
+  "/stats",
+  "/settings",
 ];
 
 const AUTH_PAGES = new Set(["/login", "/signup", "/register"]);
@@ -69,9 +55,7 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isProtected = isProtectedPath(path);
-
-  if (isProtected && !user) {
+  if (isProtectedPath(path) && !user) {
     const login = new URL("/login", request.url);
     login.searchParams.set("redirect", path);
     return NextResponse.redirect(login);
@@ -81,18 +65,26 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
+  if (path === "/" && user) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  if (path === "/" && !user) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
   return response;
 }
 
 export const config = {
   matcher: [
+    "/",
     "/dashboard/:path*",
-    "/onboarding/:path*",
-    "/leagues/:path*",
-    "/matches/:path*",
-    "/leaderboard/:path*",
-    "/global/:path*",
-    "/admin/:path*",
+    "/prospects/:path*",
+    "/today/:path*",
+    "/clients/:path*",
+    "/stats/:path*",
+    "/settings/:path*",
     "/login",
     "/signup",
     "/register",

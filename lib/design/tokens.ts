@@ -1,94 +1,52 @@
 /**
- * Tokens de design Prono Clash (dark / futuriste / gaming).
- *
- * Palette :
- *  - fond : noir profond avec dégradés bleu nuit / violet
- *  - accents : bleu électrique (#3b82f6 → #60a5fa) / violet (#a855f7) / vert néon (#22d3ee → #34d399)
- *  - glassmorphism : bg blanc 5% + blur + border blanc 10%
+ * Design system CRM — inspiré Linear / Notion / Attio.
+ * Palette bleu / blanc, minimaliste, beaucoup d'espace.
  */
 
 export const colors = {
-  bg: "#05060a",
-  bgElevated: "#0b0d18",
-  surface: "rgba(255,255,255,0.04)",
-  border: "rgba(255,255,255,0.08)",
-  borderStrong: "rgba(255,255,255,0.16)",
-  text: "#f5f7ff",
-  textMuted: "rgba(245,247,255,0.62)",
-  textDim: "rgba(245,247,255,0.40)",
-  blue: "#3b82f6",
-  blueLight: "#60a5fa",
-  violet: "#a855f7",
-  pink: "#ec4899",
-  neon: "#22d3ee",
-  neonGreen: "#34d399",
-  danger: "#f43f5e",
-  warning: "#f59e0b",
+  bg: "#f7f9fc",
+  bgElevated: "#ffffff",
+  surface: "#ffffff",
+  border: "#e8eef6",
+  borderStrong: "#d0dbeb",
+  text: "#0f172a",
+  textMuted: "#64748b",
+  textDim: "#94a3b8",
+  blue: "#2563eb",
+  blueLight: "#3b82f6",
+  blueSoft: "#eff6ff",
+  danger: "#e11d48",
+  warning: "#d97706",
+  success: "#059669",
 } as const;
 
-/** Classes utilitaires réutilisables — façon design system. */
 export const ui = {
-  /** Conteneur central responsive (mobile-first). */
-  container:
-    "mx-auto w-full max-w-6xl px-5 sm:px-6 lg:px-8",
+  container: "mx-auto w-full max-w-6xl px-5 sm:px-6 lg:px-8",
 
-  /** Carte verre dépoli. */
-  glassCard:
-    "relative rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[0_8px_40px_-12px_rgba(0,0,0,0.6)]",
+  card:
+    "rounded-2xl border border-[#e8eef6] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.08)]",
 
-  /** Carte verre + halo lumineux discret. */
-  glowCard:
-    "relative rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[0_8px_40px_-12px_rgba(59,130,246,0.35)]",
+  cardInteractive:
+    "rounded-2xl border border-[#e8eef6] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-blue-200 hover:shadow-[0_8px_24px_-12px_rgba(37,99,235,0.18)]",
 
-  /** CTA principal — gradient violet premium (aligné dashboard). */
   btnPrimary:
-    "inline-flex items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 via-violet-600 to-violet-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_40px_-10px_rgba(168,85,247,0.55)] transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98] sm:text-base",
+    "inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(37,99,235,0.25)] transition hover:bg-blue-700 active:scale-[0.98] disabled:opacity-50",
 
-  btnPrimaryLg:
-    "inline-flex items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 via-violet-600 to-violet-500 px-7 py-4 text-base font-semibold text-white shadow-[0_12px_50px_-10px_rgba(168,85,247,0.6)] transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98] sm:px-9 sm:py-5 sm:text-lg",
-
-  /** CTA secondaire (verre). */
   btnSecondary:
-    "inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-medium text-white/90 backdrop-blur-md transition hover:bg-white/10 active:scale-[0.98] sm:text-base",
+    "inline-flex items-center justify-center gap-2 rounded-xl border border-[#e8eef6] bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 active:scale-[0.98] disabled:opacity-50",
 
-  /** CTA fantôme (lien). */
   btnGhost:
-    "inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-medium text-white/70 transition hover:text-white",
+    "inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900",
 
-  /** Badge / chip. */
-  badge:
-    "inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-medium text-white/80 backdrop-blur",
+  btnDanger:
+    "inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-medium text-rose-700 transition hover:bg-rose-100",
 
-  badgeAccent:
-    "inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-200",
-
-  /** Input form. */
   input:
-    "w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-base text-white placeholder:text-white/30 outline-none transition focus:border-blue-400/60 focus:bg-white/[0.06] focus:ring-2 focus:ring-blue-500/30",
+    "w-full rounded-xl border border-[#e8eef6] bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20",
 
-  label: "mb-2 block text-sm font-medium text-white/80",
+  label: "mb-1.5 block text-sm font-medium text-slate-700",
 
-  /** Titres. */
-  h1:
-    "text-balance text-4xl font-bold leading-[1.05] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl",
-  h2:
-    "text-balance text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl md:text-5xl",
-  h3: "text-xl font-semibold tracking-tight text-white sm:text-2xl",
-
-  /** Texte muté. */
-  muted: "text-white/60",
-  dim: "text-white/40",
-
-  /** Section large. */
-  section: "py-20 sm:py-24 lg:py-28",
-} as const;
-
-/** Liens / gradients utilitaires pour décorations (halos, traits). */
-export const gradients = {
-  heroRadial:
-    "absolute inset-0 -z-10 bg-[radial-gradient(60%_60%_at_50%_0%,rgba(59,130,246,0.35)_0%,rgba(29,78,216,0.15)_35%,transparent_70%)]",
-  blueViolet: "bg-gradient-to-br from-blue-500 to-blue-700",
-  violetNeon: "bg-gradient-to-br from-blue-500 via-blue-600 to-blue-400",
-  neonLine:
-    "h-px w-full bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent",
+  h1: "text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl",
+  h2: "text-lg font-semibold tracking-tight text-slate-900",
+  muted: "text-slate-500",
 } as const;

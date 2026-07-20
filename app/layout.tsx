@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Inter, Space_Grotesk } from "next/font/google";
+import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 import { brand } from "@/lib/brand/config";
 
@@ -13,16 +13,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const inter = Inter({
-  variable: "--font-inter",
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
-  display: "swap",
-});
-
-const display = Space_Grotesk({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -33,30 +27,15 @@ export const metadata: Metadata = {
   },
   description: brand.description,
   applicationName: brand.name,
-  manifest: undefined,
-  openGraph: {
-    title: `${brand.name} — ${brand.tagline}`,
-    description: brand.description,
-    type: "website",
-    locale: "fr_CH",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `${brand.name} — ${brand.tagline}`,
-    description: brand.description,
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  robots: { index: false, follow: false },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#05060a",
+  themeColor: "#f7f9fc",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  colorScheme: "dark",
+  colorScheme: "light",
 };
 
 export default function RootLayout({
@@ -65,9 +44,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className="scroll-smooth motion-reduce:scroll-auto">
+    <html lang="fr" className="scroll-smooth">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${display.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased`}
       >
         {children}
       </body>

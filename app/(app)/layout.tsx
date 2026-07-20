@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { createServerComponentSupabase } from "@/lib/supabase/server-component";
 import { AppShell } from "@/components/app/AppShell";
-import "@/components/dashboard/pronoclash-dashboard.css";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createServerComponentSupabase();
@@ -10,25 +9,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, username, avatar_color, is_admin, total_points")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!profile?.username) {
-    redirect("/onboarding");
-  }
+  const displayName =
+    (user.user_metadata?.full_name as string | undefined)?.trim() ||
+    user.email?.split("@")[0] ||
+    "Utilisateur";
 
   return (
     <AppShell
       profile={{
-        id: profile.id,
-        username: profile.username,
-        avatarColor: profile.avatar_color ?? "indigo",
-        isAdmin: Boolean(profile.is_admin),
-        totalPoints: profile.total_points ?? 0,
+        id: user.id,
         email: user.email ?? null,
+        displayName,
       }}
     >
       {children}

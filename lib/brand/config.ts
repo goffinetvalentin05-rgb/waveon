@@ -1,25 +1,18 @@
 /**
- * Identité de marque centralisée.
- *
- * IMPORTANT : Le nom est volontairement isolé ici pour pouvoir le changer
- * partout d'un seul endroit. Ne pas dupliquer ces valeurs ailleurs.
+ * Identité de marque — CRM de prospection personnel (Obillz).
  */
 
 export const brand = {
-  name: "Waevon",
-  shortName: "Waevon",
-  tagline: "Pronostique. Joue des cartes. Sabote tes potes.",
-  promise:
-    "Pronostique les matchs, joue des cartes, sabote tes potes et deviens le champion de ta ligue.",
-  legalEntityHint: "Waevon",
-  contactEmail: "contact@waevon.com",
-  supportEmail: "support@waevon.com",
-  domain: "waevon.com",
+  name: "Prospection CRM",
+  shortName: "Prospection",
+  tagline: "Votre espace de prospection.",
+  promise: "Gérez vos prospects, relances et démos en un seul endroit.",
+  legalEntityHint: "Prospection CRM",
+  contactEmail: "contact@obillz.com",
+  supportEmail: "support@obillz.com",
+  domain: "localhost",
   description:
-    "Le jeu de pronostics entre potes pour le tournoi mondial de foot 2026. Crée ta ligue privée, joue des cartes spéciales, sabote tes amis. Sans pari d'argent.",
-  tournamentLabel: "Tournoi mondial 2026",
-  notAGamblingDisclaimer:
-    "Jeu de pronostics entre amis, sans mise d'argent. Aucune affiliation officielle avec la FIFA, la Coupe du Monde ou les fédérations sportives.",
+    "CRM de prospection personnel pour suivre clubs, relances et clients Obillz.",
 } as const;
 
 export type Brand = typeof brand;

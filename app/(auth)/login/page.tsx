@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuthShell } from "@/components/auth/AuthShell";
+import { brand } from "@/lib/brand/config";
 import { ui } from "@/lib/design/tokens";
 import { supabase } from "@/lib/supabase/client";
 
@@ -61,7 +62,7 @@ function LoginPageContent() {
     event.preventDefault();
     const trimmed = forgotEmail.trim().toLowerCase();
     if (!trimmed) {
-      setMessage("Indique une adresse email valide.");
+      setMessage("Indiquez une adresse email valide.");
       setMessageTone("error");
       return;
     }
@@ -76,24 +77,24 @@ function LoginPageContent() {
       return;
     }
     setMessage(
-      "Si un compte existe pour cette adresse, tu recevras un email avec un lien pour choisir un nouveau mot de passe."
+      "Si un compte existe pour cette adresse, vous recevrez un email avec un lien de réinitialisation."
     );
     setMessageTone("success");
   };
 
   return (
     <AuthShell
-      title={forgotView ? "Mot de passe oublié" : "Connexion"}
+      title={forgotView ? "Mot de passe oublié" : brand.name}
       subtitle={
         forgotView
-          ? "Saisis ton email : on t'envoie un lien de réinitialisation."
-          : "Connecte-toi pour rejoindre ta ligue et jouer tes cartes."
+          ? "Saisissez votre email pour recevoir un lien de réinitialisation."
+          : brand.tagline
       }
       footer={
         forgotView ? null : (
           <>
             Pas encore de compte ?{" "}
-            <Link href="/signup" className="font-semibold text-white hover:underline">
+            <Link href="/signup" className="font-semibold text-blue-600 hover:underline">
               S&apos;inscrire
             </Link>
           </>
@@ -103,11 +104,13 @@ function LoginPageContent() {
       {forgotView ? (
         <form className="space-y-4" onSubmit={handleForgot}>
           <div>
-            <label htmlFor="forgot-email" className={ui.label}>Email</label>
+            <label htmlFor="forgot-email" className={ui.label}>
+              Email
+            </label>
             <input
               id="forgot-email"
               type="email"
-              placeholder="ton@email.com"
+              placeholder="vous@email.com"
               className={ui.input}
               value={forgotEmail}
               onChange={(e) => setForgotEmail(e.target.value)}
@@ -121,7 +124,7 @@ function LoginPageContent() {
           </button>
           <button
             type="button"
-            className="block w-full text-center text-xs text-white/50 hover:text-white"
+            className="block w-full text-center text-xs text-slate-400 hover:text-slate-700"
             onClick={() => {
               setForgotView(false);
               setMessage(null);
@@ -134,11 +137,13 @@ function LoginPageContent() {
       ) : (
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="login-email" className={ui.label}>Email</label>
+            <label htmlFor="login-email" className={ui.label}>
+              Email
+            </label>
             <input
               id="login-email"
               type="email"
-              placeholder="ton@email.com"
+              placeholder="vous@email.com"
               className={ui.input}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -147,10 +152,12 @@ function LoginPageContent() {
           </div>
           <div>
             <div className="flex items-end justify-between">
-              <label htmlFor="login-password" className={ui.label}>Mot de passe</label>
+              <label htmlFor="login-password" className={ui.label}>
+                Mot de passe
+              </label>
               <button
                 type="button"
-                className="mb-2 text-xs text-white/55 hover:text-white"
+                className="mb-1.5 text-xs text-slate-400 hover:text-blue-600"
                 onClick={() => {
                   setForgotView(true);
                   setMessage(null);
@@ -182,8 +189,8 @@ function LoginPageContent() {
 
 function MessageBox({ tone, children }: { tone: "error" | "success"; children: React.ReactNode }) {
   const tones = {
-    error: "border-rose-400/30 bg-rose-500/10 text-rose-200",
-    success: "border-emerald-400/30 bg-emerald-500/10 text-emerald-200",
+    error: "border-rose-200 bg-rose-50 text-rose-700",
+    success: "border-emerald-200 bg-emerald-50 text-emerald-700",
   } as const;
   return (
     <p className={`rounded-xl border px-3 py-2 text-xs ${tones[tone]}`}>{children}</p>
@@ -194,8 +201,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <AuthShell title="Connexion">
-          <p className="text-sm text-white/60">Chargement…</p>
+        <AuthShell title={brand.name} subtitle={brand.tagline}>
+          <p className="text-sm text-slate-400">Chargement…</p>
         </AuthShell>
       }
     >

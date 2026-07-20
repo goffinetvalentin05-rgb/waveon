@@ -1,13 +1,12 @@
 {
-  "name": "prono-clash",
+  "name": "prospection-crm",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "test": "npx tsx --test lib/pronoclash/cards-v1.test.ts"
+    "lint": "eslint"
   },
   "dependencies": {
     "@react-email/components": "^1.0.12",
