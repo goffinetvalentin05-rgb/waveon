@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { getOrCreateSettings, requireUser } from "@/lib/crm/server";
+import {
+  buildProspectInsertPayload,
+  normalizeProspectFromDb,
+} from "@/lib/crm/prospect-payload";
 
 export async function GET(request: Request) {
   const auth = await requireUser();
@@ -56,7 +60,7 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
-    prospects: data ?? [],
+    prospects: (data ?? []).map((p) => normalizeProspectFromDb(p as Record<string, unknown>)),
     total: count ?? 0,
     page,
     pageSize,
@@ -69,43 +73,30 @@ export async function POST(request: Request) {
   const { supabase, user } = auth;
 
   const body = await request.json();
-  const club_name = String(body.club_name ?? "").trim();
-  if (!club_name) {
-    return NextResponse.json({ error: "Nom du club requis" }, { status: 400 });
-  }
 
-  await getOrCreateSettings(supabase, user.id);
+  try {
+    await getOrCreateSettings(supabase, user.id);
 
-  const { data, error } = await supabase
-    .from("prospects")
-    .insert({
+    const { data, error } = await supabase
+      .from("prospects")
+      .insert(buildProspectInsertPayload(user.id, body))
+      .select("*")
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    await supabase.from("prospect_activities").insert({
       user_id: user.id,
-      name: club_name,
-      club_name,
-      sport: body.sport?.trim() || null,
-      canton: body.canton?.trim() || null,
-      contact_name: body.contact_name?.trim() || null,
-      phone: body.phone?.trim() || null,
-      email: body.email?.trim() || null,
-      website: body.website?.trim() || null,
-      notes: body.notes?.trim() || null,
-      status: "À contacter",
-      last_action: "Créé",
-      last_action_at: new Date().toISOString(),
-    })
-    .select("*")
-    .single();
+      prospect_id: data.id,
+      action_type: "created",
+      title: "Prospect créé",
+    });
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ prospect: normalizeProspectFromDb(data) }, { status: 201 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Données invalides";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
-
-  await supabase.from("prospect_activities").insert({
-    user_id: user.id,
-    prospect_id: data.id,
-    action_type: "created",
-    title: "Prospect créé",
-  });
-
-  return NextResponse.json({ prospect: data }, { status: 201 });
 }

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createServerComponentSupabase } from "@/lib/supabase/server-component";
-import { ProspectDetailClient } from "@/components/crm/ProspectDetailClient";
+import { ProspectDetailClient2 } from "@/components/crm/ProspectDetailClient2";
+import { normalizeProspectFromDb } from "@/lib/crm/prospect-payload";
 import type { Prospect, ProspectActivity } from "@/lib/crm/types";
 
 type Props = { params: Promise<{ id: string }> };
@@ -30,8 +31,8 @@ export default async function ProspectDetailPage({ params }: Props) {
     .order("created_at", { ascending: false });
 
   return (
-    <ProspectDetailClient
-      prospect={prospect as Prospect}
+    <ProspectDetailClient2
+      prospect={normalizeProspectFromDb(prospect as Record<string, unknown>) as Prospect}
       activities={(activities ?? []) as ProspectActivity[]}
     />
   );

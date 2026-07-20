@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { resolveQuickAction, QUICK_ACTION_LABELS } from "@/lib/crm/actions";
+import { resolveQuickActionAt, QUICK_ACTION_LABELS } from "@/lib/crm/actions";
 import type { ProspectStatus, QuickAction } from "@/lib/crm/types";
 import { getOrCreateSettings, requireUser, todayISO } from "@/lib/crm/server";
 
@@ -36,11 +36,15 @@ export async function POST(request: Request, { params }: Params) {
   if (!prospect) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
 
   const settings = await getOrCreateSettings(supabase, user.id);
-  const result = resolveQuickAction(
+  const actionDate = new Date();
+  const demoAt = action === "demo_scheduled" && body.demo_at ? new Date(body.demo_at) : null;
+  const result = resolveQuickActionAt(
     action,
     prospect.status as ProspectStatus,
     settings,
-    prospect.club_name
+    prospect.club_name,
+    actionDate,
+    demoAt
   );
 
   const updatePayload: Record<string, unknown> = {
@@ -71,7 +75,13 @@ export async function POST(request: Request, { params }: Params) {
     prospect_id: id,
     action_type: action,
     title: result.activityTitle,
-    description: body.note?.trim() || null,
+    description:
+      action === "demo_scheduled"
+        ? JSON.stringify({
+            demoAt: body.demo_at || updatePayload.demo_at,
+            note: body.note?.trim() || null,
+          })
+        : body.note?.trim() || null,
   });
 
   // Programmer tâche pour la date de relance

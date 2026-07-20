@@ -23,7 +23,7 @@ export async function GET() {
     .select("id, club_name, status, next_follow_up, last_action")
     .eq("user_id", user.id)
     .lte("next_follow_up", today)
-    .not("status", "in", '("Client","Refus")')
+    .not("status", "in", '("Client","Refus","Pas intéressé")')
     .order("next_follow_up", { ascending: true });
 
   // Démos prévues aujourd'hui / à venir bientôt

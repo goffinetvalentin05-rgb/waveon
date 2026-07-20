@@ -6,6 +6,7 @@ import {
   countImportActions,
   type ExistingProspectKeys,
 } from "@/lib/crm/import-duplicates";
+import { buildProspectFields, buildProspectImportPayload } from "@/lib/crm/prospect-payload";
 
 type ImportBody = {
   rows: ImportProspectRow[];
@@ -19,25 +20,8 @@ const VALID_STRATEGIES = new Set<DuplicateStrategy>([
 ]);
 
 function prospectPayload(userId: string, row: ImportProspectRow, isUpdate = false) {
-  const base = {
-    club_name: row.club_name.trim(),
-    name: row.club_name.trim(),
-    sport: row.sport?.trim() || null,
-    canton: row.canton?.trim() || null,
-    contact_name: row.contact_name?.trim() || null,
-    phone: row.phone?.trim() || null,
-    email: row.email?.trim() || null,
-    website: row.website?.trim() || null,
-    notes: row.notes?.trim() || null,
-  };
-  if (isUpdate) return base;
-  return {
-    ...base,
-    user_id: userId,
-    status: "À contacter",
-    last_action: "Importé",
-    last_action_at: new Date().toISOString(),
-  };
+  if (isUpdate) return buildProspectFields(row);
+  return buildProspectImportPayload(userId, row);
 }
 
 /** POST /api/prospects/import — importe les prospects mappés. */
@@ -72,7 +56,7 @@ export async function POST(request: Request) {
 
   const { data: existingRaw, error: fetchError } = await supabase
     .from("prospects")
-    .select("id, club_name, email, phone")
+    .select("id, club_name, email, phone, phone_number")
     .eq("user_id", user.id);
 
   if (fetchError) {
@@ -177,7 +161,7 @@ export async function PUT(request: Request) {
 
   const { data: existingRaw } = await supabase
     .from("prospects")
-    .select("id, club_name, email, phone")
+    .select("id, club_name, email, phone, phone_number")
     .eq("user_id", user.id);
 
   const existing = (existingRaw ?? []) as ExistingProspectKeys[];

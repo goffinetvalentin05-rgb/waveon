@@ -13,7 +13,7 @@ export async function ensureTodayTasks(
     .select("id, club_name, status")
     .eq("user_id", userId)
     .lte("next_follow_up", today)
-    .not("status", "in", '("Client","Refus")');
+    .not("status", "in", '("Client","Refus","Pas intéressé")');
 
   const { data: newOnes } = await supabase
     .from("prospects")

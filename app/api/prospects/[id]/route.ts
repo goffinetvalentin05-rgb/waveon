@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/crm/server";
+import { nullIfEmpty, normalizeProspectFromDb } from "@/lib/crm/prospect-payload";
+import { recomputeProspectDerivatives } from "@/lib/crm/recompute-prospect";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -26,7 +28,10 @@ export async function GET(_request: Request, { params }: Params) {
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
-  return NextResponse.json({ prospect, activities: activities ?? [] });
+  return NextResponse.json({
+    prospect: normalizeProspectFromDb(prospect as Record<string, unknown>),
+    activities: activities ?? [],
+  });
 }
 
 export async function PATCH(request: Request, { params }: Params) {
@@ -40,26 +45,36 @@ export async function PATCH(request: Request, { params }: Params) {
     "club_name",
     "sport",
     "canton",
+    "ville",
     "contact_name",
+    "contact_function",
     "phone",
     "email",
     "website",
-    "status",
     "notes",
-    "next_follow_up",
-    "demo_at",
   ] as const;
 
   const patch: Record<string, unknown> = {};
   for (const key of allowed) {
     if (key in body) {
       const val = body[key];
-      patch[key] = typeof val === "string" ? val.trim() || null : val;
+      if (typeof val === "string") {
+        patch[key] = nullIfEmpty(val);
+        if (key === "phone") {
+          patch.phone_number = nullIfEmpty(val);
+        }
+      } else {
+        patch[key] = val;
+      }
     }
   }
 
-  if (patch.club_name === null || patch.club_name === "") {
+  if ("club_name" in patch && !patch.club_name) {
     return NextResponse.json({ error: "Nom du club requis" }, { status: 400 });
+  }
+
+  if (patch.club_name && typeof patch.club_name === "string") {
+    patch.name = patch.club_name;
   }
 
   const { data, error } = await supabase
@@ -77,7 +92,11 @@ export async function PATCH(request: Request, { params }: Params) {
     // optional: don't spam history on every note save
   }
 
-  return NextResponse.json({ prospect: data });
+  // Mise à jour des données dérivées (tâches du jour, titres d'historique).
+  const recomputed = await recomputeProspectDerivatives(supabase, user.id, id);
+  return NextResponse.json({
+    prospect: normalizeProspectFromDb(recomputed.prospect as Record<string, unknown>),
+  });
 }
 
 export async function DELETE(_request: Request, { params }: Params) {

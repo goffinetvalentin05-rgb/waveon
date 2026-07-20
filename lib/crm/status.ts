@@ -47,6 +47,12 @@ export const STATUS_STYLES: Record<
     dot: "bg-rose-500",
     label: "Refus",
   },
+  "Pas intéressé": {
+    bg: "bg-slate-100",
+    text: "text-slate-700",
+    dot: "bg-slate-400",
+    label: "Pas intéressé",
+  },
 };
 
 export function statusStyle(status: string) {

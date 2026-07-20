@@ -4,12 +4,14 @@ import {
   normalizeEmail,
   normalizePhone,
 } from "./import-fields";
+import { existingPhone } from "./prospect-payload";
 
 export type ExistingProspectKeys = {
   id: string;
   club_name: string;
   email: string | null;
-  phone: string | null;
+  phone?: string | null;
+  phone_number?: string | null;
 };
 
 export type DuplicateMatch = {
@@ -47,7 +49,7 @@ export function findExistingMatch(
   }
 
   if (phone.length >= 6) {
-    const match = existing.find((e) => normalizePhone(e.phone) === phone);
+    const match = existing.find((e) => normalizePhone(existingPhone(e)) === phone);
     if (match) return { id: match.id, matchedBy: "phone" };
   }
 

@@ -6,6 +6,7 @@ export const PROSPECT_STATUSES = [
   "Démonstration",
   "Client",
   "Refus",
+  "Pas intéressé",
 ] as const;
 
 export type ProspectStatus = (typeof PROSPECT_STATUSES)[number];
@@ -33,7 +34,9 @@ export type Prospect = {
   club_name: string;
   sport: string | null;
   canton: string | null;
+  ville: string | null;
   contact_name: string | null;
+  contact_function: string | null;
   phone: string | null;
   email: string | null;
   website: string | null;
