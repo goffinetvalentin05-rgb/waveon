@@ -39,7 +39,8 @@ export default async function ClientsPage({ searchParams }: PageProps) {
       .from("prospects")
       .select("*", { count: "exact", head: true })
       .eq("user_id", user.id)
-      .eq("status", "Client"),
+      .eq("status", "Client")
+      .is("archived_at", null),
   ]);
 
   if (error) {

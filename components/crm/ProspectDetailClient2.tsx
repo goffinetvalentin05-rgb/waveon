@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
+  IconArchive,
   IconArrowLeft,
   IconDots,
   IconEdit,
@@ -91,6 +92,97 @@ function ConfirmModal({
             onClick={onConfirm}
           >
             {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DeleteProspectModal({
+  open,
+  clubName,
+  loading,
+  error,
+  onCancel,
+  onConfirm,
+}: {
+  open: boolean;
+  clubName: string;
+  loading: boolean;
+  error: string | null;
+  onCancel: () => void;
+  onConfirm: (confirmClubName: string) => void;
+}) {
+  if (!open) return null;
+  return (
+    <DeleteProspectModalInner
+      key={clubName}
+      clubName={clubName}
+      loading={loading}
+      error={error}
+      onCancel={onCancel}
+      onConfirm={onConfirm}
+    />
+  );
+}
+
+function DeleteProspectModalInner({
+  clubName,
+  loading,
+  error,
+  onCancel,
+  onConfirm,
+}: {
+  clubName: string;
+  loading: boolean;
+  error: string | null;
+  onCancel: () => void;
+  onConfirm: (confirmClubName: string) => void;
+}) {
+  const [typed, setTyped] = useState("");
+  const matches = typed === clubName;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button
+        type="button"
+        className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm"
+        onClick={loading ? undefined : onCancel}
+        aria-label="Fermer"
+      />
+      <div className="relative w-full max-w-lg rounded-2xl border border-[#e8eef6] bg-white p-6 shadow-xl">
+        <h3 className="text-lg font-semibold text-slate-900">Supprimer ce prospect ?</h3>
+        <p className="mt-2 text-sm text-slate-600">
+          Cette action supprimera définitivement ce prospect ainsi que son historique, ses notes, ses
+          tâches et ses relances associées. Cette action est irréversible.
+        </p>
+        <p className="mt-3 text-sm font-medium text-slate-800">
+          {clubName} sera définitivement supprimé.
+        </p>
+        <div className="mt-5">
+          <label className={ui.label}>Saisissez {clubName} pour confirmer.</label>
+          <input
+            className={ui.input}
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            placeholder={clubName}
+            disabled={loading}
+            autoFocus
+          />
+        </div>
+        {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
+        <div className="mt-6 flex justify-end gap-2">
+          <button type="button" className={ui.btnSecondary} onClick={onCancel} disabled={loading}>
+            Annuler
+          </button>
+          <button
+            type="button"
+            className={ui.btnDanger}
+            disabled={!matches || loading}
+            onClick={() => onConfirm(typed)}
+          >
+            {loading ? "Suppression…" : "Supprimer définitivement"}
           </button>
         </div>
       </div>
@@ -496,6 +588,11 @@ export function ProspectDetailClient2({
 
   const [activityMenuId, setActivityMenuId] = useState<string | null>(null);
   const [activityToEdit, setActivityToEdit] = useState<ProspectActivity | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [archiveLoading, setArchiveLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const refreshAll = async () => {
     const refreshed = await fetch(`/api/prospects/${prospect.id}`);
@@ -651,6 +748,90 @@ export function ProspectDetailClient2({
     });
   };
 
+  const isArchived = Boolean(prospect.archived_at);
+  const hasHistoryOrNotes =
+    activities.some((a) => a.action_type !== "created" && a.action_type !== "imported") ||
+    Boolean(prospect.notes?.trim());
+
+  const archiveProspect = () => {
+    setErrorMsg(null);
+    setConfirm({
+      tone: "default",
+      title: "Archiver ce prospect ?",
+      description: `${prospect.club_name} sera retiré de la liste principale. Son historique et ses notes seront conservés. Vous pourrez le restaurer plus tard.`,
+      confirmLabel: "Archiver",
+      cancelLabel: "Annuler",
+      onConfirm: () => {
+        setConfirm(null);
+        setArchiveLoading(true);
+        startTransition(async () => {
+          const res = await fetch(`/api/prospects/${prospect.id}/archive`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ archived: true }),
+          });
+          const data = await res.json();
+          setArchiveLoading(false);
+          if (!res.ok) {
+            setErrorMsg(data.error ?? "Impossible d’archiver ce prospect.");
+            return;
+          }
+          setMsg(data.message ?? "Le prospect a été archivé.");
+          setProspect(data.prospect as Prospect);
+          if (data.activities) setActivities(data.activities as ProspectActivity[]);
+          router.refresh();
+        });
+      },
+    });
+  };
+
+  const restoreProspect = () => {
+    setErrorMsg(null);
+    setArchiveLoading(true);
+    startTransition(async () => {
+      const res = await fetch(`/api/prospects/${prospect.id}/archive`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ archived: false }),
+      });
+      const data = await res.json();
+      setArchiveLoading(false);
+      if (!res.ok) {
+        setErrorMsg(data.error ?? "Impossible de restaurer ce prospect.");
+        return;
+      }
+      setMsg(data.message ?? "Le prospect a été restauré.");
+      setProspect(data.prospect as Prospect);
+      if (data.activities) setActivities(data.activities as ProspectActivity[]);
+      router.refresh();
+    });
+  };
+
+  const deleteProspect = async (confirmClubName: string) => {
+    setDeleteError(null);
+    setDeleteLoading(true);
+    try {
+      const res = await fetch(`/api/prospects/${prospect.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirm_club_name: confirmClubName }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setDeleteError(data.error ?? "Impossible de supprimer ce prospect.");
+        setDeleteLoading(false);
+        return;
+      }
+      setShowDeleteModal(false);
+      setMsg("Le prospect a été supprimé.");
+      router.push(backHref.startsWith("/prospects") || backHref.startsWith("/clients") ? backHref : "/prospects");
+      router.refresh();
+    } catch {
+      setDeleteError("Une erreur réseau est survenue. Réessayez.");
+      setDeleteLoading(false);
+    }
+  };
+
   const statusSelector = (
     <select
       className={ui.input + " w-56"}
@@ -768,6 +949,12 @@ export function ProspectDetailClient2({
             <h1 className={ui.h1}>{prospect.club_name}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <StatusBadge status={prospect.status} />
+              {isArchived ? (
+                <span className="crm-badge bg-slate-100 text-slate-600">
+                  <span className="crm-badge-dot bg-slate-400" />
+                  Archivé
+                </span>
+              ) : null}
             </div>
           </div>
 
@@ -829,22 +1016,34 @@ export function ProspectDetailClient2({
         </p>
       ) : null}
 
+      {errorMsg ? (
+        <p className="rounded-xl border border-rose-100 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">
+          {errorMsg}
+        </p>
+      ) : null}
+
       <section className={`${ui.card} p-5 sm:p-6`}>
         <h2 className={ui.h2}>Actions rapides</h2>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {quickActions.map((a) => (
-            <button
-              key={a.key}
-              type="button"
-              disabled={pending}
-              className={a.className}
-              onClick={() => runAction(a.key)}
-            >
-              {a.icon}
-              {a.label}
-            </button>
-          ))}
-        </div>
+        {isArchived ? (
+          <p className="mt-3 text-sm text-slate-500">
+            Ce prospect est archivé. Restaurez-le pour enregistrer de nouvelles actions.
+          </p>
+        ) : (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {quickActions.map((a) => (
+              <button
+                key={a.key}
+                type="button"
+                disabled={pending}
+                className={a.className}
+                onClick={() => runAction(a.key)}
+              >
+                {a.icon}
+                {a.label}
+              </button>
+            ))}
+          </div>
+        )}
       </section>
 
       <div className="grid gap-5 lg:grid-cols-2">
@@ -1166,6 +1365,53 @@ export function ProspectDetailClient2({
         )}
       </section>
 
+      <section className="rounded-2xl border border-rose-100 bg-rose-50/40 p-5 sm:p-6">
+        <h2 className="text-lg font-semibold tracking-tight text-rose-900">Zone dangereuse</h2>
+        <p className="mt-1 text-sm text-rose-800/80">
+          {isArchived
+            ? "Ce prospect est archivé. Vous pouvez le restaurer ou le supprimer définitivement."
+            : hasHistoryOrNotes
+              ? "Ce prospect a déjà un historique ou des notes. Préférez l’archivage si vous voulez conserver ces informations."
+              : "Archiver retire le prospect de la liste. Supprimer efface toutes les données liées."}
+        </p>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          {isArchived ? (
+            <button
+              type="button"
+              className={ui.btnSecondary}
+              disabled={pending || archiveLoading || deleteLoading}
+              onClick={restoreProspect}
+            >
+              <IconArchive className="h-4 w-4" stroke={1.75} />
+              {archiveLoading ? "Restauration…" : "Restaurer le prospect"}
+            </button>
+          ) : (
+            <button
+              type="button"
+              className={ui.btnSecondary}
+              disabled={pending || archiveLoading || deleteLoading}
+              onClick={archiveProspect}
+            >
+              <IconArchive className="h-4 w-4" stroke={1.75} />
+              {archiveLoading ? "Archivage…" : "Archiver le prospect"}
+            </button>
+          )}
+          <button
+            type="button"
+            className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
+            disabled={pending || archiveLoading || deleteLoading}
+            onClick={() => {
+              setDeleteError(null);
+              setShowDeleteModal(true);
+            }}
+          >
+            <IconTrash className="h-4 w-4" stroke={1.75} />
+            Supprimer le prospect
+          </button>
+        </div>
+      </section>
+
       <ConfirmModal
         open={Boolean(confirm)}
         title={confirm?.title ?? ""}
@@ -1175,6 +1421,21 @@ export function ProspectDetailClient2({
         cancelLabel={confirm?.cancelLabel ?? "Annuler"}
         onConfirm={() => confirm?.onConfirm?.()}
         onCancel={() => setConfirm(null)}
+      />
+
+      <DeleteProspectModal
+        open={showDeleteModal}
+        clubName={prospect.club_name}
+        loading={deleteLoading}
+        error={deleteError}
+        onCancel={() => {
+          if (deleteLoading) return;
+          setShowDeleteModal(false);
+          setDeleteError(null);
+        }}
+        onConfirm={(name) => {
+          void deleteProspect(name);
+        }}
       />
 
       {activityToEdit ? (

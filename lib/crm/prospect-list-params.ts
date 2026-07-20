@@ -22,6 +22,9 @@ export type SortableColumn = (typeof SORTABLE_COLUMNS)[number];
 
 export type PresenceFilter = "yes" | "no";
 
+/** active = liste principale (défaut), archived = uniquement archivés */
+export type ArchivedFilter = "active" | "archived";
+
 export type ProspectListParams = {
   q: string;
   sort: SortableColumn | typeof DEFAULT_SORT_COLUMN;
@@ -39,6 +42,7 @@ export type ProspectListParams = {
   nextFollowUpTo: string;
   lastActionFrom: string;
   lastActionTo: string;
+  archived: ArchivedFilter;
 };
 
 export type ProspectListFilters = Omit<
@@ -57,6 +61,7 @@ export const EMPTY_FILTERS: ProspectListFilters = {
   nextFollowUpTo: "",
   lastActionFrom: "",
   lastActionTo: "",
+  archived: "active",
 };
 
 export function defaultProspectListParams(clientsOnly = false): ProspectListParams {
@@ -122,6 +127,10 @@ export function parseProspectListParams(
     nextFollowUpTo: searchParams.get("next_follow_up_to")?.trim() ?? "",
     lastActionFrom: searchParams.get("last_action_from")?.trim() ?? "",
     lastActionTo: searchParams.get("last_action_to")?.trim() ?? "",
+    archived:
+      searchParams.get("archived") === "1" || searchParams.get("archived") === "archived"
+        ? "archived"
+        : "active",
   };
 }
 
@@ -160,6 +169,7 @@ export function buildProspectListSearchParams(
   if (params.nextFollowUpTo) sp.set("next_follow_up_to", params.nextFollowUpTo);
   if (params.lastActionFrom) sp.set("last_action_from", params.lastActionFrom);
   if (params.lastActionTo) sp.set("last_action_to", params.lastActionTo);
+  if (params.archived === "archived") sp.set("archived", "1");
 
   return sp;
 }
@@ -183,6 +193,7 @@ export function countActiveFilters(filters: ProspectListFilters): number {
   if (filters.hasPhone) n++;
   if (filters.nextFollowUpFrom || filters.nextFollowUpTo) n++;
   if (filters.lastActionFrom || filters.lastActionTo) n++;
+  if (filters.archived === "archived") n++;
   return n;
 }
 

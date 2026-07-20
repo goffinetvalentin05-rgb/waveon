@@ -67,5 +67,9 @@ export function existingPhone(row: { phone?: string | null; phone_number?: strin
 /** Normalise un prospect lu depuis Supabase (phone_number → phone). */
 export function normalizeProspectFromDb(row: Record<string, unknown>) {
   const phone = nullIfEmpty(row.phone) ?? nullIfEmpty(row.phone_number);
-  return { ...row, phone };
+  const archived_at =
+    row.archived_at == null || row.archived_at === ""
+      ? null
+      : String(row.archived_at);
+  return { ...row, phone, archived_at };
 }

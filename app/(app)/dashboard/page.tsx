@@ -28,22 +28,26 @@ export default async function DashboardPage() {
       .from("prospects")
       .select("*", { count: "exact", head: true })
       .eq("user_id", user.id)
+      .is("archived_at", null)
       .lte("next_follow_up", today)
       .not("status", "in", '("Client","Refus","Pas intéressé")'),
     supabase
       .from("prospects")
       .select("*", { count: "exact", head: true })
       .eq("user_id", user.id)
+      .is("archived_at", null)
       .eq("status", "À contacter"),
     supabase
       .from("prospects")
       .select("*", { count: "exact", head: true })
       .eq("user_id", user.id)
+      .is("archived_at", null)
       .eq("status", "Démonstration"),
     supabase
       .from("prospects")
       .select("*", { count: "exact", head: true })
       .eq("user_id", user.id)
+      .is("archived_at", null)
       .eq("status", "Client"),
     supabase
       .from("daily_tasks")

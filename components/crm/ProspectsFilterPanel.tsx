@@ -167,6 +167,22 @@ export function ProspectsFilterPanel({
             onChange={(hasPhone) => onChange({ ...draft, hasPhone })}
           />
           <div>
+            <p className={ui.label}>Archivage</p>
+            <select
+              className={ui.input}
+              value={draft.archived}
+              onChange={(e) =>
+                onChange({
+                  ...draft,
+                  archived: e.target.value === "archived" ? "archived" : "active",
+                })
+              }
+            >
+              <option value="active">Actifs uniquement</option>
+              <option value="archived">Archivés uniquement</option>
+            </select>
+          </div>
+          <div>
             <p className={ui.label}>Prochaine relance</p>
             <div className="mt-2 grid grid-cols-2 gap-2">
               <input

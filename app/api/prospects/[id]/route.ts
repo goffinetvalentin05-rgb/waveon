@@ -88,22 +88,64 @@ export async function PATCH(request: Request, { params }: Params) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
 
-  if (body.notes !== undefined && typeof body.notes === "string" && body.notes.trim()) {
-    // optional: don't spam history on every note save
-  }
-
-  // Mise à jour des données dérivées (tâches du jour, titres d'historique).
   const recomputed = await recomputeProspectDerivatives(supabase, user.id, id);
   return NextResponse.json({
     prospect: normalizeProspectFromDb(recomputed.prospect as Record<string, unknown>),
   });
 }
 
-export async function DELETE(_request: Request, { params }: Params) {
+export async function DELETE(request: Request, { params }: Params) {
   const auth = await requireUser();
   if (auth.response) return auth.response;
   const { supabase, user } = auth;
   const { id } = await params;
+
+  let confirmClubName = "";
+  try {
+    const body = await request.json();
+    confirmClubName = typeof body?.confirm_club_name === "string" ? body.confirm_club_name.trim() : "";
+  } catch {
+    confirmClubName = "";
+  }
+
+  const { data: prospect, error: fetchError } = await supabase
+    .from("prospects")
+    .select("id, club_name")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 });
+  if (!prospect) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
+
+  if (!confirmClubName || confirmClubName !== prospect.club_name) {
+    return NextResponse.json(
+      { error: "Le nom du club ne correspond pas. Saisissez le nom exact pour confirmer." },
+      { status: 400 }
+    );
+  }
+
+  // Suppression explicite des tâches (sécurité si CASCADE pas encore appliqué)
+  const { error: tasksError } = await supabase
+    .from("daily_tasks")
+    .delete()
+    .eq("prospect_id", id)
+    .eq("user_id", user.id);
+
+  if (tasksError) {
+    return NextResponse.json({ error: tasksError.message }, { status: 500 });
+  }
+
+  // Les activités partent en CASCADE ; on les purge aussi explicitement
+  const { error: activitiesError } = await supabase
+    .from("prospect_activities")
+    .delete()
+    .eq("prospect_id", id)
+    .eq("user_id", user.id);
+
+  if (activitiesError) {
+    return NextResponse.json({ error: activitiesError.message }, { status: 500 });
+  }
 
   const { error } = await supabase
     .from("prospects")
@@ -112,5 +154,5 @@ export async function DELETE(_request: Request, { params }: Params) {
     .eq("user_id", user.id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, message: "Le prospect a été supprimé." });
 }

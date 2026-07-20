@@ -22,6 +22,7 @@ export async function GET() {
     .from("prospects")
     .select("id, club_name, status, next_follow_up, last_action")
     .eq("user_id", user.id)
+    .is("archived_at", null)
     .lte("next_follow_up", today)
     .not("status", "in", '("Client","Refus","Pas intéressé")')
     .order("next_follow_up", { ascending: true });
@@ -31,6 +32,7 @@ export async function GET() {
     .from("prospects")
     .select("id, club_name, status, demo_at")
     .eq("user_id", user.id)
+    .is("archived_at", null)
     .eq("status", "Démonstration")
     .order("demo_at", { ascending: true });
 

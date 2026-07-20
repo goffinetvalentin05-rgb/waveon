@@ -9,7 +9,8 @@ export async function GET() {
   const { data: prospects, error } = await supabase
     .from("prospects")
     .select("id, status, created_at")
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .is("archived_at", null);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

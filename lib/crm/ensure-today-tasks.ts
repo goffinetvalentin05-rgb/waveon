@@ -12,6 +12,7 @@ export async function ensureTodayTasks(
     .from("prospects")
     .select("id, club_name, status")
     .eq("user_id", userId)
+    .is("archived_at", null)
     .lte("next_follow_up", today)
     .not("status", "in", '("Client","Refus","Pas intéressé")');
 
@@ -19,6 +20,7 @@ export async function ensureTodayTasks(
     .from("prospects")
     .select("id, club_name, status")
     .eq("user_id", userId)
+    .is("archived_at", null)
     .eq("status", "À contacter")
     .is("next_follow_up", null);
 

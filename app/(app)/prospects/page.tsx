@@ -38,7 +38,8 @@ export default async function ProspectsPage({ searchParams }: PageProps) {
     supabase
       .from("prospects")
       .select("*", { count: "exact", head: true })
-      .eq("user_id", user.id),
+      .eq("user_id", user.id)
+      .is("archived_at", null),
   ]);
 
   if (error) {

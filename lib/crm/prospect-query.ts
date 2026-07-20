@@ -35,6 +35,12 @@ export function applyProspectListQuery(
 ) {
   let query = supabase.from("prospects").select("*", { count: "exact" }).eq("user_id", userId);
 
+  if (params.archived === "archived") {
+    query = query.not("archived_at", "is", null);
+  } else {
+    query = query.is("archived_at", null);
+  }
+
   if (params.clientsOnly) {
     query = query.eq("status", "Client");
   } else if (params.statuses.length) {
@@ -156,6 +162,12 @@ export async function fetchProspectList(
   if (error && isMissingSearchColumnError(error) && params.q.trim()) {
     let legacyQuery = supabase.from("prospects").select("*", { count: "exact" }).eq("user_id", userId);
 
+    if (params.archived === "archived") {
+      legacyQuery = legacyQuery.not("archived_at", "is", null);
+    } else {
+      legacyQuery = legacyQuery.is("archived_at", null);
+    }
+
     if (params.clientsOnly) {
       legacyQuery = legacyQuery.eq("status", "Client");
     } else if (params.statuses.length) {
@@ -213,7 +225,8 @@ export async function fetchProspectFilterOptions(
   let query = supabase
     .from("prospects")
     .select("sport, canton, ville, status")
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .is("archived_at", null);
 
   if (clientsOnly) {
     query = query.eq("status", "Client");

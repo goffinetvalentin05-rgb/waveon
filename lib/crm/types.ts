@@ -21,6 +21,8 @@ export const ACTION_TYPES = [
   "status_change",
   "imported",
   "created",
+  "archived",
+  "restored",
 ] as const;
 
 export type ActionType = (typeof ACTION_TYPES)[number];
@@ -46,6 +48,7 @@ export type Prospect = {
   next_follow_up: string | null;
   notes: string | null;
   demo_at: string | null;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
 };

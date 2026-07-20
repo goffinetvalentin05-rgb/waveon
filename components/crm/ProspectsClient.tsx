@@ -223,6 +223,7 @@ export function ProspectsClient({
       nextFollowUpTo: params.nextFollowUpTo,
       lastActionFrom: params.lastActionFrom,
       lastActionTo: params.lastActionTo,
+      archived: params.archived,
     });
     setShowFilters(true);
   };
@@ -263,11 +264,14 @@ export function ProspectsClient({
   const resultLabel = useMemo(() => {
     const noun = clientsOnly ? "client" : "prospect";
     const plural = count > 1 ? "s" : "";
+    if (params.archived === "archived") {
+      return `${count} archivé${plural}`;
+    }
     if (isFiltered) {
       return `${count} résultat${plural} sur ${allCount}`;
     }
     return `${allCount} ${noun}${allCount > 1 ? "s" : ""}`;
-  }, [count, allCount, isFiltered, clientsOnly]);
+  }, [count, allCount, isFiltered, clientsOnly, params.archived]);
 
   const totalPages = Math.max(1, Math.ceil(count / params.pageSize));
   const listReturnUrl = buildProspectListPath(params, listPath);
