@@ -2,25 +2,65 @@ import { createServerComponentSupabase } from "@/lib/supabase/server-component";
 import { ProspectsClient } from "@/components/crm/ProspectsClient";
 import { normalizeProspectFromDb } from "@/lib/crm/prospect-payload";
 import type { Prospect } from "@/lib/crm/types";
+import {
+  defaultProspectListParams,
+  parseProspectListParams,
+} from "@/lib/crm/prospect-list-params";
+import { fetchProspectList } from "@/lib/crm/prospect-query";
 
-export default async function ProspectsPage() {
+type PageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function toUrlSearchParams(
+  raw: Record<string, string | string[] | undefined>
+): URLSearchParams {
+  const sp = new URLSearchParams();
+  for (const [key, value] of Object.entries(raw)) {
+    if (typeof value === "string") sp.set(key, value);
+    else if (Array.isArray(value)) sp.set(key, value.join(","));
+  }
+  return sp;
+}
+
+export default async function ProspectsPage({ searchParams }: PageProps) {
   const supabase = await createServerComponentSupabase();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data, count } = await supabase
-    .from("prospects")
-    .select("*", { count: "exact" })
-    .eq("user_id", user.id)
-    .order("updated_at", { ascending: false })
-    .range(0, 99);
+  const sp = toUrlSearchParams(await searchParams);
+  const params = parseProspectListParams(sp);
+
+  const [{ data, count, error }, { count: totalAll }] = await Promise.all([
+    fetchProspectList(supabase, user.id, params),
+    supabase
+      .from("prospects")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id),
+  ]);
+
+  if (error) {
+    const fallback = defaultProspectListParams();
+    return (
+      <ProspectsClient
+        initial={[]}
+        total={0}
+        totalAll={totalAll ?? 0}
+        initialParams={fallback}
+      />
+    );
+  }
 
   return (
     <ProspectsClient
-      initial={(data ?? []).map((p) => normalizeProspectFromDb(p as Record<string, unknown>) as Prospect)}
+      initial={(data ?? []).map(
+        (p) => normalizeProspectFromDb(p as Record<string, unknown>) as Prospect
+      )}
       total={count ?? 0}
+      totalAll={totalAll ?? 0}
+      initialParams={params}
     />
   );
 }

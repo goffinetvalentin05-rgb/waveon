@@ -1,15 +1,54 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
-import { IconPlus, IconSearch, IconUpload } from "@tabler/icons-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import {
+  IconChevronDown,
+  IconChevronLeft,
+  IconChevronRight,
+  IconChevronUp,
+  IconFilter,
+  IconPlus,
+  IconSearch,
+  IconSelector,
+  IconUpload,
+} from "@tabler/icons-react";
 import { StatusBadge } from "@/components/crm/StatusBadge";
 import { ImportProspectsModal } from "@/components/crm/ImportProspectsModal";
-import { PROSPECT_STATUSES, type Prospect } from "@/lib/crm/types";
+import { ProspectsFilterPanel } from "@/components/crm/ProspectsFilterPanel";
+import type { Prospect } from "@/lib/crm/types";
+import {
+  EMPTY_FILTERS,
+  buildProspectListPath,
+  buildProspectListSearchParams,
+  countActiveFilters,
+  cycleSortColumn,
+  defaultProspectListParams,
+  hasActiveSearchOrFilters,
+  parseProspectListParams,
+  type ProspectListFilters,
+  type ProspectListParams,
+  type SortableColumn,
+} from "@/lib/crm/prospect-list-params";
 import { ui } from "@/lib/design/tokens";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+
+const SEARCH_DEBOUNCE_MS = 300;
+
+const SORT_COLUMNS: { key: SortableColumn; label: string }[] = [
+  { key: "club_name", label: "Club" },
+  { key: "sport", label: "Sport" },
+  { key: "canton", label: "Canton" },
+  { key: "contact_name", label: "Contact" },
+  { key: "phone", label: "Téléphone" },
+  { key: "email", label: "Email" },
+  { key: "website", label: "Site" },
+  { key: "status", label: "Statut" },
+  { key: "last_action_at", label: "Dernière action" },
+  { key: "next_follow_up", label: "Prochaine relance" },
+];
 
 function fmtDate(value: string | null) {
   if (!value) return "—";
@@ -22,45 +61,192 @@ function fmtDate(value: string | null) {
   }
 }
 
+function SortIcon({
+  column,
+  sort,
+  order,
+}: {
+  column: SortableColumn;
+  sort: string;
+  order: "asc" | "desc";
+}) {
+  if (sort !== column) {
+    return <IconSelector className="h-3.5 w-3.5 opacity-30" stroke={1.75} />;
+  }
+  if (order === "asc") {
+    return <IconChevronUp className="h-3.5 w-3.5 text-blue-600" stroke={2} />;
+  }
+  return <IconChevronDown className="h-3.5 w-3.5 text-blue-600" stroke={2} />;
+}
+
+type FilterOptions = {
+  sports: string[];
+  cantons: string[];
+  villes: string[];
+  statuses: string[];
+};
+
 export function ProspectsClient({
   initial,
   total,
+  totalAll,
   clientsOnly = false,
 }: {
   initial: Prospect[];
   total: number;
+  totalAll: number;
+  initialParams?: ProspectListParams;
   clientsOnly?: boolean;
 }) {
   const router = useRouter();
+  const urlSearchParams = useSearchParams();
   const [pending, startTransition] = useTransition();
-  const [q, setQ] = useState("");
-  const [status, setStatus] = useState("");
-  const [sort, setSort] = useState("updated_at");
+
+  const params = useMemo(
+    () => parseProspectListParams(new URLSearchParams(urlSearchParams.toString()), clientsOnly),
+    [urlSearchParams, clientsOnly]
+  );
+  const paramsKey = useMemo(() => buildProspectListSearchParams(params).toString(), [params]);
+
+  const [searchInput, setSearchInput] = useState(params.q);
   const [prospects, setProspects] = useState(initial);
   const [count, setCount] = useState(total);
+  const [allCount, setAllCount] = useState(totalAll);
   const [showCreate, setShowCreate] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterDraft, setFilterDraft] = useState<ProspectListFilters>(EMPTY_FILTERS);
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
+    sports: [],
+    cantons: [],
+    villes: [],
+    statuses: [],
+  });
   const [importMsg, setImportMsg] = useState<string | null>(null);
 
-  const reload = (opts?: { q?: string; status?: string; sort?: string }) => {
-    const params = new URLSearchParams();
-    const qq = opts?.q ?? q;
-    const ss = opts?.status ?? status;
-    const so = opts?.sort ?? sort;
-    if (qq) params.set("q", qq);
-    if (ss) params.set("status", ss);
-    if (so) params.set("sort", so);
-    if (clientsOnly) params.set("clients", "1");
-    params.set("pageSize", "100");
+  const skipNextSearchDebounce = useRef(true);
+  const skipInitialUrlFetch = useRef(true);
+  const urlChangeFromSelf = useRef(false);
+  const listPath = clientsOnly ? "/clients" : "/prospects";
 
-    startTransition(async () => {
-      const res = await fetch(`/api/prospects?${params}`);
-      const data = await res.json();
-      if (res.ok) {
-        setProspects(data.prospects);
-        setCount(data.total);
-      }
+  const activeFilterCount = countActiveFilters(params);
+  const isFiltered = hasActiveSearchOrFilters(params);
+
+  const syncUrl = useCallback(
+    (next: ProspectListParams) => {
+      urlChangeFromSelf.current = true;
+      const qs = buildProspectListSearchParams(next).toString();
+      router.replace(qs ? `${listPath}?${qs}` : listPath, { scroll: false });
+    },
+    [router, listPath]
+  );
+
+  const fetchList = useCallback(
+    (next: ProspectListParams) => {
+      const sp = buildProspectListSearchParams(next);
+      startTransition(async () => {
+        const res = await fetch(`/api/prospects?${sp}`);
+        const data = await res.json();
+        if (res.ok) {
+          setProspects(data.prospects);
+          setCount(data.total);
+        }
+      });
+    },
+    []
+  );
+
+  const applyParams = useCallback(
+    (next: ProspectListParams) => {
+      urlChangeFromSelf.current = true;
+      syncUrl(next);
+      fetchList(next);
+    },
+    [syncUrl, fetchList]
+  );
+
+  useEffect(() => {
+    if (skipInitialUrlFetch.current) {
+      skipInitialUrlFetch.current = false;
+      return;
+    }
+    if (urlChangeFromSelf.current) {
+      urlChangeFromSelf.current = false;
+      return;
+    }
+    // Synchronise la barre de recherche lors d'une navigation arrière/avancer.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync URL → champ recherche
+    setSearchInput(params.q);
+    fetchList(params);
+  }, [paramsKey, params, fetchList]);
+
+  useEffect(() => {
+    if (skipNextSearchDebounce.current) {
+      skipNextSearchDebounce.current = false;
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      const q = searchInput.trim();
+      if (q === params.q) return;
+      applyParams({ ...params, q, page: 1 });
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [searchInput, params, applyParams]);
+
+  useEffect(() => {
+    const sp = new URLSearchParams();
+    if (clientsOnly) sp.set("clients", "1");
+    fetch(`/api/prospects/filter-options?${sp}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.sports) setFilterOptions(data);
+      })
+      .catch(() => {});
+  }, [clientsOnly]);
+
+  const onSortColumn = (column: SortableColumn) => {
+    const { sort, order } = cycleSortColumn(params.sort, params.order, column);
+    applyParams({ ...params, sort, order, page: 1 });
+  };
+
+  const openFilters = () => {
+    setFilterDraft({
+      sports: params.sports,
+      cantons: params.cantons,
+      villes: params.villes,
+      statuses: params.statuses,
+      hasEmail: params.hasEmail,
+      hasPhone: params.hasPhone,
+      nextFollowUpFrom: params.nextFollowUpFrom,
+      nextFollowUpTo: params.nextFollowUpTo,
+      lastActionFrom: params.lastActionFrom,
+      lastActionTo: params.lastActionTo,
     });
+    setShowFilters(true);
+  };
+
+  const applyFilters = () => {
+    setShowFilters(false);
+    applyParams({ ...params, ...filterDraft, page: 1 });
+  };
+
+  const resetAll = () => {
+    skipNextSearchDebounce.current = true;
+    setSearchInput("");
+    setFilterDraft(EMPTY_FILTERS);
+    setShowFilters(false);
+    const next = defaultProspectListParams(clientsOnly);
+    applyParams(next);
+  };
+
+  const resetFiltersOnly = () => {
+    setFilterDraft(EMPTY_FILTERS);
+  };
+
+  const goToPage = (page: number) => {
+    applyParams({ ...params, page });
   };
 
   const onImported = (result: { imported: number; updated: number; skipped: number }) => {
@@ -69,21 +255,33 @@ export function ProspectsClient({
     if (result.updated > 0) parts.push(`${result.updated} mis à jour`);
     if (result.skipped > 0) parts.push(`${result.skipped} ignoré${result.skipped > 1 ? "s" : ""}`);
     setImportMsg(parts.length ? `Import réussi : ${parts.join(", ")}.` : "Import terminé.");
-    reload();
+    applyParams(params);
+    setAllCount((n) => n + result.imported);
     router.refresh();
   };
 
-  const filteredHint = useMemo(() => {
-    if (clientsOnly) return `${count} client${count > 1 ? "s" : ""}`;
-    return `${count} prospect${count > 1 ? "s" : ""}`;
-  }, [count, clientsOnly]);
+  const resultLabel = useMemo(() => {
+    const noun = clientsOnly ? "client" : "prospect";
+    const plural = count > 1 ? "s" : "";
+    if (isFiltered) {
+      return `${count} résultat${plural} sur ${allCount}`;
+    }
+    return `${allCount} ${noun}${allCount > 1 ? "s" : ""}`;
+  }, [count, allCount, isFiltered, clientsOnly]);
+
+  const totalPages = Math.max(1, Math.ceil(count / params.pageSize));
+  const listReturnUrl = buildProspectListPath(params, listPath);
+
+  const visibleSortColumns = clientsOnly
+    ? SORT_COLUMNS.filter((c) => c.key !== "status")
+    : SORT_COLUMNS;
 
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className={ui.h1}>{clientsOnly ? "Clients" : "Prospects"}</h1>
-          <p className="mt-1 text-sm text-slate-500">{filteredHint}</p>
+          <p className="mt-1 text-sm text-slate-500">{resultLabel}</p>
         </div>
         {!clientsOnly ? (
           <div className="flex flex-wrap gap-2">
@@ -118,75 +316,70 @@ export function ProspectsClient({
           <input
             className={`${ui.input} pl-9`}
             placeholder="Rechercher un club, contact, canton…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") reload({ q });
-            }}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
           />
         </div>
-        {!clientsOnly ? (
-          <select
-            className={ui.input + " sm:w-44"}
-            value={status}
-            onChange={(e) => {
-              setStatus(e.target.value);
-              reload({ status: e.target.value });
-            }}
-          >
-            <option value="">Tous les statuts</option>
-            {PROSPECT_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        ) : null}
-        <select
-          className={ui.input + " sm:w-44"}
-          value={sort}
-          onChange={(e) => {
-            setSort(e.target.value);
-            reload({ sort: e.target.value });
-          }}
+        <button
+          type="button"
+          className={`${ui.btnSecondary} relative`}
+          onClick={openFilters}
         >
-          <option value="updated_at">Récent</option>
-          <option value="club_name">Nom</option>
-          <option value="next_follow_up">Prochaine relance</option>
-          <option value="status">Statut</option>
-          <option value="canton">Canton</option>
-        </select>
-        <button type="button" className={ui.btnSecondary} disabled={pending} onClick={() => reload()}>
+          <IconFilter className="h-4 w-4" stroke={1.75} />
           Filtrer
+          {activeFilterCount > 0 ? (
+            <span className="text-slate-500"> · {activeFilterCount}</span>
+          ) : null}
         </button>
       </div>
 
-      <div className="crm-table-wrap crm-animate-in">
+      <div className={`crm-table-wrap crm-animate-in ${pending ? "opacity-70" : ""}`}>
         <table className="crm-table">
           <thead>
             <tr>
-              <th>Club</th>
-              <th>Sport</th>
-              <th>Canton</th>
-              <th>Contact</th>
-              <th>Téléphone</th>
-              <th>Email</th>
-              <th>Site</th>
-              {!clientsOnly ? <th>Statut</th> : null}
-              <th>Dernière action</th>
-              <th>Prochaine relance</th>
+              {visibleSortColumns.map(({ key, label }) => (
+                <th key={key}>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1.5 hover:text-slate-900"
+                    onClick={() => onSortColumn(key)}
+                  >
+                    {label}
+                    <SortIcon column={key} sort={params.sort} order={params.order} />
+                  </button>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {prospects.length === 0 ? (
               <tr>
-                <td colSpan={10} className="!cursor-default py-12 text-center text-slate-400">
-                  Aucun prospect. Importez un fichier ou créez-en un.
+                <td colSpan={visibleSortColumns.length} className="!cursor-default py-12 text-center">
+                  {isFiltered ? (
+                    <div className="space-y-3">
+                      <p className="text-slate-500">
+                        Aucun prospect ne correspond à votre recherche.
+                      </p>
+                      <button type="button" className={ui.btnSecondary} onClick={resetAll}>
+                        Réinitialiser la recherche et les filtres
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-slate-400">
+                      Aucun prospect. Importez un fichier ou créez-en un.
+                    </span>
+                  )}
                 </td>
               </tr>
             ) : (
               prospects.map((p) => (
-                <tr key={p.id} onClick={() => router.push(`/prospects/${p.id}`)}>
+                <tr
+                  key={p.id}
+                  onClick={() => {
+                    const back = encodeURIComponent(listReturnUrl);
+                    router.push(`/prospects/${p.id}?back=${back}`);
+                  }}
+                >
                   <td className="font-medium text-slate-900">{p.club_name}</td>
                   <td>{p.sport ?? "—"}</td>
                   <td>{p.canton ?? "—"}</td>
@@ -224,6 +417,43 @@ export function ProspectsClient({
         </table>
       </div>
 
+      {count > params.pageSize ? (
+        <div className="flex items-center justify-between gap-3 text-sm text-slate-600">
+          <button
+            type="button"
+            className={ui.btnGhost}
+            disabled={params.page <= 1 || pending}
+            onClick={() => goToPage(params.page - 1)}
+          >
+            <IconChevronLeft className="h-4 w-4" />
+            Précédent
+          </button>
+          <span>
+            Page {params.page} sur {totalPages}
+          </span>
+          <button
+            type="button"
+            className={ui.btnGhost}
+            disabled={params.page >= totalPages || pending}
+            onClick={() => goToPage(params.page + 1)}
+          >
+            Suivant
+            <IconChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      ) : null}
+
+      <ProspectsFilterPanel
+        open={showFilters}
+        draft={filterDraft}
+        options={filterOptions}
+        clientsOnly={clientsOnly}
+        onChange={setFilterDraft}
+        onApply={applyFilters}
+        onReset={resetFiltersOnly}
+        onClose={() => setShowFilters(false)}
+      />
+
       {showImport ? (
         <ImportProspectsModal
           open={showImport}
@@ -237,7 +467,8 @@ export function ProspectsClient({
           onClose={() => setShowCreate(false)}
           onCreated={() => {
             setShowCreate(false);
-            reload();
+            applyParams(params);
+            setAllCount((n) => n + 1);
             router.refresh();
           }}
         />

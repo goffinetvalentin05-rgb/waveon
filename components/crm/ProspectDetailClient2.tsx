@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -448,6 +448,13 @@ export function ProspectDetailClient2({
   activities: ProspectActivity[];
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const backHref = (() => {
+    const back = searchParams.get("back");
+    if (back?.startsWith("/prospects") || back?.startsWith("/clients")) return back;
+    return "/prospects";
+  })();
+  const backLabel = backHref.startsWith("/clients") ? "Clients" : "Prospects";
   const [pending, startTransition] = useTransition();
   const [prospect, setProspect] = useState(initial);
   const [activities, setActivities] = useState(initialActivities);
@@ -750,11 +757,11 @@ export function ProspectDetailClient2({
     <div className="space-y-6 crm-animate-in">
       <div>
         <Link
-          href="/prospects"
+          href={backHref}
           className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800"
         >
           <IconArrowLeft className="h-4 w-4" />
-          Prospects
+          {backLabel}
         </Link>
         <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
           <div>
