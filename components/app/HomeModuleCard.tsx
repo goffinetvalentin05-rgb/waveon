@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import type { AppModule, HomeSummary } from "@/modules/types";
 
@@ -9,6 +7,7 @@ type HomeModuleCardProps = {
   index?: number;
 };
 
+/** Server Component — les icônes (fonctions) ne doivent pas traverser la frontière client. */
 export function HomeModuleCard({ module, summary, index = 0 }: HomeModuleCardProps) {
   const Icon = module.icon;
   const delayClass =
