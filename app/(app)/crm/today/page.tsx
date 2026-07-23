@@ -7,7 +7,7 @@ import { TodayTaskList } from "@/components/crm/TodayTaskList";
 import type { DailyTask } from "@/lib/crm/types";
 import { ui } from "@/lib/design/tokens";
 
-export default async function TodayPage() {
+export default async function CrmTodayPage() {
   const supabase = await createServerComponentSupabase();
   const {
     data: { user },
@@ -48,7 +48,7 @@ export default async function TodayPage() {
       </div>
 
       <p className="text-center text-sm text-slate-400">
-        <Link href="/prospects" className="text-blue-600 hover:underline">
+        <Link href="/crm/prospects" className="text-blue-600 hover:underline">
           Voir tous les prospects
         </Link>
       </p>

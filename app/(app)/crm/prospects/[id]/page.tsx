@@ -6,7 +6,7 @@ import type { Prospect, ProspectActivity } from "@/lib/crm/types";
 
 type Props = { params: Promise<{ id: string }> };
 
-export default async function ProspectDetailPage({ params }: Props) {
+export default async function CrmProspectDetailPage({ params }: Props) {
   const { id } = await params;
   const supabase = await createServerComponentSupabase();
   const {

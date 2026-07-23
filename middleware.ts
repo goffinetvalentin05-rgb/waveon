@@ -2,12 +2,17 @@ import { createServerClient } from "@supabase/auth-helpers-nextjs";
 import { type NextRequest, NextResponse } from "next/server";
 
 const PROTECTED_PREFIXES = [
+  "/home",
+  "/crm",
+  "/calendar",
+  "/english",
+  "/settings",
+  // Anciennes URLs (redirigées ensuite) — protégées pour éviter le flash login
   "/dashboard",
   "/prospects",
   "/today",
   "/clients",
   "/stats",
-  "/settings",
 ];
 
 const AUTH_PAGES = new Set(["/login", "/signup", "/register"]);
@@ -62,11 +67,11 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && AUTH_PAGES.has(path)) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL("/home", request.url));
   }
 
   if (path === "/" && user) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL("/home", request.url));
   }
 
   if (path === "/" && !user) {
@@ -79,6 +84,10 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/",
+    "/home/:path*",
+    "/crm/:path*",
+    "/calendar/:path*",
+    "/english/:path*",
     "/dashboard/:path*",
     "/prospects/:path*",
     "/today/:path*",

@@ -39,7 +39,7 @@ function SignupContent() {
     try {
       const normalizedEmail = email.trim().toLowerCase();
       const emailRedirectTo =
-        typeof window !== "undefined" ? `${window.location.origin}/dashboard` : undefined;
+        typeof window !== "undefined" ? `${window.location.origin}/home` : undefined;
       const { data, error } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
@@ -55,7 +55,7 @@ function SignupContent() {
         );
         return;
       }
-      router.replace("/dashboard");
+      router.replace("/home");
     } catch {
       setMessage("Erreur technique. Réessayez dans quelques instants.");
     } finally {

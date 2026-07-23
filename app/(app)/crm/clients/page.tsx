@@ -23,7 +23,7 @@ function toUrlSearchParams(
   return sp;
 }
 
-export default async function ClientsPage({ searchParams }: PageProps) {
+export default async function CrmClientsPage({ searchParams }: PageProps) {
   const supabase = await createServerComponentSupabase();
   const {
     data: { user },

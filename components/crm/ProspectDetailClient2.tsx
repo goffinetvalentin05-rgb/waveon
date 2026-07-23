@@ -543,10 +543,19 @@ export function ProspectDetailClient2({
   const searchParams = useSearchParams();
   const backHref = (() => {
     const back = searchParams.get("back");
-    if (back?.startsWith("/prospects") || back?.startsWith("/clients")) return back;
-    return "/prospects";
+    if (
+      back?.startsWith("/crm/prospects") ||
+      back?.startsWith("/crm/clients") ||
+      back?.startsWith("/prospects") ||
+      back?.startsWith("/clients")
+    ) {
+      return back
+        .replace(/^\/prospects/, "/crm/prospects")
+        .replace(/^\/clients/, "/crm/clients");
+    }
+    return "/crm/prospects";
   })();
-  const backLabel = backHref.startsWith("/clients") ? "Clients" : "Prospects";
+  const backLabel = backHref.includes("/clients") ? "Clients" : "Prospects";
   const [pending, startTransition] = useTransition();
   const [prospect, setProspect] = useState(initial);
   const [activities, setActivities] = useState(initialActivities);
@@ -824,7 +833,11 @@ export function ProspectDetailClient2({
       }
       setShowDeleteModal(false);
       setMsg("Le prospect a été supprimé.");
-      router.push(backHref.startsWith("/prospects") || backHref.startsWith("/clients") ? backHref : "/prospects");
+      router.push(
+        backHref.includes("/prospects") || backHref.includes("/clients")
+          ? backHref
+          : "/crm/prospects"
+      );
       router.refresh();
     } catch {
       setDeleteError("Une erreur réseau est survenue. Réessayez.");

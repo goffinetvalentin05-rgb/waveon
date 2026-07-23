@@ -25,6 +25,21 @@ const nextConfig: NextConfig = {
         }
       : undefined;
   })(),
+
+  async redirects() {
+    return [
+      { source: "/dashboard", destination: "/home", permanent: false },
+      { source: "/prospects", destination: "/crm/prospects", permanent: false },
+      {
+        source: "/prospects/:id",
+        destination: "/crm/prospects/:id",
+        permanent: false,
+      },
+      { source: "/today", destination: "/crm/today", permanent: false },
+      { source: "/clients", destination: "/crm/clients", permanent: false },
+      { source: "/stats", destination: "/crm/stats", permanent: false },
+    ];
+  },
 };
 
 export default nextConfig;

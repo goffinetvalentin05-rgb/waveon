@@ -84,7 +84,9 @@ export function TodayTaskList({
                 <button
                   type="button"
                   className="text-xs text-slate-400 hover:text-blue-600"
-                  onClick={() => router.push(`/prospects/${task.prospect!.id}`)}
+                  onClick={() =>
+                    router.push(`/crm/prospects/${task.prospect!.id}`)
+                  }
                 >
                   {task.prospect.club_name}
                 </button>

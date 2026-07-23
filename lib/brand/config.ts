@@ -3,16 +3,16 @@
  */
 
 export const brand = {
-  name: "Prospection CRM",
+  name: "Prospection",
   shortName: "Prospection",
-  tagline: "Votre espace de prospection.",
-  promise: "Gérez vos prospects, relances et démos en un seul endroit.",
-  legalEntityHint: "Prospection CRM",
+  tagline: "Votre espace de travail.",
+  promise: "CRM, calendrier et outils du quotidien, en un seul endroit.",
+  legalEntityHint: "Prospection",
   contactEmail: "contact@obillz.com",
   supportEmail: "support@obillz.com",
   domain: "localhost",
   description:
-    "CRM de prospection personnel pour suivre clubs, relances et clients Obillz.",
+    "Espace de travail personnel : prospection, calendrier et apprentissage.",
 } as const;
 
 export type Brand = typeof brand;

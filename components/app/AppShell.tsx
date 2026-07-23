@@ -4,18 +4,16 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import {
-  IconChartBar,
-  IconChecklist,
-  IconLayoutDashboard,
+  IconHome,
   IconLogout,
   IconMenu2,
   IconSettings,
-  IconUsers,
-  IconUserCheck,
   IconX,
 } from "@tabler/icons-react";
 import { brand } from "@/lib/brand/config";
 import { supabase } from "@/lib/supabase/client";
+import { getNavModules } from "@/modules/registry";
+import type { ModuleIcon } from "@/modules/types";
 
 export type AppProfile = {
   id: string;
@@ -28,19 +26,42 @@ type AppShellProps = {
   children: React.ReactNode;
 };
 
-const NAV = [
-  { href: "/dashboard", label: "Dashboard", icon: IconLayoutDashboard },
-  { href: "/prospects", label: "Prospects", icon: IconUsers },
-  { href: "/today", label: "Aujourd'hui", icon: IconChecklist },
-  { href: "/clients", label: "Clients", icon: IconUserCheck },
-  { href: "/stats", label: "Statistiques", icon: IconChartBar },
-  { href: "/settings", label: "Paramètres", icon: IconSettings },
-] as const;
+type NavItem = {
+  href: string;
+  label: string;
+  icon: ModuleIcon;
+  match: "exact" | "prefix";
+};
+
+const HOME_ITEM: NavItem = {
+  href: "/home",
+  label: "Accueil",
+  icon: IconHome,
+  match: "exact",
+};
+
+const SETTINGS_ITEM: NavItem = {
+  href: "/settings",
+  label: "Paramètres",
+  icon: IconSettings,
+  match: "prefix",
+};
+
+function buildNav(): NavItem[] {
+  const modules = getNavModules().map((m) => ({
+    href: m.href,
+    label: m.label,
+    icon: m.icon,
+    match: "prefix" as const,
+  }));
+  return [HOME_ITEM, ...modules, SETTINGS_ITEM];
+}
 
 export function AppShell({ profile, children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const nav = buildNav();
 
   const logout = async () => {
     await supabase.auth.signOut();
@@ -52,7 +73,7 @@ export function AppShell({ profile, children }: AppShellProps) {
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[var(--sidebar-width)] flex-col border-r border-[#e8eef6] bg-white/80 backdrop-blur-xl lg:flex">
         <div className="flex h-16 items-center px-5">
-          <Link href="/dashboard" className="group flex items-center gap-2.5">
+          <Link href="/home" className="group flex items-center gap-2.5">
             <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-sm font-bold text-white shadow-sm">
               P
             </span>
@@ -63,13 +84,13 @@ export function AppShell({ profile, children }: AppShellProps) {
         </div>
 
         <nav className="flex flex-1 flex-col gap-0.5 px-3 py-2">
-          {NAV.map((item) => (
+          {nav.map((item) => (
             <SideLink
               key={item.href}
               href={item.href}
               label={item.label}
               icon={item.icon}
-              active={isActive(pathname, item.href)}
+              active={isActive(pathname, item)}
             />
           ))}
         </nav>
@@ -91,7 +112,7 @@ export function AppShell({ profile, children }: AppShellProps) {
 
       {/* Mobile top bar */}
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-[#e8eef6] bg-white/90 px-4 backdrop-blur-xl lg:hidden">
-        <Link href="/dashboard" className="flex items-center gap-2">
+        <Link href="/home" className="flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white">
             P
           </span>
@@ -128,13 +149,13 @@ export function AppShell({ profile, children }: AppShellProps) {
               </button>
             </div>
             <nav className="flex flex-1 flex-col gap-0.5 px-3 py-2">
-              {NAV.map((item) => (
+              {nav.map((item) => (
                 <SideLink
                   key={item.href}
                   href={item.href}
                   label={item.label}
                   icon={item.icon}
-                  active={isActive(pathname, item.href)}
+                  active={isActive(pathname, item)}
                   onClick={() => setMobileOpen(false)}
                 />
               ))}
@@ -162,13 +183,13 @@ export function AppShell({ profile, children }: AppShellProps) {
   );
 }
 
-function isActive(pathname: string | null, href: string) {
+function isActive(pathname: string | null, item: NavItem) {
   if (!pathname) return false;
-  if (href === "/dashboard") return pathname === "/dashboard";
-  if (href === "/prospects") {
-    return pathname === "/prospects" || pathname.startsWith("/prospects/");
+  if (item.match === "exact") return pathname === item.href;
+  if (item.href === "/crm") {
+    return pathname === "/crm" || pathname.startsWith("/crm/");
   }
-  return pathname === href || pathname.startsWith(`${href}/`);
+  return pathname === item.href || pathname.startsWith(`${item.href}/`);
 }
 
 function SideLink({
@@ -180,7 +201,7 @@ function SideLink({
 }: {
   href: string;
   label: string;
-  icon: React.ComponentType<{ className?: string; stroke?: number }>;
+  icon: ModuleIcon;
   active: boolean;
   onClick?: () => void;
 }) {

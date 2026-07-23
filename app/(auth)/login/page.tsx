@@ -13,7 +13,7 @@ const hasSupabaseConfig = Boolean(
 );
 
 function safeInternalPath(raw: string | null): string {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/home";
   return raw;
 }
 

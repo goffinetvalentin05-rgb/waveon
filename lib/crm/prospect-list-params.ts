@@ -176,7 +176,7 @@ export function buildProspectListSearchParams(
 
 export function buildProspectListPath(
   params: ProspectListParams,
-  basePath: "/prospects" | "/clients" = "/prospects"
+  basePath: "/crm/prospects" | "/crm/clients" = "/crm/prospects"
 ): string {
   const sp = buildProspectListSearchParams(params);
   const qs = sp.toString();

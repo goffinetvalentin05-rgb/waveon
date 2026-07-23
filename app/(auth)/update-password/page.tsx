@@ -55,7 +55,7 @@ export default function UpdatePasswordPage() {
       setMessage(error.message);
       return;
     }
-    router.replace("/dashboard");
+    router.replace("/home");
   };
 
   if (!hasSession) {

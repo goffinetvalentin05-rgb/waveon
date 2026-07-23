@@ -127,7 +127,7 @@ export function ProspectsClient({
   const skipNextSearchDebounce = useRef(true);
   const skipInitialUrlFetch = useRef(true);
   const urlChangeFromSelf = useRef(false);
-  const listPath = clientsOnly ? "/clients" : "/prospects";
+  const listPath = clientsOnly ? "/crm/clients" : "/crm/prospects";
 
   const activeFilterCount = countActiveFilters(params);
   const isFiltered = hasActiveSearchOrFilters(params);
@@ -381,7 +381,7 @@ export function ProspectsClient({
                   key={p.id}
                   onClick={() => {
                     const back = encodeURIComponent(listReturnUrl);
-                    router.push(`/prospects/${p.id}?back=${back}`);
+                    router.push(`/crm/prospects/${p.id}?back=${back}`);
                   }}
                 >
                   <td className="font-medium text-slate-900">{p.club_name}</td>

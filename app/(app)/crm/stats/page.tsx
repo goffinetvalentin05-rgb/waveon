@@ -18,7 +18,7 @@ type Stats = {
   activityByDay: { date: string; count: number }[];
 };
 
-export default function StatsPage() {
+export default function CrmStatsPage() {
   const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
