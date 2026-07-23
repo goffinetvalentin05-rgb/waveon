@@ -1,10 +1,5 @@
-import { ComingSoon } from "@/components/app/ComingSoon";
+import { EnglishClient } from "@/components/english/EnglishClient";
 
 export default function EnglishPage() {
-  return (
-    <ComingSoon
-      title="Anglais"
-      description="Construisez votre bibliothèque de vocabulaire et révisez avec des flashcards. Ce module arrive bientôt."
-    />
-  );
+  return <EnglishClient />;
 }

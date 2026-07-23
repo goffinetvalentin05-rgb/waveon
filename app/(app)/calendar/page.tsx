@@ -1,10 +1,5 @@
-import { ComingSoon } from "@/components/app/ComingSoon";
+import { CalendarClient } from "@/components/calendar/CalendarClient";
 
 export default function CalendarPage() {
-  return (
-    <ComingSoon
-      title="Calendrier"
-      description="Organisez vos rendez-vous, démonstrations et anniversaires. Ce module arrive bientôt."
-    />
-  );
+  return <CalendarClient />;
 }

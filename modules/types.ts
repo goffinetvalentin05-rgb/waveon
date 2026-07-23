@@ -7,6 +7,7 @@ export type HomeSummaryId = "crm-follow-ups" | "calendar-today" | "english-revie
 export type HomeSummary = {
   label: string;
   value: number;
+  secondaryLabel?: string;
 };
 
 export type AppModule = {

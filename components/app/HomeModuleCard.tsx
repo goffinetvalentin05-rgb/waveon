@@ -38,7 +38,14 @@ export function HomeModuleCard({ module, summary, index = 0 }: HomeModuleCardPro
           {module.description}
         </p>
         {summary ? (
-          <p className="mt-4 text-xs font-medium text-slate-400">{summary.label}</p>
+          <div className="mt-4 space-y-1">
+            <p className="text-xs font-medium text-slate-400">{summary.label}</p>
+            {summary.secondaryLabel ? (
+              <p className="text-xs font-medium text-rose-400/90">
+                {summary.secondaryLabel}
+              </p>
+            ) : null}
+          </div>
         ) : null}
       </div>
 

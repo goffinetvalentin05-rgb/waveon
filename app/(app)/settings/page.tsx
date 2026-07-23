@@ -4,15 +4,28 @@ import { useEffect, useState } from "react";
 import { ui } from "@/lib/design/tokens";
 import type { CrmSettings } from "@/lib/crm/types";
 
+const TIMEZONES = [
+  "Europe/Zurich",
+  "Europe/Paris",
+  "Europe/Berlin",
+  "Europe/London",
+  "UTC",
+];
+
 export default function SettingsPage() {
   const [settings, setSettings] = useState<CrmSettings | null>(null);
+  const [timezone, setTimezone] = useState("Europe/Zurich");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    void fetch("/api/settings")
-      .then((r) => r.json())
-      .then((d) => setSettings(d.settings));
+    void Promise.all([
+      fetch("/api/settings").then((r) => r.json()),
+      fetch("/api/preferences").then((r) => r.json()),
+    ]).then(([s, p]) => {
+      setSettings(s.settings);
+      if (p.preferences?.timezone) setTimezone(p.preferences.timezone);
+    });
   }, []);
 
   const save = async (e: React.FormEvent) => {
@@ -20,18 +33,27 @@ export default function SettingsPage() {
     if (!settings) return;
     setSaving(true);
     setMsg(null);
-    const res = await fetch("/api/settings", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        delay_relance_1_days: settings.delay_relance_1_days,
-        delay_relance_2_days: settings.delay_relance_2_days,
-        delay_relance_3_days: settings.delay_relance_3_days,
+
+    const [resSettings, resPrefs] = await Promise.all([
+      fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          delay_relance_1_days: settings.delay_relance_1_days,
+          delay_relance_2_days: settings.delay_relance_2_days,
+          delay_relance_3_days: settings.delay_relance_3_days,
+        }),
       }),
-    });
-    const data = await res.json();
+      fetch("/api/preferences", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ timezone }),
+      }),
+    ]);
+
+    const data = await resSettings.json();
     setSaving(false);
-    if (!res.ok) {
+    if (!resSettings.ok || !resPrefs.ok) {
       setMsg(data.error ?? "Erreur");
       return;
     }
@@ -66,7 +88,7 @@ export default function SettingsPage() {
       <div className="crm-animate-in">
         <h1 className={ui.h1}>Paramètres</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Ces délais programment automatiquement vos prochaines relances.
+          Relances CRM et fuseau horaire pour les rappels.
         </p>
       </div>
 
@@ -96,6 +118,27 @@ export default function SettingsPage() {
             <p className="mt-1 text-xs text-slate-400">{f.hint}</p>
           </div>
         ))}
+
+        <div>
+          <label className={ui.label} htmlFor="timezone">
+            Fuseau horaire
+          </label>
+          <select
+            id="timezone"
+            className={ui.input}
+            value={timezone}
+            onChange={(e) => setTimezone(e.target.value)}
+          >
+            {TIMEZONES.map((tz) => (
+              <option key={tz} value={tz}>
+                {tz}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-slate-400">
+            Utilisé pour les rappels d&apos;anniversaire par email.
+          </p>
+        </div>
 
         {msg ? (
           <p className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-700">

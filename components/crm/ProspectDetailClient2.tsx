@@ -8,6 +8,7 @@ import { fr } from "date-fns/locale";
 import {
   IconArchive,
   IconArrowLeft,
+  IconCalendarEvent,
   IconDots,
   IconEdit,
   IconMail,
@@ -602,6 +603,7 @@ export function ProspectDetailClient2({
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [archiveLoading, setArchiveLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [calendarLoading, setCalendarLoading] = useState(false);
 
   const refreshAll = async () => {
     const refreshed = await fetch(`/api/prospects/${prospect.id}`);
@@ -943,6 +945,52 @@ export function ProspectDetailClient2({
     },
   ];
 
+  const addDemoToCalendar = async () => {
+    setCalendarLoading(true);
+    setMsg(null);
+    setErrorMsg(null);
+    try {
+      const day = prospect.demo_at
+        ? new Date(prospect.demo_at).toISOString().slice(0, 10)
+        : new Date().toISOString().slice(0, 10);
+      const start_at = `${day}T10:00:00`;
+      const end_at = `${day}T11:00:00`;
+      const res = await fetch("/api/calendar/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: `Démo — ${prospect.club_name}`,
+          category: "demo",
+          start_at,
+          end_at,
+          all_day: false,
+          description: prospect.notes ?? undefined,
+          location: prospect.ville ?? undefined,
+          source: "crm",
+          source_id: prospect.id,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMsg(data.error ?? "Impossible d'ajouter au calendrier");
+        return;
+      }
+      setMsg(
+        data.deduped
+          ? "Cette démonstration est déjà dans le calendrier."
+          : "Démonstration ajoutée au calendrier."
+      );
+    } catch {
+      setErrorMsg("Impossible d'ajouter au calendrier");
+    } finally {
+      setCalendarLoading(false);
+    }
+  };
+
+  const showAddToCalendar =
+    !isArchived &&
+    (Boolean(prospect.demo_at) || prospect.status === "Démonstration");
+
   const canUndo = activities.some((a) => editableActions.has(a.action_type));
 
   const activityMenuOpen = activityMenuId;
@@ -1055,6 +1103,17 @@ export function ProspectDetailClient2({
                 {a.label}
               </button>
             ))}
+            {showAddToCalendar ? (
+              <button
+                type="button"
+                disabled={pending || calendarLoading}
+                className={ui.btnSecondary}
+                onClick={() => void addDemoToCalendar()}
+              >
+                <IconCalendarEvent className="h-4 w-4" />
+                {calendarLoading ? "Ajout…" : "Ajouter au calendrier"}
+              </button>
+            ) : null}
           </div>
         )}
       </section>

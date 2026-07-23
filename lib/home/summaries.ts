@@ -1,10 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  daysUntil,
+  nextBirthdayDate,
+} from "@/lib/calendar/helpers";
+import { dateInTimezone, getUserTimezone } from "@/lib/calendar/timezone";
+import { todayDateISO } from "@/lib/english/srs";
 import type { HomeSummary, HomeSummaryId } from "@/modules/types";
 
 /**
  * Résout les indicateurs affichés sur les cartes du hub.
- * Chaque id correspond à un adapter léger — les modules futurs
- * s'ajoutent ici sans toucher à la page d'accueil.
  */
 export async function resolveHomeSummary(
   id: HomeSummaryId,
@@ -15,11 +19,9 @@ export async function resolveHomeSummary(
     case "crm-follow-ups":
       return getCrmFollowUpsSummary(supabase, userId);
     case "calendar-today":
-      // Phase calendrier — pas encore de données
-      return null;
+      return getCalendarTodaySummary(supabase, userId);
     case "english-review":
-      // Phase anglais — pas encore de données
-      return null;
+      return getEnglishReviewSummary(supabase, userId);
     default:
       return null;
   }
@@ -50,4 +52,84 @@ async function getCrmFollowUpsSummary(
           ? "1 relance aujourd'hui"
           : `${value} relances aujourd'hui`,
   };
+}
+
+async function getEnglishReviewSummary(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<HomeSummary | null> {
+  const today = todayDateISO();
+  const { count, error } = await supabase
+    .from("english_entries")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .neq("status", "archived")
+    .lte("next_review_at", today);
+
+  if (error) return null;
+
+  const value = count ?? 0;
+  return {
+    value,
+    label:
+      value === 0
+        ? "Rien à réviser"
+        : value === 1
+          ? "1 carte à réviser"
+          : `${value} cartes à réviser`,
+  };
+}
+
+async function getCalendarTodaySummary(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<HomeSummary | null> {
+  const tz = await getUserTimezone(supabase, userId);
+  const today = dateInTimezone(tz);
+  const dayStart = `${today}T00:00:00.000Z`;
+  const dayEnd = `${today}T23:59:59.999Z`;
+
+  const [{ count, error }, { data: birthdays }] = await Promise.all([
+    supabase
+      .from("calendar_events")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .lte("start_at", dayEnd)
+      .gte("end_at", dayStart),
+    supabase.from("birthdays").select("*").eq("user_id", userId),
+  ]);
+
+  // Si tables absentes (migration non appliquée), ne pas casser l'accueil
+  if (error) return null;
+
+  const value = count ?? 0;
+  const label =
+    value === 0
+      ? "Aucun événement aujourd'hui"
+      : value === 1
+        ? "1 événement aujourd'hui"
+        : `${value} événements aujourd'hui`;
+
+  let secondaryLabel: string | undefined;
+  if (birthdays && birthdays.length > 0) {
+    const upcoming = birthdays
+      .map((b) => {
+        const next = nextBirthdayDate(b.birth_date, today);
+        return { name: b.person_name as string, next, days: daysUntil(today, next) };
+      })
+      .filter((b) => b.days >= 0 && b.days <= 14)
+      .sort((a, b) => a.days - b.days);
+
+    const nearest = upcoming[0];
+    if (nearest) {
+      secondaryLabel =
+        nearest.days === 0
+          ? `Anniversaire de ${nearest.name} aujourd'hui`
+          : nearest.days === 1
+            ? `Anniversaire de ${nearest.name} demain`
+            : `Anniversaire de ${nearest.name} dans ${nearest.days} jours`;
+    }
+  }
+
+  return { value, label, secondaryLabel };
 }
