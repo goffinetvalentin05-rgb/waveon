@@ -46,6 +46,8 @@ export type EnglishStats = {
   dueToday: number;
   known: number;
   review: number;
+  streak?: number;
+  progressToday?: number;
 };
 
 export const ENGLISH_TYPE_LABELS: Record<EnglishType, string> = {

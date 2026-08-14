@@ -188,22 +188,22 @@ function EventModalInner({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button
         type="button"
-        className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm"
+        className={ui.overlay}
         onClick={onClose}
         aria-label="Fermer"
       />
       <form
         onSubmit={submit}
-        className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[#e8eef6] bg-white shadow-xl"
+        className={`${ui.modal} flex max-h-[90vh] max-w-lg flex-col`}
       >
-        <div className="flex items-center justify-between border-b border-[#e8eef6] px-6 py-4">
-          <h2 className="text-lg font-semibold text-slate-900">
+        <div className={ui.modalHeader}>
+          <h2 className="text-lg font-semibold text-[#f3f0fa]">
             {isEdit ? "Modifier l'événement" : "Nouvel événement"}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            className="rounded-lg p-1.5 text-[#6a6578] transition hover:bg-white/[0.06] hover:text-[#f3f0fa]"
             aria-label="Fermer"
           >
             <IconX className="h-5 w-5" />
@@ -247,10 +247,10 @@ function EventModalInner({
                     setColor(e.target.value);
                     setColorTouched(true);
                   }}
-                  className="h-[42px] w-12 cursor-pointer rounded-xl border border-[#e8eef6] bg-white p-1"
+                  className="h-[42px] w-12 cursor-pointer rounded-xl border border-white/[0.08] bg-[#0f0d16] p-1"
                   aria-label="Couleur de l'événement"
                 />
-                <span className="text-xs text-slate-400">{color}</span>
+                <span className="text-xs text-[#6a6578]">{color}</span>
               </div>
             </div>
           </div>
@@ -269,12 +269,12 @@ function EventModalInner({
             />
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-slate-700">
+          <label className="flex items-center gap-2 text-sm text-[#c8c3d6]">
             <input
               type="checkbox"
               checked={allDay}
               onChange={(e) => setAllDay(e.target.checked)}
-              className="h-4 w-4 rounded border-[#d0dbeb] text-blue-600 focus:ring-blue-500/30"
+              className="h-4 w-4 rounded border-white/20 bg-transparent text-violet-500 focus:ring-violet-500/30"
             />
             Toute la journée
           </label>
@@ -367,7 +367,7 @@ function EventModalInner({
           ) : null}
         </div>
 
-        <div className="flex items-center justify-between gap-2 border-t border-[#e8eef6] px-6 py-4">
+        <div className="flex items-center justify-between gap-2 border-t border-white/[0.06] px-6 py-4">
           {isEdit && !confirmDelete ? (
             <button type="button" className={ui.btnDanger} onClick={() => setConfirmDelete(true)}>
               <IconTrash className="h-4 w-4" stroke={1.75} />

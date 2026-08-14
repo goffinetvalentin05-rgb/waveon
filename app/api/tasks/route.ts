@@ -1,11 +1,45 @@
 import { NextResponse } from "next/server";
 import { requireUser, todayISO } from "@/lib/crm/server";
 
-export async function GET() {
+export async function GET(request: Request) {
   const auth = await requireUser();
   if (auth.response) return auth.response;
   const { supabase, user } = auth;
   const today = todayISO();
+  const range = new URL(request.url).searchParams.get("range");
+
+  if (range === "board") {
+    const since = new Date();
+    since.setDate(since.getDate() - 30);
+    const [{ data: open, error: openError }, { data: done, error: doneError }] = await Promise.all([
+      supabase
+        .from("daily_tasks")
+        .select("*, prospect:prospects(id, club_name, status)")
+        .eq("user_id", user.id)
+        .eq("completed", false)
+        .order("due_date", { ascending: true })
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("daily_tasks")
+        .select("*, prospect:prospects(id, club_name, status)")
+        .eq("user_id", user.id)
+        .eq("completed", true)
+        .gte("completed_at", since.toISOString())
+        .order("completed_at", { ascending: false })
+        .limit(80),
+    ]);
+
+    if (openError) return NextResponse.json({ error: openError.message }, { status: 500 });
+    if (doneError) return NextResponse.json({ error: doneError.message }, { status: 500 });
+
+    const openTasks = open ?? [];
+    return NextResponse.json({
+      today: openTasks.filter((t) => t.due_date <= today),
+      upcoming: openTasks.filter((t) => t.due_date > today),
+      completed: done ?? [],
+      todayISO: today,
+    });
+  }
 
   const { data: tasks, error } = await supabase
     .from("daily_tasks")

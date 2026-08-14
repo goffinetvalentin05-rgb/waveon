@@ -22,6 +22,8 @@ export async function resolveHomeSummary(
       return getCalendarTodaySummary(supabase, userId);
     case "english-review":
       return getEnglishReviewSummary(supabase, userId);
+    case "tasks-today":
+      return getTasksTodaySummary(supabase, userId);
     default:
       return null;
   }
@@ -133,3 +135,29 @@ async function getCalendarTodaySummary(
 
   return { value, label, secondaryLabel };
 }
+
+async function getTasksTodaySummary(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<HomeSummary | null> {
+  const today = new Date().toISOString().slice(0, 10);
+  const { count, error } = await supabase
+    .from("daily_tasks")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("due_date", today)
+    .eq("completed", false);
+
+  if (error) return null;
+  const value = count ?? 0;
+  return {
+    value,
+    label:
+      value === 0
+        ? "Tout est fait"
+        : value === 1
+          ? "1 tâche restante"
+          : `${value} tâches restantes`,
+  };
+}
+

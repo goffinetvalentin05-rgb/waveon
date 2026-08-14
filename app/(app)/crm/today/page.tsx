@@ -31,9 +31,9 @@ export default async function CrmTodayPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="crm-animate-in">
-        <p className="text-sm font-medium capitalize text-slate-400">{dateLabel}</p>
+        <p className="text-sm font-medium capitalize text-[#6a6578]">{dateLabel}</p>
         <h1 className={`${ui.h1} mt-1`}>Aujourd&apos;hui</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-[#8b869c]">
           {openCount === 0
             ? "Tout est fait pour aujourd'hui."
             : `${openCount} action${openCount > 1 ? "s" : ""} à traiter.`}
@@ -47,8 +47,8 @@ export default async function CrmTodayPage() {
         />
       </div>
 
-      <p className="text-center text-sm text-slate-400">
-        <Link href="/crm/prospects" className="text-blue-600 hover:underline">
+      <p className="text-center text-sm text-[#6a6578]">
+        <Link href="/crm/prospects" className={ui.link}>
           Voir tous les prospects
         </Link>
       </p>

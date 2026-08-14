@@ -62,7 +62,7 @@ export default function SettingsPage() {
   };
 
   if (!settings) {
-    return <p className="text-sm text-slate-400">Chargement…</p>;
+    return <p className="text-sm text-[#6a6578]">Chargement…</p>;
   }
 
   const fields = [
@@ -87,7 +87,7 @@ export default function SettingsPage() {
     <div className="mx-auto max-w-lg space-y-6">
       <div className="crm-animate-in">
         <h1 className={ui.h1}>Paramètres</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-[#8b869c]">
           Relances CRM et fuseau horaire pour les rappels.
         </p>
       </div>
@@ -113,9 +113,9 @@ export default function SettingsPage() {
                   })
                 }
               />
-              <span className="text-sm text-slate-400">jours</span>
+              <span className="text-sm text-[#8b869c]">jours</span>
             </div>
-            <p className="mt-1 text-xs text-slate-400">{f.hint}</p>
+            <p className="mt-1 text-xs text-[#6a6578]">{f.hint}</p>
           </div>
         ))}
 
@@ -135,15 +135,13 @@ export default function SettingsPage() {
               </option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="mt-1 text-xs text-[#6a6578]">
             Utilisé pour les rappels d&apos;anniversaire par email.
           </p>
         </div>
 
         {msg ? (
-          <p className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-700">
-            {msg}
-          </p>
+          <p className={ui.alertInfo}>{msg}</p>
         ) : null}
 
         <button type="submit" className={ui.btnPrimary} disabled={saving}>

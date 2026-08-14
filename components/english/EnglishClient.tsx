@@ -43,17 +43,17 @@ const DEFAULT_FILTERS: Filters = {
 };
 
 const TYPE_STYLES: Record<EnglishType, { bg: string; text: string }> = {
-  word: { bg: "bg-blue-50", text: "text-blue-700" },
-  expression: { bg: "bg-sky-50", text: "text-sky-700" },
-  sentence: { bg: "bg-slate-100", text: "text-slate-700" },
+  word: { bg: "bg-violet-500/15", text: "text-violet-200" },
+  expression: { bg: "bg-sky-500/15", text: "text-sky-200" },
+  sentence: { bg: "bg-white/[0.06]", text: "text-[#c8c3d6]" },
 };
 
 const STATUS_STYLES: Record<EnglishStatus, { bg: string; text: string; dot: string }> = {
-  new: { bg: "bg-slate-100", text: "text-slate-700", dot: "bg-slate-400" },
-  learning: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500" },
-  known: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
-  review: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500" },
-  archived: { bg: "bg-slate-100", text: "text-slate-400", dot: "bg-slate-300" },
+  new: { bg: "bg-white/[0.06]", text: "text-[#c8c3d6]", dot: "bg-[#8b869c]" },
+  learning: { bg: "bg-violet-500/15", text: "text-violet-200", dot: "bg-violet-400" },
+  known: { bg: "bg-emerald-500/15", text: "text-emerald-200", dot: "bg-emerald-400" },
+  review: { bg: "bg-amber-500/15", text: "text-amber-200", dot: "bg-amber-400" },
+  archived: { bg: "bg-white/[0.04]", text: "text-[#6a6578]", dot: "bg-[#6a6578]" },
 };
 
 function fmtDate(value: string | null) {
@@ -219,18 +219,18 @@ export function EnglishClient() {
 
   const summaryCards: { label: string; value: number | string }[] = [
     { label: "Total", value: stats?.total ?? "—" },
-    { label: "À réviser aujourd'hui", value: stats?.dueToday ?? "—" },
-    { label: "Connus", value: stats?.known ?? "—" },
-    { label: "À revoir", value: stats?.review ?? "—" },
+    { label: "À réviser", value: stats?.dueToday ?? "—" },
+    { label: "Série", value: stats?.streak != null ? `${stats.streak} j` : "—" },
+    { label: "Aujourd'hui", value: stats?.progressToday != null ? `${stats.progressToday}%` : "—" },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between crm-animate-in">
         <div>
-          <h1 className={ui.h1}>Anglais</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Enregistrez du vocabulaire et révisez-le grâce à la répétition espacée.
+          <h1 className={ui.h1}>English</h1>
+          <p className="mt-1 text-sm text-[#8b869c]">
+            Vocabulaire, expressions et répétition espacée — le même cockpit, un module différent.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -249,8 +249,8 @@ export function EnglishClient() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 crm-animate-in-delay-1">
         {summaryCards.map((c) => (
           <div key={c.label} className={`${ui.card} p-4 sm:p-5`}>
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{c.label}</p>
-            <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+            <p className="text-xs font-medium uppercase tracking-wide text-[#8b869c]">{c.label}</p>
+            <p className="mt-2 text-2xl font-semibold tracking-tight text-[#f3f0fa] sm:text-3xl">
               {c.value}
             </p>
           </div>
@@ -259,7 +259,7 @@ export function EnglishClient() {
 
       <div className="flex flex-col gap-3 crm-animate-in-delay-1 sm:flex-row sm:flex-wrap sm:items-center">
         <div className="relative flex-1 sm:min-w-[220px]">
-          <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6a6578]" />
           <input
             className={`${ui.input} pl-9`}
             placeholder="Rechercher un mot, une expression, une phrase…"
@@ -324,21 +324,19 @@ export function EnglishClient() {
       </div>
 
       {listError ? (
-        <p className="rounded-xl border border-rose-100 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">
-          {listError}
-        </p>
+        <p className={ui.alertError}>{listError}</p>
       ) : null}
 
       {entries === null ? (
-        <p className="text-sm text-slate-400">Chargement des entrées…</p>
+        <p className="text-sm text-[#6a6578]">Chargement des entrées…</p>
       ) : entries.length === 0 ? (
         <div className={`${ui.card} flex flex-col items-center gap-3 px-6 py-14 text-center crm-animate-in-delay-2`}>
-          <p className="text-base font-medium text-slate-700">
+          <p className="text-base font-medium text-[#f3f0fa]">
             {hasActiveFilters
               ? "Aucune entrée ne correspond à votre recherche."
               : "Aucune entrée pour le moment."}
           </p>
-          <p className="max-w-sm text-sm text-slate-500">
+          <p className="max-w-sm text-sm text-[#8b869c]">
             {hasActiveFilters
               ? "Essayez de modifier votre recherche ou vos filtres."
               : "Ajoutez un mot, une expression ou une phrase pour commencer à construire votre vocabulaire."}
@@ -375,13 +373,13 @@ export function EnglishClient() {
                       {ENGLISH_STATUS_LABELS[entry.status]}
                     </span>
                     {entry.category ? (
-                      <span className="text-xs font-medium text-slate-400">{entry.category}</span>
+                      <span className="text-xs font-medium text-[#6a6578]">{entry.category}</span>
                     ) : null}
                   </div>
-                  <p className="mt-2 text-base font-semibold text-slate-900">{entry.english_text}</p>
-                  <p className="text-sm text-slate-500">{entry.french_translation}</p>
+                  <p className="mt-2 text-base font-semibold text-[#f3f0fa]">{entry.english_text}</p>
+                  <p className="text-sm text-[#8b869c]">{entry.french_translation}</p>
                   {entry.example_english ? (
-                    <p className="mt-1 truncate text-xs italic text-slate-400">
+                    <p className="mt-1 truncate text-xs italic text-[#6a6578]">
                       &ldquo;{entry.example_english}&rdquo;
                     </p>
                   ) : null}
@@ -389,15 +387,15 @@ export function EnglishClient() {
 
                 <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end sm:justify-end sm:gap-2.5">
                   <div className="text-right">
-                    <p className="text-xs text-slate-400">Prochaine révision</p>
-                    <p className={`text-sm font-medium ${due ? "text-amber-600" : "text-slate-600"}`}>
+                    <p className="text-xs text-[#6a6578]">Prochaine révision</p>
+                    <p className={`text-sm font-medium ${due ? "text-amber-300" : "text-[#c8c3d6]"}`}>
                       {fmtDate(entry.next_review_at)}
                     </p>
                   </div>
                   <div className="flex gap-1.5">
                     <button
                       type="button"
-                      className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                      className="rounded-lg p-2 text-[#6a6578] transition hover:bg-white/[0.06] hover:text-[#f3f0fa]"
                       onClick={() => openEdit(entry)}
                       aria-label="Modifier"
                       title="Modifier"
@@ -406,7 +404,7 @@ export function EnglishClient() {
                     </button>
                     <button
                       type="button"
-                      className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                      className="rounded-lg p-2 text-[#6a6578] transition hover:bg-white/[0.06] hover:text-[#f3f0fa]"
                       onClick={() => handleArchive(entry)}
                       aria-label="Archiver"
                       title="Archiver"
@@ -415,7 +413,7 @@ export function EnglishClient() {
                     </button>
                     <button
                       type="button"
-                      className="rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+                      className="rounded-lg p-2 text-[#6a6578] transition hover:bg-rose-500/10 hover:text-rose-300"
                       onClick={() => {
                         setDeleteError(null);
                         setPendingDelete(entry);
@@ -478,24 +476,24 @@ function ConfirmDeleteModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button
         type="button"
-        className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm"
+        className={ui.overlay}
         onClick={loading ? undefined : onCancel}
         aria-label="Fermer"
       />
-      <div className="relative w-full max-w-md rounded-2xl border border-[#e8eef6] bg-white p-6 shadow-xl">
-        <h3 className="text-lg font-semibold text-slate-900">Supprimer cette entrée ?</h3>
-        <p className="mt-2 text-sm text-slate-600">
+      <div className={`${ui.modal} max-w-md p-6`}>
+        <h3 className="text-lg font-semibold text-[#f3f0fa]">Supprimer cette entrée ?</h3>
+        <p className="mt-2 text-sm text-[#8b869c]">
           « {entry.english_text} » sera définitivement supprimé, ainsi que son historique de
           révision. Cette action est irréversible.
         </p>
-        {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
+        {error ? <p className="mt-3 text-sm text-rose-300">{error}</p> : null}
         <div className="mt-6 flex justify-end gap-2">
           <button type="button" className={ui.btnSecondary} onClick={onCancel} disabled={loading}>
             Annuler
           </button>
           <button
             type="button"
-            className="inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
+            className={ui.btnDanger}
             onClick={onConfirm}
             disabled={loading}
           >

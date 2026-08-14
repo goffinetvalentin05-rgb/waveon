@@ -113,21 +113,21 @@ export function EnglishEntryModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button
         type="button"
-        className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm"
+        className={ui.overlay}
         onClick={loading ? undefined : onClose}
         aria-label="Fermer"
       />
       <form
         onSubmit={submit}
-        className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-[#e8eef6] bg-white p-6 shadow-xl"
+        className={`${ui.modal} max-h-[90vh] max-w-lg overflow-y-auto p-6`}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">
+          <h2 className="text-lg font-semibold text-[#f3f0fa]">
             {isEdit ? "Modifier l'entrée" : "Ajouter une entrée"}
           </h2>
           <button
             type="button"
-            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            className="rounded-lg p-1.5 text-[#6a6578] transition hover:bg-white/[0.06] hover:text-[#f3f0fa]"
             onClick={onClose}
             aria-label="Fermer"
           >
@@ -146,8 +146,8 @@ export function EnglishEntryModal({
                   onClick={() => setField("type", t)}
                   className={`rounded-xl border px-3.5 py-2 text-sm font-medium transition ${
                     values.type === t
-                      ? "border-blue-500 bg-blue-50 text-blue-700"
-                      : "border-[#e8eef6] bg-white text-slate-600 hover:bg-slate-50"
+                      ? "border-violet-500/50 bg-violet-500/15 text-violet-200"
+                      : "border-white/[0.08] bg-transparent text-[#8b869c] hover:bg-white/[0.04]"
                   }`}
                 >
                   {ENGLISH_TYPE_LABELS[t]}

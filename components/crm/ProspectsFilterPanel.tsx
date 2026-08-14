@@ -36,7 +36,7 @@ function MultiCheckboxGroup({
     return (
       <div>
         <p className={ui.label}>{label}</p>
-        <p className="text-sm text-slate-400">Aucune valeur disponible</p>
+        <p className="text-sm text-[#6a6578]">Aucune valeur disponible</p>
       </div>
     );
   }
@@ -44,19 +44,19 @@ function MultiCheckboxGroup({
   return (
     <div>
       <p className={ui.label}>{label}</p>
-      <div className="mt-2 max-h-36 space-y-1.5 overflow-y-auto rounded-xl border border-[#e8eef6] p-2">
+      <div className="mt-2 max-h-36 space-y-1.5 overflow-y-auto rounded-xl border border-white/[0.08] p-2">
         {values.map((value) => {
           const checked = selected.includes(value);
           return (
             <label
               key={value}
-              className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+              className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-[#c8c3d6] hover:bg-white/[0.04]"
             >
               <input
                 type="checkbox"
                 checked={checked}
                 onChange={() => onToggle(value)}
-                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500/30"
+                className="rounded border-white/20 text-violet-500 focus:ring-violet-500/30"
               />
               <span className="truncate">{value}</span>
             </label>
@@ -119,13 +119,13 @@ export function ProspectsFilterPanel({
     <div className="fixed inset-0 z-50 flex items-start justify-center p-4 sm:items-center">
       <button
         type="button"
-        className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm"
+        className={ui.overlay}
         onClick={onClose}
         aria-label="Fermer"
       />
-      <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-[#e8eef6] bg-white p-6 shadow-xl">
-        <h2 className="text-lg font-semibold text-slate-900">Filtrer les prospects</h2>
-        <p className="mt-1 text-sm text-slate-500">
+      <div className={`${ui.modal} max-h-[90vh] max-w-2xl overflow-y-auto p-6`}>
+        <h2 className="text-lg font-semibold text-[#f3f0fa]">Filtrer les prospects</h2>
+        <p className="mt-1 text-sm text-[#8b869c]">
           Sélectionnez vos critères puis appliquez les filtres.
         </p>
 

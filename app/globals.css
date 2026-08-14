@@ -1,93 +1,100 @@
 @import "tailwindcss";
 
 /* =========================================================
- * Prospection CRM — design system (bleu / blanc)
- * Inspiré Linear · Notion · Attio
+ * Waveone — design system dark premium
+ * Inspiré Linear · Attio · Raycast
  * ========================================================= */
 
 :root {
-  color-scheme: light;
-  --background: #f7f9fc;
-  --foreground: #0f172a;
-  --crm-bg: #f7f9fc;
-  --crm-surface: #ffffff;
-  --crm-border: #e8eef6;
-  --crm-text: #0f172a;
-  --crm-muted: #64748b;
-  --crm-blue: #2563eb;
-  --crm-blue-soft: #eff6ff;
-  --sidebar-width: 240px;
+  color-scheme: dark;
+  --background: #0b0a10;
+  --foreground: #f3f0fa;
+  --wo-bg: #0b0a10;
+  --wo-sidebar: #0d0b13;
+  --wo-surface: #14121c;
+  --wo-elevated: #1a1824;
+  --wo-border: rgba(255, 255, 255, 0.07);
+  --wo-text: #f3f0fa;
+  --wo-muted: #8b869c;
+  --wo-dim: #6a6578;
+  --wo-accent: #8b5cf6;
+  --sidebar-width: 232px;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-outfit), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
 html,
 body {
   min-height: 100%;
-  background-color: var(--crm-bg);
-  color: var(--crm-text);
+  background-color: var(--wo-bg);
+  color: var(--wo-text);
 }
 
 body {
-  font-family: var(--font-outfit), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background:
-    radial-gradient(ellipse 80% 50% at 0% 0%, rgba(37, 99, 235, 0.06) 0%, transparent 55%),
-    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(59, 130, 246, 0.04) 0%, transparent 50%),
-    var(--crm-bg);
+  background: var(--wo-bg);
 }
 
 input,
 textarea,
 select {
-  color: var(--crm-text);
-  background-color: #ffffff;
+  color: var(--wo-text);
+  background-color: #0f0d16;
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: #94a3b8;
+  color: var(--wo-dim);
 }
 
 ::selection {
-  background: rgba(37, 99, 235, 0.18);
-  color: #0f172a;
+  background: rgba(139, 92, 246, 0.28);
+  color: #f3f0fa;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(15, 23, 42, 0.15) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 99px;
 }
 
 /* Auth ambient */
 .crm-auth-bg {
   background:
-    radial-gradient(ellipse 70% 50% at 50% -10%, rgba(37, 99, 235, 0.12) 0%, transparent 55%),
-    radial-gradient(ellipse 40% 30% at 90% 80%, rgba(59, 130, 246, 0.06) 0%, transparent 50%),
-    #f7f9fc;
+    radial-gradient(ellipse 70% 50% at 50% -10%, rgba(139, 92, 246, 0.16) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 30% at 90% 80%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
+    #0b0a10;
 }
 
-/* Subtle grid for auth */
 .crm-auth-grid::before {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(37, 99, 235, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(37, 99, 235, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(139, 92, 246, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139, 92, 246, 0.04) 1px, transparent 1px);
   background-size: 48px 48px;
   mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 20%, transparent 75%);
 }
 
-/* Page enter */
 @keyframes crm-fade-up {
   from {
     opacity: 0;
@@ -115,31 +122,30 @@ textarea::placeholder {
   animation: crm-fade-up 0.4s ease-out 0.15s both;
 }
 
-/* Status badge */
 .crm-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
   border-radius: 9999px;
-  padding: 0.25rem 0.625rem;
-  font-size: 0.75rem;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.6875rem;
   font-weight: 500;
   line-height: 1.25;
+  letter-spacing: 0.01em;
 }
 
 .crm-badge-dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 9999px;
   flex-shrink: 0;
 }
 
-/* Table */
 .crm-table-wrap {
   overflow-x: auto;
-  border-radius: 1rem;
-  border: 1px solid var(--crm-border);
-  background: white;
+  border-radius: 14px;
+  border: 1px solid var(--wo-border);
+  background: var(--wo-surface);
 }
 
 .crm-table {
@@ -150,12 +156,14 @@ textarea::placeholder {
 
 .crm-table th {
   text-align: left;
-  padding: 0.75rem 1rem;
-  font-size: 0.75rem;
+  padding: 0.7rem 1rem;
+  font-size: 0.6875rem;
   font-weight: 500;
-  color: #64748b;
-  background: #fafbfd;
-  border-bottom: 1px solid var(--crm-border);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--wo-muted);
+  background: #12101a;
+  border-bottom: 1px solid var(--wo-border);
   white-space: nowrap;
 }
 
@@ -169,9 +177,9 @@ textarea::placeholder {
 }
 
 .crm-table td {
-  padding: 0.875rem 1rem;
-  border-bottom: 1px solid #f1f5f9;
-  color: #334155;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: #c8c3d6;
   white-space: nowrap;
 }
 
@@ -181,20 +189,19 @@ textarea::placeholder {
 }
 
 .crm-table tbody tr:hover {
-  background: #f8fafc;
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .crm-table tbody tr:last-child td {
   border-bottom: none;
 }
 
-/* Today priority dots */
 .crm-prio-follow {
-  color: #e11d48;
+  color: #f43f5e;
 }
 .crm-prio-contact {
-  color: #d97706;
+  color: #fbbf24;
 }
 .crm-prio-demo {
-  color: #059669;
+  color: #34d399;
 }

@@ -6,6 +6,7 @@ const PROTECTED_PREFIXES = [
   "/crm",
   "/calendar",
   "/english",
+  "/tasks",
   "/settings",
   // Anciennes URLs (redirigées ensuite) — protégées pour éviter le flash login
   "/dashboard",
@@ -88,6 +89,7 @@ export const config = {
     "/crm/:path*",
     "/calendar/:path*",
     "/english/:path*",
+    "/tasks/:path*",
     "/dashboard/:path*",
     "/prospects/:path*",
     "/today/:path*",

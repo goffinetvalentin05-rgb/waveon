@@ -2,7 +2,7 @@ import type { ComponentType } from "react";
 
 export type ModuleIcon = ComponentType<{ className?: string; stroke?: number }>;
 
-export type HomeSummaryId = "crm-follow-ups" | "calendar-today" | "english-review";
+export type HomeSummaryId = "crm-follow-ups" | "calendar-today" | "english-review" | "tasks-today";
 
 export type HomeSummary = {
   label: string;

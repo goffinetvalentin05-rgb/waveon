@@ -17,6 +17,7 @@ import {
 import { StatusBadge } from "@/components/crm/StatusBadge";
 import { ImportProspectsModal } from "@/components/crm/ImportProspectsModal";
 import { ProspectsFilterPanel } from "@/components/crm/ProspectsFilterPanel";
+import { PipelineStats, ProspectsPipeline } from "@/components/crm/ProspectsPipeline";
 import type { Prospect } from "@/lib/crm/types";
 import {
   EMPTY_FILTERS,
@@ -74,9 +75,9 @@ function SortIcon({
     return <IconSelector className="h-3.5 w-3.5 opacity-30" stroke={1.75} />;
   }
   if (order === "asc") {
-    return <IconChevronUp className="h-3.5 w-3.5 text-blue-600" stroke={2} />;
+    return <IconChevronUp className="h-3.5 w-3.5 text-violet-400" stroke={2} />;
   }
-  return <IconChevronDown className="h-3.5 w-3.5 text-blue-600" stroke={2} />;
+  return <IconChevronDown className="h-3.5 w-3.5 text-violet-400" stroke={2} />;
 }
 
 type FilterOptions = {
@@ -123,6 +124,7 @@ export function ProspectsClient({
     statuses: [],
   });
   const [importMsg, setImportMsg] = useState<string | null>(null);
+  const [view, setView] = useState<"pipeline" | "list">(clientsOnly ? "list" : "pipeline");
 
   const skipNextSearchDebounce = useRef(true);
   const skipInitialUrlFetch = useRef(true);
@@ -206,6 +208,14 @@ export function ProspectsClient({
       .catch(() => {});
   }, [clientsOnly]);
 
+  useEffect(() => {
+    if (clientsOnly || view !== "pipeline") return;
+    if (params.pageSize >= 200) return;
+    applyParams({ ...params, pageSize: 200, page: 1 });
+    // Charge un volume suffisant pour le kanban, sans toucher à la vue liste.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, clientsOnly]);
+
   const onSortColumn = (column: SortableColumn) => {
     const { sort, order } = cycleSortColumn(params.sort, params.order, column);
     applyParams({ ...params, sort, order, page: 1 });
@@ -284,39 +294,69 @@ export function ProspectsClient({
     <div className="space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className={ui.h1}>{clientsOnly ? "Clients" : "Prospects"}</h1>
-          <p className="mt-1 text-sm text-slate-500">{resultLabel}</p>
+          <h1 className={ui.h1}>{clientsOnly ? "Clients" : "Ma pipeline"}</h1>
+          <p className="mt-1 text-sm text-[#8b869c]">{resultLabel}</p>
         </div>
-        {!clientsOnly ? (
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className={ui.btnSecondary}
-              onClick={() => {
-                setImportMsg(null);
-                setShowImport(true);
-              }}
-            >
-              <IconUpload className="h-4 w-4" stroke={1.75} />
-              Importer des prospects
-            </button>
-            <button type="button" className={ui.btnPrimary} onClick={() => setShowCreate(true)}>
-              <IconPlus className="h-4 w-4" stroke={2} />
-              Nouveau
-            </button>
-          </div>
-        ) : null}
+        <div className="flex flex-wrap gap-2">
+          {!clientsOnly ? (
+            <div className="inline-flex rounded-[12px] border border-white/[0.08] bg-[#14121c] p-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setView("pipeline");
+                  if (params.pageSize < 200) applyParams({ ...params, pageSize: 200, page: 1 });
+                }}
+                className={`rounded-[10px] px-3 py-1.5 text-sm font-medium transition ${
+                  view === "pipeline" ? "bg-violet-500/15 text-violet-200" : "text-[#8b869c] hover:text-[#f3f0fa]"
+                }`}
+              >
+                Pipeline
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setView("list");
+                  if (params.pageSize !== 25) applyParams({ ...params, pageSize: 25, page: 1 });
+                }}
+                className={`rounded-[10px] px-3 py-1.5 text-sm font-medium transition ${
+                  view === "list" ? "bg-violet-500/15 text-violet-200" : "text-[#8b869c] hover:text-[#f3f0fa]"
+                }`}
+              >
+                Liste
+              </button>
+            </div>
+          ) : null}
+          {!clientsOnly ? (
+            <>
+              <button
+                type="button"
+                className={ui.btnSecondary}
+                onClick={() => {
+                  setImportMsg(null);
+                  setShowImport(true);
+                }}
+              >
+                <IconUpload className="h-4 w-4" stroke={1.75} />
+                Importer
+              </button>
+              <button type="button" className={ui.btnPrimary} onClick={() => setShowCreate(true)}>
+                <IconPlus className="h-4 w-4" stroke={2} />
+                Nouveau
+              </button>
+            </>
+          ) : null}
+        </div>
       </div>
 
-      {importMsg ? (
-        <p className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700">
-          {importMsg}
-        </p>
+      {importMsg ? <p className={ui.alertSuccess}>{importMsg}</p> : null}
+
+      {!clientsOnly && view === "pipeline" ? (
+        <PipelineStats prospects={prospects} />
       ) : null}
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
-          <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6a6578]" />
           <input
             className={`${ui.input} pl-9`}
             placeholder="Rechercher un club, contact, canton…"
@@ -332,11 +372,16 @@ export function ProspectsClient({
           <IconFilter className="h-4 w-4" stroke={1.75} />
           Filtrer
           {activeFilterCount > 0 ? (
-            <span className="text-slate-500"> · {activeFilterCount}</span>
+            <span className="text-[#8b869c]"> · {activeFilterCount}</span>
           ) : null}
         </button>
       </div>
 
+      {!clientsOnly && view === "pipeline" ? (
+        <div className={pending ? "opacity-70" : ""}>
+          <ProspectsPipeline prospects={prospects} listReturnUrl={listReturnUrl} />
+        </div>
+      ) : (
       <div className={`crm-table-wrap crm-animate-in ${pending ? "opacity-70" : ""}`}>
         <table className="crm-table">
           <thead>
@@ -345,7 +390,7 @@ export function ProspectsClient({
                 <th key={key}>
                   <button
                     type="button"
-                    className="inline-flex items-center gap-1.5 hover:text-slate-900"
+                    className="inline-flex items-center gap-1.5 hover:text-[#f3f0fa]"
                     onClick={() => onSortColumn(key)}
                   >
                     {label}
@@ -361,7 +406,7 @@ export function ProspectsClient({
                 <td colSpan={visibleSortColumns.length} className="!cursor-default py-12 text-center">
                   {isFiltered ? (
                     <div className="space-y-3">
-                      <p className="text-slate-500">
+                      <p className="text-[#8b869c]">
                         Aucun prospect ne correspond à votre recherche.
                       </p>
                       <button type="button" className={ui.btnSecondary} onClick={resetAll}>
@@ -369,7 +414,7 @@ export function ProspectsClient({
                       </button>
                     </div>
                   ) : (
-                    <span className="text-slate-400">
+                    <span className="text-[#6a6578]">
                       Aucun prospect. Importez un fichier ou créez-en un.
                     </span>
                   )}
@@ -384,7 +429,7 @@ export function ProspectsClient({
                     router.push(`/crm/prospects/${p.id}?back=${back}`);
                   }}
                 >
-                  <td className="font-medium text-slate-900">{p.club_name}</td>
+                  <td className="font-medium text-[#f3f0fa]">{p.club_name}</td>
                   <td>{p.sport ?? "—"}</td>
                   <td>{p.canton ?? "—"}</td>
                   <td>{p.contact_name ?? "—"}</td>
@@ -396,7 +441,7 @@ export function ProspectsClient({
                         href={p.website.startsWith("http") ? p.website : `https://${p.website}`}
                         target="_blank"
                         onClick={(e) => e.stopPropagation()}
-                        className="text-blue-600 hover:underline"
+                        className="text-violet-400 hover:underline"
                       >
                         Lien
                       </Link>
@@ -410,8 +455,8 @@ export function ProspectsClient({
                     </td>
                   ) : null}
                   <td>
-                    <div className="text-slate-700">{p.last_action ?? "—"}</div>
-                    <div className="text-xs text-slate-400">{fmtDate(p.last_action_at)}</div>
+                    <div className="text-[#c8c3d6]">{p.last_action ?? "—"}</div>
+                    <div className="text-xs text-[#6a6578]">{fmtDate(p.last_action_at)}</div>
                   </td>
                   <td>{fmtDate(p.next_follow_up)}</td>
                 </tr>
@@ -420,9 +465,10 @@ export function ProspectsClient({
           </tbody>
         </table>
       </div>
+      )}
 
-      {count > params.pageSize ? (
-        <div className="flex items-center justify-between gap-3 text-sm text-slate-600">
+      {view === "list" && count > params.pageSize ? (
+        <div className="flex items-center justify-between gap-3 text-sm text-[#8b869c]">
           <button
             type="button"
             className={ui.btnGhost}
@@ -513,12 +559,12 @@ function CreateProspectModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <button type="button" className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={onClose} />
+      <button type="button" className={ui.overlay} onClick={onClose} />
       <form
         onSubmit={submit}
-        className="relative w-full max-w-lg rounded-2xl border border-[#e8eef6] bg-white p-6 shadow-xl"
+        className={`${ui.modal} max-w-lg p-6`}
       >
-        <h2 className="text-lg font-semibold text-slate-900">Nouveau prospect</h2>
+        <h2 className="text-lg font-semibold text-[#f3f0fa]">Nouveau prospect</h2>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {(
             [
@@ -537,7 +583,7 @@ function CreateProspectModal({
             </div>
           ))}
         </div>
-        {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
+        {error ? <p className="mt-3 text-sm text-rose-300">{error}</p> : null}
         <div className="mt-6 flex justify-end gap-2">
           <button type="button" className={ui.btnSecondary} onClick={onClose}>
             Annuler

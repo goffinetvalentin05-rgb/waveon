@@ -31,7 +31,11 @@ export default async function CrmProspectsPage({ searchParams }: PageProps) {
   if (!user) return null;
 
   const sp = toUrlSearchParams(await searchParams);
-  const params = parseProspectListParams(sp);
+  const parsed = parseProspectListParams(sp);
+  const params = {
+    ...parsed,
+    pageSize: parsed.pageSize === 25 ? 200 : parsed.pageSize,
+  };
 
   const [{ data, count, error }, { count: totalAll }] = await Promise.all([
     fetchProspectList(supabase, user.id, params),

@@ -35,16 +35,9 @@ type NavItem = {
 
 const HOME_ITEM: NavItem = {
   href: "/home",
-  label: "Accueil",
+  label: "Dashboard",
   icon: IconHome,
   match: "exact",
-};
-
-const SETTINGS_ITEM: NavItem = {
-  href: "/settings",
-  label: "Paramètres",
-  icon: IconSettings,
-  match: "prefix",
 };
 
 function buildNav(): NavItem[] {
@@ -54,7 +47,13 @@ function buildNav(): NavItem[] {
     icon: m.icon,
     match: "prefix" as const,
   }));
-  return [HOME_ITEM, ...modules, SETTINGS_ITEM];
+  return [HOME_ITEM, ...modules];
+}
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return (parts[0]?.slice(0, 2) ?? "W").toUpperCase();
 }
 
 export function AppShell({ profile, children }: AppShellProps) {
@@ -69,21 +68,20 @@ export function AppShell({ profile, children }: AppShellProps) {
   };
 
   return (
-    <div className="min-h-screen lg:flex">
-      {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[var(--sidebar-width)] flex-col border-r border-[#e8eef6] bg-white/80 backdrop-blur-xl lg:flex">
-        <div className="flex h-16 items-center px-5">
+    <div className="min-h-screen bg-[#0b0a10] lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[var(--sidebar-width)] flex-col border-r border-white/[0.06] bg-[#0d0b13] lg:flex">
+        <div className="flex h-[60px] items-center px-5">
           <Link href="/home" className="group flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-sm font-bold text-white shadow-sm">
-              P
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-500 text-[11px] font-bold text-white">
+              W
             </span>
-            <span className="text-[15px] font-semibold tracking-tight text-slate-900">
+            <span className="text-[15px] font-semibold tracking-tight text-[#f3f0fa]">
               {brand.shortName}
             </span>
           </Link>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-0.5 px-3 py-2">
+        <nav className="flex flex-1 flex-col gap-0.5 px-2.5 py-2">
           {nav.map((item) => (
             <SideLink
               key={item.href}
@@ -95,54 +93,77 @@ export function AppShell({ profile, children }: AppShellProps) {
           ))}
         </nav>
 
-        <div className="border-t border-[#e8eef6] p-3">
-          <div className="mb-2 truncate px-3 text-xs text-slate-400">
-            {profile.email ?? profile.displayName}
+        <div className="mt-auto space-y-1 border-t border-white/[0.06] p-2.5 pb-4">
+          <SideLink
+            href="/settings"
+            label="Paramètres"
+            icon={IconSettings}
+            active={Boolean(pathname?.startsWith("/settings"))}
+          />
+          <div className="flex items-center gap-2.5 rounded-[12px] px-2.5 py-2">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-[11px] font-semibold text-violet-200">
+              {initials(profile.displayName)}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13px] font-medium text-[#f3f0fa]">
+                {profile.displayName}
+              </p>
+              <p className="truncate text-[11px] text-[#6a6578]">
+                {profile.email ?? "Compte personnel"}
+              </p>
+            </div>
           </div>
           <button
             type="button"
             onClick={logout}
-            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-800"
+            className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium text-[#8b869c] transition hover:bg-white/[0.04] hover:text-[#f3f0fa]"
           >
-            <IconLogout className="h-4 w-4" stroke={1.75} />
-            Déconnexion
+            <IconLogout className="h-4 w-4" stroke={1.6} />
+            Se déconnecter
           </button>
         </div>
       </aside>
 
-      {/* Mobile top bar */}
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-[#e8eef6] bg-white/90 px-4 backdrop-blur-xl lg:hidden">
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-white/[0.06] bg-[#0b0a10]/90 px-4 backdrop-blur-xl lg:hidden">
         <Link href="/home" className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white">
-            P
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-500 text-[11px] font-bold text-white">
+            W
           </span>
-          <span className="text-sm font-semibold text-slate-900">{brand.shortName}</span>
+          <span className="text-sm font-semibold text-[#f3f0fa]">{brand.shortName}</span>
         </Link>
-        <button
-          type="button"
-          className="rounded-xl p-2 text-slate-600 hover:bg-slate-100"
-          onClick={() => setMobileOpen(true)}
-          aria-label="Ouvrir le menu"
-        >
-          <IconMenu2 className="h-5 w-5" />
-        </button>
+        <div className="flex items-center gap-1">
+          <Link
+            href="/settings"
+            className="rounded-[10px] p-2 text-[#8b869c] hover:bg-white/[0.05] hover:text-[#f3f0fa]"
+            aria-label="Paramètres"
+          >
+            <IconSettings className="h-5 w-5" stroke={1.6} />
+          </Link>
+          <button
+            type="button"
+            className="rounded-[10px] p-2 text-[#8b869c] hover:bg-white/[0.05] hover:text-[#f3f0fa]"
+            onClick={() => setMobileOpen(true)}
+            aria-label="Ouvrir le menu"
+          >
+            <IconMenu2 className="h-5 w-5" />
+          </button>
+        </div>
       </header>
 
-      {/* Mobile drawer */}
       {mobileOpen ? (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
-            className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
             aria-label="Fermer"
           />
-          <aside className="absolute inset-y-0 left-0 flex w-72 flex-col bg-white shadow-xl">
+          <aside className="absolute inset-y-0 left-0 flex w-72 flex-col bg-[#0d0b13]">
             <div className="flex h-14 items-center justify-between px-4">
-              <span className="text-sm font-semibold text-slate-900">{brand.name}</span>
+              <span className="text-sm font-semibold text-[#f3f0fa]">{brand.name}</span>
               <button
                 type="button"
-                className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+                className="rounded-[10px] p-2 text-[#8b869c] hover:bg-white/[0.05]"
                 onClick={() => setMobileOpen(false)}
               >
                 <IconX className="h-5 w-5" />
@@ -160,25 +181,56 @@ export function AppShell({ profile, children }: AppShellProps) {
                 />
               ))}
             </nav>
-            <div className="border-t border-[#e8eef6] p-3">
+            <div className="border-t border-white/[0.06] p-3">
+              <div className="mb-2 flex items-center gap-2.5 px-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-500/20 text-[11px] font-semibold text-violet-200">
+                  {initials(profile.displayName)}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-[#f3f0fa]">{profile.displayName}</p>
+                  <p className="truncate text-xs text-[#6a6578]">{profile.email}</p>
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={logout}
-                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50"
+                className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2 text-sm font-medium text-[#8b869c] hover:bg-white/[0.04]"
               >
                 <IconLogout className="h-4 w-4" />
-                Déconnexion
+                Se déconnecter
               </button>
             </div>
           </aside>
         </div>
       ) : null}
 
-      <main className="min-h-screen flex-1 lg:ml-[var(--sidebar-width)]">
-        <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <main className="min-h-screen flex-1 pb-[4.5rem] lg:ml-[var(--sidebar-width)] lg:pb-0">
+        <div className="mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
           {children}
         </div>
       </main>
+
+      <nav
+        aria-label="Navigation principale"
+        className="fixed inset-x-0 bottom-0 z-30 flex border-t border-white/[0.06] bg-[#0d0b13]/95 backdrop-blur-xl lg:hidden"
+      >
+        {nav.map((item) => {
+          const Icon = item.icon;
+          const active = isActive(pathname, item);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 py-2.5 text-[10px] font-medium transition ${
+                active ? "text-violet-300" : "text-[#6a6578]"
+              }`}
+            >
+              <Icon className="h-[18px] w-[18px]" stroke={active ? 1.9 : 1.5} />
+              <span className="truncate">{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }
@@ -209,13 +261,16 @@ function SideLink({
     <Link
       href={href}
       onClick={onClick}
-      className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+      className={`relative flex items-center gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium transition ${
         active
-          ? "bg-blue-50 text-blue-700"
-          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+          ? "bg-violet-500/12 text-[#f3f0fa]"
+          : "text-[#8b869c] hover:bg-white/[0.04] hover:text-[#f3f0fa]"
       }`}
     >
-      <Icon className="h-[18px] w-[18px]" stroke={1.75} />
+      {active ? (
+        <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-violet-500" />
+      ) : null}
+      <Icon className={`h-[18px] w-[18px] ${active ? "text-violet-300" : ""}`} stroke={1.6} />
       {label}
     </Link>
   );

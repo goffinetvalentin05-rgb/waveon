@@ -65,37 +65,33 @@ export function FlashcardSession() {
       <div>
         <Link
           href="/english"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition hover:text-blue-600"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-[#8b869c] transition hover:text-violet-300"
         >
           <IconArrowLeft className="h-4 w-4" stroke={1.75} />
-          Anglais
+          English
         </Link>
         <h1 className={`${ui.h1} mt-1`}>Révision</h1>
       </div>
 
-      {error ? (
-        <p className="rounded-xl border border-rose-100 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">
-          {error}
-        </p>
-      ) : null}
+      {error ? <p className={ui.alertError}>{error}</p> : null}
 
       {cards === null ? (
-        <p className="text-sm text-slate-400">Chargement des cartes à réviser…</p>
+        <p className="text-sm text-[#6a6578]">Chargement des cartes à réviser…</p>
       ) : empty ? (
         <div className={`${ui.card} flex flex-col items-center gap-3 px-6 py-14 text-center`}>
-          <p className="text-lg font-semibold text-slate-900">Vous êtes à jour !</p>
-          <p className="max-w-sm text-sm text-slate-500">
+          <p className="text-lg font-semibold text-[#f3f0fa]">Vous êtes à jour</p>
+          <p className="max-w-sm text-sm text-[#8b869c]">
             Aucune carte à réviser pour aujourd&apos;hui. Revenez plus tard ou ajoutez du nouveau
             vocabulaire.
           </p>
           <Link href="/english" className={`${ui.btnPrimary} mt-2`}>
-            Retour à Anglais
+            Retour à English
           </Link>
         </div>
       ) : finished ? (
         <div className={`${ui.card} flex flex-col items-center gap-3 px-6 py-14 text-center`}>
-          <p className="text-lg font-semibold text-slate-900">Session terminée</p>
-          <p className="max-w-sm text-sm text-slate-500">
+          <p className="text-lg font-semibold text-[#f3f0fa]">Session terminée</p>
+          <p className="max-w-sm text-sm text-[#8b869c]">
             Bravo, vous avez révisé {total} carte{total > 1 ? "s" : ""} aujourd&apos;hui.
           </p>
           <div className="mt-2 flex flex-wrap justify-center gap-2">
@@ -103,22 +99,22 @@ export function FlashcardSession() {
               Vérifier à nouveau
             </button>
             <Link href="/english" className={ui.btnPrimary}>
-              Retour à Anglais
+              Retour à English
             </Link>
           </div>
         </div>
       ) : current ? (
         <>
           <div>
-            <div className="mb-2 flex items-center justify-between text-sm text-slate-500">
+            <div className="mb-2 flex items-center justify-between text-sm text-[#8b869c]">
               <span>
                 {index + 1} sur {total}
               </span>
               <span>{ENGLISH_TYPE_LABELS[current.type]}</span>
             </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
               <div
-                className="h-full rounded-full bg-blue-600 transition-all"
+                className="h-full rounded-full bg-violet-500 transition-all"
                 style={{ width: `${(index / total) * 100}%` }}
               />
             </div>
@@ -127,37 +123,41 @@ export function FlashcardSession() {
           <button
             type="button"
             onClick={() => setFlipped((f) => !f)}
-            className={`${ui.card} flex min-h-[280px] w-full flex-col items-center justify-center gap-4 px-6 py-10 text-center transition sm:min-h-[320px]`}
+            className={`${ui.card} flex min-h-[300px] w-full flex-col items-center justify-center gap-4 px-6 py-10 text-center transition hover:border-white/[0.12] sm:min-h-[340px]`}
           >
             {!flipped ? (
               <>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Anglais</p>
-                <p className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+                <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-[#6a6578]">
+                  Anglais
+                </p>
+                <p className="text-2xl font-semibold tracking-tight text-[#f3f0fa] sm:text-3xl">
                   {current.english_text}
                 </p>
                 {current.example_english ? (
-                  <p className="max-w-sm text-sm italic text-slate-400">
+                  <p className="max-w-sm text-sm italic text-[#8b869c]">
                     &ldquo;{current.example_english}&rdquo;
                   </p>
                 ) : null}
-                <span className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-blue-600">
+                <span className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-violet-300">
                   <IconRotate2 className="h-4 w-4" stroke={1.75} />
                   Voir la traduction
                 </span>
               </>
             ) : (
               <>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Français</p>
-                <p className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+                <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-[#6a6578]">
+                  Français
+                </p>
+                <p className="text-2xl font-semibold tracking-tight text-[#f3f0fa] sm:text-3xl">
                   {current.french_translation}
                 </p>
                 {current.example_french ? (
-                  <p className="max-w-sm text-sm italic text-slate-400">
+                  <p className="max-w-sm text-sm italic text-[#8b869c]">
                     &ldquo;{current.example_french}&rdquo;
                   </p>
                 ) : null}
                 {current.personal_note ? (
-                  <p className="max-w-sm rounded-xl bg-blue-50 px-3 py-2 text-sm text-blue-700">
+                  <p className="max-w-sm rounded-[12px] bg-violet-500/15 px-3 py-2 text-sm text-violet-200">
                     {current.personal_note}
                   </p>
                 ) : null}
@@ -170,7 +170,7 @@ export function FlashcardSession() {
               type="button"
               disabled={submitting}
               onClick={() => void rate("hard")}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 rounded-[12px] border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm font-medium text-rose-300 transition hover:bg-rose-500/20 disabled:opacity-50"
             >
               <IconBolt className="h-4 w-4" stroke={1.75} />
               Difficile
@@ -179,7 +179,7 @@ export function FlashcardSession() {
               type="button"
               disabled={submitting}
               onClick={() => void rate("review")}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 rounded-[12px] border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm font-medium text-amber-200 transition hover:bg-amber-500/20 disabled:opacity-50"
             >
               <IconRotate className="h-4 w-4" stroke={1.75} />
               À revoir
@@ -188,7 +188,7 @@ export function FlashcardSession() {
               type="button"
               disabled={submitting}
               onClick={() => void rate("know")}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 rounded-[12px] border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-medium text-emerald-300 transition hover:bg-emerald-500/20 disabled:opacity-50"
             >
               <IconCheck className="h-4 w-4" stroke={1.75} />
               Je connais
