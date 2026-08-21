@@ -212,9 +212,9 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
       <div className={`${ui.modal} flex max-h-[90vh] max-w-3xl flex-col`}>
         {/* Header */}
         <div className="border-b border-white/[0.08] px-6 py-4">
-          <h2 className="text-lg font-semibold text-[#f3f0fa]">Importer des prospects</h2>
+          <h2 className="text-lg font-semibold text-[#eef6f2]">Importer des prospects</h2>
           {fileName && step !== "select" ? (
-            <p className="mt-0.5 flex items-center gap-1.5 text-sm text-[#8b869c]">
+            <p className="mt-0.5 flex items-center gap-1.5 text-sm text-[#8a9e96]">
               <IconFileSpreadsheet className="h-4 w-4" stroke={1.75} />
               {fileName}
             </p>
@@ -225,22 +225,22 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
           {/* Étape 1 : sélection fichier */}
           {step === "select" ? (
             <div className="space-y-4">
-              <p className="text-sm text-[#8b869c]">
+              <p className="text-sm text-[#8a9e96]">
                 Formats acceptés : CSV, Excel (.xlsx, .xls). Encodage UTF-8 recommandé pour les CSV.
               </p>
 
               <label
-                className={`flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-white/[0.08] bg-white/[0.03]/50 px-6 py-10 transition hover:border-violet-400/40 hover:bg-violet-500/10 ${loading ? "pointer-events-none opacity-60" : ""}`}
+                className={`flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-white/[0.08] bg-white/[0.03]/50 px-6 py-10 transition hover:border-emerald-400/40 hover:bg-emerald-500/10 ${loading ? "pointer-events-none opacity-60" : ""}`}
               >
                 {loading ? (
-                  <IconLoader2 className="h-8 w-8 animate-spin text-violet-400" />
+                  <IconLoader2 className="h-8 w-8 animate-spin text-emerald-400" />
                 ) : (
-                  <IconUpload className="h-8 w-8 text-[#6a6578]" stroke={1.5} />
+                  <IconUpload className="h-8 w-8 text-[#6b7d76]" stroke={1.5} />
                 )}
-                <span className="text-sm font-medium text-[#c8c3d6]">
+                <span className="text-sm font-medium text-[#c2d4cc]">
                   {loading ? "Lecture du fichier…" : "Cliquez pour sélectionner un fichier"}
                 </span>
-                <span className="text-xs text-[#6a6578]">.csv · .xlsx · .xls</span>
+                <span className="text-xs text-[#6b7d76]">.csv · .xlsx · .xls</span>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -274,17 +274,17 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
 
               {/* Mapping colonnes */}
               <section>
-                <h3 className="text-sm font-semibold text-[#f3f0fa]">Association des colonnes</h3>
-                <p className="mt-0.5 text-xs text-[#6a6578]">
+                <h3 className="text-sm font-semibold text-[#eef6f2]">Association des colonnes</h3>
+                <p className="mt-0.5 text-xs text-[#6b7d76]">
                   Associez chaque colonne du fichier à un champ CRM. « Nom du club » est obligatoire.
                 </p>
                 <div className="mt-3 space-y-2">
                   {parsed.columns.map((col) => (
                     <div key={col} className="flex items-center gap-3">
-                      <span className="w-2/5 truncate text-sm text-[#8b869c]" title={col}>
+                      <span className="w-2/5 truncate text-sm text-[#8a9e96]" title={col}>
                         {col || "(sans nom)"}
                       </span>
-                      <span className="text-[#4a4658]">→</span>
+                      <span className="text-[#3d524c]">→</span>
                       <select
                         className={`${ui.input} flex-1 text-sm`}
                         value={mapping[col] ?? ""}
@@ -313,8 +313,8 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
 
               {/* Doublons */}
               <section>
-                <h3 className="text-sm font-semibold text-[#f3f0fa]">Gestion des doublons</h3>
-                <p className="mt-0.5 text-xs text-[#6a6578]">
+                <h3 className="text-sm font-semibold text-[#eef6f2]">Gestion des doublons</h3>
+                <p className="mt-0.5 text-xs text-[#6b7d76]">
                   Détection par email, nom de club ou téléphone.
                 </p>
                 <div className="mt-3 space-y-2">
@@ -329,7 +329,7 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
                       key={value}
                       className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 transition ${
                         duplicateStrategy === value
-                          ? "border-violet-500/30 bg-violet-500/10"
+                          ? "border-emerald-500/30 bg-emerald-500/10"
                           : "border-white/[0.08] hover:bg-white/[0.03]"
                       }`}
                     >
@@ -342,8 +342,8 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
                         className="mt-0.5"
                       />
                       <div>
-                        <p className="text-sm font-medium text-[#e8e4f0]">{label}</p>
-                        <p className="text-xs text-[#6a6578]">{hint}</p>
+                        <p className="text-sm font-medium text-[#dce8e3]">{label}</p>
+                        <p className="text-xs text-[#6b7d76]">{hint}</p>
                       </div>
                     </label>
                   ))}
@@ -352,13 +352,13 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
 
               {/* Aperçu 5 lignes */}
               <section>
-                <h3 className="text-sm font-semibold text-[#f3f0fa]">Aperçu (5 premières lignes)</h3>
+                <h3 className="text-sm font-semibold text-[#eef6f2]">Aperçu (5 premières lignes)</h3>
                 <div className="mt-2 overflow-x-auto rounded-xl border border-white/[0.08]">
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="border-b border-white/[0.08] bg-white/[0.03]">
                         {parsed.columns.map((col, i) => (
-                          <th key={i} className="whitespace-nowrap px-3 py-2 text-left font-medium text-[#8b869c]">
+                          <th key={i} className="whitespace-nowrap px-3 py-2 text-left font-medium text-[#8a9e96]">
                             {col || `Col ${i + 1}`}
                           </th>
                         ))}
@@ -368,7 +368,7 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
                       {previewRows.map((row, ri) => (
                         <tr key={ri} className="border-b border-white/[0.04] last:border-0">
                           {row.map((cell, ci) => (
-                            <td key={ci} className="whitespace-nowrap px-3 py-2 text-[#c8c3d6]">
+                            <td key={ci} className="whitespace-nowrap px-3 py-2 text-[#c2d4cc]">
                               {cell || "—"}
                             </td>
                           ))}
@@ -381,8 +381,8 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
 
               {/* Compteur avant import */}
               {hasClubMapping && previewCounts ? (
-                <div className="rounded-xl border border-violet-500/20 bg-violet-500/10 px-4 py-3">
-                  <p className="text-sm font-medium text-violet-200">
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3">
+                  <p className="text-sm font-medium text-emerald-200">
                     {previewCounts.willImport} prospect{previewCounts.willImport > 1 ? "s" : ""}{" "}
                     {previewCounts.willImport > 1 ? "seront importés" : "sera importé"}
                     {previewCounts.willUpdate > 0
@@ -391,7 +391,7 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
                     .
                   </p>
                   {previewCounts.willSkip > 0 ? (
-                    <p className="mt-0.5 text-xs text-violet-400">
+                    <p className="mt-0.5 text-xs text-emerald-400">
                       {previewCounts.willSkip} ligne{previewCounts.willSkip > 1 ? "s" : ""} ignorée
                       {previewCounts.willSkip > 1 ? "s" : ""}.
                     </p>
@@ -410,8 +410,8 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
                 <IconCheck className="h-7 w-7 text-emerald-600" stroke={2} />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-[#f3f0fa]">Import terminé</h3>
-                <p className="mt-2 text-sm text-[#8b869c]">
+                <h3 className="text-lg font-semibold text-[#eef6f2]">Import terminé</h3>
+                <p className="mt-2 text-sm text-[#8a9e96]">
                   {result.imported} prospect{result.imported > 1 ? "s" : ""} créé
                   {result.imported > 1 ? "s" : ""}
                   {result.updated > 0
@@ -420,7 +420,7 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
                   .
                 </p>
                 {result.skipped > 0 ? (
-                  <p className="mt-1 text-sm text-[#6a6578]">
+                  <p className="mt-1 text-sm text-[#6b7d76]">
                     {result.skipped} ligne{result.skipped > 1 ? "s" : ""} ignorée
                     {result.skipped > 1 ? "s" : ""}.
                   </p>
@@ -512,8 +512,8 @@ function StatCard({
 }) {
   return (
     <div className="rounded-xl border border-white/[0.08] bg-white/[0.03]/50 px-4 py-3">
-      <p className="text-xs text-[#6a6578]">{label}</p>
-      <p className={`mt-0.5 text-xl font-semibold ${accent ?? "text-[#f3f0fa]"}`}>{value}</p>
+      <p className="text-xs text-[#6b7d76]">{label}</p>
+      <p className={`mt-0.5 text-xl font-semibold ${accent ?? "text-[#eef6f2]"}`}>{value}</p>
     </div>
   );
 }

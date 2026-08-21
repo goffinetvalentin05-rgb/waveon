@@ -7,14 +7,14 @@ export const STATUS_STYLES: Record<
 > = {
   "À contacter": {
     bg: "bg-white/[0.06]",
-    text: "text-[#c8c3d6]",
-    dot: "bg-[#8b869c]",
+    text: "text-[#c2d4cc]",
+    dot: "bg-[#8a9e96]",
     label: "À contacter",
   },
   Contacté: {
-    bg: "bg-violet-500/15",
-    text: "text-violet-200",
-    dot: "bg-violet-400",
+    bg: "bg-teal-500/15",
+    text: "text-teal-200",
+    dot: "bg-teal-400",
     label: "Contacté",
   },
   Répondu: {
@@ -24,9 +24,9 @@ export const STATUS_STYLES: Record<
     label: "Répondu",
   },
   "Démo prévue": {
-    bg: "bg-violet-500/20",
-    text: "text-violet-100",
-    dot: "bg-violet-400",
+    bg: "bg-cyan-500/15",
+    text: "text-cyan-100",
+    dot: "bg-cyan-400",
     label: "Démo prévue",
   },
   "Démo faite": {
@@ -67,8 +67,8 @@ export function statusStyle(status: string) {
   return (
     STATUS_STYLES[mapped as ProspectStatus] ?? {
       bg: "bg-white/[0.06]",
-      text: "text-[#c8c3d6]",
-      dot: "bg-[#8b869c]",
+      text: "text-[#c2d4cc]",
+      dot: "bg-[#8a9e96]",
       label: status,
     }
   );

@@ -244,16 +244,16 @@ export function CalendarClient({
     <div className="crm-animate-in space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         {hideTitle ? (
-          <p className="text-sm text-[#8b869c]">
+          <p className="text-sm text-[#8a9e96]">
             {headerLabel}
-            {loading ? <IconLoader2 className="ml-2 inline h-3.5 w-3.5 animate-spin text-[#6a6578]" /> : null}
+            {loading ? <IconLoader2 className="ml-2 inline h-3.5 w-3.5 animate-spin text-[#6b7d76]" /> : null}
           </p>
         ) : (
           <div>
             <h1 className={ui.h1}>Calendrier</h1>
-            <p className="mt-1 flex items-center gap-2 text-sm text-[#8b869c]">
+            <p className="mt-1 flex items-center gap-2 text-sm text-[#8a9e96]">
               {headerLabel}
-              {loading ? <IconLoader2 className="h-3.5 w-3.5 animate-spin text-[#6a6578]" /> : null}
+              {loading ? <IconLoader2 className="h-3.5 w-3.5 animate-spin text-[#6b7d76]" /> : null}
             </p>
           </div>
         )}
@@ -272,14 +272,14 @@ export function CalendarClient({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex rounded-[12px] border border-white/[0.08] bg-[#14121c] p-1">
+        <div className="inline-flex rounded-full border border-white/[0.08] bg-[#0c1916] p-1">
           {(["month", "week", "day"] as const).map((v) => (
             <button
               key={v}
               type="button"
               onClick={() => setView(v)}
-              className={`rounded-[10px] px-3 py-1.5 text-sm font-medium transition ${
-                view === v ? "bg-violet-500/15 text-violet-200" : "text-[#8b869c] hover:bg-white/[0.04] hover:text-[#f3f0fa]"
+              className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
+                view === v ? "wo-subnav-active" : "text-[#8a9e96] hover:bg-white/[0.04] hover:text-[#eef6f2]"
               }`}
             >
               {v === "month" ? "Mois" : v === "week" ? "Semaine" : "Jour"}
@@ -403,8 +403,8 @@ function TodaySidebar({
   return (
     <aside className={`${ui.widget} w-full shrink-0 lg:w-[280px]`}>
       <div className="px-4 pt-4">
-        <h2 className="text-sm font-semibold text-[#f3f0fa]">Aujourd&apos;hui</h2>
-        <p className="mt-0.5 text-xs capitalize text-[#6a6578]">
+        <h2 className="text-sm font-semibold text-[#eef6f2]">Aujourd&apos;hui</h2>
+        <p className="mt-0.5 text-xs capitalize text-[#6b7d76]">
           {format(new Date(), "EEEE d MMMM", { locale: fr })}
         </p>
       </div>
@@ -416,7 +416,7 @@ function TodaySidebar({
           <EventChip key={e.id} event={e} onClick={() => onEventClick(e)} />
         ))}
         {todayEvents.length === 0 && todayBirthdays.length === 0 ? (
-          <p className="px-1 py-6 text-center text-xs text-[#6a6578]">Rien de prévu.</p>
+          <p className="px-1 py-6 text-center text-xs text-[#6b7d76]">Rien de prévu.</p>
         ) : null}
       </div>
     </aside>
@@ -504,10 +504,10 @@ function MonthGrid({
   setDraggingId: (id: string | null) => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-[14px] border border-white/[0.07] bg-[#14121c]">
-      <div className="grid grid-cols-7 border-b border-white/[0.06] bg-[#12101a]">
+    <div className="overflow-hidden rounded-[1.35rem] border border-white/[0.07] bg-[#0c1916]">
+      <div className="grid grid-cols-7 border-b border-white/[0.06] bg-[#0a1512]">
         {WEEKDAY_LABELS.map((d) => (
-          <div key={d} className="px-2 py-2 text-center text-xs font-medium text-[#8b869c]">
+          <div key={d} className="px-2 py-2 text-center text-xs font-medium text-[#8a9e96]">
             {d}
           </div>
         ))}
@@ -547,7 +547,7 @@ function MonthGrid({
             >
               <span
                 className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
-                  isToday(day) ? "bg-violet-500 text-white" : inMonth ? "text-[#c8c3d6]" : "text-[#4a4658]"
+                  isToday(day) ? "bg-emerald-500 text-white" : inMonth ? "text-[#c2d4cc]" : "text-[#3d524c]"
                 }`}
               >
                 {format(day, "d")}
@@ -577,7 +577,7 @@ function MonthGrid({
                       e.stopPropagation();
                       onExpandDay(day);
                     }}
-                    className="text-left text-[11px] font-medium text-[#6a6578] hover:text-violet-300"
+                    className="text-left text-[11px] font-medium text-[#6b7d76] hover:text-emerald-300"
                   >
                     +{hiddenCount} de plus
                   </button>
@@ -607,17 +607,17 @@ function TimeGrid({
   const gridCols = `56px repeat(${days.length}, 1fr)`;
 
   return (
-    <div className="overflow-hidden rounded-[14px] border border-white/[0.07] bg-[#14121c]">
+    <div className="overflow-hidden rounded-[1.35rem] border border-white/[0.07] bg-[#0c1916]">
       <div className="grid border-b border-white/[0.06]" style={{ gridTemplateColumns: gridCols }}>
         <div />
         {days.map((d) => (
           <div key={d.toISOString()} className="border-l border-white/[0.04] px-2 py-2 text-center">
-            <div className="text-[11px] font-medium uppercase text-[#6a6578]">
+            <div className="text-[11px] font-medium uppercase text-[#6b7d76]">
               {format(d, "EEE", { locale: fr })}
             </div>
             <div
               className={`mx-auto mt-0.5 flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold ${
-                isToday(d) ? "bg-violet-500 text-white" : "text-[#f3f0fa]"
+                isToday(d) ? "bg-emerald-500 text-white" : "text-[#eef6f2]"
               }`}
             >
               {format(d, "d")}
@@ -626,8 +626,8 @@ function TimeGrid({
         ))}
       </div>
 
-      <div className="grid border-b border-white/[0.06] bg-[#12101a]" style={{ gridTemplateColumns: gridCols }}>
-        <div className="px-2 py-1.5 text-[10px] text-[#6a6578]">Journée</div>
+      <div className="grid border-b border-white/[0.06] bg-[#0a1512]" style={{ gridTemplateColumns: gridCols }}>
+        <div className="px-2 py-1.5 text-[10px] text-[#6b7d76]">Journée</div>
         {days.map((d) => {
           const dStr = format(d, "yyyy-MM-dd");
           const allDayEvents = events.filter((e) => e.all_day && isDayInEventRange(d, e));
@@ -652,7 +652,7 @@ function TimeGrid({
               <div
                 key={h}
                 style={{ height: ROW_HEIGHT }}
-                className="relative -top-2.5 pr-2 text-right text-[11px] text-[#6a6578]"
+                className="relative -top-2.5 pr-2 text-right text-[11px] text-[#6b7d76]"
               >
                 {h}h
               </div>
@@ -666,7 +666,7 @@ function TimeGrid({
                   <div
                     key={h}
                     style={{ height: ROW_HEIGHT }}
-                    className="cursor-pointer border-b border-white/[0.04] transition hover:bg-violet-500/10"
+                    className="cursor-pointer border-b border-white/[0.04] transition hover:bg-emerald-500/10"
                     onClick={() => onSlotClick(d, h)}
                   />
                 ))}
@@ -736,21 +736,21 @@ function AgendaList({
               <button
                 type="button"
                 onClick={() => onDayClick(d)}
-                className={`text-sm font-semibold capitalize ${isToday(d) ? "text-violet-300" : "text-[#f3f0fa]"}`}
+                className={`text-sm font-semibold capitalize ${isToday(d) ? "text-emerald-300" : "text-[#eef6f2]"}`}
               >
                 {format(d, "EEEE d MMMM", { locale: fr })}
               </button>
               <button
                 type="button"
                 onClick={() => onAddClick(d)}
-                className="rounded-lg p-1 text-[#6a6578] hover:bg-white/[0.06] hover:text-violet-300"
+                className="rounded-lg p-1 text-[#6b7d76] hover:bg-white/[0.06] hover:text-emerald-300"
                 aria-label="Ajouter un événement"
               >
                 <IconPlus className="h-4 w-4" />
               </button>
             </div>
             <div className="mt-2 space-y-1.5">
-              {!hasItems ? <p className="text-xs text-[#6a6578]">Aucun événement</p> : null}
+              {!hasItems ? <p className="text-xs text-[#6b7d76]">Aucun événement</p> : null}
               {dayBirthdays.map((o) => (
                 <BirthdayChip key={`${o.birthdayId}-${o.date}`} occurrence={o} />
               ))}

@@ -40,7 +40,7 @@ export function TodayTaskList({
 
   if (!local.length) {
     return (
-      <p className="rounded-[12px] border border-dashed border-white/[0.08] px-4 py-8 text-center text-sm text-[#6a6578]">
+      <p className="rounded-[12px] border border-dashed border-white/[0.08] px-4 py-8 text-center text-sm text-[#6b7d76]">
         {emptyLabel}
       </p>
     );
@@ -56,7 +56,7 @@ export function TodayTaskList({
               ? "bg-amber-400"
               : task.task_kind === "follow_up"
                 ? "bg-rose-400"
-                : "bg-violet-400";
+                : "bg-emerald-400";
 
         return (
           <li
@@ -71,8 +71,8 @@ export function TodayTaskList({
               onClick={() => toggle(task.id, !task.completed)}
               className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[5px] border transition ${
                 task.completed
-                  ? "border-violet-500 bg-violet-500 text-white"
-                  : "border-white/20 hover:border-violet-400"
+                  ? "border-emerald-500 bg-emerald-500 text-white"
+                  : "border-white/20 hover:border-emerald-400"
               }`}
               aria-label={task.completed ? "Décocher" : "Cocher"}
             >
@@ -85,7 +85,7 @@ export function TodayTaskList({
             <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${kindClass}`} />
             <div className="min-w-0 flex-1">
               <p
-                className={`truncate text-sm font-medium text-[#f3f0fa] ${
+                className={`truncate text-sm font-medium text-[#eef6f2] ${
                   task.completed ? "line-through" : ""
                 }`}
               >
@@ -95,13 +95,13 @@ export function TodayTaskList({
                 {task.prospect ? (
                   <button
                     type="button"
-                    className="text-[11px] text-[#6a6578] hover:text-violet-300"
+                    className="text-[11px] text-[#6b7d76] hover:text-emerald-300"
                     onClick={() => router.push(`/crm/prospects/${task.prospect!.id}`)}
                   >
                     {task.prospect.club_name}
                   </button>
                 ) : (
-                  <span className="text-[11px] text-[#6a6578]">
+                  <span className="text-[11px] text-[#6b7d76]">
                     {KIND_LABEL[task.task_kind] ?? "Tâche"}
                   </span>
                 )}

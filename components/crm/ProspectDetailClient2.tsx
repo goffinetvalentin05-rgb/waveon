@@ -77,9 +77,9 @@ function ConfirmModal({
         aria-label="Fermer"
       />
       <div className={`${ui.modal} max-w-lg p-6`}>
-        <h3 className="text-lg font-semibold text-[#f3f0fa]">{title}</h3>
+        <h3 className="text-lg font-semibold text-[#eef6f2]">{title}</h3>
         {description ? (
-          <p className="mt-2 text-sm text-[#8b869c] whitespace-pre-line">{description}</p>
+          <p className="mt-2 text-sm text-[#8a9e96] whitespace-pre-line">{description}</p>
         ) : null}
         <div className="mt-6 flex justify-end gap-2">
           <button type="button" className={ui.btnSecondary} onClick={onCancel}>
@@ -155,12 +155,12 @@ function DeleteProspectModalInner({
         aria-label="Fermer"
       />
       <div className={`${ui.modal} max-w-lg p-6`}>
-        <h3 className="text-lg font-semibold text-[#f3f0fa]">Supprimer ce prospect ?</h3>
-        <p className="mt-2 text-sm text-[#8b869c]">
+        <h3 className="text-lg font-semibold text-[#eef6f2]">Supprimer ce prospect ?</h3>
+        <p className="mt-2 text-sm text-[#8a9e96]">
           Cette action supprimera définitivement ce prospect ainsi que son historique, ses notes, ses
           tâches et ses relances associées. Cette action est irréversible.
         </p>
-        <p className="mt-3 text-sm font-medium text-[#e8e4f0]">
+        <p className="mt-3 text-sm font-medium text-[#dce8e3]">
           {clubName} sera définitivement supprimé.
         </p>
         <div className="mt-5">
@@ -218,8 +218,8 @@ function InlineValue({
 }) {
   return (
     <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-      <dt className="text-[#6a6578]">{label}</dt>
-      <dd className="text-right font-medium text-[#e8e4f0]">
+      <dt className="text-[#6b7d76]">{label}</dt>
+      <dd className="text-right font-medium text-[#dce8e3]">
         {inline ? (
           <div className="flex items-center justify-end gap-2">
             <input
@@ -239,7 +239,7 @@ function InlineValue({
             {telHref ? (
               <a
                 href={telHref}
-                className="text-violet-400 hover:underline"
+                className="text-emerald-400 hover:underline"
                 onClick={(e) => {
                   e.preventDefault();
                   onStart();
@@ -250,7 +250,7 @@ function InlineValue({
             ) : mailHref ? (
               <a
                 href={mailHref}
-                className="text-violet-400 hover:underline"
+                className="text-emerald-400 hover:underline"
                 onClick={(e) => {
                   e.preventDefault();
                   onStart();
@@ -260,7 +260,7 @@ function InlineValue({
               </a>
             ) : (
               <span
-                className="cursor-pointer hover:text-violet-400"
+                className="cursor-pointer hover:text-emerald-400"
                 onClick={() => onStart()}
               >
                 {value}
@@ -268,7 +268,7 @@ function InlineValue({
             )}
             <button
               type="button"
-              className="rounded-xl p-2 text-[#6a6578] hover:bg-white/[0.04] hover:text-[#c8c3d6]"
+              className="rounded-xl p-2 text-[#6b7d76] hover:bg-white/[0.04] hover:text-[#c2d4cc]"
               onClick={onStart}
               aria-label={`Modifier ${label}`}
             >
@@ -278,14 +278,14 @@ function InlineValue({
         ) : (
           <div className="flex items-center justify-end gap-2">
             <span
-              className="cursor-pointer text-[#6a6578] hover:text-violet-400"
+              className="cursor-pointer text-[#6b7d76] hover:text-emerald-400"
               onClick={() => onStart()}
             >
               —
             </span>
             <button
               type="button"
-              className="rounded-xl p-2 text-[#6a6578] hover:bg-white/[0.04] hover:text-[#c8c3d6]"
+              className="rounded-xl p-2 text-[#6b7d76] hover:bg-white/[0.04] hover:text-[#c2d4cc]"
               onClick={onStart}
               aria-label={`Modifier ${label}`}
             >
@@ -441,12 +441,12 @@ function ProspectActivityEditorModal({
       <div className={`${ui.modal} max-w-2xl p-6`}>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h3 className="text-lg font-semibold text-[#f3f0fa]">Modifier l’action</h3>
-            <p className="mt-1 text-sm text-[#8b869c]">{activity.title}</p>
+            <h3 className="text-lg font-semibold text-[#eef6f2]">Modifier l’action</h3>
+            <p className="mt-1 text-sm text-[#8a9e96]">{activity.title}</p>
           </div>
           <button
             type="button"
-            className="rounded-xl p-2 text-[#8b869c] hover:bg-white/[0.04] hover:text-[#c8c3d6]"
+            className="rounded-xl p-2 text-[#8a9e96] hover:bg-white/[0.04] hover:text-[#c2d4cc]"
             onClick={onClose}
           >
             Annuler
@@ -1010,7 +1010,7 @@ export function ProspectDetailClient2({
       <div>
         <Link
           href={backHref}
-          className="inline-flex items-center gap-1.5 text-sm text-[#8b869c] hover:text-[#e8e4f0]"
+          className="inline-flex items-center gap-1.5 text-sm text-[#8a9e96] hover:text-[#dce8e3]"
         >
           <IconArrowLeft className="h-4 w-4" />
           {backLabel}
@@ -1021,7 +1021,7 @@ export function ProspectDetailClient2({
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <StatusBadge status={prospect.status} />
               {isArchived ? (
-                <span className="crm-badge bg-white/[0.06] text-[#8b869c]">
+                <span className="crm-badge bg-white/[0.06] text-[#8a9e96]">
                   <span className="crm-badge-dot bg-slate-400" />
                   Archivé
                 </span>
@@ -1100,7 +1100,7 @@ export function ProspectDetailClient2({
       <section className={`${ui.card} p-5 sm:p-6`}>
         <h2 className={ui.h2}>Actions rapides</h2>
         {isArchived ? (
-          <p className="mt-3 text-sm text-[#8b869c]">
+          <p className="mt-3 text-sm text-[#8a9e96]">
             Ce prospect est archivé. Restaurez-le pour enregistrer de nouvelles actions.
           </p>
         ) : (
@@ -1139,20 +1139,20 @@ export function ProspectDetailClient2({
           {!editMode ? (
             <dl className="mt-4 space-y-0 text-sm">
               <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-                <dt className="text-[#6a6578]">Sport</dt>
-                <dd className="text-right font-medium text-[#e8e4f0]">{prospect.sport ?? "—"}</dd>
+                <dt className="text-[#6b7d76]">Sport</dt>
+                <dd className="text-right font-medium text-[#dce8e3]">{prospect.sport ?? "—"}</dd>
               </div>
               <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-                <dt className="text-[#6a6578]">Canton</dt>
-                <dd className="text-right font-medium text-[#e8e4f0]">{prospect.canton ?? "—"}</dd>
+                <dt className="text-[#6b7d76]">Canton</dt>
+                <dd className="text-right font-medium text-[#dce8e3]">{prospect.canton ?? "—"}</dd>
               </div>
               <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-                <dt className="text-[#6a6578]">Ville</dt>
-                <dd className="text-right font-medium text-[#e8e4f0]">{prospect.ville ?? "—"}</dd>
+                <dt className="text-[#6b7d76]">Ville</dt>
+                <dd className="text-right font-medium text-[#dce8e3]">{prospect.ville ?? "—"}</dd>
               </div>
               <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-                <dt className="text-[#6a6578]">Fonction du contact</dt>
-                <dd className="text-right font-medium text-[#e8e4f0]">{prospect.contact_function ?? "—"}</dd>
+                <dt className="text-[#6b7d76]">Fonction du contact</dt>
+                <dd className="text-right font-medium text-[#dce8e3]">{prospect.contact_function ?? "—"}</dd>
               </div>
 
               <InlineValue
@@ -1198,14 +1198,14 @@ export function ProspectDetailClient2({
               />
 
               <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-                <dt className="text-[#6a6578]">Site web</dt>
-                <dd className="text-right font-medium text-[#e8e4f0]">
+                <dt className="text-[#6b7d76]">Site web</dt>
+                <dd className="text-right font-medium text-[#dce8e3]">
                   {prospect.website ? (
                     <a
                       href={prospect.website.startsWith("http") ? prospect.website : `https://${prospect.website}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-violet-400 hover:underline"
+                      className="text-emerald-400 hover:underline"
                     >
                       {prospect.website}
                     </a>
@@ -1216,8 +1216,8 @@ export function ProspectDetailClient2({
               </div>
 
               <div className="flex justify-between gap-4 border-b border-white/[0.04] pb-2">
-                <dt className="text-[#6a6578]">Valeur potentielle</dt>
-                <dd className="text-right font-medium text-[#e8e4f0]">
+                <dt className="text-[#6b7d76]">Valeur potentielle</dt>
+                <dd className="text-right font-medium text-[#dce8e3]">
                   {prospect.potential_value != null
                     ? new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(
                         Number(prospect.potential_value)
@@ -1226,22 +1226,22 @@ export function ProspectDetailClient2({
                 </dd>
               </div>
               <div className="flex justify-between gap-4 border-b border-white/[0.04] pb-2">
-                <dt className="text-[#6a6578]">Canal</dt>
-                <dd className="text-right font-medium text-[#e8e4f0]">{prospect.contact_channel ?? "—"}</dd>
+                <dt className="text-[#6b7d76]">Canal</dt>
+                <dd className="text-right font-medium text-[#dce8e3]">{prospect.contact_channel ?? "—"}</dd>
               </div>
               <div className="flex justify-between gap-4 border-b border-white/[0.04] pb-2">
-                <dt className="text-[#6a6578]">Tags</dt>
-                <dd className="text-right font-medium text-[#e8e4f0]">
+                <dt className="text-[#6b7d76]">Tags</dt>
+                <dd className="text-right font-medium text-[#dce8e3]">
                   {(prospect.tags ?? []).length ? prospect.tags.join(", ") : "—"}
                 </dd>
               </div>
               <div className="flex justify-between gap-4 border-b border-white/[0.04] pb-2">
-                <dt className="text-[#6a6578]">Dernière action</dt>
-                <dd className="text-right font-medium text-[#e8e4f0]">{prospect.last_action ?? "—"}</dd>
+                <dt className="text-[#6b7d76]">Dernière action</dt>
+                <dd className="text-right font-medium text-[#dce8e3]">{prospect.last_action ?? "—"}</dd>
               </div>
               <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-                <dt className="text-[#6a6578]">Prochaine relance</dt>
-                <dd className="text-right font-medium text-[#e8e4f0]">
+                <dt className="text-[#6b7d76]">Prochaine relance</dt>
+                <dd className="text-right font-medium text-[#dce8e3]">
                   {prospect.next_follow_up ? (
                     format(new Date(`${prospect.next_follow_up}T12:00:00`), "d MMMM yyyy", { locale: fr })
                   ) : (
@@ -1412,7 +1412,7 @@ export function ProspectDetailClient2({
         <InteractionForm prospectId={prospect.id} onAdded={() => void refreshAll()} />
 
         {activities.length === 0 ? (
-          <p className="mt-4 text-sm text-[#6a6578]">Aucune action pour le moment.</p>
+          <p className="mt-4 text-sm text-[#6b7d76]">Aucune action pour le moment.</p>
         ) : (
           <ol className="mt-5 space-y-0">
             {activities.map((a, idx) => {
@@ -1426,23 +1426,23 @@ export function ProspectDetailClient2({
                   {idx < activities.length - 1 ? (
                     <span className="absolute left-[7px] top-3 h-full w-px bg-white/[0.06]" />
                   ) : null}
-                  <span className="relative mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full border-2 border-violet-500 bg-[#14121c]" />
+                  <span className="relative mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full border-2 border-emerald-500 bg-[#0c1916]" />
 
                   <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-xs font-medium uppercase tracking-wide text-[#6a6578]">
+                        <p className="text-xs font-medium uppercase tracking-wide text-[#6b7d76]">
                           {fmtDay(a.occurred_at || a.created_at)}
                           {a.actor_name ? ` · ${a.actor_name}` : ""}
                         </p>
-                        <p className="mt-0.5 text-sm font-medium text-[#e8e4f0]">{a.title}</p>
+                        <p className="mt-0.5 text-sm font-medium text-[#dce8e3]">{a.title}</p>
                       </div>
 
                       {showMenu ? (
                         <div className="relative">
                           <button
                             type="button"
-                            className="rounded-xl p-2 text-[#6a6578] hover:bg-white/[0.04] hover:text-[#c8c3d6]"
+                            className="rounded-xl p-2 text-[#6b7d76] hover:bg-white/[0.04] hover:text-[#c2d4cc]"
                             onClick={() => setActivityMenuId((v) => (v === a.id ? null : a.id))}
                             aria-label="Menu actions"
                           >
@@ -1450,10 +1450,10 @@ export function ProspectDetailClient2({
                           </button>
 
                           {activityMenuOpen === a.id ? (
-                            <div className="absolute right-0 top-9 z-20 w-44 rounded-[12px] border border-white/[0.08] bg-[#16141f] p-2">
+                            <div className="absolute right-0 top-9 z-20 w-44 rounded-[12px] border border-white/[0.08] bg-[#0e1c19] p-2">
                               <button
                                 type="button"
-                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-[#c8c3d6] hover:bg-white/[0.04]"
+                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-[#c2d4cc] hover:bg-white/[0.04]"
                                 onClick={() => {
                                   setActivityMenuId(null);
                                   setActivityToEdit(a);
@@ -1501,7 +1501,7 @@ export function ProspectDetailClient2({
                       ) : null}
                     </div>
 
-                    {a.description ? <p className="text-sm text-[#8b869c] whitespace-pre-wrap">{a.description}</p> : null}
+                    {a.description ? <p className="text-sm text-[#8a9e96] whitespace-pre-wrap">{a.description}</p> : null}
                   </div>
                 </li>
               );

@@ -75,9 +75,9 @@ function SortIcon({
     return <IconSelector className="h-3.5 w-3.5 opacity-30" stroke={1.75} />;
   }
   if (order === "asc") {
-    return <IconChevronUp className="h-3.5 w-3.5 text-violet-400" stroke={2} />;
+    return <IconChevronUp className="h-3.5 w-3.5 text-emerald-400" stroke={2} />;
   }
-  return <IconChevronDown className="h-3.5 w-3.5 text-violet-400" stroke={2} />;
+  return <IconChevronDown className="h-3.5 w-3.5 text-emerald-400" stroke={2} />;
 }
 
 type FilterOptions = {
@@ -308,7 +308,7 @@ export function ProspectsClient({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           {projectId ? null : <h1 className={ui.h1}>{clientsOnly ? "Clients" : "Ma pipeline"}</h1>}
-          <p className={`${projectId ? "" : "mt-1"} text-sm text-[#8b869c]`}>{resultLabel}</p>
+          <p className={`${projectId ? "" : "mt-1"} text-sm text-[#8a9e96]`}>{resultLabel}</p>
           {!clientsOnly ? (
             <div className="mt-3 flex flex-wrap gap-2">
               <button
@@ -316,7 +316,7 @@ export function ProspectsClient({
                 className={`rounded-full px-3 py-1 text-xs font-medium ${
                   params.followUpPreset === "today"
                     ? "bg-amber-500/15 text-amber-200"
-                    : "bg-white/[0.05] text-[#8b869c] hover:text-[#f3f0fa]"
+                    : "bg-white/[0.05] text-[#8a9e96] hover:text-[#eef6f2]"
                 }`}
                 onClick={() =>
                   applyParams({
@@ -333,7 +333,7 @@ export function ProspectsClient({
                 className={`rounded-full px-3 py-1 text-xs font-medium ${
                   params.followUpPreset === "overdue"
                     ? "bg-rose-500/15 text-rose-200"
-                    : "bg-white/[0.05] text-[#8b869c] hover:text-[#f3f0fa]"
+                    : "bg-white/[0.05] text-[#8a9e96] hover:text-[#eef6f2]"
                 }`}
                 onClick={() =>
                   applyParams({
@@ -350,15 +350,15 @@ export function ProspectsClient({
         </div>
         <div className="flex flex-wrap gap-2">
           {!clientsOnly ? (
-            <div className="inline-flex rounded-[12px] border border-white/[0.08] bg-[#14121c] p-1">
+            <div className="inline-flex rounded-full border border-white/[0.08] bg-[#0c1916] p-1">
               <button
                 type="button"
                 onClick={() => {
                   setView("pipeline");
                   if (params.pageSize < 200) applyParams({ ...params, pageSize: 200, page: 1 });
                 }}
-                className={`rounded-[10px] px-3 py-1.5 text-sm font-medium transition ${
-                  view === "pipeline" ? "bg-violet-500/15 text-violet-200" : "text-[#8b869c] hover:text-[#f3f0fa]"
+                className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
+                  view === "pipeline" ? "wo-subnav-active" : "text-[#8a9e96] hover:text-[#eef6f2]"
                 }`}
               >
                 Pipeline
@@ -369,8 +369,8 @@ export function ProspectsClient({
                   setView("list");
                   if (params.pageSize !== 25) applyParams({ ...params, pageSize: 25, page: 1 });
                 }}
-                className={`rounded-[10px] px-3 py-1.5 text-sm font-medium transition ${
-                  view === "list" ? "bg-violet-500/15 text-violet-200" : "text-[#8b869c] hover:text-[#f3f0fa]"
+                className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
+                  view === "list" ? "wo-subnav-active" : "text-[#8a9e96] hover:text-[#eef6f2]"
                 }`}
               >
                 Liste
@@ -407,7 +407,7 @@ export function ProspectsClient({
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
-          <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6a6578]" />
+          <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6b7d76]" />
           <input
             className={`${ui.input} pl-9`}
             placeholder="Rechercher un club, contact, canton…"
@@ -423,7 +423,7 @@ export function ProspectsClient({
           <IconFilter className="h-4 w-4" stroke={1.75} />
           Filtrer
           {activeFilterCount > 0 ? (
-            <span className="text-[#8b869c]"> · {activeFilterCount}</span>
+            <span className="text-[#8a9e96]"> · {activeFilterCount}</span>
           ) : null}
         </button>
       </div>
@@ -441,7 +441,7 @@ export function ProspectsClient({
                 <th key={key}>
                   <button
                     type="button"
-                    className="inline-flex items-center gap-1.5 hover:text-[#f3f0fa]"
+                    className="inline-flex items-center gap-1.5 hover:text-[#eef6f2]"
                     onClick={() => onSortColumn(key)}
                   >
                     {label}
@@ -457,7 +457,7 @@ export function ProspectsClient({
                 <td colSpan={visibleSortColumns.length} className="!cursor-default py-12 text-center">
                   {isFiltered ? (
                     <div className="space-y-3">
-                      <p className="text-[#8b869c]">
+                      <p className="text-[#8a9e96]">
                         Aucun prospect ne correspond à votre recherche.
                       </p>
                       <button type="button" className={ui.btnSecondary} onClick={resetAll}>
@@ -465,7 +465,7 @@ export function ProspectsClient({
                       </button>
                     </div>
                   ) : (
-                    <span className="text-[#6a6578]">
+                    <span className="text-[#6b7d76]">
                       Aucun prospect. Importez un fichier ou créez-en un.
                     </span>
                   )}
@@ -480,7 +480,7 @@ export function ProspectsClient({
                     router.push(`/crm/prospects/${p.id}?back=${back}`);
                   }}
                 >
-                  <td className="font-medium text-[#f3f0fa]">{p.club_name}</td>
+                  <td className="font-medium text-[#eef6f2]">{p.club_name}</td>
                   <td>{p.sport ?? "—"}</td>
                   <td>{p.canton ?? "—"}</td>
                   <td>{p.contact_name ?? "—"}</td>
@@ -492,7 +492,7 @@ export function ProspectsClient({
                         href={p.website.startsWith("http") ? p.website : `https://${p.website}`}
                         target="_blank"
                         onClick={(e) => e.stopPropagation()}
-                        className="text-violet-400 hover:underline"
+                        className="text-emerald-400 hover:underline"
                       >
                         Lien
                       </Link>
@@ -506,8 +506,8 @@ export function ProspectsClient({
                     </td>
                   ) : null}
                   <td>
-                    <div className="text-[#c8c3d6]">{p.last_action ?? "—"}</div>
-                    <div className="text-xs text-[#6a6578]">{fmtDate(p.last_action_at)}</div>
+                    <div className="text-[#c2d4cc]">{p.last_action ?? "—"}</div>
+                    <div className="text-xs text-[#6b7d76]">{fmtDate(p.last_action_at)}</div>
                   </td>
                   <td>{fmtDate(p.next_follow_up)}</td>
                 </tr>
@@ -519,7 +519,7 @@ export function ProspectsClient({
       )}
 
       {view === "list" && count > params.pageSize ? (
-        <div className="flex items-center justify-between gap-3 text-sm text-[#8b869c]">
+        <div className="flex items-center justify-between gap-3 text-sm text-[#8a9e96]">
           <button
             type="button"
             className={ui.btnGhost}
@@ -619,7 +619,7 @@ function CreateProspectModal({
         onSubmit={submit}
         className={`${ui.modal} max-w-lg p-6`}
       >
-        <h2 className="text-lg font-semibold text-[#f3f0fa]">Nouveau prospect</h2>
+        <h2 className="text-lg font-semibold text-[#eef6f2]">Nouveau prospect</h2>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {(
             [

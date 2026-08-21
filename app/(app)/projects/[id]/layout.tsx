@@ -28,17 +28,17 @@ export default async function ProjectLayout({
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <Link href="/projects" className="text-xs font-medium text-[#8b869c] hover:text-[#f3f0fa]">
+          <Link href="/projects" className="text-xs font-medium text-[#8a9e96] hover:text-[#eef6f2]">
             ← Tous les projets
           </Link>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <ProjectSwitcher projects={projects} currentId={id} />
             {project.status === "archived" ? (
-              <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[11px] text-[#8b869c]">Archivé</span>
+              <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[11px] text-[#8a9e96]">Archivé</span>
             ) : null}
           </div>
           {project.description ? (
-            <p className="mt-2 text-sm text-[#8b869c]">{project.description}</p>
+            <p className="mt-2 text-sm text-[#8a9e96]">{project.description}</p>
           ) : null}
         </div>
         <ProjectActions project={project} />

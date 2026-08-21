@@ -39,7 +39,7 @@ export function ProjectsHub({
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className={ui.h1}>Projets</h1>
-          <p className="mt-1 text-sm text-[#8b869c]">Choisissez un espace business, puis travaillez dedans.</p>
+          <p className="mt-1 text-sm text-[#8a9e96]">Choisissez un espace business, puis travaillez dedans.</p>
         </div>
         <button type="button" className={ui.btnPrimary} onClick={() => setCreate(true)}>
           <IconPlus className="h-4 w-4" />
@@ -53,7 +53,7 @@ export function ProjectsHub({
             key={id}
             type="button"
             onClick={() => setFilter(id)}
-            className={`inline-flex shrink-0 items-center rounded-[10px] px-3.5 py-2 text-sm font-medium ${
+            className={`inline-flex shrink-0 items-center rounded-full px-3.5 py-2 text-sm font-medium ${
               filter === id ? ui.subNavActive : ui.subNavIdle
             }`}
           >
@@ -64,8 +64,8 @@ export function ProjectsHub({
 
       {unassigned.prospects + unassigned.tasks + unassigned.notes > 0 && filter === "active" ? (
         <Link href="/projects/unassigned" className={`${ui.cardInteractive} block p-4`}>
-          <p className="text-sm font-semibold text-[#f3f0fa]">Sans projet</p>
-          <p className="mt-1 text-sm text-[#8b869c]">
+          <p className="text-sm font-semibold text-[#eef6f2]">Sans projet</p>
+          <p className="mt-1 text-sm text-[#8a9e96]">
             {unassigned.prospects} prospect{unassigned.prospects > 1 ? "s" : ""} · {unassigned.tasks} tâche
             {unassigned.tasks > 1 ? "s" : ""} · {unassigned.notes} note{unassigned.notes > 1 ? "s" : ""}
           </p>
@@ -86,22 +86,22 @@ export function ProjectsHub({
                 ? format(new Date(card.nextEventAt), "d MMM HH:mm", { locale: fr })
                 : null;
             return (
-              <div key={p.id} className={`${ui.card} p-5`}>
+              <div key={p.id} className={`${ui.cardInteractive} p-5`}>
                 <Link href={`/projects/${p.id}`} className="block">
                   <div className="flex items-center gap-3">
                     <span
                       className="flex h-10 w-10 items-center justify-center rounded-[12px] text-lg"
-                      style={{ background: `${p.color ?? "#8b5cf6"}22` }}
+                      style={{ background: `${p.color ?? "#10b981"}22` }}
                     >
                       {p.icon || p.name.slice(0, 1).toUpperCase()}
                     </span>
                     <div>
-                      <h2 className="text-base font-semibold text-[#f3f0fa]">{p.name}</h2>
-                      <p className="text-xs text-[#8b869c]">{p.status === "active" ? "Actif" : "Archivé"}</p>
+                      <h2 className="text-base font-semibold text-[#eef6f2]">{p.name}</h2>
+                      <p className="text-xs text-[#8a9e96]">{p.status === "active" ? "Actif" : "Archivé"}</p>
                     </div>
                   </div>
                   {"openTasks" in card ? (
-                    <div className="mt-4 space-y-1 text-sm text-[#8b869c]">
+                    <div className="mt-4 space-y-1 text-sm text-[#8a9e96]">
                       <p>
                         {card.openTasks} tâche{card.openTasks > 1 ? "s" : ""}
                       </p>

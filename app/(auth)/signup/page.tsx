@@ -70,7 +70,7 @@ function SignupContent() {
       footer={
         <>
           Déjà un compte ?{" "}
-          <Link href="/login" className="font-semibold text-violet-400 hover:underline">
+          <Link href="/login" className="font-semibold text-emerald-400 hover:underline">
             Se connecter
           </Link>
         </>
@@ -120,7 +120,7 @@ function SignupContent() {
           />
         </div>
         {message ? (
-          <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-xs text-[#c8c3d6]">
+          <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-xs text-[#c2d4cc]">
             {message}
           </p>
         ) : null}
@@ -137,7 +137,7 @@ export default function SignupPage() {
     <Suspense
       fallback={
         <AuthShell title="Créer un compte">
-          <p className="text-sm text-[#6a6578]">Chargement…</p>
+          <p className="text-sm text-[#6b7d76]">Chargement…</p>
         </AuthShell>
       }
     >

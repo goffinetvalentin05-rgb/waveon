@@ -52,13 +52,13 @@ export function PersonalSecuritySettings() {
     <section className={`${ui.card} space-y-4 p-5 sm:p-6`}>
       <div>
         <h2 className={ui.h2}>Verrouillage Personnel</h2>
-        <p className="mt-1 text-sm text-[#8b869c]">
+        <p className="mt-1 text-sm text-[#8a9e96]">
           PIN secondaire pour l&apos;espace Personnel. Vous restez connecté à WaveOne. Le PIN n&apos;est jamais
           stocké en clair.
         </p>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-[#e8e4f0]">
+      <label className="flex items-center gap-2 text-sm text-[#dce8e3]">
         <input
           type="checkbox"
           checked={lockEnabled}

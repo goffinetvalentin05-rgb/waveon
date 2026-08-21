@@ -32,7 +32,7 @@ export function SubNav({
           <Link
             key={item.href}
             href={item.href}
-            className={`inline-flex shrink-0 items-center gap-2 rounded-[10px] px-3.5 py-2 text-sm font-medium transition ${
+            className={`inline-flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-medium transition ${
               active ? ui.subNavActive : ui.subNavIdle
             }`}
           >

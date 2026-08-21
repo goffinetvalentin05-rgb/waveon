@@ -111,15 +111,13 @@ export function AppShell({
     router.refresh();
   };
 
+  const openSearch = () => window.dispatchEvent(new Event("waveone:search"));
+
   const nav = (() => {
     if (inPersonal) {
       return (
         <>
-          <Link
-            href="/home"
-            onClick={() => setMobileOpen(false)}
-            className="mb-2 flex items-center gap-2 rounded-[10px] px-3 py-2 text-[13px] font-medium text-[#8b869c] hover:bg-white/[0.04] hover:text-[#f3f0fa]"
-          >
+          <Link href="/home" onClick={() => setMobileOpen(false)} className="wo-nav-link mb-1">
             <IconArrowLeft className="h-4 w-4" stroke={1.6} />
             Accueil
           </Link>
@@ -154,11 +152,7 @@ export function AppShell({
             />
           </NavSection>
           {personalLockEnabled ? (
-            <button
-              type="button"
-              onClick={() => void lockPersonal()}
-              className="mt-2 flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium text-[#8b869c] hover:bg-white/[0.04] hover:text-[#f3f0fa]"
-            >
+            <button type="button" onClick={() => void lockPersonal()} className="wo-nav-link mt-1 w-full">
               <IconLock className="h-[18px] w-[18px]" stroke={1.6} />
               Verrouiller
             </button>
@@ -170,11 +164,7 @@ export function AppShell({
     if (inProject && currentProject) {
       return (
         <>
-          <Link
-            href="/projects"
-            onClick={() => setMobileOpen(false)}
-            className="mb-2 flex items-center gap-2 rounded-[10px] px-3 py-2 text-[13px] font-medium text-[#8b869c] hover:bg-white/[0.04] hover:text-[#f3f0fa]"
-          >
+          <Link href="/projects" onClick={() => setMobileOpen(false)} className="wo-nav-link mb-1">
             <IconArrowLeft className="h-4 w-4" stroke={1.6} />
             Tous les projets
           </Link>
@@ -227,7 +217,7 @@ export function AppShell({
             <button
               type="button"
               onClick={() => setCreateProject(true)}
-              className="rounded-md p-0.5 text-[#6a6578] hover:bg-white/[0.06] hover:text-[#f3f0fa]"
+              className="rounded-full p-1 text-[#6b7d76] transition hover:bg-white/[0.06] hover:text-[#eef6f2]"
               aria-label="Nouveau projet"
             >
               <IconPlus className="h-3.5 w-3.5" />
@@ -239,21 +229,16 @@ export function AppShell({
               key={p.id}
               href={`/projects/${p.id}`}
               onClick={() => setMobileOpen(false)}
-              className={`relative flex items-center gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium transition ${
-                pathname?.startsWith(`/projects/${p.id}`)
-                  ? "bg-violet-500/12 text-[#f3f0fa]"
-                  : "text-[#8b869c] hover:bg-white/[0.04] hover:text-[#f3f0fa]"
-              }`}
+              className={`wo-nav-link ${pathname?.startsWith(`/projects/${p.id}`) ? "wo-nav-link-active" : ""}`}
             >
-              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: p.color ?? "#8b5cf6" }} />
+              <span
+                className="h-2 w-2 shrink-0 rounded-full shadow-[0_0_8px_currentColor]"
+                style={{ background: p.color ?? "#10b981", color: p.color ?? "#10b981" }}
+              />
               <span className="truncate">{p.name}</span>
             </Link>
           ))}
-          <button
-            type="button"
-            onClick={() => setCreateProject(true)}
-            className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium text-[#6a6578] hover:bg-white/[0.04] hover:text-[#f3f0fa]"
-          >
+          <button type="button" onClick={() => setCreateProject(true)} className="wo-nav-link w-full text-[#6b7d76]">
             <IconPlus className="h-[18px] w-[18px]" stroke={1.6} />
             Nouveau projet
           </button>
@@ -262,23 +247,24 @@ export function AppShell({
     );
   })();
 
+  const chromeTitle = inPersonal ? "Personnel" : currentProject?.name ?? brand.shortName;
+
   return (
-    <div className="min-h-screen bg-[#0b0a10] lg:flex">
+    <div className="wo-app min-h-screen lg:flex">
       <CommandPalette />
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[var(--sidebar-width)] flex-col border-r border-white/[0.06] bg-[#0d0b13] lg:flex">
-        <div className="flex h-[60px] items-center justify-between px-5">
+      <aside className="wo-sidebar fixed inset-y-3 left-3 z-40 hidden w-[var(--sidebar-width)] flex-col overflow-hidden rounded-[28px] lg:flex">
+        <span className="wo-sidebar-inner-glow" aria-hidden />
+        <div className="relative flex h-[64px] items-center justify-between px-4">
           <Link href="/home" className="group flex items-center gap-2.5">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-500 text-[11px] font-bold text-white">
-              W
-            </span>
-            <span className="text-[15px] font-semibold tracking-tight text-[#f3f0fa]">
+            <span className="wo-brand-mark">W</span>
+            <span className="font-display text-[15px] font-semibold tracking-tight text-[#eef6f2]">
               {brand.shortName}
             </span>
           </Link>
           <button
             type="button"
-            className="rounded-[10px] p-1.5 text-[#8b869c] hover:bg-white/[0.05] hover:text-[#f3f0fa]"
-            onClick={() => window.dispatchEvent(new Event("waveone:search"))}
+            className="wo-icon-btn"
+            onClick={openSearch}
             aria-label="Recherche"
             title="Ctrl + K"
           >
@@ -286,9 +272,9 @@ export function AppShell({
           </button>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-4 overflow-y-auto px-2.5 py-2">{nav}</nav>
+        <nav className="relative flex flex-1 flex-col gap-5 overflow-y-auto px-2.5 py-1">{nav}</nav>
 
-        <div className="mt-auto space-y-1 border-t border-white/[0.06] p-2.5 pb-4">
+        <div className="relative mt-auto space-y-1.5 p-2.5 pb-3.5">
           <SideLink
             href="/notifications"
             label="Notifications"
@@ -302,57 +288,47 @@ export function AppShell({
             icon={IconSettings}
             active={Boolean(pathname?.startsWith("/settings"))}
           />
-          <div className="flex items-center gap-2.5 rounded-[12px] px-2.5 py-2">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-[11px] font-semibold text-violet-200">
-              {initials(profile.displayName)}
-            </span>
+          <div className="wo-profile mt-1">
+            <span className="wo-avatar">{initials(profile.displayName)}</span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-medium text-[#f3f0fa]">{profile.displayName}</p>
-              <p className="truncate text-[11px] text-[#6a6578]">{profile.email ?? "Compte personnel"}</p>
+              <p className="truncate text-[13px] font-medium text-[#eef6f2]">{profile.displayName}</p>
+              <p className="truncate text-[11px] text-[#6b7d76]">{profile.email ?? "Compte personnel"}</p>
             </div>
+            <button
+              type="button"
+              onClick={logout}
+              className="wo-icon-btn"
+              aria-label="Se déconnecter"
+              title="Se déconnecter"
+            >
+              <IconLogout className="h-4 w-4" stroke={1.6} />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={logout}
-            className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium text-[#8b869c] transition hover:bg-white/[0.04] hover:text-[#f3f0fa]"
-          >
-            <IconLogout className="h-4 w-4" stroke={1.6} />
-            Se déconnecter
-          </button>
         </div>
       </aside>
 
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-white/[0.06] bg-[#0b0a10]/90 px-4 backdrop-blur-xl lg:hidden">
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-white/[0.06] bg-[#06110e]/80 px-4 backdrop-blur-xl lg:hidden">
         <Link href="/home" className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-500 text-[11px] font-bold text-white">
-            W
-          </span>
-          <span className="text-sm font-semibold text-[#f3f0fa]">
-            {inPersonal ? "Personnel" : currentProject?.name ?? brand.shortName}
-          </span>
+          <span className="wo-brand-mark !h-7 !w-7">W</span>
+          <span className="text-sm font-semibold text-[#eef6f2]">{chromeTitle}</span>
         </Link>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            className="rounded-[10px] p-2 text-[#8b869c] hover:bg-white/[0.05] hover:text-[#f3f0fa]"
-            onClick={() => window.dispatchEvent(new Event("waveone:search"))}
-            aria-label="Recherche"
-          >
+        <div className="flex items-center gap-0.5">
+          <button type="button" className="wo-icon-btn h-10 w-10" onClick={openSearch} aria-label="Recherche">
             <IconSearch className="h-5 w-5" stroke={1.6} />
           </button>
           <Link
             href="/notifications"
-            className="relative rounded-[10px] p-2 text-[#8b869c] hover:bg-white/[0.05] hover:text-[#f3f0fa]"
+            className="relative flex h-10 w-10 items-center justify-center rounded-full text-[#8a9e96] hover:bg-white/[0.05] hover:text-[#eef6f2]"
             aria-label="Notifications"
           >
             <IconBell className="h-5 w-5" stroke={1.6} />
             {notifCount > 0 ? (
-              <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-violet-400" />
+              <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
             ) : null}
           </Link>
           <button
             type="button"
-            className="rounded-[10px] p-2 text-[#8b869c] hover:bg-white/[0.05] hover:text-[#f3f0fa]"
+            className="wo-icon-btn h-10 w-10"
             onClick={() => setMobileOpen(true)}
             aria-label="Ouvrir le menu"
           >
@@ -369,19 +345,19 @@ export function AppShell({
             onClick={() => setMobileOpen(false)}
             aria-label="Fermer"
           />
-          <aside className="absolute inset-y-0 left-0 flex w-72 flex-col bg-[#0d0b13]">
-            <div className="flex h-14 items-center justify-between px-4">
-              <span className="text-sm font-semibold text-[#f3f0fa]">{brand.name}</span>
-              <button
-                type="button"
-                className="rounded-[10px] p-2 text-[#8b869c] hover:bg-white/[0.05]"
-                onClick={() => setMobileOpen(false)}
-              >
+          <aside className="wo-sidebar absolute inset-y-2 left-2 flex w-72 flex-col overflow-hidden rounded-[24px]">
+            <span className="wo-sidebar-inner-glow" aria-hidden />
+            <div className="relative flex h-14 items-center justify-between px-4">
+              <span className="flex items-center gap-2 text-sm font-semibold text-[#eef6f2]">
+                <span className="wo-brand-mark !h-7 !w-7">W</span>
+                {brand.name}
+              </span>
+              <button type="button" className="wo-icon-btn" onClick={() => setMobileOpen(false)}>
                 <IconX className="h-5 w-5" />
               </button>
             </div>
-            <nav className="flex flex-1 flex-col gap-4 overflow-y-auto px-3 py-2">{nav}</nav>
-            <div className="border-t border-white/[0.06] p-3">
+            <nav className="relative flex flex-1 flex-col gap-4 overflow-y-auto px-3 py-2">{nav}</nav>
+            <div className="relative space-y-1 p-3">
               <SideLink
                 href="/notifications"
                 label="Notifications"
@@ -397,11 +373,7 @@ export function AppShell({
                 active={Boolean(pathname?.startsWith("/settings"))}
                 onClick={() => setMobileOpen(false)}
               />
-              <button
-                type="button"
-                onClick={logout}
-                className="mt-2 flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2 text-sm font-medium text-[#8b869c] hover:bg-white/[0.04]"
-              >
+              <button type="button" onClick={logout} className="wo-nav-link mt-1 w-full">
                 <IconLogout className="h-4 w-4" />
                 Se déconnecter
               </button>
@@ -410,15 +382,22 @@ export function AppShell({
         </div>
       ) : null}
 
-      <main className="min-h-screen flex-1 pb-[4.5rem] lg:ml-[var(--sidebar-width)] lg:pb-0">
-        <div className="mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
-          {children}
+      <main className="min-h-screen flex-1 pb-[4.5rem] lg:ml-[calc(var(--sidebar-width)+1.5rem)] lg:pb-0 lg:pt-3">
+        <div className="sticky top-3 z-20 hidden items-center gap-3 px-6 py-0 lg:flex lg:px-8">
+          <button type="button" className="wo-topbar-search" onClick={openSearch}>
+            <IconSearch className="h-4 w-4 shrink-0" stroke={1.7} />
+            <span className="flex-1 truncate text-left text-sm">Rechercher dans WaveOne…</span>
+            <kbd className="hidden rounded-md border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[10px] font-medium text-[#6b7d76] sm:inline">
+              Ctrl K
+            </kbd>
+          </button>
         </div>
+        <div className="mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8">{children}</div>
       </main>
 
       <nav
         aria-label="Navigation principale"
-        className="fixed inset-x-0 bottom-0 z-30 flex border-t border-white/[0.06] bg-[#0d0b13]/95 backdrop-blur-xl lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 flex border-t border-white/[0.06] bg-[#071412]/92 backdrop-blur-xl lg:hidden"
       >
         {[
           { href: "/home", label: "Accueil", icon: IconHome, match: "exact" as const },
@@ -434,7 +413,7 @@ export function AppShell({
               key={item.href}
               href={item.href}
               className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 py-2.5 text-[10px] font-medium transition ${
-                active ? "text-violet-300" : "text-[#6a6578]"
+                active ? "text-emerald-300" : "text-[#6b7d76]"
               }`}
             >
               <Icon className="h-[18px] w-[18px]" stroke={active ? 1.9 : 1.5} />
@@ -469,8 +448,8 @@ function NavSection({
 }) {
   return (
     <div>
-      <div className="mb-1 flex items-center justify-between px-3">
-        <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-[#6a6578]">{label}</p>
+      <div className="mb-1.5 flex items-center justify-between px-3">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6b7d76]">{label}</p>
         {action}
       </div>
       <div className="flex flex-col gap-0.5">{children}</div>
@@ -497,22 +476,11 @@ function SideLink({
 }) {
   void exact;
   return (
-    <Link
-      href={href}
-      onClick={onClick}
-      className={`relative flex items-center gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium transition ${
-        active
-          ? "bg-violet-500/12 text-[#f3f0fa]"
-          : "text-[#8b869c] hover:bg-white/[0.04] hover:text-[#f3f0fa]"
-      }`}
-    >
-      {active ? (
-        <span className="absolute bottom-1.5 left-0 top-1.5 w-[3px] rounded-full bg-violet-500" />
-      ) : null}
-      <Icon className={`h-[18px] w-[18px] ${active ? "text-violet-300" : ""}`} stroke={1.6} />
+    <Link href={href} onClick={onClick} className={`wo-nav-link ${active ? "wo-nav-link-active" : ""}`}>
+      <Icon className={`wo-nav-icon h-[18px] w-[18px] ${active ? "text-emerald-300" : ""}`} stroke={1.6} />
       <span className="flex-1 truncate">{label}</span>
       {badge ? (
-        <span className="rounded-full bg-violet-500/20 px-1.5 text-[10px] font-semibold tabular-nums text-violet-200">
+        <span className="rounded-full bg-emerald-500/20 px-1.5 text-[10px] font-semibold tabular-nums text-emerald-200">
           {badge}
         </span>
       ) : null}

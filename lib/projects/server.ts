@@ -112,7 +112,7 @@ export async function fetchProjectSummaries(supabase: SupabaseClient, userId: st
       name: "Sans projet",
       description: "Prospects à rattacher",
       icon: "•",
-      color: "#6a6578",
+      color: "#6b7d76",
       status: "active",
       created_at: "",
       updated_at: "",

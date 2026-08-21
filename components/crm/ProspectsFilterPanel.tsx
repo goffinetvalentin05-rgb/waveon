@@ -36,7 +36,7 @@ function MultiCheckboxGroup({
     return (
       <div>
         <p className={ui.label}>{label}</p>
-        <p className="text-sm text-[#6a6578]">Aucune valeur disponible</p>
+        <p className="text-sm text-[#6b7d76]">Aucune valeur disponible</p>
       </div>
     );
   }
@@ -50,13 +50,13 @@ function MultiCheckboxGroup({
           return (
             <label
               key={value}
-              className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-[#c8c3d6] hover:bg-white/[0.04]"
+              className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-[#c2d4cc] hover:bg-white/[0.04]"
             >
               <input
                 type="checkbox"
                 checked={checked}
                 onChange={() => onToggle(value)}
-                className="rounded border-white/20 text-violet-500 focus:ring-violet-500/30"
+                className="rounded border-white/20 text-emerald-500 focus:ring-emerald-500/30"
               />
               <span className="truncate">{value}</span>
             </label>
@@ -124,8 +124,8 @@ export function ProspectsFilterPanel({
         aria-label="Fermer"
       />
       <div className={`${ui.modal} max-h-[90vh] max-w-2xl overflow-y-auto p-6`}>
-        <h2 className="text-lg font-semibold text-[#f3f0fa]">Filtrer les prospects</h2>
-        <p className="mt-1 text-sm text-[#8b869c]">
+        <h2 className="text-lg font-semibold text-[#eef6f2]">Filtrer les prospects</h2>
+        <p className="mt-1 text-sm text-[#8a9e96]">
           Sélectionnez vos critères puis appliquez les filtres.
         </p>
 

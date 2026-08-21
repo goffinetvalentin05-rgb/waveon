@@ -22,7 +22,7 @@ export function Logo({ size = "md", href = "/", className = "", markOnly = false
   const content = (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
       <span
-        className="relative shrink-0 drop-shadow-[0_0_14px_rgba(59,130,246,0.35)]"
+        className="relative shrink-0 drop-shadow-[0_0_14px_rgba(16,185,129,0.4)]"
         aria-hidden={markOnly ? undefined : true}
       >
         <Image

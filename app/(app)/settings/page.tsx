@@ -64,7 +64,7 @@ export default function SettingsPage() {
   };
 
   if (!settings) {
-    return <p className="text-sm text-[#6a6578]">Chargement…</p>;
+    return <p className="text-sm text-[#6b7d76]">Chargement…</p>;
   }
 
   const fields = [
@@ -89,7 +89,7 @@ export default function SettingsPage() {
     <div className="mx-auto max-w-lg space-y-6">
       <div className="crm-animate-in">
         <h1 className={ui.h1}>Paramètres</h1>
-        <p className="mt-1 text-sm text-[#8b869c]">
+        <p className="mt-1 text-sm text-[#8a9e96]">
           Relances CRM et fuseau horaire pour les rappels.
         </p>
       </div>
@@ -115,9 +115,9 @@ export default function SettingsPage() {
                   })
                 }
               />
-              <span className="text-sm text-[#8b869c]">jours</span>
+              <span className="text-sm text-[#8a9e96]">jours</span>
             </div>
-            <p className="mt-1 text-xs text-[#6a6578]">{f.hint}</p>
+            <p className="mt-1 text-xs text-[#6b7d76]">{f.hint}</p>
           </div>
         ))}
 
@@ -137,7 +137,7 @@ export default function SettingsPage() {
               </option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-[#6a6578]">
+          <p className="mt-1 text-xs text-[#6b7d76]">
             Utilisé pour les rappels d&apos;anniversaire par email.
           </p>
         </div>

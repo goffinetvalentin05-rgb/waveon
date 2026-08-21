@@ -25,17 +25,17 @@ export function ProjectSwitcher({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-2 rounded-[12px] border border-white/[0.08] bg-[#14121c] px-3 py-2 text-sm font-medium text-[#f3f0fa]"
+        className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-[#0c1916] px-3.5 py-2 text-sm font-medium text-[#eef6f2] transition hover:border-emerald-400/25"
       >
         <span
           className="h-2.5 w-2.5 rounded-full"
-          style={{ background: current?.color ?? "#8b5cf6" }}
+          style={{ background: current?.color ?? "#10b981" }}
         />
         {current?.name ?? "Projet"}
-        <IconChevronDown className="h-4 w-4 text-[#8b869c]" />
+        <IconChevronDown className="h-4 w-4 text-[#8a9e96]" />
       </button>
       {open ? (
-        <div className="absolute left-0 z-30 mt-2 w-56 overflow-hidden rounded-[12px] border border-white/[0.08] bg-[#16141f] p-1 shadow-xl">
+        <div className="wo-modal absolute left-0 z-30 mt-2 w-56 overflow-hidden p-1">
           {projects
             .filter((p) => p.status === "active")
             .map((p) => (
@@ -44,17 +44,17 @@ export function ProjectSwitcher({
                 href={`/projects/${p.id}${rest}`}
                 onClick={() => setOpen(false)}
                 className={`flex items-center gap-2 rounded-[10px] px-3 py-2 text-sm ${
-                  p.id === currentId ? "bg-white/[0.06] text-[#f3f0fa]" : "text-[#c8c3d6] hover:bg-white/[0.04]"
+                  p.id === currentId ? "bg-white/[0.06] text-[#eef6f2]" : "text-[#c2d4cc] hover:bg-white/[0.04]"
                 }`}
               >
-                <span className="h-2 w-2 rounded-full" style={{ background: p.color ?? "#8b5cf6" }} />
+                <span className="h-2 w-2 rounded-full" style={{ background: p.color ?? "#10b981" }} />
                 {p.name}
               </Link>
             ))}
           <Link
             href="/projects"
             onClick={() => setOpen(false)}
-            className="mt-1 flex items-center gap-2 rounded-[10px] border-t border-white/[0.06] px-3 py-2 text-sm text-[#8b869c] hover:bg-white/[0.04] hover:text-[#f3f0fa]"
+            className="mt-1 flex items-center gap-2 rounded-[10px] border-t border-white/[0.06] px-3 py-2 text-sm text-[#8a9e96] hover:bg-white/[0.04] hover:text-[#eef6f2]"
           >
             Tous les projets
           </Link>

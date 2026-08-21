@@ -53,7 +53,7 @@ export function FinancesClient({ projectId }: { projectId?: string }) {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className={ui.h1}>Finances</h1>
-            <p className="mt-1 text-sm text-[#8b869c]">Dépenses, partages, sans comptabilité lourde.</p>
+            <p className="mt-1 text-sm text-[#8a9e96]">Dépenses, partages, sans comptabilité lourde.</p>
           </div>
           <button type="button" className={ui.btnPrimary} onClick={() => setShowCreate(true)}>
             <IconPlus className="h-4 w-4" />
@@ -72,7 +72,7 @@ export function FinancesClient({ projectId }: { projectId?: string }) {
       ) : null}
 
       <div className={`${ui.statCard} max-w-xs`}>
-        <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#8b869c]">Ce mois</p>
+        <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#8a9e96]">Ce mois</p>
         <p className="mt-2 text-2xl font-semibold tabular-nums">{chf(monthTotal)}</p>
       </div>
 
@@ -83,8 +83,8 @@ export function FinancesClient({ projectId }: { projectId?: string }) {
           {expenses.map((e) => (
             <div key={e.id} className={`${ui.card} flex items-center justify-between gap-3 px-4 py-3`}>
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-[#f3f0fa]">{e.title}</p>
-                <p className="text-[11px] text-[#8b869c]">
+                <p className="truncate text-sm font-medium text-[#eef6f2]">{e.title}</p>
+                <p className="text-[11px] text-[#8a9e96]">
                   {format(new Date(`${e.expense_date}T12:00:00`), "d MMM yyyy", { locale: fr })}
                   {e.category ? ` · ${e.category}` : ""}
                   {e.payer?.name ? ` · payé par ${e.payer.name}` : ""}
@@ -252,8 +252,8 @@ function ExpenseModal({
                   onClick={() => toggle(p.id)}
                   className={`rounded-full px-3 py-1 text-xs ${
                     participants.includes(p.id)
-                      ? "bg-violet-500/20 text-violet-200"
-                      : "bg-white/[0.05] text-[#8b869c]"
+                      ? "bg-emerald-500/20 text-emerald-200"
+                      : "bg-white/[0.05] text-[#8a9e96]"
                   }`}
                 >
                   {p.name}

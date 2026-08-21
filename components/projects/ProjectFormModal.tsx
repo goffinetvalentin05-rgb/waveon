@@ -70,7 +70,7 @@ export function ProjectFormModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button type="button" className={ui.overlay} onClick={onClose} />
       <form onSubmit={submit} className={`${ui.modal} max-h-[90vh] max-w-lg overflow-y-auto p-6`}>
-        <h2 className="text-lg font-semibold text-[#f3f0fa]">
+        <h2 className="text-lg font-semibold text-[#eef6f2]">
           {project ? "Modifier le projet" : "Nouveau projet"}
         </h2>
         <div className="mt-5 space-y-4">
@@ -124,12 +124,12 @@ export function ProjectFormModal({
                     onClick={() => applyTemplate(t.id)}
                     className={`rounded-[12px] border px-3 py-2.5 text-left ${
                       template === t.id
-                        ? "border-violet-500/50 bg-violet-500/10"
+                        ? "border-emerald-500/50 bg-emerald-500/10"
                         : "border-white/[0.08] hover:bg-white/[0.04]"
                     }`}
                   >
-                    <p className="text-sm font-medium text-[#f3f0fa]">{t.label}</p>
-                    <p className="mt-0.5 text-[11px] text-[#8b869c]">{t.description}</p>
+                    <p className="text-sm font-medium text-[#eef6f2]">{t.label}</p>
+                    <p className="mt-0.5 text-[11px] text-[#8a9e96]">{t.description}</p>
                   </button>
                 ))}
               </div>
@@ -142,7 +142,7 @@ export function ProjectFormModal({
               {PROJECT_MODULE_KEYS.map((key) => (
                 <label
                   key={key}
-                  className="flex items-center gap-2 rounded-[10px] border border-white/[0.06] px-3 py-2 text-sm text-[#e8e4f0]"
+                  className="flex items-center gap-2 rounded-[10px] border border-white/[0.06] px-3 py-2 text-sm text-[#dce8e3]"
                 >
                   <input
                     type="checkbox"

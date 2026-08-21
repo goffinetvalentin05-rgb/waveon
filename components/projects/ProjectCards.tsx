@@ -50,14 +50,14 @@ export function ProjectCards({
                 <div className="flex items-center gap-3">
                   <span
                     className="flex h-10 w-10 items-center justify-center rounded-[12px] text-lg"
-                    style={{ background: `${p.color ?? "#8b5cf6"}22`, color: p.color ?? "#8b5cf6" }}
+                    style={{ background: `${p.color ?? "#10b981"}22`, color: p.color ?? "#10b981" }}
                   >
                     {p.icon || p.name.slice(0, 1).toUpperCase()}
                   </span>
                   <div>
-                    <h2 className="text-base font-semibold text-[#f3f0fa]">{p.name}</h2>
+                    <h2 className="text-base font-semibold text-[#eef6f2]">{p.name}</h2>
                     {p.description ? (
-                      <p className="mt-0.5 line-clamp-1 text-xs text-[#8b869c]">{p.description}</p>
+                      <p className="mt-0.5 line-clamp-1 text-xs text-[#8a9e96]">{p.description}</p>
                     ) : null}
                   </div>
                 </div>
@@ -69,7 +69,7 @@ export function ProjectCards({
                 <Stat label="Clients" value={String(p.clientsCount)} />
               </div>
               {p.potentialValue > 0 ? (
-                <p className="mt-4 text-xs text-[#8b869c]">
+                <p className="mt-4 text-xs text-[#8a9e96]">
                   Potentiel {formatChf(p.potentialValue)}
                 </p>
               ) : null}
@@ -78,7 +78,7 @@ export function ProjectCards({
           <button
             type="button"
             onClick={() => setShowCreate(true)}
-            className="flex min-h-[180px] flex-col items-center justify-center gap-2 rounded-[14px] border border-dashed border-white/[0.1] text-sm text-[#8b869c] transition hover:border-violet-500/40 hover:text-[#f3f0fa]"
+            className="flex min-h-[180px] flex-col items-center justify-center gap-2 rounded-[14px] border border-dashed border-white/[0.1] text-sm text-[#8a9e96] transition hover:border-emerald-500/40 hover:text-[#eef6f2]"
           >
             <IconPlus className="h-5 w-5" />
             Nouveau projet
@@ -88,13 +88,13 @@ export function ProjectCards({
 
       {archived.length > 0 ? (
         <div>
-          <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-[#6a6578]">Archivés</h3>
+          <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-[#6b7d76]">Archivés</h3>
           <div className="flex flex-wrap gap-2">
             {archived.map((p) => (
               <Link
                 key={p.id}
                 href={hrefFor(p.id)}
-                className="rounded-full border border-white/[0.08] px-3 py-1 text-xs text-[#8b869c] hover:text-[#f3f0fa]"
+                className="rounded-full border border-white/[0.08] px-3 py-1 text-xs text-[#8a9e96] hover:text-[#eef6f2]"
               >
                 {p.name}
               </Link>
@@ -120,8 +120,8 @@ export function ProjectCards({
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[10px] bg-white/[0.03] px-3 py-2">
-      <p className="text-[10px] uppercase tracking-wide text-[#6a6578]">{label}</p>
-      <p className="mt-0.5 font-semibold tabular-nums text-[#f3f0fa]">{value}</p>
+      <p className="text-[10px] uppercase tracking-wide text-[#6b7d76]">{label}</p>
+      <p className="mt-0.5 font-semibold tabular-nums text-[#eef6f2]">{value}</p>
     </div>
   );
 }

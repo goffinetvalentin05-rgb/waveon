@@ -35,7 +35,7 @@ export function ProspectStats({ projectId }: { projectId?: string }) {
       .then(setStats);
   }, [projectId]);
 
-  if (!stats) return <p className="text-sm text-[#6a6578]">Chargement des statistiques…</p>;
+  if (!stats) return <p className="text-sm text-[#6b7d76]">Chargement des statistiques…</p>;
 
   const cards = [
     { label: "Prospects", value: String(stats.total) },
@@ -57,14 +57,14 @@ export function ProspectStats({ projectId }: { projectId?: string }) {
       {projectId ? null : (
         <div>
           <h1 className={ui.h1}>Statistiques</h1>
-          <p className="mt-1 text-sm text-[#8b869c]">Vue d&apos;ensemble de la prospection.</p>
+          <p className="mt-1 text-sm text-[#8a9e96]">Vue d&apos;ensemble de la prospection.</p>
         </div>
       )}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((c) => (
-          <div key={c.label} className={`${ui.card} p-5`}>
-            <p className="text-xs font-medium uppercase tracking-wide text-[#8b869c]">{c.label}</p>
-            <p className="mt-2 text-2xl font-semibold tracking-tight text-[#f3f0fa]">{c.value}</p>
+          <div key={c.label} className={ui.statCard}>
+            <p className="text-xs font-medium uppercase tracking-wide text-[#8a9e96]">{c.label}</p>
+            <p className="mt-2 text-2xl font-semibold tracking-tight text-[#eef6f2]">{c.value}</p>
           </div>
         ))}
       </div>
@@ -78,11 +78,11 @@ export function ProspectStats({ projectId }: { projectId?: string }) {
             return (
               <li key={s}>
                 <div className="mb-1 flex justify-between text-sm">
-                  <span className="flex items-center gap-2 text-[#c8c3d6]">
+                  <span className="flex items-center gap-2 text-[#c2d4cc]">
                     <span className={`h-2 w-2 rounded-full ${style.dot}`} />
                     {s}
                   </span>
-                  <span className="font-medium text-[#f3f0fa]">{n}</span>
+                  <span className="font-medium text-[#eef6f2]">{n}</span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
                   <div className={`h-full rounded-full ${style.dot} opacity-80`} style={{ width: `${(n / max) * 100}%` }} />

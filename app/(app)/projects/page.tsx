@@ -19,7 +19,7 @@ export default async function ProjectsPage() {
   ]);
 
   return (
-    <Suspense fallback={<p className="text-sm text-[#6a6578]">Chargement…</p>}>
+    <Suspense fallback={<p className="text-sm text-[#6b7d76]">Chargement…</p>}>
       <ProjectsHub
         projects={launcher.projects}
         archived={all.filter((p) => p.status === "archived")}

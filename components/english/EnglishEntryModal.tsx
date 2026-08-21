@@ -122,12 +122,12 @@ export function EnglishEntryModal({
         className={`${ui.modal} max-h-[90vh] max-w-lg overflow-y-auto p-6`}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[#f3f0fa]">
+          <h2 className="text-lg font-semibold text-[#eef6f2]">
             {isEdit ? "Modifier l'entrée" : "Ajouter une entrée"}
           </h2>
           <button
             type="button"
-            className="rounded-lg p-1.5 text-[#6a6578] transition hover:bg-white/[0.06] hover:text-[#f3f0fa]"
+            className="rounded-lg p-1.5 text-[#6b7d76] transition hover:bg-white/[0.06] hover:text-[#eef6f2]"
             onClick={onClose}
             aria-label="Fermer"
           >
@@ -146,8 +146,8 @@ export function EnglishEntryModal({
                   onClick={() => setField("type", t)}
                   className={`rounded-xl border px-3.5 py-2 text-sm font-medium transition ${
                     values.type === t
-                      ? "border-violet-500/50 bg-violet-500/15 text-violet-200"
-                      : "border-white/[0.08] bg-transparent text-[#8b869c] hover:bg-white/[0.04]"
+                      ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-200"
+                      : "border-white/[0.08] bg-transparent text-[#8a9e96] hover:bg-white/[0.04]"
                   }`}
                 >
                   {ENGLISH_TYPE_LABELS[t]}

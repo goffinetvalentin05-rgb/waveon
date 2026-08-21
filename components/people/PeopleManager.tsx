@@ -41,22 +41,22 @@ export function PeopleManager() {
   return (
     <section className={`${ui.card} p-5 sm:p-6`}>
       <h2 className={ui.h2}>Personnes</h2>
-      <p className="mt-1 text-sm text-[#8b869c]">
+      <p className="mt-1 text-sm text-[#8a9e96]">
         Carnet interne pour assigner tâches, prospects et dépenses.
       </p>
       <ul className="mt-4 space-y-2">
         {people.map((p) => (
           <li key={p.id} className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-500/20 text-[11px] font-semibold text-violet-200">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20 text-[11px] font-semibold text-emerald-200">
                 {personInitials(p.name)}
               </span>
               <div>
-                <p className="text-sm font-medium text-[#f3f0fa]">
+                <p className="text-sm font-medium text-[#eef6f2]">
                   {p.name}
-                  {p.is_self ? <span className="ml-2 text-[10px] text-violet-300">toi</span> : null}
+                  {p.is_self ? <span className="ml-2 text-[10px] text-emerald-300">toi</span> : null}
                 </p>
-                {p.role ? <p className="text-[11px] text-[#6a6578]">{p.role}</p> : null}
+                {p.role ? <p className="text-[11px] text-[#6b7d76]">{p.role}</p> : null}
               </div>
             </div>
             {p.is_self ? null : (

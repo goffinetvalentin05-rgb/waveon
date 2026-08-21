@@ -43,17 +43,17 @@ const DEFAULT_FILTERS: Filters = {
 };
 
 const TYPE_STYLES: Record<EnglishType, { bg: string; text: string }> = {
-  word: { bg: "bg-violet-500/15", text: "text-violet-200" },
+  word: { bg: "bg-teal-500/15", text: "text-teal-200" },
   expression: { bg: "bg-sky-500/15", text: "text-sky-200" },
-  sentence: { bg: "bg-white/[0.06]", text: "text-[#c8c3d6]" },
+  sentence: { bg: "bg-white/[0.06]", text: "text-[#c2d4cc]" },
 };
 
 const STATUS_STYLES: Record<EnglishStatus, { bg: string; text: string; dot: string }> = {
-  new: { bg: "bg-white/[0.06]", text: "text-[#c8c3d6]", dot: "bg-[#8b869c]" },
-  learning: { bg: "bg-violet-500/15", text: "text-violet-200", dot: "bg-violet-400" },
+  new: { bg: "bg-white/[0.06]", text: "text-[#c2d4cc]", dot: "bg-[#8a9e96]" },
+  learning: { bg: "bg-teal-500/15", text: "text-teal-200", dot: "bg-teal-400" },
   known: { bg: "bg-emerald-500/15", text: "text-emerald-200", dot: "bg-emerald-400" },
   review: { bg: "bg-amber-500/15", text: "text-amber-200", dot: "bg-amber-400" },
-  archived: { bg: "bg-white/[0.04]", text: "text-[#6a6578]", dot: "bg-[#6a6578]" },
+  archived: { bg: "bg-white/[0.04]", text: "text-[#6b7d76]", dot: "bg-[#6b7d76]" },
 };
 
 function fmtDate(value: string | null) {
@@ -229,7 +229,7 @@ export function EnglishClient() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between crm-animate-in">
         <div>
           <h1 className={ui.h1}>English</h1>
-          <p className="mt-1 text-sm text-[#8b869c]">
+          <p className="mt-1 text-sm text-[#8a9e96]">
             Vocabulaire, expressions et répétition espacée — le même cockpit, un module différent.
           </p>
         </div>
@@ -248,9 +248,9 @@ export function EnglishClient() {
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 crm-animate-in-delay-1">
         {summaryCards.map((c) => (
-          <div key={c.label} className={`${ui.card} p-4 sm:p-5`}>
-            <p className="text-xs font-medium uppercase tracking-wide text-[#8b869c]">{c.label}</p>
-            <p className="mt-2 text-2xl font-semibold tracking-tight text-[#f3f0fa] sm:text-3xl">
+          <div key={c.label} className={ui.statCard}>
+            <p className="text-xs font-medium uppercase tracking-wide text-[#8a9e96]">{c.label}</p>
+            <p className="mt-2 text-2xl font-semibold tracking-tight text-[#eef6f2] sm:text-3xl">
               {c.value}
             </p>
           </div>
@@ -259,7 +259,7 @@ export function EnglishClient() {
 
       <div className="flex flex-col gap-3 crm-animate-in-delay-1 sm:flex-row sm:flex-wrap sm:items-center">
         <div className="relative flex-1 sm:min-w-[220px]">
-          <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6a6578]" />
+          <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6b7d76]" />
           <input
             className={`${ui.input} pl-9`}
             placeholder="Rechercher un mot, une expression, une phrase…"
@@ -328,15 +328,15 @@ export function EnglishClient() {
       ) : null}
 
       {entries === null ? (
-        <p className="text-sm text-[#6a6578]">Chargement des entrées…</p>
+        <p className="text-sm text-[#6b7d76]">Chargement des entrées…</p>
       ) : entries.length === 0 ? (
         <div className={`${ui.card} flex flex-col items-center gap-3 px-6 py-14 text-center crm-animate-in-delay-2`}>
-          <p className="text-base font-medium text-[#f3f0fa]">
+          <p className="text-base font-medium text-[#eef6f2]">
             {hasActiveFilters
               ? "Aucune entrée ne correspond à votre recherche."
               : "Aucune entrée pour le moment."}
           </p>
-          <p className="max-w-sm text-sm text-[#8b869c]">
+          <p className="max-w-sm text-sm text-[#8a9e96]">
             {hasActiveFilters
               ? "Essayez de modifier votre recherche ou vos filtres."
               : "Ajoutez un mot, une expression ou une phrase pour commencer à construire votre vocabulaire."}
@@ -373,13 +373,13 @@ export function EnglishClient() {
                       {ENGLISH_STATUS_LABELS[entry.status]}
                     </span>
                     {entry.category ? (
-                      <span className="text-xs font-medium text-[#6a6578]">{entry.category}</span>
+                      <span className="text-xs font-medium text-[#6b7d76]">{entry.category}</span>
                     ) : null}
                   </div>
-                  <p className="mt-2 text-base font-semibold text-[#f3f0fa]">{entry.english_text}</p>
-                  <p className="text-sm text-[#8b869c]">{entry.french_translation}</p>
+                  <p className="mt-2 text-base font-semibold text-[#eef6f2]">{entry.english_text}</p>
+                  <p className="text-sm text-[#8a9e96]">{entry.french_translation}</p>
                   {entry.example_english ? (
-                    <p className="mt-1 truncate text-xs italic text-[#6a6578]">
+                    <p className="mt-1 truncate text-xs italic text-[#6b7d76]">
                       &ldquo;{entry.example_english}&rdquo;
                     </p>
                   ) : null}
@@ -387,15 +387,15 @@ export function EnglishClient() {
 
                 <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end sm:justify-end sm:gap-2.5">
                   <div className="text-right">
-                    <p className="text-xs text-[#6a6578]">Prochaine révision</p>
-                    <p className={`text-sm font-medium ${due ? "text-amber-300" : "text-[#c8c3d6]"}`}>
+                    <p className="text-xs text-[#6b7d76]">Prochaine révision</p>
+                    <p className={`text-sm font-medium ${due ? "text-amber-300" : "text-[#c2d4cc]"}`}>
                       {fmtDate(entry.next_review_at)}
                     </p>
                   </div>
                   <div className="flex gap-1.5">
                     <button
                       type="button"
-                      className="rounded-lg p-2 text-[#6a6578] transition hover:bg-white/[0.06] hover:text-[#f3f0fa]"
+                      className="rounded-lg p-2 text-[#6b7d76] transition hover:bg-white/[0.06] hover:text-[#eef6f2]"
                       onClick={() => openEdit(entry)}
                       aria-label="Modifier"
                       title="Modifier"
@@ -404,7 +404,7 @@ export function EnglishClient() {
                     </button>
                     <button
                       type="button"
-                      className="rounded-lg p-2 text-[#6a6578] transition hover:bg-white/[0.06] hover:text-[#f3f0fa]"
+                      className="rounded-lg p-2 text-[#6b7d76] transition hover:bg-white/[0.06] hover:text-[#eef6f2]"
                       onClick={() => handleArchive(entry)}
                       aria-label="Archiver"
                       title="Archiver"
@@ -413,7 +413,7 @@ export function EnglishClient() {
                     </button>
                     <button
                       type="button"
-                      className="rounded-lg p-2 text-[#6a6578] transition hover:bg-rose-500/10 hover:text-rose-300"
+                      className="rounded-lg p-2 text-[#6b7d76] transition hover:bg-rose-500/10 hover:text-rose-300"
                       onClick={() => {
                         setDeleteError(null);
                         setPendingDelete(entry);
@@ -481,8 +481,8 @@ function ConfirmDeleteModal({
         aria-label="Fermer"
       />
       <div className={`${ui.modal} max-w-md p-6`}>
-        <h3 className="text-lg font-semibold text-[#f3f0fa]">Supprimer cette entrée ?</h3>
-        <p className="mt-2 text-sm text-[#8b869c]">
+        <h3 className="text-lg font-semibold text-[#eef6f2]">Supprimer cette entrée ?</h3>
+        <p className="mt-2 text-sm text-[#8a9e96]">
           « {entry.english_text} » sera définitivement supprimé, ainsi que son historique de
           révision. Cette action est irréversible.
         </p>

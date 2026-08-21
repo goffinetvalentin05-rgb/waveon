@@ -18,13 +18,13 @@ export type PipelineColumn = {
 };
 
 export const PIPELINE_COLUMNS: PipelineColumn[] = [
-  { id: "to_contact", label: "À contacter", accent: "bg-[#8b869c]" },
-  { id: "contacted", label: "Contacté", accent: "bg-violet-400" },
+  { id: "to_contact", label: "À contacter", accent: "bg-[#8a9e96]" },
+  { id: "contacted", label: "Contacté", accent: "bg-teal-400" },
   { id: "replied", label: "Répondu", accent: "bg-sky-400" },
-  { id: "demo_scheduled", label: "Démo prévue", accent: "bg-violet-500" },
+  { id: "demo_scheduled", label: "Démo prévue", accent: "bg-cyan-400" },
   { id: "demo_done", label: "Démo faite", accent: "bg-emerald-400" },
   { id: "negotiation", label: "Négociation", accent: "bg-amber-400" },
-  { id: "client", label: "Client", accent: "bg-emerald-400" },
+  { id: "client", label: "Client", accent: "bg-emerald-300" },
   { id: "refus", label: "Refusé", accent: "bg-rose-400" },
 ];
 
@@ -62,12 +62,12 @@ export function isFollowedProspect(prospect: Prospect): boolean {
 }
 
 const AVATAR_TONES = [
-  "bg-violet-500/20 text-violet-200",
+  "bg-teal-500/20 text-teal-200",
   "bg-emerald-500/20 text-emerald-200",
   "bg-sky-500/20 text-sky-200",
   "bg-amber-500/20 text-amber-200",
   "bg-rose-500/20 text-rose-200",
-  "bg-fuchsia-500/20 text-fuchsia-200",
+  "bg-cyan-500/20 text-cyan-200",
 ];
 
 export function prospectAvatarTone(name: string): string {

@@ -47,24 +47,30 @@ export default async function PersonalHomePage() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-violet-300/80">Personnel</p>
-        <h1 className={ui.h1}>Mon espace</h1>
-        <p className="mt-1 text-sm text-[#8b869c]">Uniquement vos outils personnels.</p>
+        <p className={ui.kicker}>Personnel</p>
+        <h1 className={`${ui.h1} mt-2`}>Mon espace</h1>
+        <p className="mt-1 text-sm text-[#8a9e96]">Uniquement vos outils personnels.</p>
         {next ? (
-          <p className="mt-3 text-sm text-[#c8c3d6]">
+          <p className="mt-3 text-sm text-[#c2d4cc]">
             Prochain événement : {next.title} ·{" "}
             {format(new Date(next.start_at), "d MMM HH:mm", { locale: fr })}
           </p>
         ) : null}
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        {modules.map((m) => {
+        {modules.map((m, i) => {
           const Icon = m.icon;
           return (
-            <Link key={m.href} href={m.href} className={`${ui.cardInteractive} p-5`}>
-              <Icon className="h-5 w-5 text-violet-300" />
-              <h2 className="mt-3 text-base font-semibold text-[#f3f0fa]">{m.label}</h2>
-              <p className="mt-1 text-sm text-[#8b869c]">{m.hint}</p>
+            <Link
+              key={m.href}
+              href={m.href}
+              className={`${i === 0 ? ui.cardFeatured : ui.cardInteractive} p-5`}
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-300">
+                <Icon className="h-5 w-5" />
+              </span>
+              <h2 className="mt-3 font-display text-base font-semibold text-[#eef6f2]">{m.label}</h2>
+              <p className="mt-1 text-sm text-[#8a9e96]">{m.hint}</p>
             </Link>
           );
         })}

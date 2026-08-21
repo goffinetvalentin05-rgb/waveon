@@ -94,7 +94,7 @@ function LoginPageContent() {
         forgotView ? null : (
           <>
             Pas encore de compte ?{" "}
-            <Link href="/signup" className="font-semibold text-violet-400 hover:underline">
+            <Link href="/signup" className="font-semibold text-emerald-400 hover:underline">
               S&apos;inscrire
             </Link>
           </>
@@ -124,7 +124,7 @@ function LoginPageContent() {
           </button>
           <button
             type="button"
-            className="block w-full text-center text-xs text-[#6a6578] hover:text-[#f3f0fa]"
+            className="block w-full text-center text-xs text-[#6b7d76] hover:text-[#eef6f2]"
             onClick={() => {
               setForgotView(false);
               setMessage(null);
@@ -157,7 +157,7 @@ function LoginPageContent() {
               </label>
               <button
                 type="button"
-                className="mb-1.5 text-xs text-[#6a6578] hover:text-violet-300"
+                className="mb-1.5 text-xs text-[#6b7d76] hover:text-emerald-300"
                 onClick={() => {
                   setForgotView(true);
                   setMessage(null);
@@ -202,7 +202,7 @@ export default function LoginPage() {
     <Suspense
       fallback={
         <AuthShell title={brand.name} subtitle={brand.tagline}>
-          <p className="text-sm text-[#6a6578]">Chargement…</p>
+          <p className="text-sm text-[#6b7d76]">Chargement…</p>
         </AuthShell>
       }
     >

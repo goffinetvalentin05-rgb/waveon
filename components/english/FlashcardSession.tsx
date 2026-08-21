@@ -65,7 +65,7 @@ export function FlashcardSession() {
       <div>
         <Link
           href="/personal/english"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-[#8b869c] transition hover:text-violet-300"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-[#8a9e96] transition hover:text-emerald-300"
         >
           <IconArrowLeft className="h-4 w-4" stroke={1.75} />
           English
@@ -76,11 +76,11 @@ export function FlashcardSession() {
       {error ? <p className={ui.alertError}>{error}</p> : null}
 
       {cards === null ? (
-        <p className="text-sm text-[#6a6578]">Chargement des cartes à réviser…</p>
+        <p className="text-sm text-[#6b7d76]">Chargement des cartes à réviser…</p>
       ) : empty ? (
         <div className={`${ui.card} flex flex-col items-center gap-3 px-6 py-14 text-center`}>
-          <p className="text-lg font-semibold text-[#f3f0fa]">Vous êtes à jour</p>
-          <p className="max-w-sm text-sm text-[#8b869c]">
+          <p className="text-lg font-semibold text-[#eef6f2]">Vous êtes à jour</p>
+          <p className="max-w-sm text-sm text-[#8a9e96]">
             Aucune carte à réviser pour aujourd&apos;hui. Revenez plus tard ou ajoutez du nouveau
             vocabulaire.
           </p>
@@ -90,8 +90,8 @@ export function FlashcardSession() {
         </div>
       ) : finished ? (
         <div className={`${ui.card} flex flex-col items-center gap-3 px-6 py-14 text-center`}>
-          <p className="text-lg font-semibold text-[#f3f0fa]">Session terminée</p>
-          <p className="max-w-sm text-sm text-[#8b869c]">
+          <p className="text-lg font-semibold text-[#eef6f2]">Session terminée</p>
+          <p className="max-w-sm text-sm text-[#8a9e96]">
             Bravo, vous avez révisé {total} carte{total > 1 ? "s" : ""} aujourd&apos;hui.
           </p>
           <div className="mt-2 flex flex-wrap justify-center gap-2">
@@ -106,7 +106,7 @@ export function FlashcardSession() {
       ) : current ? (
         <>
           <div>
-            <div className="mb-2 flex items-center justify-between text-sm text-[#8b869c]">
+            <div className="mb-2 flex items-center justify-between text-sm text-[#8a9e96]">
               <span>
                 {index + 1} sur {total}
               </span>
@@ -114,7 +114,7 @@ export function FlashcardSession() {
             </div>
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
               <div
-                className="h-full rounded-full bg-violet-500 transition-all"
+                className="h-full rounded-full bg-emerald-500 transition-all"
                 style={{ width: `${(index / total) * 100}%` }}
               />
             </div>
@@ -123,41 +123,41 @@ export function FlashcardSession() {
           <button
             type="button"
             onClick={() => setFlipped((f) => !f)}
-            className={`${ui.card} flex min-h-[300px] w-full flex-col items-center justify-center gap-4 px-6 py-10 text-center transition hover:border-white/[0.12] sm:min-h-[340px]`}
+            className={`${ui.cardFeatured} flex min-h-[300px] w-full flex-col items-center justify-center gap-4 px-6 py-10 text-center sm:min-h-[340px]`}
           >
             {!flipped ? (
               <>
-                <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-[#6a6578]">
+                <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-[#6b7d76]">
                   Anglais
                 </p>
-                <p className="text-2xl font-semibold tracking-tight text-[#f3f0fa] sm:text-3xl">
+                <p className="text-2xl font-semibold tracking-tight text-[#eef6f2] sm:text-3xl">
                   {current.english_text}
                 </p>
                 {current.example_english ? (
-                  <p className="max-w-sm text-sm italic text-[#8b869c]">
+                  <p className="max-w-sm text-sm italic text-[#8a9e96]">
                     &ldquo;{current.example_english}&rdquo;
                   </p>
                 ) : null}
-                <span className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-violet-300">
+                <span className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-emerald-300">
                   <IconRotate2 className="h-4 w-4" stroke={1.75} />
                   Voir la traduction
                 </span>
               </>
             ) : (
               <>
-                <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-[#6a6578]">
+                <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-[#6b7d76]">
                   Français
                 </p>
-                <p className="text-2xl font-semibold tracking-tight text-[#f3f0fa] sm:text-3xl">
+                <p className="text-2xl font-semibold tracking-tight text-[#eef6f2] sm:text-3xl">
                   {current.french_translation}
                 </p>
                 {current.example_french ? (
-                  <p className="max-w-sm text-sm italic text-[#8b869c]">
+                  <p className="max-w-sm text-sm italic text-[#8a9e96]">
                     &ldquo;{current.example_french}&rdquo;
                   </p>
                 ) : null}
                 {current.personal_note ? (
-                  <p className="max-w-sm rounded-[12px] bg-violet-500/15 px-3 py-2 text-sm text-violet-200">
+                  <p className="max-w-sm rounded-[12px] bg-emerald-500/15 px-3 py-2 text-sm text-emerald-200">
                     {current.personal_note}
                   </p>
                 ) : null}

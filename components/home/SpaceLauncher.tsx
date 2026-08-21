@@ -32,68 +32,64 @@ export function SpaceLauncher({
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
-      <div>
-        <h1 className="text-[2rem] font-semibold tracking-tight text-[#f3f0fa] sm:text-[2.35rem]">
+      <div className="crm-animate-in">
+        <p className={ui.kicker}>Cockpit</p>
+        <h1 className="mt-2 font-display text-[2rem] font-semibold tracking-tight text-[#eef6f2] sm:text-[2.4rem]">
           Bonjour {firstName}.
         </h1>
-        <p className="mt-2 text-base text-[#8b869c]">Sur quoi voulez-vous travailler ?</p>
+        <p className="mt-2 text-base text-[#8a9e96]">Sur quoi voulez-vous travailler ?</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Link
-          href="/personal"
-          className="group relative overflow-hidden rounded-[18px] border border-white/[0.08] bg-[#14121c] p-6 transition hover:border-violet-500/35 hover:bg-[#1a1824]"
-        >
-          <div className="flex items-start justify-between gap-3">
+      <div className="grid gap-4 sm:grid-cols-2 crm-animate-in-delay-1">
+        <Link href="/personal" className="wo-card-featured group p-6">
+          <div className="relative flex items-start justify-between gap-3">
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#6a6578]">Espace</p>
-              <h2 className="mt-1 text-xl font-semibold text-[#f3f0fa]">Personnel</h2>
+              <p className={ui.kicker}>Espace</p>
+              <h2 className="mt-1 font-display text-xl font-semibold text-[#eef6f2]">Personnel</h2>
             </div>
             {data.personal.lockEnabled ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-white/[0.06] px-2 py-1 text-[11px] text-[#c8c3d6]">
+              <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-black/20 px-2 py-1 text-[11px] text-[#c2d4cc]">
                 <IconLock className="h-3.5 w-3.5" />
                 {data.personal.unlocked ? "Session ouverte" : "Verrouillé"}
               </span>
             ) : null}
           </div>
-          <div className="mt-6 space-y-1.5 text-sm text-[#8b869c]">
+          <div className="relative mt-8 space-y-1.5 text-sm text-[#a7f3d0]/80">
             <p>
               {data.personal.openTasks} tâche{data.personal.openTasks > 1 ? "s" : ""} personnelle
               {data.personal.openTasks > 1 ? "s" : ""}
             </p>
-            <p>{nextPersonal ? `Prochain : ${data.personal.nextEventTitle} · ${nextPersonal}` : "Aucun événement à venir"}</p>
+            <p className="text-[#8a9e96]">
+              {nextPersonal ? `Prochain : ${data.personal.nextEventTitle} · ${nextPersonal}` : "Aucun événement à venir"}
+            </p>
           </div>
         </Link>
 
         {data.projects.map((project) => {
           const when = formatWhen(project.nextEventAt);
           return (
-            <Link
-              key={project.id}
-              href={`/projects/${project.id}`}
-              className="group relative overflow-hidden rounded-[18px] border border-white/[0.08] bg-[#14121c] p-6 transition hover:border-white/[0.14] hover:bg-[#1a1824]"
-            >
+            <Link key={project.id} href={`/projects/${project.id}`} className={`${ui.cardInteractive} group relative overflow-hidden p-6`}>
               <span
-                className="absolute inset-y-0 left-0 w-[3px]"
-                style={{ background: project.color ?? "#8b5cf6" }}
+                className="absolute inset-y-4 left-0 w-[3px] rounded-full"
+                style={{ background: project.color ?? "#10b981" }}
               />
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start justify-between gap-3 pl-1">
                 <div className="flex items-center gap-3">
                   <span
-                    className="flex h-11 w-11 items-center justify-center rounded-[12px] text-lg"
-                    style={{ background: `${project.color ?? "#8b5cf6"}22` }}
+                    className="flex h-11 w-11 items-center justify-center rounded-2xl text-lg"
+                    style={{ background: `${project.color ?? "#10b981"}22` }}
                   >
                     {project.icon || project.name.slice(0, 1).toUpperCase()}
                   </span>
                   <div>
-                    <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#6a6578]">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6b7d76]">
                       {project.status === "active" ? "Projet actif" : "Archivé"}
                     </p>
-                    <h2 className="text-xl font-semibold text-[#f3f0fa]">{project.name}</h2>
+                    <h2 className="font-display text-xl font-semibold text-[#eef6f2]">{project.name}</h2>
                   </div>
                 </div>
               </div>
-              <div className="mt-6 space-y-1.5 text-sm text-[#8b869c]">
+              <div className="mt-8 space-y-1.5 text-sm text-[#8a9e96]">
                 <p>
                   {project.openTasks} tâche{project.openTasks > 1 ? "s" : ""}
                 </p>
@@ -111,16 +107,18 @@ export function SpaceLauncher({
         <button
           type="button"
           onClick={() => setCreate(true)}
-          className="flex min-h-[180px] flex-col items-center justify-center gap-2 rounded-[18px] border border-dashed border-white/[0.12] text-sm text-[#8b869c] transition hover:border-violet-500/40 hover:text-[#f3f0fa]"
+          className="flex min-h-[180px] flex-col items-center justify-center gap-2 rounded-[1.5rem] border border-dashed border-white/[0.12] text-sm text-[#8a9e96] transition hover:border-emerald-400/40 hover:bg-emerald-500/[0.04] hover:text-[#eef6f2]"
         >
-          <IconPlus className="h-5 w-5" />
+          <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.03]">
+            <IconPlus className="h-5 w-5" />
+          </span>
           Nouveau projet
         </button>
       </div>
 
       {data.unassigned.prospects + data.unassigned.tasks + data.unassigned.notes > 0 ? (
-        <Link href="/projects?filter=unassigned" className={`${ui.cardInteractive} block p-4 text-sm text-[#8b869c]`}>
-          <span className="font-medium text-[#c8c3d6]">Sans projet</span>
+        <Link href="/projects?filter=unassigned" className={`${ui.cardInteractive} block p-4 text-sm text-[#8a9e96]`}>
+          <span className="font-medium text-[#c2d4cc]">Sans projet</span>
           {" · "}
           {data.unassigned.prospects} prospect{data.unassigned.prospects > 1 ? "s" : ""}
           {data.unassigned.tasks ? ` · ${data.unassigned.tasks} tâches` : ""}

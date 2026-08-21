@@ -207,13 +207,13 @@ function EventModalInner({
         className={`${ui.modal} flex max-h-[90vh] max-w-lg flex-col`}
       >
         <div className={ui.modalHeader}>
-          <h2 className="text-lg font-semibold text-[#f3f0fa]">
+          <h2 className="text-lg font-semibold text-[#eef6f2]">
             {isEdit ? "Modifier l'événement" : "Nouvel événement"}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-[#6a6578] transition hover:bg-white/[0.06] hover:text-[#f3f0fa]"
+            className="rounded-lg p-1.5 text-[#6b7d76] transition hover:bg-white/[0.06] hover:text-[#eef6f2]"
             aria-label="Fermer"
           >
             <IconX className="h-5 w-5" />
@@ -257,10 +257,10 @@ function EventModalInner({
                     setColor(e.target.value);
                     setColorTouched(true);
                   }}
-                  className="h-[42px] w-12 cursor-pointer rounded-xl border border-white/[0.08] bg-[#0f0d16] p-1"
+                  className="h-[42px] w-12 cursor-pointer rounded-xl border border-white/[0.08] bg-[#081411] p-1"
                   aria-label="Couleur de l'événement"
                 />
-                <span className="text-xs text-[#6a6578]">{color}</span>
+                <span className="text-xs text-[#6b7d76]">{color}</span>
               </div>
             </div>
           </div>
@@ -279,12 +279,12 @@ function EventModalInner({
             />
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-[#c8c3d6]">
+          <label className="flex items-center gap-2 text-sm text-[#c2d4cc]">
             <input
               type="checkbox"
               checked={allDay}
               onChange={(e) => setAllDay(e.target.checked)}
-              className="h-4 w-4 rounded border-white/20 bg-transparent text-violet-500 focus:ring-violet-500/30"
+              className="h-4 w-4 rounded border-white/20 bg-transparent text-emerald-500 focus:ring-emerald-500/30"
             />
             Toute la journée
           </label>

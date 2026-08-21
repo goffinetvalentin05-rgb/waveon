@@ -47,7 +47,7 @@ export function BalancesClient() {
     <div className="space-y-6">
       <div>
         <h1 className={ui.h1}>Qui doit quoi</h1>
-        <p className="mt-1 text-sm text-[#8b869c]">Soldes nets entre les personnes, sans effacer l&apos;historique.</p>
+        <p className="mt-1 text-sm text-[#8a9e96]">Soldes nets entre les personnes, sans effacer l&apos;historique.</p>
       </div>
 
       {balances.length === 0 ? (
@@ -61,12 +61,12 @@ export function BalancesClient() {
               onClick={() => setOpen(b)}
               className={`${ui.cardInteractive} flex w-full items-center justify-between px-4 py-4 text-left`}
             >
-              <p className="text-sm text-[#e8e4f0]">
-                <span className="font-semibold text-[#f3f0fa]">{b.fromName}</span>
-                <span className="text-[#8b869c]"> → </span>
-                <span className="font-semibold text-[#f3f0fa]">{b.toName}</span>
+              <p className="text-sm text-[#dce8e3]">
+                <span className="font-semibold text-[#eef6f2]">{b.fromName}</span>
+                <span className="text-[#8a9e96]"> → </span>
+                <span className="font-semibold text-[#eef6f2]">{b.toName}</span>
               </p>
-              <p className="text-base font-semibold tabular-nums text-violet-200">{chf(b.amount)}</p>
+              <p className="text-base font-semibold tabular-nums text-emerald-200">{chf(b.amount)}</p>
             </button>
           ))}
         </div>
@@ -75,7 +75,7 @@ export function BalancesClient() {
       {settlements.length > 0 ? (
         <section>
           <h2 className={ui.h2}>Remboursements</h2>
-          <ul className="mt-3 space-y-2 text-sm text-[#8b869c]">
+          <ul className="mt-3 space-y-2 text-sm text-[#8a9e96]">
             {settlements.map((s) => (
               <li key={s.id}>
                 {chf(Number(s.amount))} · {new Date(s.settled_at).toLocaleDateString("fr-CH")}
@@ -95,8 +95,8 @@ export function BalancesClient() {
             <ul className="mt-4 max-h-56 space-y-2 overflow-y-auto text-sm">
               {(details[`${open.fromId}::${open.toId}`] ?? []).map((line) => (
                 <li key={line.expenseId} className="flex justify-between gap-3">
-                  <span className="text-[#e8e4f0]">{line.title}</span>
-                  <span className="tabular-nums text-[#8b869c]">{chf(line.amount)}</span>
+                  <span className="text-[#dce8e3]">{line.title}</span>
+                  <span className="tabular-nums text-[#8a9e96]">{chf(line.amount)}</span>
                 </li>
               ))}
             </ul>

@@ -76,11 +76,11 @@ export function TasksClient({ projectId, scope }: { projectId?: string; scope?: 
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         {projectId ? (
-          <p className="text-sm text-[#8b869c]">{tasks.length} tâche{tasks.length > 1 ? "s" : ""}</p>
+          <p className="text-sm text-[#8a9e96]">{tasks.length} tâche{tasks.length > 1 ? "s" : ""}</p>
         ) : (
           <div>
             <h1 className={ui.h1}>Tâches</h1>
-            <p className="mt-1 text-sm text-[#8b869c]">Ce qui compte, clairement.</p>
+            <p className="mt-1 text-sm text-[#8a9e96]">Ce qui compte, clairement.</p>
           </div>
         )}
         <button type="button" className={ui.btnPrimary} onClick={() => setEditing("new")}>
@@ -95,7 +95,7 @@ export function TasksClient({ projectId, scope }: { projectId?: string; scope?: 
             key={v.id}
             type="button"
             onClick={() => setView(v.id)}
-            className={`inline-flex shrink-0 items-center rounded-[10px] px-3.5 py-2 text-sm font-medium transition ${
+            className={`inline-flex shrink-0 items-center rounded-full px-3.5 py-2 text-sm font-medium transition ${
               view === v.id ? ui.subNavActive : ui.subNavIdle
             }`}
           >
@@ -105,7 +105,7 @@ export function TasksClient({ projectId, scope }: { projectId?: string; scope?: 
       </div>
 
       {loading ? (
-        <p className="text-sm text-[#6a6578]">Chargement…</p>
+        <p className="text-sm text-[#6b7d76]">Chargement…</p>
       ) : view === "kanban" ? (
         <Kanban tasks={tasks} onStatus={updateStatus} onOpen={setEditing} />
       ) : tasks.length === 0 ? (
@@ -171,12 +171,12 @@ function TaskRow({
   const prio = PRIORITY_STYLES[(task.priority as TaskPriority) ?? "Normale"];
   const done = task.status === "Terminé" || task.completed;
   return (
-    <li className="flex items-center gap-3 rounded-[12px] px-2 py-2.5 hover:bg-white/[0.03]">
+    <li className="wo-list-row flex items-center gap-3 px-2.5 py-2.5">
       <button
         type="button"
         onClick={onToggle}
         className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[5px] border ${
-          done ? "border-violet-500 bg-violet-500 text-white" : "border-white/20 hover:border-violet-400"
+          done ? "border-emerald-500 bg-emerald-500 text-white" : "border-white/20 hover:border-emerald-400"
         }`}
         aria-label="Terminer"
       >
@@ -187,10 +187,10 @@ function TaskRow({
         ) : null}
       </button>
       <button type="button" onClick={onOpen} className="min-w-0 flex-1 text-left">
-        <p className={`truncate text-sm font-medium text-[#f3f0fa] ${done ? "line-through opacity-50" : ""}`}>
+        <p className={`truncate text-sm font-medium text-[#eef6f2] ${done ? "line-through opacity-50" : ""}`}>
           {task.title}
         </p>
-        <p className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-[#6a6578]">
+        <p className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-[#6b7d76]">
           <span>{formatDay(task.due_date)}</span>
           {task.due_time ? <span>{String(task.due_time).slice(0, 5)}</span> : null}
           {task.project?.name ? <span>{task.project.name}</span> : null}
@@ -223,7 +223,7 @@ function Kanban({
         return (
           <div
             key={status}
-            className="flex w-[260px] shrink-0 flex-col rounded-[14px] border border-white/[0.06] bg-[#100e16]"
+            className="flex w-[260px] shrink-0 flex-col rounded-[1.35rem] border border-white/[0.07] bg-[#0a1412]/80"
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               const id = e.dataTransfer.getData("text/plain");
@@ -231,8 +231,8 @@ function Kanban({
             }}
           >
             <div className="flex items-center justify-between px-3.5 py-3">
-              <h3 className="text-[13px] font-medium text-[#f3f0fa]">{status}</h3>
-              <span className="text-[11px] text-[#8b869c]">{items.length}</span>
+              <h3 className="text-[13px] font-medium text-[#eef6f2]">{status}</h3>
+              <span className="text-[11px] text-[#8a9e96]">{items.length}</span>
             </div>
             <div className="flex flex-1 flex-col gap-1.5 px-2 pb-2">
               {items.map((t) => (
@@ -242,10 +242,10 @@ function Kanban({
                   draggable
                   onDragStart={(e) => e.dataTransfer.setData("text/plain", t.id)}
                   onClick={() => onOpen(t)}
-                  className="rounded-[12px] border border-white/[0.04] bg-[#14121c] px-3 py-2.5 text-left hover:border-white/[0.1]"
+                  className="rounded-[14px] border border-white/[0.05] bg-[#0c1916] px-3 py-2.5 text-left transition hover:border-emerald-400/20"
                 >
-                  <p className="text-[13px] font-medium text-[#f3f0fa]">{t.title}</p>
-                  <p className="mt-1 text-[11px] text-[#6a6578]">{formatDay(t.due_date)}</p>
+                  <p className="text-[13px] font-medium text-[#eef6f2]">{t.title}</p>
+                  <p className="mt-1 text-[11px] text-[#6b7d76]">{formatDay(t.due_date)}</p>
                 </button>
               ))}
             </div>
@@ -330,8 +330,8 @@ function TaskEditor({
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <button type="button" className={ui.overlay} onClick={onClose} />
-      <div className="relative h-full w-full max-w-md overflow-y-auto border-l border-white/[0.08] bg-[#16141f] p-6">
-        <h2 className="text-lg font-semibold text-[#f3f0fa]">{task ? "Modifier la tâche" : "Nouvelle tâche"}</h2>
+      <div className="relative h-full w-full max-w-md overflow-y-auto border-l border-white/[0.08] bg-[#0e1c19] p-6">
+        <h2 className="text-lg font-semibold text-[#eef6f2]">{task ? "Modifier la tâche" : "Nouvelle tâche"}</h2>
         <div className="mt-5 space-y-3">
           <div>
             <label className={ui.label}>Titre</label>
@@ -407,10 +407,10 @@ function TaskEditor({
                       setSubtasks((prev) => prev.map((x, j) => (j === i ? { ...x, completed: e.target.checked } : x)))
                     }
                   />
-                  <span className={s.completed ? "text-[#6a6578] line-through" : "text-[#e8e4f0]"}>{s.title}</span>
+                  <span className={s.completed ? "text-[#6b7d76] line-through" : "text-[#dce8e3]"}>{s.title}</span>
                   <button
                     type="button"
-                    className="ml-auto text-[#6a6578]"
+                    className="ml-auto text-[#6b7d76]"
                     onClick={() => setSubtasks((prev) => prev.filter((_, j) => j !== i))}
                   >
                     ×
