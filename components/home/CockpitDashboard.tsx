@@ -99,6 +99,8 @@ export function CockpitDashboard({
         <CalendarWidget events={data.events} />
         <EnglishWidget english={data.english} />
         <TasksWidget tasks={data.tasks} />
+        <FinanceWidget monthSpend={data.monthSpend} monthlySubs={data.monthlySubs} />
+        <ActivityWidget events={data.recentEvents} />
       </div>
     </div>
   );
@@ -130,7 +132,7 @@ function WidgetHeader({
 function ProspectsWidget({ prospects }: { prospects: Prospect[] }) {
   return (
     <section className={ui.widget}>
-      <WidgetHeader title="Prospection — À rappeler" href="/crm/prospects" cta="Voir la prospection" />
+      <WidgetHeader title="Prospection — À rappeler" href="/crm" cta="Voir la prospection" />
       <div className="flex flex-1 flex-col gap-1.5 p-3 sm:p-4">
         {prospects.length === 0 ? (
           <p className="px-1 py-8 text-center text-sm text-[#6a6578]">Aucune relance en attente.</p>
@@ -238,6 +240,52 @@ function TasksWidget({ tasks }: { tasks: CockpitData["tasks"] }) {
           tasks={tasks}
           emptyLabel="Aucune tâche importante aujourd'hui."
         />
+      </div>
+    </section>
+  );
+}
+
+function chf(n: number) {
+  return new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(n);
+}
+
+function FinanceWidget({ monthSpend, monthlySubs }: { monthSpend: number; monthlySubs: number }) {
+  return (
+    <section className={ui.widget}>
+      <WidgetHeader title="Finances" href="/finances" cta="Ouvrir" />
+      <div className="grid grid-cols-2 gap-3 p-4 sm:p-5">
+        <div>
+          <p className="text-[10px] uppercase tracking-wide text-[#8b869c]">Dépenses du mois</p>
+          <p className="mt-1 text-xl font-semibold tabular-nums text-[#f3f0fa]">{chf(monthSpend)}</p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-wide text-[#8b869c]">Abonnements / mois</p>
+          <p className="mt-1 text-xl font-semibold tabular-nums text-[#f3f0fa]">{chf(monthlySubs)}</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ActivityWidget({ events }: { events: CockpitData["recentEvents"] }) {
+  return (
+    <section className={ui.widget}>
+      <WidgetHeader title="Activité récente" href="/notifications" cta="Alertes" />
+      <div className="p-4 sm:p-5">
+        {events.length === 0 ? (
+          <p className="py-6 text-center text-sm text-[#6a6578]">Pas encore d&apos;activité enregistrée.</p>
+        ) : (
+          <ul className="space-y-2">
+            {events.map((e) => (
+              <li key={e.id} className="text-sm">
+                <p className="text-[#e8e4f0]">{e.title}</p>
+                <p className="text-[11px] text-[#6a6578]">
+                  {format(new Date(e.created_at), "d MMM HH:mm", { locale: fr })}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </section>
   );

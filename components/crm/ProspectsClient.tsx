@@ -39,7 +39,7 @@ import { fr } from "date-fns/locale";
 const SEARCH_DEBOUNCE_MS = 300;
 
 const SORT_COLUMNS: { key: SortableColumn; label: string }[] = [
-  { key: "club_name", label: "Club" },
+  { key: "club_name", label: "Organisation" },
   { key: "sport", label: "Sport" },
   { key: "canton", label: "Canton" },
   { key: "contact_name", label: "Contact" },
@@ -92,21 +92,23 @@ export function ProspectsClient({
   total,
   totalAll,
   clientsOnly = false,
+  projectId,
 }: {
   initial: Prospect[];
   total: number;
   totalAll: number;
   initialParams?: ProspectListParams;
   clientsOnly?: boolean;
+  projectId?: string;
 }) {
   const router = useRouter();
   const urlSearchParams = useSearchParams();
   const [pending, startTransition] = useTransition();
 
-  const params = useMemo(
-    () => parseProspectListParams(new URLSearchParams(urlSearchParams.toString()), clientsOnly),
-    [urlSearchParams, clientsOnly]
-  );
+  const params = useMemo(() => {
+    const parsed = parseProspectListParams(new URLSearchParams(urlSearchParams.toString()), clientsOnly);
+    return projectId ? { ...parsed, projectId } : parsed;
+  }, [urlSearchParams, clientsOnly, projectId]);
   const paramsKey = useMemo(() => buildProspectListSearchParams(params).toString(), [params]);
 
   const [searchInput, setSearchInput] = useState(params.q);
@@ -129,7 +131,11 @@ export function ProspectsClient({
   const skipNextSearchDebounce = useRef(true);
   const skipInitialUrlFetch = useRef(true);
   const urlChangeFromSelf = useRef(false);
-  const listPath = clientsOnly ? "/crm/clients" : "/crm/prospects";
+  const listPath = clientsOnly
+    ? "/crm/clients"
+    : projectId && projectId !== "unassigned"
+      ? `/projects/${projectId}/prospects`
+      : "/crm/prospects";
 
   const activeFilterCount = countActiveFilters(params);
   const isFiltered = hasActiveSearchOrFilters(params);
@@ -234,6 +240,13 @@ export function ProspectsClient({
       lastActionFrom: params.lastActionFrom,
       lastActionTo: params.lastActionTo,
       archived: params.archived,
+      projectId: params.projectId,
+      assignedTo: params.assignedTo,
+      tags: params.tags,
+      channel: params.channel,
+      followUpPreset: params.followUpPreset,
+      minValue: params.minValue,
+      maxValue: params.maxValue,
     });
     setShowFilters(true);
   };
@@ -248,7 +261,7 @@ export function ProspectsClient({
     setSearchInput("");
     setFilterDraft(EMPTY_FILTERS);
     setShowFilters(false);
-    const next = defaultProspectListParams(clientsOnly);
+    const next = { ...defaultProspectListParams(clientsOnly), projectId: projectId ?? "" };
     applyParams(next);
   };
 
@@ -294,8 +307,46 @@ export function ProspectsClient({
     <div className="space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className={ui.h1}>{clientsOnly ? "Clients" : "Ma pipeline"}</h1>
-          <p className="mt-1 text-sm text-[#8b869c]">{resultLabel}</p>
+          {projectId ? null : <h1 className={ui.h1}>{clientsOnly ? "Clients" : "Ma pipeline"}</h1>}
+          <p className={`${projectId ? "" : "mt-1"} text-sm text-[#8b869c]`}>{resultLabel}</p>
+          {!clientsOnly ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className={`rounded-full px-3 py-1 text-xs font-medium ${
+                  params.followUpPreset === "today"
+                    ? "bg-amber-500/15 text-amber-200"
+                    : "bg-white/[0.05] text-[#8b869c] hover:text-[#f3f0fa]"
+                }`}
+                onClick={() =>
+                  applyParams({
+                    ...params,
+                    followUpPreset: params.followUpPreset === "today" ? null : "today",
+                    page: 1,
+                  })
+                }
+              >
+                À relancer aujourd&apos;hui
+              </button>
+              <button
+                type="button"
+                className={`rounded-full px-3 py-1 text-xs font-medium ${
+                  params.followUpPreset === "overdue"
+                    ? "bg-rose-500/15 text-rose-200"
+                    : "bg-white/[0.05] text-[#8b869c] hover:text-[#f3f0fa]"
+                }`}
+                onClick={() =>
+                  applyParams({
+                    ...params,
+                    followUpPreset: params.followUpPreset === "overdue" ? null : "overdue",
+                    page: 1,
+                  })
+                }
+              >
+                Relances en retard
+              </button>
+            </div>
+          ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
           {!clientsOnly ? (
@@ -514,6 +565,7 @@ export function ProspectsClient({
 
       {showCreate ? (
         <CreateProspectModal
+          projectId={projectId}
           onClose={() => setShowCreate(false)}
           onCreated={() => {
             setShowCreate(false);
@@ -530,9 +582,11 @@ export function ProspectsClient({
 function CreateProspectModal({
   onClose,
   onCreated,
+  projectId,
 }: {
   onClose: () => void;
   onCreated: () => void;
+  projectId?: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -543,6 +597,7 @@ function CreateProspectModal({
     setError(null);
     const fd = new FormData(e.currentTarget);
     const body = Object.fromEntries(fd.entries());
+    if (projectId && projectId !== "unassigned") body.project_id = projectId;
     const res = await fetch("/api/prospects", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -568,13 +623,12 @@ function CreateProspectModal({
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {(
             [
-              ["club_name", "Nom du club *", true],
-              ["sport", "Sport", false],
-              ["canton", "Canton", false],
+              ["club_name", "Organisation *", true],
               ["contact_name", "Contact", false],
               ["phone", "Téléphone", false],
               ["email", "Email", false],
               ["website", "Site web", false],
+              ["contact_channel", "Canal", false],
             ] as const
           ).map(([name, label, required]) => (
             <div key={name} className={name === "club_name" || name === "website" ? "sm:col-span-2" : ""}>

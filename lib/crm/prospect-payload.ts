@@ -14,6 +14,12 @@ export type ProspectInput = {
   email?: unknown;
   website?: unknown;
   notes?: unknown;
+  project_id?: unknown;
+  assigned_to?: unknown;
+  potential_value?: unknown;
+  contact_channel?: unknown;
+  tags?: unknown;
+  next_follow_up?: unknown;
 };
 
 /** Champs prospect normalisés pour insert/update Supabase. */
@@ -24,6 +30,19 @@ export function buildProspectFields(input: ProspectInput) {
   }
 
   const phone = nullIfEmpty(input.phone);
+
+  let potential_value: number | null = null;
+  if (input.potential_value != null && input.potential_value !== "") {
+    const n = Number(input.potential_value);
+    if (!Number.isNaN(n)) potential_value = n;
+  }
+
+  let tags: string[] = [];
+  if (Array.isArray(input.tags)) {
+    tags = input.tags.map((t) => String(t).trim()).filter(Boolean);
+  } else if (typeof input.tags === "string" && input.tags.trim()) {
+    tags = input.tags.split(",").map((t) => t.trim()).filter(Boolean);
+  }
 
   return {
     club_name,
@@ -36,6 +55,12 @@ export function buildProspectFields(input: ProspectInput) {
     email: nullIfEmpty(input.email),
     website: nullIfEmpty(input.website),
     notes: nullIfEmpty(input.notes),
+    project_id: nullIfEmpty(input.project_id),
+    assigned_to: nullIfEmpty(input.assigned_to),
+    potential_value,
+    contact_channel: nullIfEmpty(input.contact_channel),
+    tags,
+    next_follow_up: nullIfEmpty(input.next_follow_up),
   };
 }
 
@@ -71,5 +96,10 @@ export function normalizeProspectFromDb(row: Record<string, unknown>) {
     row.archived_at == null || row.archived_at === ""
       ? null
       : String(row.archived_at);
-  return { ...row, phone, archived_at };
+  const tags = Array.isArray(row.tags) ? (row.tags as string[]) : [];
+  const potential_value =
+    row.potential_value == null || row.potential_value === ""
+      ? null
+      : Number(row.potential_value);
+  return { ...row, phone, archived_at, tags, potential_value };
 }

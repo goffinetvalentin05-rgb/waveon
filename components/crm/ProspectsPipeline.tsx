@@ -9,6 +9,7 @@ import {
   isFollowedProspect,
   prospectAvatarTone,
 } from "@/lib/crm/pipeline";
+import { isDemoScheduledStatus } from "@/lib/crm/closed";
 import type { Prospect } from "@/lib/crm/types";
 
 function fmtDate(value: string | null) {
@@ -102,7 +103,7 @@ export function ProspectsPipeline({
 
 export function PipelineStats({ prospects, conversionRate }: { prospects: Prospect[]; conversionRate?: number }) {
   const followed = prospects.filter(isFollowedProspect).length;
-  const meetings = prospects.filter((p) => p.status === "Démonstration").length;
+  const meetings = prospects.filter((p) => isDemoScheduledStatus(p.status) || p.status === "Démo faite").length;
   const clients = prospects.filter((p) => p.status === "Client").length;
   const rate =
     conversionRate ??

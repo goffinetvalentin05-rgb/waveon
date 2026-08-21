@@ -4,7 +4,6 @@ import {
   IconChartBar,
   IconChecklist,
   IconLanguage,
-  IconUsers,
   IconUserCheck,
 } from "@tabler/icons-react";
 import type { AppModule, CrmSubNavItem } from "@/modules/types";
@@ -75,8 +74,7 @@ export const APP_MODULES: AppModule[] = [
 
 /** Sous-navigation interne du module CRM. */
 export const CRM_SUB_NAV: CrmSubNavItem[] = [
-  { href: "/crm/prospects", label: "Pipeline", icon: IconUsers },
-  { href: "/crm/today", label: "Aujourd'hui", icon: IconChecklist },
+  { href: "/crm/today", label: "Relances", icon: IconChecklist },
   { href: "/crm/clients", label: "Clients", icon: IconUserCheck },
   { href: "/crm/stats", label: "Statistiques", icon: IconChartBar },
 ];

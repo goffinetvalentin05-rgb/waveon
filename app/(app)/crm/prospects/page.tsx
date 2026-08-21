@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { createServerComponentSupabase } from "@/lib/supabase/server-component";
 import { ProspectsClient } from "@/components/crm/ProspectsClient";
 import { normalizeProspectFromDb } from "@/lib/crm/prospect-payload";
@@ -31,6 +32,7 @@ export default async function CrmProspectsPage({ searchParams }: PageProps) {
   if (!user) return null;
 
   const sp = toUrlSearchParams(await searchParams);
+  if (!sp.get("project")) redirect("/crm");
   const parsed = parseProspectListParams(sp);
   const params = {
     ...parsed,
@@ -66,6 +68,7 @@ export default async function CrmProspectsPage({ searchParams }: PageProps) {
       total={count ?? 0}
       totalAll={totalAll ?? 0}
       initialParams={params}
+      projectId={params.projectId}
     />
   );
 }

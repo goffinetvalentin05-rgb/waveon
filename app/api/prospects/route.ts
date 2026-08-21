@@ -6,6 +6,7 @@ import {
 } from "@/lib/crm/prospect-payload";
 import { fetchProspectList } from "@/lib/crm/prospect-query";
 import { parseProspectListParams } from "@/lib/crm/prospect-list-params";
+import { logWorkspaceEvent } from "@/lib/workspace/events";
 
 export async function GET(request: Request) {
   const auth = await requireUser();
@@ -54,6 +55,14 @@ export async function POST(request: Request) {
       prospect_id: data.id,
       action_type: "created",
       title: "Prospect créé",
+    });
+
+    await logWorkspaceEvent(supabase, user.id, {
+      event_type: "prospect_created",
+      title: `Prospect ajouté : ${data.club_name}`,
+      project_id: data.project_id,
+      entity_type: "prospect",
+      entity_id: data.id,
     });
 
     return NextResponse.json({ prospect: normalizeProspectFromDb(data) }, { status: 201 });

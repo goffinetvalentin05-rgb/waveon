@@ -1,5 +1,6 @@
 import { addDays, formatISO } from "date-fns";
 import { resolveQuickActionAt } from "@/lib/crm/actions";
+import { isClosedProspectStatus, isDemoScheduledStatus } from "@/lib/crm/closed";
 import type { CrmSettings, Prospect, ProspectActivity, ProspectStatus, QuickAction } from "@/lib/crm/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -46,7 +47,7 @@ function parseStatusChangeToStatus(description: string | null): ProspectStatus |
 }
 
 function isTerminalStatus(status: ProspectStatus) {
-  return status === "Client" || status === "Refus" || status === "Pas intéressé";
+  return isClosedProspectStatus(status);
 }
 
 function statusToNextFollowUpDate(
@@ -61,12 +62,11 @@ function statusToNextFollowUpDate(
       return dateOnly(actionDate);
     case "Contacté":
       return dateOnly(addDays(actionDate, settings.delay_relance_1_days));
-    case "Relance 1":
-      return dateOnly(addDays(actionDate, settings.delay_relance_2_days));
-    case "Relance 2":
-      return dateOnly(addDays(actionDate, settings.delay_relance_3_days));
-    case "Démonstration":
-      // On considère la date de statut comme la date de démo.
+    case "Répondu":
+      return dateOnly(addDays(actionDate, settings.delay_relance_1_days));
+    case "Démo prévue":
+    case "Démo faite":
+    case "Négociation":
       return dateOnly(actionDate);
     default:
       return dateOnly(actionDate);
@@ -81,7 +81,7 @@ function taskFromStatus(clubName: string, status: ProspectStatus): {
   if (status === "À contacter") {
     return { taskKind: "first_contact", title: `Premier contact ${clubName}` };
   }
-  if (status === "Démonstration") {
+  if (isDemoScheduledStatus(status) || status === "Démo faite") {
     return { taskKind: "demo", title: `Démonstration ${clubName}` };
   }
   return { taskKind: "follow_up", title: `Relancer ${clubName}` };
@@ -155,7 +155,7 @@ export async function recomputeProspectDerivatives(
       currentStatus = toStatus;
       lastAction = computedTitle;
       lastActionAt = a.created_at;
-      demoAtIso = toStatus === "Démonstration" ? actionDate.toISOString() : null;
+      demoAtIso = isDemoScheduledStatus(toStatus) ? actionDate.toISOString() : null;
       nextFollowUp = statusToNextFollowUpDate(toStatus, actionDate, settings);
       continue;
     }

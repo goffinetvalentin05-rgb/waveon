@@ -18,7 +18,9 @@ import {
   IconUserCheck,
   IconUserX,
 } from "@tabler/icons-react";
+import { isDemoScheduledStatus } from "@/lib/crm/closed";
 import { StatusBadge } from "@/components/crm/StatusBadge";
+import { InteractionForm } from "@/components/crm/InteractionForm";
 import { QUICK_ACTION_LABELS } from "@/lib/crm/actions";
 import type {
   Prospect,
@@ -576,6 +578,10 @@ export function ProspectDetailClient2({
     website: initial.website ?? "",
     notes: initial.notes ?? "",
     status: initial.status as ProspectStatus,
+    potential_value: initial.potential_value != null ? String(initial.potential_value) : "",
+    contact_channel: initial.contact_channel ?? "",
+    tags: (initial.tags ?? []).join(", "),
+    next_follow_up: initial.next_follow_up ?? "",
   });
 
   const [inlineEditing, setInlineEditing] = useState<{
@@ -685,6 +691,10 @@ export function ProspectDetailClient2({
         email: draft.email,
         website: draft.website,
         notes: draft.notes,
+        potential_value: draft.potential_value === "" ? null : Number(draft.potential_value),
+        contact_channel: draft.contact_channel,
+        tags: draft.tags,
+        next_follow_up: draft.next_follow_up,
       };
 
       const patchRes = await fetch(`/api/prospects/${prospect.id}`, {
@@ -718,7 +728,7 @@ export function ProspectDetailClient2({
       await refreshAll();
     };
 
-    if ((nextStatus === "Client" || nextStatus === "Refus") && nextStatus !== originalStatus) {
+    if ((nextStatus === "Client" || nextStatus === "Refusé") && nextStatus !== originalStatus) {
       setConfirm({
         tone: "default",
         title: "Confirmer le changement de statut ?",
@@ -855,7 +865,7 @@ export function ProspectDetailClient2({
         const next = e.target.value as ProspectStatus;
         if (next === prospect.status) return;
 
-        if (next === "Client" || next === "Refus") {
+        if (next === "Client" || next === "Refusé") {
           setConfirm({
             tone: "default",
             title: "Confirmer le changement de statut ?",
@@ -989,7 +999,7 @@ export function ProspectDetailClient2({
 
   const showAddToCalendar =
     !isArchived &&
-    (Boolean(prospect.demo_at) || prospect.status === "Démonstration");
+    (Boolean(prospect.demo_at) || isDemoScheduledStatus(prospect.status));
 
   const canUndo = activities.some((a) => editableActions.has(a.action_type));
 
@@ -1058,6 +1068,10 @@ export function ProspectDetailClient2({
                     website: prospect.website ?? "",
                     notes: prospect.notes ?? "",
                     status: prospect.status,
+                    potential_value: prospect.potential_value != null ? String(prospect.potential_value) : "",
+                    contact_channel: prospect.contact_channel ?? "",
+                    tags: (prospect.tags ?? []).join(", "),
+                    next_follow_up: prospect.next_follow_up ?? "",
                   });
                   setEditMode(true);
                   setMsg(null);
@@ -1201,7 +1215,27 @@ export function ProspectDetailClient2({
                 </dd>
               </div>
 
-              <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
+              <div className="flex justify-between gap-4 border-b border-white/[0.04] pb-2">
+                <dt className="text-[#6a6578]">Valeur potentielle</dt>
+                <dd className="text-right font-medium text-[#e8e4f0]">
+                  {prospect.potential_value != null
+                    ? new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(
+                        Number(prospect.potential_value)
+                      )
+                    : "—"}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4 border-b border-white/[0.04] pb-2">
+                <dt className="text-[#6a6578]">Canal</dt>
+                <dd className="text-right font-medium text-[#e8e4f0]">{prospect.contact_channel ?? "—"}</dd>
+              </div>
+              <div className="flex justify-between gap-4 border-b border-white/[0.04] pb-2">
+                <dt className="text-[#6a6578]">Tags</dt>
+                <dd className="text-right font-medium text-[#e8e4f0]">
+                  {(prospect.tags ?? []).length ? prospect.tags.join(", ") : "—"}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4 border-b border-white/[0.04] pb-2">
                 <dt className="text-[#6a6578]">Dernière action</dt>
                 <dd className="text-right font-medium text-[#e8e4f0]">{prospect.last_action ?? "—"}</dd>
               </div>
@@ -1219,7 +1253,7 @@ export function ProspectDetailClient2({
           ) : (
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label className={ui.label}>Nom du club *</label>
+                <label className={ui.label}>Organisation *</label>
                 <input
                   className={ui.input}
                   value={draft.club_name}
@@ -1290,6 +1324,40 @@ export function ProspectDetailClient2({
                   onChange={(e) => setDraft((d) => ({ ...d, website: e.target.value }))}
                 />
               </div>
+              <div>
+                <label className={ui.label}>Valeur potentielle (CHF)</label>
+                <input
+                  className={ui.input}
+                  value={draft.potential_value}
+                  onChange={(e) => setDraft((d) => ({ ...d, potential_value: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className={ui.label}>Canal</label>
+                <input
+                  className={ui.input}
+                  value={draft.contact_channel}
+                  onChange={(e) => setDraft((d) => ({ ...d, contact_channel: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className={ui.label}>Tags</label>
+                <input
+                  className={ui.input}
+                  value={draft.tags}
+                  onChange={(e) => setDraft((d) => ({ ...d, tags: e.target.value }))}
+                  placeholder="séparés par des virgules"
+                />
+              </div>
+              <div>
+                <label className={ui.label}>Prochaine relance</label>
+                <input
+                  type="date"
+                  className={ui.input}
+                  value={draft.next_follow_up}
+                  onChange={(e) => setDraft((d) => ({ ...d, next_follow_up: e.target.value }))}
+                />
+              </div>
               <div className="sm:col-span-2">
                 <label className={ui.label}>Statut</label>
                 <select
@@ -1341,6 +1409,8 @@ export function ProspectDetailClient2({
           ) : null}
         </div>
 
+        <InteractionForm prospectId={prospect.id} onAdded={() => void refreshAll()} />
+
         {activities.length === 0 ? (
           <p className="mt-4 text-sm text-[#6a6578]">Aucune action pour le moment.</p>
         ) : (
@@ -1361,7 +1431,10 @@ export function ProspectDetailClient2({
                   <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-xs font-medium uppercase tracking-wide text-[#6a6578]">{fmtDay(a.created_at)}</p>
+                        <p className="text-xs font-medium uppercase tracking-wide text-[#6a6578]">
+                          {fmtDay(a.occurred_at || a.created_at)}
+                          {a.actor_name ? ` · ${a.actor_name}` : ""}
+                        </p>
                         <p className="mt-0.5 text-sm font-medium text-[#e8e4f0]">{a.title}</p>
                       </div>
 

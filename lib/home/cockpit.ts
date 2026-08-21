@@ -5,6 +5,7 @@ import type { DailyTask, Prospect } from "@/lib/crm/types";
 import { todayDateISO } from "@/lib/english/srs";
 import { ensureTodayTasks } from "@/lib/crm/ensure-today-tasks";
 import { normalizeProspectFromDb } from "@/lib/crm/prospect-payload";
+import { monthlyAmount } from "@/lib/finance/types";
 
 export type CockpitData = {
   followUpsDue: number;
@@ -20,6 +21,9 @@ export type CockpitData = {
     progress: number;
     reviewedToday: number;
   };
+  monthSpend: number;
+  monthlySubs: number;
+  recentEvents: { id: string; title: string; created_at: string }[];
 };
 
 function startOfDayIso(date: string): string {
@@ -75,6 +79,9 @@ export async function loadCockpitData(
     dueEnglishRes,
     reviewedRes,
     reviewDatesRes,
+    expensesRes,
+    subsRes,
+    activityRes,
   ] = await Promise.all([
     supabase
       .from("prospects")
@@ -82,14 +89,14 @@ export async function loadCockpitData(
       .eq("user_id", userId)
       .is("archived_at", null)
       .lte("next_follow_up", today)
-      .not("status", "in", '("Client","Refus","Pas intéressé")'),
+      .not("status", "in", '("Client","Refusé","Refus","Pas intéressé")'),
     supabase
       .from("prospects")
       .select("*")
       .eq("user_id", userId)
       .is("archived_at", null)
       .lte("next_follow_up", today)
-      .not("status", "in", '("Client","Refus","Pas intéressé")')
+      .not("status", "in", '("Client","Refusé","Refus","Pas intéressé")')
       .order("next_follow_up", { ascending: true })
       .limit(6),
     supabase
@@ -125,6 +132,22 @@ export async function loadCockpitData(
       .eq("user_id", userId)
       .not("last_reviewed_at", "is", null)
       .limit(500),
+    supabase
+      .from("expenses")
+      .select("amount")
+      .eq("user_id", userId)
+      .gte("expense_date", `${today.slice(0, 7)}-01`),
+    supabase
+      .from("finance_subscriptions")
+      .select("amount, frequency, interval_days, status")
+      .eq("user_id", userId)
+      .eq("status", "active"),
+    supabase
+      .from("workspace_events")
+      .select("id, title, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(6),
   ]);
 
   const tasks = tasksRes.error ? [] : ((tasksRes.data ?? []) as DailyTask[]);
@@ -155,5 +178,21 @@ export async function loadCockpitData(
       progress,
       reviewedToday,
     },
+    monthSpend: expensesRes.error
+      ? 0
+      : (expensesRes.data ?? []).reduce((s, e) => s + Number((e as { amount?: number }).amount || 0), 0),
+    monthlySubs: subsRes.error
+      ? 0
+      : (subsRes.data ?? []).reduce(
+          (s, sub) =>
+            s +
+            monthlyAmount({
+              amount: Number((sub as { amount?: number }).amount || 0),
+              frequency: ((sub as { frequency?: string }).frequency as "monthly" | "yearly" | "custom") ?? "monthly",
+              interval_days: (sub as { interval_days?: number | null }).interval_days ?? null,
+            }),
+          0
+        ),
+    recentEvents: activityRes.error ? [] : (activityRes.data ?? []),
   };
 }

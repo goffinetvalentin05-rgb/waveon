@@ -16,6 +16,7 @@ export const SORTABLE_COLUMNS = [
   "status",
   "last_action_at",
   "next_follow_up",
+  "potential_value",
 ] as const;
 
 export type SortableColumn = (typeof SORTABLE_COLUMNS)[number];
@@ -24,6 +25,8 @@ export type PresenceFilter = "yes" | "no";
 
 /** active = liste principale (défaut), archived = uniquement archivés */
 export type ArchivedFilter = "active" | "archived";
+
+export type FollowUpPreset = "today" | "overdue" | null;
 
 export type ProspectListParams = {
   q: string;
@@ -43,6 +46,13 @@ export type ProspectListParams = {
   lastActionFrom: string;
   lastActionTo: string;
   archived: ArchivedFilter;
+  projectId: string;
+  assignedTo: string;
+  tags: string[];
+  channel: string;
+  followUpPreset: FollowUpPreset;
+  minValue: string;
+  maxValue: string;
 };
 
 export type ProspectListFilters = Omit<
@@ -62,6 +72,13 @@ export const EMPTY_FILTERS: ProspectListFilters = {
   lastActionFrom: "",
   lastActionTo: "",
   archived: "active",
+  projectId: "",
+  assignedTo: "",
+  tags: [],
+  channel: "",
+  followUpPreset: null,
+  minValue: "",
+  maxValue: "",
 };
 
 export function defaultProspectListParams(clientsOnly = false): ProspectListParams {
@@ -131,6 +148,16 @@ export function parseProspectListParams(
       searchParams.get("archived") === "1" || searchParams.get("archived") === "archived"
         ? "archived"
         : "active",
+    projectId: searchParams.get("project")?.trim() ?? "",
+    assignedTo: searchParams.get("assigned")?.trim() ?? "",
+    tags: parseMultiParam(searchParams.get("tag")),
+    channel: searchParams.get("channel")?.trim() ?? "",
+    followUpPreset:
+      searchParams.get("follow") === "today" || searchParams.get("follow") === "overdue"
+        ? (searchParams.get("follow") as FollowUpPreset)
+        : null,
+    minValue: searchParams.get("min_value")?.trim() ?? "",
+    maxValue: searchParams.get("max_value")?.trim() ?? "",
   };
 }
 
@@ -170,13 +197,20 @@ export function buildProspectListSearchParams(
   if (params.lastActionFrom) sp.set("last_action_from", params.lastActionFrom);
   if (params.lastActionTo) sp.set("last_action_to", params.lastActionTo);
   if (params.archived === "archived") sp.set("archived", "1");
+  if (params.projectId) sp.set("project", params.projectId);
+  if (params.assignedTo) sp.set("assigned", params.assignedTo);
+  if (params.tags.length) sp.set("tag", params.tags.join(","));
+  if (params.channel) sp.set("channel", params.channel);
+  if (params.followUpPreset) sp.set("follow", params.followUpPreset);
+  if (params.minValue) sp.set("min_value", params.minValue);
+  if (params.maxValue) sp.set("max_value", params.maxValue);
 
   return sp;
 }
 
 export function buildProspectListPath(
   params: ProspectListParams,
-  basePath: "/crm/prospects" | "/crm/clients" = "/crm/prospects"
+  basePath: string = "/crm/prospects"
 ): string {
   const sp = buildProspectListSearchParams(params);
   const qs = sp.toString();
@@ -194,6 +228,12 @@ export function countActiveFilters(filters: ProspectListFilters): number {
   if (filters.nextFollowUpFrom || filters.nextFollowUpTo) n++;
   if (filters.lastActionFrom || filters.lastActionTo) n++;
   if (filters.archived === "archived") n++;
+  if (filters.projectId) n++;
+  if (filters.assignedTo) n++;
+  if (filters.tags.length) n++;
+  if (filters.channel) n++;
+  if (filters.followUpPreset) n++;
+  if (filters.minValue || filters.maxValue) n++;
   return n;
 }
 

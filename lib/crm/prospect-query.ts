@@ -19,6 +19,7 @@ const ALLOWED_SORT = new Set([
   "next_follow_up",
   "updated_at",
   "created_at",
+  "potential_value",
 ]);
 
 export type ProspectQueryResult = {
@@ -74,6 +75,34 @@ export function applyProspectListQuery(
   }
   if (params.lastActionTo) {
     query = query.lte("last_action_at", `${params.lastActionTo}T23:59:59`);
+  }
+
+  if (params.projectId === "unassigned") {
+    query = query.is("project_id", null);
+  } else if (params.projectId) {
+    query = query.eq("project_id", params.projectId);
+  }
+  if (params.assignedTo) {
+    query = query.eq("assigned_to", params.assignedTo);
+  }
+  if (params.channel) {
+    query = query.eq("contact_channel", params.channel);
+  }
+  if (params.tags.length) {
+    query = query.overlaps("tags", params.tags);
+  }
+  if (params.minValue) {
+    query = query.gte("potential_value", Number(params.minValue));
+  }
+  if (params.maxValue) {
+    query = query.lte("potential_value", Number(params.maxValue));
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  if (params.followUpPreset === "today") {
+    query = query.eq("next_follow_up", today);
+  } else if (params.followUpPreset === "overdue") {
+    query = query.lt("next_follow_up", today);
   }
 
   const q = params.q.trim();
@@ -198,6 +227,9 @@ export async function fetchProspectList(
     if (params.lastActionTo) {
       legacyQuery = legacyQuery.lte("last_action_at", `${params.lastActionTo}T23:59:59`);
     }
+    if (params.projectId) legacyQuery = legacyQuery.eq("project_id", params.projectId);
+    if (params.assignedTo) legacyQuery = legacyQuery.eq("assigned_to", params.assignedTo);
+    if (params.channel) legacyQuery = legacyQuery.eq("contact_channel", params.channel);
 
     legacyQuery = applyLegacyTextSearch(legacyQuery, params.q.trim());
 
@@ -224,7 +256,7 @@ export async function fetchProspectFilterOptions(
 ) {
   let query = supabase
     .from("prospects")
-    .select("sport, canton, ville, status")
+    .select("sport, canton, ville, status, tags, contact_channel")
     .eq("user_id", userId)
     .is("archived_at", null);
 
@@ -239,12 +271,18 @@ export async function fetchProspectFilterOptions(
   const cantons = new Set<string>();
   const villes = new Set<string>();
   const statuses = new Set<string>();
+  const tags = new Set<string>();
+  const channels = new Set<string>();
 
   for (const row of data ?? []) {
     if (row.sport) sports.add(row.sport);
     if (row.canton) cantons.add(row.canton);
     if (row.ville) villes.add(row.ville);
     if (row.status) statuses.add(row.status);
+    if (Array.isArray(row.tags)) {
+      for (const t of row.tags) if (t) tags.add(String(t));
+    }
+    if (row.contact_channel) channels.add(row.contact_channel);
   }
 
   const sortAlpha = (a: string, b: string) => a.localeCompare(b, "fr");
@@ -254,5 +292,7 @@ export async function fetchProspectFilterOptions(
     cantons: [...cantons].sort(sortAlpha),
     villes: [...villes].sort(sortAlpha),
     statuses: [...statuses].sort(sortAlpha),
+    tags: [...tags].sort(sortAlpha),
+    channels: [...channels].sort(sortAlpha),
   };
 }

@@ -1,5 +1,6 @@
 import { addDays, formatISO } from "date-fns";
 import type { CrmSettings, ProspectStatus, QuickAction } from "./types";
+import { isClosedProspectStatus } from "./closed";
 
 export type ActionResult = {
   status: ProspectStatus;
@@ -16,10 +17,6 @@ function dateOnly(d: Date): string {
 
 function followUpDateFrom(base: Date, days: number): string {
   return dateOnly(addDays(base, days));
-}
-
-function isTerminalStatus(status: ProspectStatus) {
-  return status === "Client" || status === "Refus" || status === "Pas intéressé";
 }
 
 /** Applique une action rapide et calcule le prochain statut + relance. */
@@ -46,8 +43,7 @@ export function resolveQuickActionAt(
   actionDate: Date,
   demoAt?: Date | null
 ): ActionResult {
-  // Sécurité : une fois terminal, on ne planifie plus de relance.
-  if (isTerminalStatus(currentStatus)) {
+  if (isClosedProspectStatus(currentStatus)) {
     if (action === "client") {
       return {
         status: "Client",
@@ -60,7 +56,7 @@ export function resolveQuickActionAt(
     }
     if (action === "refus") {
       return {
-        status: "Refus",
+        status: "Refusé",
         lastAction: "Refus",
         nextFollowUp: null,
         activityTitle: "Refus enregistré",
@@ -80,41 +76,13 @@ export function resolveQuickActionAt(
 
   switch (action) {
     case "mail_sent": {
-      if (currentStatus === "À contacter") {
-        return {
-          status: "Contacté",
-          lastAction: "Mail envoyé",
-          nextFollowUp: followUpDateFrom(actionDate, settings.delay_relance_1_days),
-          activityTitle: "Premier mail envoyé",
-          taskTitle: `Relancer ${clubName}`,
-          taskKind: "follow_up",
-        };
-      }
-      if (currentStatus === "Contacté") {
-        return {
-          status: "Relance 1",
-          lastAction: "Relance mail",
-          nextFollowUp: followUpDateFrom(actionDate, settings.delay_relance_2_days),
-          activityTitle: "Relance 1 effectuée",
-          taskTitle: `Relancer ${clubName}`,
-          taskKind: "follow_up",
-        };
-      }
-      if (currentStatus === "Relance 1") {
-        return {
-          status: "Relance 2",
-          lastAction: "Relance mail 2",
-          nextFollowUp: followUpDateFrom(actionDate, settings.delay_relance_3_days),
-          activityTitle: "Relance 2 effectuée",
-          taskTitle: `Relancer ${clubName}`,
-          taskKind: "follow_up",
-        };
-      }
+      const nextStatus: ProspectStatus =
+        currentStatus === "À contacter" ? "Contacté" : currentStatus;
       return {
-        status: currentStatus,
+        status: nextStatus,
         lastAction: "Mail envoyé",
         nextFollowUp: followUpDateFrom(actionDate, settings.delay_relance_1_days),
-        activityTitle: "Mail envoyé",
+        activityTitle: currentStatus === "À contacter" ? "Premier mail envoyé" : "Mail envoyé",
         taskTitle: `Relancer ${clubName}`,
         taskKind: "follow_up",
       };
@@ -132,10 +100,8 @@ export function resolveQuickActionAt(
       };
     }
     case "demo_scheduled":
-      // Pour une démo, on utilise la date prévue (demoAt) comme prochaine échéance.
-      // Si elle n'est pas fournie, on retombe sur la date de l'action.
       return {
-        status: "Démonstration",
+        status: "Démo prévue",
         lastAction: "Démo planifiée",
         nextFollowUp: dateOnly(demoAt ?? actionDate),
         activityTitle: "Démonstration planifiée",
@@ -153,7 +119,7 @@ export function resolveQuickActionAt(
       };
     case "refus":
       return {
-        status: "Refus",
+        status: "Refusé",
         lastAction: "Refus",
         nextFollowUp: null,
         activityTitle: "Refus enregistré",

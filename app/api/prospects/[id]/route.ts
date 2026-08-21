@@ -26,6 +26,7 @@ export async function GET(_request: Request, { params }: Params) {
     .select("*")
     .eq("prospect_id", id)
     .eq("user_id", user.id)
+    .order("occurred_at", { ascending: false })
     .order("created_at", { ascending: false });
 
   return NextResponse.json({
@@ -52,6 +53,12 @@ export async function PATCH(request: Request, { params }: Params) {
     "email",
     "website",
     "notes",
+    "project_id",
+    "assigned_to",
+    "potential_value",
+    "contact_channel",
+    "tags",
+    "next_follow_up",
   ] as const;
 
   const patch: Record<string, unknown> = {};
@@ -63,6 +70,14 @@ export async function PATCH(request: Request, { params }: Params) {
         if (key === "phone") {
           patch.phone_number = nullIfEmpty(val);
         }
+      } else if (key === "tags") {
+        if (Array.isArray(val)) {
+          patch.tags = val.map((t) => String(t).trim()).filter(Boolean);
+        } else if (typeof val === "string") {
+          patch.tags = val.split(",").map((t) => t.trim()).filter(Boolean);
+        }
+      } else if (key === "potential_value") {
+        patch.potential_value = val === null || val === "" ? null : Number(val);
       } else {
         patch[key] = val;
       }

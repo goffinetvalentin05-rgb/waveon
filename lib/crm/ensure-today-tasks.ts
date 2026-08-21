@@ -1,3 +1,4 @@
+import { CLOSED_STATUS_POSTGREST, isDemoScheduledStatus } from "@/lib/crm/closed";
 import type { createServerComponentSupabase } from "@/lib/supabase/server-component";
 
 type Supabase = Awaited<ReturnType<typeof createServerComponentSupabase>>;
@@ -14,7 +15,7 @@ export async function ensureTodayTasks(
     .eq("user_id", userId)
     .is("archived_at", null)
     .lte("next_follow_up", today)
-    .not("status", "in", '("Client","Refus","Pas intéressé")');
+    .not("status", "in", CLOSED_STATUS_POSTGREST);
 
   const { data: newOnes } = await supabase
     .from("prospects")
@@ -50,14 +51,14 @@ export async function ensureTodayTasks(
       title:
         p.status === "À contacter"
           ? `Premier contact ${p.club_name}`
-          : p.status === "Démonstration"
+          : isDemoScheduledStatus(p.status)
             ? `Démonstration ${p.club_name}`
             : `Relancer ${p.club_name}`,
       due_date: today,
       task_kind:
         p.status === "À contacter"
           ? "first_contact"
-          : p.status === "Démonstration"
+          : isDemoScheduledStatus(p.status)
             ? "demo"
             : "follow_up",
     }))

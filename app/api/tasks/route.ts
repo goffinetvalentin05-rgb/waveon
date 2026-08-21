@@ -1,81 +1,57 @@
 import { NextResponse } from "next/server";
+import { addDays } from "date-fns";
 import { requireUser, todayISO } from "@/lib/crm/server";
+import { logWorkspaceEvent } from "@/lib/workspace/events";
+import { TASK_PRIORITIES, TASK_STATUSES, type TaskPriority, type TaskStatus } from "@/lib/tasks/types";
+
+const TASK_SELECT =
+  "*, prospect:prospects(id, club_name, status), project:projects(id, name, color), assignee:people!daily_tasks_assigned_to_fkey(id, name), subtasks:task_subtasks(*)";
 
 export async function GET(request: Request) {
   const auth = await requireUser();
   if (auth.response) return auth.response;
   const { supabase, user } = auth;
+  const url = new URL(request.url);
+  const view = url.searchParams.get("view") ?? "today";
+  const projectId = url.searchParams.get("project");
   const today = todayISO();
-  const range = new URL(request.url).searchParams.get("range");
+  const weekEnd = addDays(new Date(`${today}T12:00:00`), 7).toISOString().slice(0, 10);
 
-  if (range === "board") {
-    const since = new Date();
-    since.setDate(since.getDate() - 30);
-    const [{ data: open, error: openError }, { data: done, error: doneError }] = await Promise.all([
-      supabase
-        .from("daily_tasks")
-        .select("*, prospect:prospects(id, club_name, status)")
-        .eq("user_id", user.id)
-        .eq("completed", false)
-        .order("due_date", { ascending: true })
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("daily_tasks")
-        .select("*, prospect:prospects(id, club_name, status)")
-        .eq("user_id", user.id)
-        .eq("completed", true)
-        .gte("completed_at", since.toISOString())
-        .order("completed_at", { ascending: false })
-        .limit(80),
-    ]);
-
-    if (openError) return NextResponse.json({ error: openError.message }, { status: 500 });
-    if (doneError) return NextResponse.json({ error: doneError.message }, { status: 500 });
-
-    const openTasks = open ?? [];
-    return NextResponse.json({
-      today: openTasks.filter((t) => t.due_date <= today),
-      upcoming: openTasks.filter((t) => t.due_date > today),
-      completed: done ?? [],
-      todayISO: today,
-    });
-  }
-
-  const { data: tasks, error } = await supabase
+  let query = supabase
     .from("daily_tasks")
-    .select("*, prospect:prospects(id, club_name, status)")
+    .select(TASK_SELECT)
     .eq("user_id", user.id)
-    .eq("due_date", today)
-    .order("completed", { ascending: true })
+    .order("due_date", { ascending: true })
     .order("created_at", { ascending: true });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (projectId) query = query.eq("project_id", projectId);
 
-  // Prospects à relancer aujourd'hui (même sans tâche créée)
-  const { data: dueProspects } = await supabase
-    .from("prospects")
-    .select("id, club_name, status, next_follow_up, last_action")
-    .eq("user_id", user.id)
-    .is("archived_at", null)
-    .lte("next_follow_up", today)
-    .not("status", "in", '("Client","Refus","Pas intéressé")')
-    .order("next_follow_up", { ascending: true });
+  if (view === "today") {
+    query = query.eq("due_date", today).neq("status", "Terminé");
+  } else if (view === "week") {
+    query = query.gte("due_date", today).lte("due_date", weekEnd).neq("status", "Terminé");
+  } else if (view === "upcoming") {
+    query = query.gt("due_date", today).neq("status", "Terminé");
+  } else if (view === "overdue") {
+    query = query.lt("due_date", today).neq("status", "Terminé");
+  } else if (view === "done") {
+    query = query.eq("status", "Terminé").order("completed_at", { ascending: false });
+  } else if (view === "kanban" || view === "all") {
+    // no extra filter
+  }
 
-  // Démos prévues aujourd'hui / à venir bientôt
-  const { data: demos } = await supabase
-    .from("prospects")
-    .select("id, club_name, status, demo_at")
-    .eq("user_id", user.id)
-    .is("archived_at", null)
-    .eq("status", "Démonstration")
-    .order("demo_at", { ascending: true });
+  const { data, error } = await query;
+  if (error) {
+    const fallback = await supabase
+      .from("daily_tasks")
+      .select("*, prospect:prospects(id, club_name, status)")
+      .eq("user_id", user.id)
+      .order("due_date", { ascending: true });
+    if (fallback.error) return NextResponse.json({ error: fallback.error.message }, { status: 500 });
+    return NextResponse.json({ tasks: fallback.data ?? [], todayISO: today });
+  }
 
-  return NextResponse.json({
-    tasks: tasks ?? [],
-    dueProspects: dueProspects ?? [],
-    demos: demos ?? [],
-    today,
-  });
+  return NextResponse.json({ tasks: data ?? [], todayISO: today });
 }
 
 export async function POST(request: Request) {
@@ -84,22 +60,72 @@ export async function POST(request: Request) {
   const { supabase, user } = auth;
   const body = await request.json();
   const title = String(body.title ?? "").trim();
-  if (!title) {
-    return NextResponse.json({ error: "Titre requis" }, { status: 400 });
-  }
+  if (!title) return NextResponse.json({ error: "Titre requis" }, { status: 400 });
+
+  const priority = TASK_PRIORITIES.includes(body.priority as TaskPriority)
+    ? (body.priority as TaskPriority)
+    : "Normale";
+  const status = TASK_STATUSES.includes(body.status as TaskStatus)
+    ? (body.status as TaskStatus)
+    : "À faire";
 
   const { data, error } = await supabase
     .from("daily_tasks")
     .insert({
       user_id: user.id,
       title,
+      description: String(body.description ?? "").trim() || null,
       due_date: body.due_date || todayISO(),
+      due_time: body.due_time || null,
       prospect_id: body.prospect_id || null,
+      project_id: body.project_id || null,
+      assigned_to: body.assigned_to || null,
       task_kind: body.task_kind || "custom",
+      priority,
+      status,
+      notes: String(body.notes ?? "").trim() || null,
+      completed: status === "Terminé",
     })
-    .select("*")
+    .select(TASK_SELECT)
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    const simple = await supabase
+      .from("daily_tasks")
+      .insert({
+        user_id: user.id,
+        title,
+        due_date: body.due_date || todayISO(),
+        prospect_id: body.prospect_id || null,
+        task_kind: body.task_kind || "custom",
+      })
+      .select("*")
+      .single();
+    if (simple.error) return NextResponse.json({ error: simple.error.message }, { status: 500 });
+    return NextResponse.json({ task: simple.data }, { status: 201 });
+  }
+
+  const subtasks: string[] = Array.isArray(body.subtasks)
+    ? body.subtasks.map((s: unknown) => String(s).trim()).filter(Boolean)
+    : [];
+  if (subtasks.length && data) {
+    await supabase.from("task_subtasks").insert(
+      subtasks.map((title, i) => ({
+        user_id: user.id,
+        task_id: data.id,
+        title,
+        position: i,
+      }))
+    );
+  }
+
+  await logWorkspaceEvent(supabase, user.id, {
+    event_type: "task_created",
+    title: `Tâche créée : ${title}`,
+    project_id: body.project_id || null,
+    entity_type: "task",
+    entity_id: data.id,
+  });
+
   return NextResponse.json({ task: data }, { status: 201 });
 }

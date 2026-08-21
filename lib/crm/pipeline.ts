@@ -1,10 +1,13 @@
 import type { Prospect } from "@/lib/crm/types";
+import { isClosedProspectStatus, isDemoScheduledStatus } from "@/lib/crm/closed";
 
 export type PipelineColumnId =
   | "to_contact"
-  | "to_recall"
-  | "meeting"
+  | "contacted"
+  | "replied"
+  | "demo_scheduled"
   | "demo_done"
+  | "negotiation"
   | "client"
   | "refus";
 
@@ -16,39 +19,35 @@ export type PipelineColumn = {
 
 export const PIPELINE_COLUMNS: PipelineColumn[] = [
   { id: "to_contact", label: "À contacter", accent: "bg-[#8b869c]" },
-  { id: "to_recall", label: "À rappeler", accent: "bg-violet-400" },
-  { id: "meeting", label: "RDV à venir", accent: "bg-violet-500" },
+  { id: "contacted", label: "Contacté", accent: "bg-violet-400" },
+  { id: "replied", label: "Répondu", accent: "bg-sky-400" },
+  { id: "demo_scheduled", label: "Démo prévue", accent: "bg-violet-500" },
   { id: "demo_done", label: "Démo faite", accent: "bg-emerald-400" },
+  { id: "negotiation", label: "Négociation", accent: "bg-amber-400" },
   { id: "client", label: "Client", accent: "bg-emerald-400" },
-  { id: "refus", label: "Refus", accent: "bg-rose-400" },
+  { id: "refus", label: "Refusé", accent: "bg-rose-400" },
 ];
-
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function demoDate(prospect: Prospect): string | null {
-  return prospect.demo_at ? prospect.demo_at.slice(0, 10) : null;
-}
 
 export function pipelineColumnId(prospect: Prospect): PipelineColumnId {
   if (prospect.status === "À contacter") return "to_contact";
+  if (prospect.status === "Contacté") return "contacted";
+  if (prospect.status === "Répondu") return "replied";
+  if (prospect.status === "Démo faite") return "demo_done";
+  if (isDemoScheduledStatus(prospect.status)) return "demo_scheduled";
+  if (prospect.status === "Négociation") return "negotiation";
   if (prospect.status === "Client") return "client";
-  if (prospect.status === "Refus" || prospect.status === "Pas intéressé") return "refus";
-  if (prospect.status === "Démonstration") {
-    const d = demoDate(prospect);
-    if (d && d < todayISO()) return "demo_done";
-    return "meeting";
-  }
-  return "to_recall";
+  if (isClosedProspectStatus(prospect.status)) return "refus";
+  return "contacted";
 }
 
 export function groupProspectsByPipeline(prospects: Prospect[]): Record<PipelineColumnId, Prospect[]> {
   const groups: Record<PipelineColumnId, Prospect[]> = {
     to_contact: [],
-    to_recall: [],
-    meeting: [],
+    contacted: [],
+    replied: [],
+    demo_scheduled: [],
     demo_done: [],
+    negotiation: [],
     client: [],
     refus: [],
   };
@@ -59,7 +58,7 @@ export function groupProspectsByPipeline(prospects: Prospect[]): Record<Pipeline
 }
 
 export function isFollowedProspect(prospect: Prospect): boolean {
-  return !["Client", "Refus", "Pas intéressé"].includes(prospect.status);
+  return !isClosedProspectStatus(prospect.status);
 }
 
 const AVATAR_TONES = [
