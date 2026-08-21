@@ -11,12 +11,22 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const from = url.searchParams.get("from");
   const to = url.searchParams.get("to");
+  const scope = url.searchParams.get("scope");
+  const projectId = url.searchParams.get("project");
 
   let query = supabase
     .from("calendar_events")
     .select("*")
     .eq("user_id", user.id)
     .order("start_at", { ascending: true });
+
+  if (scope === "personal") {
+    query = query.eq("scope", "personal");
+  } else if (projectId === "unassigned") {
+    query = query.eq("scope", "project").is("project_id", null);
+  } else if (projectId) {
+    query = query.eq("scope", "project").eq("project_id", projectId);
+  }
 
   if (from) query = query.gte("end_at", from);
   if (to) query = query.lte("start_at", to);
@@ -72,6 +82,8 @@ export async function POST(request: Request) {
       location: parsed.data.location ?? null,
       source: parsed.data.source ?? null,
       source_id: parsed.data.source_id ?? null,
+      project_id: parsed.data.project_id ?? null,
+      scope: parsed.data.scope ?? "personal",
     })
     .select("*")
     .single();

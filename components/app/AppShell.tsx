@@ -4,12 +4,18 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
+  IconArrowLeft,
   IconBell,
   IconCalendarEvent,
   IconCash,
+  IconChartBar,
   IconChecklist,
+  IconFileText,
   IconHome,
   IconLanguage,
+  IconLayoutDashboard,
+  IconLock,
+  IconLockOpen,
   IconLogout,
   IconMenu2,
   IconNote,
@@ -23,6 +29,7 @@ import { brand } from "@/lib/brand/config";
 import { supabase } from "@/lib/supabase/client";
 import { CommandPalette } from "@/components/search/CommandPalette";
 import { ProjectFormModal } from "@/components/projects/ProjectFormModal";
+import { hasModule, PROJECT_MODULE_LABELS, type ProjectModuleKey } from "@/lib/projects/modules";
 import type { ModuleIcon } from "@/modules/types";
 import type { Project } from "@/lib/projects/types";
 
@@ -35,8 +42,21 @@ export type AppProfile = {
 type AppShellProps = {
   profile: AppProfile;
   projects: Project[];
+  personalLockEnabled: boolean;
+  personalUnlocked: boolean;
   children: React.ReactNode;
 };
+
+const PROJECT_NAV: { key: ProjectModuleKey; href: (id: string) => string; icon: ModuleIcon; exact?: boolean }[] = [
+  { key: "overview", href: (id) => `/projects/${id}`, icon: IconLayoutDashboard, exact: true },
+  { key: "prospects", href: (id) => `/projects/${id}/prospects`, icon: IconUsers },
+  { key: "tasks", href: (id) => `/projects/${id}/tasks`, icon: IconChecklist },
+  { key: "calendar", href: (id) => `/projects/${id}/calendar`, icon: IconCalendarEvent },
+  { key: "finances", href: (id) => `/projects/${id}/finances`, icon: IconCash },
+  { key: "notes", href: (id) => `/projects/${id}/notes`, icon: IconNote },
+  { key: "stats", href: (id) => `/projects/${id}/stats`, icon: IconChartBar },
+  { key: "documents", href: (id) => `/projects/${id}/documents`, icon: IconFileText },
+];
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -44,7 +64,21 @@ function initials(name: string): string {
   return (parts[0]?.slice(0, 2) ?? "W").toUpperCase();
 }
 
-export function AppShell({ profile, projects, children }: AppShellProps) {
+function projectIdFromPath(pathname: string | null): string | null {
+  if (!pathname) return null;
+  const match = pathname.match(/^\/projects\/([^/]+)/);
+  if (!match) return null;
+  if (match[1] === "unassigned") return "unassigned";
+  return match[1];
+}
+
+export function AppShell({
+  profile,
+  projects,
+  personalLockEnabled,
+  personalUnlocked,
+  children,
+}: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -52,6 +86,12 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
   const [notifCount, setNotifCount] = useState(0);
 
   const activeProjects = projects.filter((p) => p.status === "active");
+  const inPersonal = Boolean(pathname?.startsWith("/personal"));
+  const currentProjectId = projectIdFromPath(pathname);
+  const currentProject = currentProjectId
+    ? activeProjects.find((p) => p.id === currentProjectId) ?? projects.find((p) => p.id === currentProjectId)
+    : null;
+  const inProject = Boolean(currentProjectId && currentProjectId !== "unassigned");
 
   useEffect(() => {
     void fetch("/api/notifications")
@@ -65,95 +105,162 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
     router.replace("/login");
   };
 
-  const nav = (
-    <>
-      <NavSection label="WaveOne">
-        <SideLink href="/home" label="Accueil" icon={IconHome} active={pathname === "/home"} exact />
-      </NavSection>
+  const lockPersonal = async () => {
+    await fetch("/api/personal/lock", { method: "POST" });
+    router.push("/home");
+    router.refresh();
+  };
 
-      <NavSection label="Personnel">
-        <SideLink
-          href="/calendar"
-          label="Calendrier"
-          icon={IconCalendarEvent}
-          active={Boolean(pathname?.startsWith("/calendar"))}
-        />
-        <SideLink
-          href="/tasks"
-          label="Tâches"
-          icon={IconChecklist}
-          active={Boolean(pathname?.startsWith("/tasks"))}
-        />
-        <SideLink
-          href="/english"
-          label="Anglais"
-          icon={IconLanguage}
-          active={Boolean(pathname?.startsWith("/english"))}
-        />
-        <SideLink
-          href="/notes"
-          label="Notes"
-          icon={IconNote}
-          active={Boolean(pathname?.startsWith("/notes"))}
-        />
-      </NavSection>
+  const nav = (() => {
+    if (inPersonal) {
+      return (
+        <>
+          <Link
+            href="/home"
+            onClick={() => setMobileOpen(false)}
+            className="mb-2 flex items-center gap-2 rounded-[10px] px-3 py-2 text-[13px] font-medium text-[#8b869c] hover:bg-white/[0.04] hover:text-[#f3f0fa]"
+          >
+            <IconArrowLeft className="h-4 w-4" stroke={1.6} />
+            Accueil
+          </Link>
+          <NavSection label="Personnel">
+            <SideLink
+              href="/personal/calendar"
+              label="Calendrier"
+              icon={IconCalendarEvent}
+              active={Boolean(pathname?.startsWith("/personal/calendar"))}
+              onClick={() => setMobileOpen(false)}
+            />
+            <SideLink
+              href="/personal/tasks"
+              label="Tâches"
+              icon={IconChecklist}
+              active={Boolean(pathname?.startsWith("/personal/tasks"))}
+              onClick={() => setMobileOpen(false)}
+            />
+            <SideLink
+              href="/personal/english"
+              label="Anglais"
+              icon={IconLanguage}
+              active={Boolean(pathname?.startsWith("/personal/english"))}
+              onClick={() => setMobileOpen(false)}
+            />
+            <SideLink
+              href="/personal/notes"
+              label="Notes"
+              icon={IconNote}
+              active={Boolean(pathname?.startsWith("/personal/notes"))}
+              onClick={() => setMobileOpen(false)}
+            />
+          </NavSection>
+          {personalLockEnabled ? (
+            <button
+              type="button"
+              onClick={() => void lockPersonal()}
+              className="mt-2 flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium text-[#8b869c] hover:bg-white/[0.04] hover:text-[#f3f0fa]"
+            >
+              <IconLock className="h-[18px] w-[18px]" stroke={1.6} />
+              Verrouiller
+            </button>
+          ) : null}
+        </>
+      );
+    }
 
-      <NavSection
-        label="Projets"
-        action={
+    if (inProject && currentProject) {
+      return (
+        <>
+          <Link
+            href="/projects"
+            onClick={() => setMobileOpen(false)}
+            className="mb-2 flex items-center gap-2 rounded-[10px] px-3 py-2 text-[13px] font-medium text-[#8b869c] hover:bg-white/[0.04] hover:text-[#f3f0fa]"
+          >
+            <IconArrowLeft className="h-4 w-4" stroke={1.6} />
+            Tous les projets
+          </Link>
+          <NavSection label={currentProject.name}>
+            {PROJECT_NAV.filter((item) => hasModule(currentProject.enabledModules, item.key)).map((item) => (
+              <SideLink
+                key={item.key}
+                href={item.href(currentProject.id)}
+                label={PROJECT_MODULE_LABELS[item.key]}
+                icon={item.icon}
+                exact={item.exact}
+                active={
+                  item.exact
+                    ? pathname === item.href(currentProject.id)
+                    : Boolean(pathname?.startsWith(item.href(currentProject.id)))
+                }
+                onClick={() => setMobileOpen(false)}
+              />
+            ))}
+          </NavSection>
+        </>
+      );
+    }
+
+    return (
+      <>
+        <NavSection label="WaveOne">
+          <SideLink
+            href="/home"
+            label="Accueil"
+            icon={IconHome}
+            active={pathname === "/home"}
+            onClick={() => setMobileOpen(false)}
+          />
+        </NavSection>
+
+        <NavSection label="Personnel">
+          <SideLink
+            href="/personal"
+            label="Mon espace"
+            icon={personalLockEnabled && !personalUnlocked ? IconLock : IconLockOpen}
+            active={inPersonal}
+            onClick={() => setMobileOpen(false)}
+          />
+        </NavSection>
+
+        <NavSection
+          label="Business"
+          action={
+            <button
+              type="button"
+              onClick={() => setCreateProject(true)}
+              className="rounded-md p-0.5 text-[#6a6578] hover:bg-white/[0.06] hover:text-[#f3f0fa]"
+              aria-label="Nouveau projet"
+            >
+              <IconPlus className="h-3.5 w-3.5" />
+            </button>
+          }
+        >
+          {activeProjects.map((p) => (
+            <Link
+              key={p.id}
+              href={`/projects/${p.id}`}
+              onClick={() => setMobileOpen(false)}
+              className={`relative flex items-center gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium transition ${
+                pathname?.startsWith(`/projects/${p.id}`)
+                  ? "bg-violet-500/12 text-[#f3f0fa]"
+                  : "text-[#8b869c] hover:bg-white/[0.04] hover:text-[#f3f0fa]"
+              }`}
+            >
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: p.color ?? "#8b5cf6" }} />
+              <span className="truncate">{p.name}</span>
+            </Link>
+          ))}
           <button
             type="button"
             onClick={() => setCreateProject(true)}
-            className="rounded-md p-0.5 text-[#6a6578] hover:bg-white/[0.06] hover:text-[#f3f0fa]"
-            aria-label="Nouveau projet"
+            className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium text-[#6a6578] hover:bg-white/[0.04] hover:text-[#f3f0fa]"
           >
-            <IconPlus className="h-3.5 w-3.5" />
+            <IconPlus className="h-[18px] w-[18px]" stroke={1.6} />
+            Nouveau projet
           </button>
-        }
-      >
-        {activeProjects.slice(0, 8).map((p) => (
-          <Link
-            key={p.id}
-            href={`/projects/${p.id}`}
-            onClick={() => setMobileOpen(false)}
-            className={`relative flex items-center gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium transition ${
-              pathname?.startsWith(`/projects/${p.id}`)
-                ? "bg-violet-500/12 text-[#f3f0fa]"
-                : "text-[#8b869c] hover:bg-white/[0.04] hover:text-[#f3f0fa]"
-            }`}
-          >
-            <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: p.color ?? "#8b5cf6" }} />
-            <span className="truncate">{p.name}</span>
-          </Link>
-        ))}
-        <button
-          type="button"
-          onClick={() => setCreateProject(true)}
-          className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium text-[#6a6578] hover:bg-white/[0.04] hover:text-[#f3f0fa]"
-        >
-          <IconPlus className="h-[18px] w-[18px]" stroke={1.6} />
-          Nouveau projet
-        </button>
-      </NavSection>
-
-      <NavSection label="Business">
-        <SideLink
-          href="/crm"
-          label="Prospects"
-          icon={IconUsers}
-          active={Boolean(pathname === "/crm" || pathname?.startsWith("/crm/"))}
-          onClick={() => setMobileOpen(false)}
-        />
-        <SideLink
-          href="/finances"
-          label="Finances"
-          icon={IconCash}
-          active={Boolean(pathname?.startsWith("/finances"))}
-          onClick={() => setMobileOpen(false)}
-        />
-      </NavSection>
-    </>
-  );
+        </NavSection>
+      </>
+    );
+  })();
 
   return (
     <div className="min-h-screen bg-[#0b0a10] lg:flex">
@@ -220,7 +327,9 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-500 text-[11px] font-bold text-white">
             W
           </span>
-          <span className="text-sm font-semibold text-[#f3f0fa]">{brand.shortName}</span>
+          <span className="text-sm font-semibold text-[#f3f0fa]">
+            {inPersonal ? "Personnel" : currentProject?.name ?? brand.shortName}
+          </span>
         </Link>
         <div className="flex items-center gap-1">
           <button
@@ -273,10 +382,25 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
             </div>
             <nav className="flex flex-1 flex-col gap-4 overflow-y-auto px-3 py-2">{nav}</nav>
             <div className="border-t border-white/[0.06] p-3">
+              <SideLink
+                href="/notifications"
+                label="Notifications"
+                icon={IconBell}
+                active={Boolean(pathname?.startsWith("/notifications"))}
+                badge={notifCount}
+                onClick={() => setMobileOpen(false)}
+              />
+              <SideLink
+                href="/settings"
+                label="Paramètres"
+                icon={IconSettings}
+                active={Boolean(pathname?.startsWith("/settings"))}
+                onClick={() => setMobileOpen(false)}
+              />
               <button
                 type="button"
                 onClick={logout}
-                className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2 text-sm font-medium text-[#8b869c] hover:bg-white/[0.04]"
+                className="mt-2 flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2 text-sm font-medium text-[#8b869c] hover:bg-white/[0.04]"
               >
                 <IconLogout className="h-4 w-4" />
                 Se déconnecter
@@ -298,10 +422,9 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
       >
         {[
           { href: "/home", label: "Accueil", icon: IconHome, match: "exact" as const },
-          { href: "/tasks", label: "Tâches", icon: IconChecklist, match: "prefix" as const },
-          { href: "/crm", label: "Prospects", icon: IconUsers, match: "prefix" as const },
-          { href: "/calendar", label: "Agenda", icon: IconCalendarEvent, match: "prefix" as const },
-          { href: "/finances", label: "Finances", icon: IconCash, match: "prefix" as const },
+          { href: "/personal", label: "Personnel", icon: IconLockOpen, match: "prefix" as const },
+          { href: "/projects", label: "Projets", icon: IconLayoutDashboard, match: "prefix" as const },
+          { href: "/notifications", label: "Alertes", icon: IconBell, match: "prefix" as const },
         ].map((item) => {
           const Icon = item.icon;
           const active =

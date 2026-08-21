@@ -22,6 +22,8 @@ export type CalendarEvent = {
   location: string | null;
   source: string | null;
   source_id: string | null;
+  project_id: string | null;
+  scope?: "personal" | "project";
   created_at: string;
   updated_at: string;
 };
@@ -37,6 +39,8 @@ export type CalendarEventInput = {
   location?: string | null;
   source?: string | null;
   source_id?: string | null;
+  project_id?: string | null;
+  scope?: "personal" | "project";
 };
 
 export type Birthday = {

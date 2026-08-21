@@ -234,7 +234,7 @@ export function EnglishClient() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href="/english/review" className={ui.btnSecondary}>
+          <Link href="/personal/english/review" className={ui.btnSecondary}>
             <IconCards className="h-4 w-4" stroke={1.75} />
             Réviser
             {stats && stats.dueToday > 0 ? ` (${stats.dueToday})` : ""}

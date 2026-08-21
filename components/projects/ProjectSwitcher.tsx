@@ -51,6 +51,13 @@ export function ProjectSwitcher({
                 {p.name}
               </Link>
             ))}
+          <Link
+            href="/projects"
+            onClick={() => setOpen(false)}
+            className="mt-1 flex items-center gap-2 rounded-[10px] border-t border-white/[0.06] px-3 py-2 text-sm text-[#8b869c] hover:bg-white/[0.04] hover:text-[#f3f0fa]"
+          >
+            Tous les projets
+          </Link>
         </div>
       ) : null}
     </div>

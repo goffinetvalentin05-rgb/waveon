@@ -29,6 +29,7 @@ export async function POST(_request: Request, { params }: Params) {
       due_time: source.due_time,
       prospect_id: source.prospect_id,
       project_id: source.project_id,
+      scope: source.scope ?? (source.project_id ? "project" : "personal"),
       assigned_to: source.assigned_to,
       task_kind: source.task_kind,
       priority: source.priority ?? "Normale",

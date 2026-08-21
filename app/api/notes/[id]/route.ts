@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser, todayISO } from "@/lib/crm/server";
 import { logWorkspaceEvent } from "@/lib/workspace/events";
+import { parseScopeInput } from "@/lib/workspace/scope";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -14,7 +15,11 @@ export async function PATCH(request: Request, { params }: Params) {
   const patch: Record<string, unknown> = {};
   if ("title" in body) patch.title = String(body.title ?? "").trim() || "Sans titre";
   if ("content" in body) patch.content = String(body.content ?? "");
-  if ("project_id" in body) patch.project_id = body.project_id || null;
+  if ("project_id" in body || "scope" in body) {
+    const scoped = parseScopeInput(body);
+    patch.project_id = scoped.project_id;
+    patch.scope = scoped.scope;
+  }
   if ("tags" in body) {
     patch.tags = Array.isArray(body.tags)
       ? body.tags.map((t: unknown) => String(t).trim()).filter(Boolean)
@@ -72,6 +77,7 @@ export async function POST(request: Request, { params }: Params) {
       title: note.title || "Tâche",
       description: note.content || null,
       project_id: note.project_id,
+      scope: note.scope ?? (note.project_id ? "project" : "personal"),
       due_date: todayISO(),
       task_kind: "custom",
       priority: "Normale",

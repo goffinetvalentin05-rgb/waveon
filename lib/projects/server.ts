@@ -1,6 +1,24 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Project } from "@/lib/projects/types";
 import { CLOSED_STATUS_POSTGREST, isDemoScheduledStatus } from "@/lib/crm/closed";
+import {
+  DEFAULT_ENABLED_MODULES,
+  modulesFromRows,
+  normalizeModules,
+  type ProjectModuleKey,
+} from "@/lib/projects/modules";
+
+type ProjectRow = Project & {
+  project_modules?: { module: string; enabled: boolean }[] | null;
+};
+
+function mapProject(row: ProjectRow): Project {
+  const { project_modules, ...project } = row;
+  return {
+    ...project,
+    enabledModules: modulesFromRows(project_modules),
+  };
+}
 
 export async function fetchProjects(
   supabase: SupabaseClient,
@@ -9,13 +27,46 @@ export async function fetchProjects(
 ): Promise<Project[]> {
   let query = supabase
     .from("projects")
-    .select("*")
+    .select("*, project_modules(module, enabled)")
     .eq("user_id", userId)
     .order("name", { ascending: true });
   if (!includeArchived) query = query.eq("status", "active");
   const { data, error } = await query;
-  if (error) return [];
-  return (data ?? []) as Project[];
+  if (error) {
+    let fallback = supabase
+      .from("projects")
+      .select("*")
+      .eq("user_id", userId)
+      .order("name", { ascending: true });
+    if (!includeArchived) fallback = fallback.eq("status", "active");
+    const retry = await fallback;
+    if (retry.error) return [];
+    return ((retry.data ?? []) as Project[]).map((p) => ({
+      ...p,
+      enabledModules: [...DEFAULT_ENABLED_MODULES],
+    }));
+  }
+  return ((data ?? []) as ProjectRow[]).map(mapProject);
+}
+
+export async function replaceProjectModules(
+  supabase: SupabaseClient,
+  userId: string,
+  projectId: string,
+  modules: ProjectModuleKey[]
+): Promise<ProjectModuleKey[]> {
+  const enabled = normalizeModules(modules);
+  await supabase.from("project_modules").delete().eq("project_id", projectId).eq("user_id", userId);
+  const rows = enabled.map((module) => ({
+    user_id: userId,
+    project_id: projectId,
+    module,
+    enabled: true,
+  }));
+  if (rows.length) {
+    await supabase.from("project_modules").insert(rows);
+  }
+  return enabled;
 }
 
 export async function fetchProjectSummaries(supabase: SupabaseClient, userId: string) {

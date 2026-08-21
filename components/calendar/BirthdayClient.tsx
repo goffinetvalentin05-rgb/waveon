@@ -116,7 +116,7 @@ export function BirthdayClient({ initial }: { initial: Birthday[] }) {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <Link
-            href="/calendar"
+            href="/personal/calendar"
             className="mb-2 inline-flex items-center gap-1.5 text-sm font-medium text-[#8b869c] transition hover:text-[#e8e4f0]"
           >
             <IconArrowLeft className="h-4 w-4" stroke={1.75} />

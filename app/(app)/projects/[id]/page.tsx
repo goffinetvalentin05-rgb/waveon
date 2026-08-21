@@ -18,12 +18,12 @@ export default async function ProjectPage({ params }: Props) {
   const projects = await fetchProjects(supabase, user.id, true);
   const project = projects.find((p) => p.id === id);
   if (!project) notFound();
-  void project;
 
   const today = new Date().toISOString().slice(0, 10);
+  const now = new Date().toISOString();
   const monthStart = `${today.slice(0, 7)}-01`;
 
-  const [prospectsRes, tasksRes, expensesRes, subsRes, eventsRes] = await Promise.all([
+  const [prospectsRes, tasksRes, expensesRes, subsRes, calendarRes, notesRes] = await Promise.all([
     supabase
       .from("prospects")
       .select("id, status, next_follow_up, potential_value")
@@ -35,6 +35,7 @@ export default async function ProjectPage({ params }: Props) {
       .select("id, title, due_date, status, priority")
       .eq("user_id", user.id)
       .eq("project_id", id)
+      .eq("scope", "project")
       .neq("status", "Terminé")
       .order("due_date", { ascending: true })
       .limit(8),
@@ -51,41 +52,48 @@ export default async function ProjectPage({ params }: Props) {
       .eq("project_id", id)
       .eq("status", "active"),
     supabase
-      .from("workspace_events")
-      .select("*")
+      .from("calendar_events")
+      .select("id, title, start_at")
       .eq("user_id", user.id)
       .eq("project_id", id)
-      .order("created_at", { ascending: false })
-      .limit(8),
+      .eq("scope", "project")
+      .gte("end_at", now)
+      .order("start_at", { ascending: true })
+      .limit(6),
+    supabase
+      .from("workspace_notes")
+      .select("id, title, updated_at")
+      .eq("user_id", user.id)
+      .eq("project_id", id)
+      .order("updated_at", { ascending: false })
+      .limit(5),
   ]);
 
   const prospects = prospectsRes.data ?? [];
-  const clients = prospects.filter((p) => p.status === "Client").length;
   const followUps = prospects.filter(
     (p) => p.next_follow_up && p.next_follow_up <= today && p.status !== "Client" && p.status !== "Refusé"
   ).length;
-  const potential = prospects.reduce((s, p) => s + (Number(p.potential_value) || 0), 0);
-  const conversion = prospects.length ? Math.round((clients / prospects.length) * 1000) / 10 : 0;
   const monthSpend = (expensesRes.data ?? []).reduce((s, e) => s + Number(e.amount || 0), 0);
-  const monthlySubs = (subsRes.data as FinanceSubscription[] | null ?? []).reduce(
+  const monthlySubs = ((subsRes.data as FinanceSubscription[] | null) ?? []).reduce(
     (s, sub) => s + monthlyAmount(sub),
     0
   );
 
   return (
     <ProjectOverview
-        stats={{
-          prospects: prospects.length,
-          clients,
-          conversion,
-          potential,
-          followUps,
-          openTasks: (tasksRes.data ?? []).length,
-          monthSpend,
-          monthlySubs,
-        }}
-        tasks={tasksRes.data ?? []}
-        events={eventsRes.data ?? []}
-      />
+      projectId={id}
+      projectName={project.name}
+      enabledModules={project.enabledModules}
+      stats={{
+        prospects: prospects.length,
+        followUps,
+        openTasks: (tasksRes.data ?? []).length,
+        monthSpend,
+        monthlySubs,
+      }}
+      tasks={tasksRes.data ?? []}
+      calendarEvents={calendarRes.data ?? []}
+      notes={notesRes.data ?? []}
+    />
   );
 }

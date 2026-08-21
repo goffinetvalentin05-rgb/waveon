@@ -4,6 +4,7 @@ import {
   type CalendarCategory,
   type CalendarEventInput,
 } from "@/lib/calendar/types";
+import { parseScopeInput } from "@/lib/workspace/scope";
 
 export function validateEventInput(body: unknown): {
   data?: CalendarEventInput;
@@ -56,6 +57,7 @@ export function validateEventInput(body: unknown): {
         typeof b.source_id === "string" && b.source_id.trim()
           ? b.source_id.trim()
           : null,
+      ...parseScopeInput(b),
     },
   };
 }

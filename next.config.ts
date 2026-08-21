@@ -38,6 +38,18 @@ const nextConfig: NextConfig = {
       { source: "/today", destination: "/crm/today", permanent: false },
       { source: "/clients", destination: "/crm/clients", permanent: false },
       { source: "/stats", destination: "/crm/stats", permanent: false },
+      { source: "/calendar", destination: "/personal/calendar", permanent: false },
+      { source: "/calendar/:path*", destination: "/personal/calendar/:path*", permanent: false },
+      { source: "/tasks", destination: "/personal/tasks", permanent: false },
+      { source: "/english", destination: "/personal/english", permanent: false },
+      { source: "/english/:path*", destination: "/personal/english/:path*", permanent: false },
+      { source: "/notes", destination: "/personal/notes", permanent: false },
+      { source: "/crm", destination: "/projects", permanent: false },
+      { source: "/crm/today", destination: "/projects", permanent: false },
+      { source: "/crm/clients", destination: "/projects", permanent: false },
+      { source: "/crm/stats", destination: "/projects", permanent: false },
+      { source: "/finances", destination: "/projects", permanent: false },
+      { source: "/finances/:path*", destination: "/projects", permanent: false },
     ];
   },
 };

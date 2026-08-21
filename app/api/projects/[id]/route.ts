@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/crm/server";
+import { replaceProjectModules } from "@/lib/projects/server";
+import { normalizeModules, type ProjectModuleKey } from "@/lib/projects/modules";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -41,7 +43,7 @@ export async function PATCH(request: Request, { params }: Params) {
 
   const { data, error } = await supabase
     .from("projects")
-    .update(patch)
+    .update(Object.keys(patch).length ? patch : { updated_at: new Date().toISOString() })
     .eq("id", id)
     .eq("user_id", user.id)
     .select("*")
@@ -49,7 +51,13 @@ export async function PATCH(request: Request, { params }: Params) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
-  return NextResponse.json({ project: data });
+
+  let enabledModules: ProjectModuleKey[] | undefined;
+  if ("modules" in body) {
+    enabledModules = await replaceProjectModules(supabase, user.id, id, normalizeModules(body.modules));
+  }
+
+  return NextResponse.json({ project: { ...data, enabledModules } });
 }
 
 export async function DELETE(_request: Request, { params }: Params) {

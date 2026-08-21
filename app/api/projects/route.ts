@@ -2,21 +2,15 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/crm/server";
 import { logWorkspaceEvent } from "@/lib/workspace/events";
 import { PROJECT_COLORS } from "@/lib/projects/types";
+import { fetchProjects, replaceProjectModules } from "@/lib/projects/server";
+import { normalizeModules, PROJECT_TEMPLATES, type ProjectTemplateId } from "@/lib/projects/modules";
 
 export async function GET() {
   const auth = await requireUser();
   if (auth.response) return auth.response;
   const { supabase, user } = auth;
-
-  const { data, error } = await supabase
-    .from("projects")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("status", { ascending: true })
-    .order("name", { ascending: true });
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ projects: data ?? [] });
+  const projects = await fetchProjects(supabase, user.id, true);
+  return NextResponse.json({ projects });
 }
 
 export async function POST(request: Request) {
@@ -31,6 +25,10 @@ export async function POST(request: Request) {
     typeof body.color === "string" && body.color
       ? body.color
       : PROJECT_COLORS[Math.floor(Math.random() * PROJECT_COLORS.length)];
+
+  const templateId = body.template as ProjectTemplateId | undefined;
+  const template = PROJECT_TEMPLATES.find((t) => t.id === templateId);
+  const modules = normalizeModules(body.modules ?? template?.modules);
 
   const { data, error } = await supabase
     .from("projects")
@@ -47,6 +45,8 @@ export async function POST(request: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  const enabledModules = await replaceProjectModules(supabase, user.id, data.id, modules);
+
   await logWorkspaceEvent(supabase, user.id, {
     event_type: "project_created",
     title: `Projet créé : ${name}`,
@@ -55,5 +55,5 @@ export async function POST(request: Request) {
     entity_id: data.id,
   });
 
-  return NextResponse.json({ project: data }, { status: 201 });
+  return NextResponse.json({ project: { ...data, enabledModules } }, { status: 201 });
 }

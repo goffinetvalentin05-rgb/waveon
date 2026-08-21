@@ -21,6 +21,7 @@ export type WorkspaceTask = {
   title: string;
   description: string | null;
   project_id: string | null;
+  scope?: "personal" | "project";
   assigned_to: string | null;
   due_date: string;
   due_time: string | null;

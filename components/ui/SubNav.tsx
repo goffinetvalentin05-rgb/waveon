@@ -27,9 +27,7 @@ export function SubNav({
         const Icon = item.icon;
         const active = item.exact
           ? pathname === item.href
-          : item.href === "/calendar"
-            ? pathname === "/calendar"
-            : pathname === item.href || pathname.startsWith(`${item.href}/`);
+          : pathname === item.href || pathname.startsWith(`${item.href}/`);
         return (
           <Link
             key={item.href}

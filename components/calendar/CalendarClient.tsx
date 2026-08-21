@@ -83,7 +83,17 @@ function getRange(view: ViewMode, anchor: Date): { start: Date; end: Date } {
   return { start: startOfDay(anchor), end: startOfDay(anchor) };
 }
 
-export function CalendarClient() {
+export function CalendarClient({
+  scope,
+  projectId,
+  showBirthdays = true,
+  hideTitle = false,
+}: {
+  scope?: "personal" | "project";
+  projectId?: string;
+  showBirthdays?: boolean;
+  hideTitle?: boolean;
+}) {
   const [view, setView] = useState<ViewMode>("month");
   const [anchor, setAnchor] = useState<Date>(() => new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -101,9 +111,13 @@ export function CalendarClient() {
     try {
       const from = range.start.toISOString();
       const to = endOfDay(range.end).toISOString();
-      const res = await fetch(
-        `/api/calendar/events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
-      );
+      const sp = new URLSearchParams({
+        from,
+        to,
+      });
+      if (scope === "personal") sp.set("scope", "personal");
+      else if (projectId) sp.set("project", projectId);
+      const res = await fetch(`/api/calendar/events?${sp.toString()}`);
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "Erreur lors du chargement des événements.");
@@ -115,13 +129,14 @@ export function CalendarClient() {
     } finally {
       setLoading(false);
     }
-  }, [range.start, range.end]);
+  }, [range.start, range.end, scope, projectId]);
 
   useEffect(() => {
     void loadEvents();
   }, [loadEvents]);
 
   useEffect(() => {
+    if (!showBirthdays) return;
     let active = true;
     fetch("/api/calendar/birthdays")
       .then((r) => r.json())
@@ -134,7 +149,7 @@ export function CalendarClient() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [showBirthdays]);
 
   const occurrences = useMemo(
     () =>
@@ -228,18 +243,27 @@ export function CalendarClient() {
   return (
     <div className="crm-animate-in space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className={ui.h1}>Calendrier</h1>
-          <p className="mt-1 flex items-center gap-2 text-sm text-[#8b869c]">
+        {hideTitle ? (
+          <p className="text-sm text-[#8b869c]">
             {headerLabel}
-            {loading ? <IconLoader2 className="h-3.5 w-3.5 animate-spin text-[#6a6578]" /> : null}
+            {loading ? <IconLoader2 className="ml-2 inline h-3.5 w-3.5 animate-spin text-[#6a6578]" /> : null}
           </p>
-        </div>
+        ) : (
+          <div>
+            <h1 className={ui.h1}>Calendrier</h1>
+            <p className="mt-1 flex items-center gap-2 text-sm text-[#8b869c]">
+              {headerLabel}
+              {loading ? <IconLoader2 className="h-3.5 w-3.5 animate-spin text-[#6a6578]" /> : null}
+            </p>
+          </div>
+        )}
         <div className="flex flex-wrap gap-2">
-          <Link href="/calendar/birthdays" className={ui.btnSecondary}>
-            <IconCake className="h-4 w-4" stroke={1.75} />
-            Anniversaires
-          </Link>
+          {showBirthdays ? (
+            <Link href="/personal/calendar/birthdays" className={ui.btnSecondary}>
+              <IconCake className="h-4 w-4" stroke={1.75} />
+              Anniversaires
+            </Link>
+          ) : null}
           <button type="button" className={ui.btnPrimary} onClick={() => openCreate(anchor)}>
             <IconPlus className="h-4 w-4" stroke={2} />
             Nouvel événement
@@ -350,6 +374,8 @@ export function CalendarClient() {
           event={modalState.event}
           defaultDate={modalState.date}
           defaultStartHour={modalState.hour}
+          scope={scope}
+          projectId={projectId}
           onClose={closeModal}
           onSaved={handleSaved}
           onDeleted={handleDeleted}
@@ -400,7 +426,7 @@ function TodaySidebar({
 function BirthdayChip({ occurrence }: { occurrence: BirthdayOccurrence }) {
   return (
     <Link
-      href="/calendar/birthdays"
+      href="/personal/calendar/birthdays"
       onClick={(e) => e.stopPropagation()}
       className="flex items-center gap-1 truncate rounded-md border border-rose-500/20 bg-rose-500/10 px-1.5 py-0.5 text-[11px] font-medium text-rose-300 transition hover:bg-rose-500/20"
       title={occurrence.person_name}

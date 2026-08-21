@@ -1,9 +1,8 @@
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
 import { createServerComponentSupabase } from "@/lib/supabase/server-component";
 import { firstNameFromDisplay } from "@/lib/brand/config";
-import { loadCockpitData } from "@/lib/home/cockpit";
-import { CockpitDashboard } from "@/components/home/CockpitDashboard";
+import { loadLauncherData } from "@/lib/home/launcher";
+import { getPersonalSecurityState } from "@/lib/personal/security";
+import { SpaceLauncher } from "@/components/home/SpaceLauncher";
 
 export default async function HomePage() {
   const supabase = await createServerComponentSupabase();
@@ -17,14 +16,8 @@ export default async function HomePage() {
     user.email?.split("@")[0] ||
     "toi";
 
-  const data = await loadCockpitData(supabase, user.id);
-  const dateLabel = format(new Date(), "EEEE d MMMM", { locale: fr });
+  const security = await getPersonalSecurityState(supabase, user.id);
+  const data = await loadLauncherData(supabase, user.id, security);
 
-  return (
-    <CockpitDashboard
-      firstName={firstNameFromDisplay(displayName)}
-      dateLabel={dateLabel}
-      data={data}
-    />
-  );
+  return <SpaceLauncher firstName={firstNameFromDisplay(displayName)} data={data} />;
 }

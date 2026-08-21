@@ -67,6 +67,8 @@ export async function PATCH(request: Request, ctx: Ctx) {
       description: parsed.data.description ?? null,
       color,
       location: parsed.data.location ?? null,
+      project_id: parsed.data.project_id ?? null,
+      scope: parsed.data.scope ?? "personal",
     })
     .eq("id", id)
     .eq("user_id", user.id)

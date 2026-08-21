@@ -4,89 +4,143 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { ui } from "@/lib/design/tokens";
+import { hasModule, type ProjectModuleKey } from "@/lib/projects/modules";
 
 function chf(n: number) {
   return new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(n);
 }
 
 export function ProjectOverview({
+  projectId,
+  projectName,
+  enabledModules,
   stats,
   tasks,
-  events,
+  calendarEvents,
+  notes,
 }: {
+  projectId: string;
+  projectName: string;
+  enabledModules?: ProjectModuleKey[];
   stats: {
     prospects: number;
-    clients: number;
-    conversion: number;
-    potential: number;
     followUps: number;
     openTasks: number;
     monthSpend: number;
     monthlySubs: number;
   };
   tasks: { id: string; title: string; due_date: string; status: string; priority: string }[];
-  events: { id: string; title: string; created_at: string }[];
+  calendarEvents: { id: string; title: string; start_at: string }[];
+  notes: { id: string; title: string; updated_at: string }[];
 }) {
+  const base = `/projects/${projectId}`;
   const cards = [
-    { label: "Prospects", value: String(stats.prospects) },
-    { label: "Clients", value: String(stats.clients) },
-    { label: "Conversion", value: `${stats.conversion}%` },
-    { label: "Potentiel", value: chf(stats.potential) },
-    { label: "Relances", value: String(stats.followUps) },
-    { label: "Tâches ouvertes", value: String(stats.openTasks) },
-    { label: "Dépenses du mois", value: chf(stats.monthSpend) },
-    { label: "Abos / mois", value: chf(stats.monthlySubs) },
-  ];
+    hasModule(enabledModules, "tasks")
+      ? { label: "Tâches restantes", value: String(stats.openTasks), href: `${base}/tasks` }
+      : null,
+    hasModule(enabledModules, "prospects")
+      ? { label: "Prospects à relancer", value: String(stats.followUps), href: `${base}/prospects` }
+      : null,
+    hasModule(enabledModules, "calendar")
+      ? { label: "Prochains rendez-vous", value: String(calendarEvents.length), href: `${base}/calendar` }
+      : null,
+    hasModule(enabledModules, "finances")
+      ? { label: "Dépenses du mois", value: chf(stats.monthSpend), href: `${base}/finances` }
+      : null,
+  ].filter(Boolean) as { label: string; value: string; href: string }[];
 
   return (
     <div className="space-y-6">
+      <div>
+        <h2 className="text-[1.35rem] font-semibold tracking-tight text-[#f3f0fa]">{projectName}</h2>
+        <p className="mt-1 text-sm text-[#8b869c]">Voici ce qui demande votre attention.</p>
+      </div>
+
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {cards.map((c) => (
-          <div key={c.label} className={ui.statCard}>
+          <Link key={c.label} href={c.href} className={ui.statCard}>
             <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#8b869c]">{c.label}</p>
             <p className="mt-2 text-xl font-semibold tabular-nums tracking-tight text-[#f3f0fa]">{c.value}</p>
-          </div>
+          </Link>
         ))}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className={`${ui.widget} p-5`}>
-          <h2 className={ui.h2}>Prochaines échéances</h2>
-          {tasks.length === 0 ? (
-            <p className="mt-4 text-sm text-[#6a6578]">Aucune tâche ouverte.</p>
-          ) : (
-            <ul className="mt-4 space-y-2">
-              {tasks.map((t) => (
-                <li key={t.id} className="flex items-center justify-between gap-3 text-sm">
-                  <span className="truncate text-[#f3f0fa]">{t.title}</span>
-                  <span className="shrink-0 text-xs text-[#8b869c]">
-                    {format(new Date(`${t.due_date}T12:00:00`), "d MMM", { locale: fr })}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-          <Link href="/tasks" className={`${ui.link} mt-4 inline-block text-sm`}>
-            Voir les tâches
-          </Link>
-        </section>
-        <section className={`${ui.widget} p-5`}>
-          <h2 className={ui.h2}>Activité récente</h2>
-          {events.length === 0 ? (
-            <p className="mt-4 text-sm text-[#6a6578]">Pas encore d&apos;activité.</p>
-          ) : (
-            <ul className="mt-4 space-y-2">
-              {events.map((e) => (
-                <li key={e.id} className="text-sm">
-                  <p className="text-[#e8e4f0]">{e.title}</p>
-                  <p className="text-[11px] text-[#6a6578]">
-                    {format(new Date(e.created_at), "d MMM HH:mm", { locale: fr })}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        {hasModule(enabledModules, "tasks") ? (
+          <section className={`${ui.widget} p-5`}>
+            <h2 className={ui.h2}>Tâches</h2>
+            {tasks.length === 0 ? (
+              <p className="mt-4 text-sm text-[#6a6578]">Aucune tâche ouverte.</p>
+            ) : (
+              <ul className="mt-4 space-y-2">
+                {tasks.map((t) => (
+                  <li key={t.id} className="flex items-center justify-between gap-3 text-sm">
+                    <span className="truncate text-[#f3f0fa]">{t.title}</span>
+                    <span className="shrink-0 text-xs text-[#8b869c]">
+                      {format(new Date(`${t.due_date}T12:00:00`), "d MMM", { locale: fr })}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Link href={`${base}/tasks`} className={`${ui.link} mt-4 inline-block text-sm`}>
+              Voir les tâches
+            </Link>
+          </section>
+        ) : null}
+
+        {hasModule(enabledModules, "calendar") ? (
+          <section className={`${ui.widget} p-5`}>
+            <h2 className={ui.h2}>Prochains rendez-vous</h2>
+            {calendarEvents.length === 0 ? (
+              <p className="mt-4 text-sm text-[#6a6578]">Rien de prévu.</p>
+            ) : (
+              <ul className="mt-4 space-y-2">
+                {calendarEvents.map((e) => (
+                  <li key={e.id} className="text-sm">
+                    <p className="text-[#e8e4f0]">{e.title}</p>
+                    <p className="text-[11px] text-[#6a6578]">
+                      {format(new Date(e.start_at), "d MMM HH:mm", { locale: fr })}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Link href={`${base}/calendar`} className={`${ui.link} mt-4 inline-block text-sm`}>
+              Ouvrir le calendrier
+            </Link>
+          </section>
+        ) : null}
+
+        {hasModule(enabledModules, "notes") ? (
+          <section className={`${ui.widget} p-5`}>
+            <h2 className={ui.h2}>Dernières notes</h2>
+            {notes.length === 0 ? (
+              <p className="mt-4 text-sm text-[#6a6578]">Aucune note.</p>
+            ) : (
+              <ul className="mt-4 space-y-2">
+                {notes.map((n) => (
+                  <li key={n.id} className="text-sm text-[#e8e4f0]">
+                    {n.title || "Sans titre"}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Link href={`${base}/notes`} className={`${ui.link} mt-4 inline-block text-sm`}>
+              Voir les notes
+            </Link>
+          </section>
+        ) : null}
+
+        {hasModule(enabledModules, "finances") ? (
+          <section className={`${ui.widget} p-5`}>
+            <h2 className={ui.h2}>Finances</h2>
+            <p className="mt-4 text-sm text-[#c8c3d6]">Abonnements : {chf(stats.monthlySubs)} / mois</p>
+            <Link href={`${base}/finances`} className={`${ui.link} mt-4 inline-block text-sm`}>
+              Ouvrir les finances
+            </Link>
+          </section>
+        ) : null}
       </div>
     </div>
   );

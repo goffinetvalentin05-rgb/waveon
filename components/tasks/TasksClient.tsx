@@ -30,7 +30,7 @@ const VIEWS: { id: View; label: string }[] = [
   { id: "kanban", label: "Kanban" },
 ];
 
-export function TasksClient({ projectId }: { projectId?: string }) {
+export function TasksClient({ projectId, scope }: { projectId?: string; scope?: "personal" | "project" }) {
   const [view, setView] = useState<View>("today");
   const [tasks, setTasks] = useState<WorkspaceTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,7 +42,8 @@ export function TasksClient({ projectId }: { projectId?: string }) {
   const load = useCallback(async () => {
     setLoading(true);
     const sp = new URLSearchParams({ view });
-    if (projectId) sp.set("project", projectId);
+    if (scope === "personal") sp.set("scope", "personal");
+    else if (projectId) sp.set("project", projectId);
     try {
       const [t, p, pe] = await Promise.all([
         fetch(`/api/tasks?${sp}`).then((r) => r.json()),
@@ -55,7 +56,7 @@ export function TasksClient({ projectId }: { projectId?: string }) {
     } finally {
       setLoading(false);
     }
-  }, [view, projectId]);
+  }, [view, projectId, scope]);
 
   useEffect(() => {
     void load();
@@ -127,6 +128,7 @@ export function TasksClient({ projectId }: { projectId?: string }) {
         <TaskEditor
           task={editing === "new" ? null : editing}
           projectId={projectId}
+          scope={scope}
           projects={projects}
           people={people}
           onClose={() => setEditing(null)}
@@ -265,6 +267,7 @@ function formatDay(value: string) {
 function TaskEditor({
   task,
   projectId,
+  scope,
   projects,
   people,
   onClose,
@@ -272,6 +275,7 @@ function TaskEditor({
 }: {
   task: WorkspaceTask | null;
   projectId?: string;
+  scope?: "personal" | "project";
   projects: Project[];
   people: Person[];
   onClose: () => void;
@@ -302,7 +306,8 @@ function TaskEditor({
       due_time: dueTime || null,
       priority,
       status,
-      project_id: project || null,
+      project_id: scope === "personal" ? null : project || null,
+      scope: scope === "personal" ? "personal" : "project",
       assigned_to: assignee || null,
       notes,
       subtasks,
@@ -365,6 +370,7 @@ function TaskEditor({
                 ))}
               </select>
             </div>
+            {scope === "personal" ? null : (
             <div>
               <label className={ui.label}>Projet</label>
               <select className={ui.input} value={project} onChange={(e) => setProject(e.target.value)}>
@@ -376,6 +382,7 @@ function TaskEditor({
                 ))}
               </select>
             </div>
+            )}
             <div>
               <label className={ui.label}>Assigné à</label>
               <select className={ui.input} value={assignee} onChange={(e) => setAssignee(e.target.value)}>

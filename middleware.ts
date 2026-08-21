@@ -12,6 +12,7 @@ const PROTECTED_PREFIXES = [
   "/finances",
   "/notes",
   "/notifications",
+  "/personal",
   "/dashboard",
   "/prospects",
   "/today",
@@ -82,26 +83,89 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
+  if (user) {
+    const spaceRedirect = redirectLegacySpace(request);
+    if (spaceRedirect) return spaceRedirect;
+  }
+
   return response;
+}
+
+function redirectLegacySpace(request: NextRequest): NextResponse | null {
+  const path = request.nextUrl.pathname;
+  const url = request.nextUrl;
+
+  const mapPrefix = (from: string, to: string) => {
+    if (path === from || path.startsWith(`${from}/`)) {
+      const next = new URL(path.replace(from, to), request.url);
+      next.search = url.search;
+      return NextResponse.redirect(next);
+    }
+    return null;
+  };
+
+  const personal = mapPrefix("/calendar", "/personal/calendar")
+    ?? mapPrefix("/tasks", "/personal/tasks")
+    ?? mapPrefix("/english", "/personal/english")
+    ?? mapPrefix("/notes", "/personal/notes");
+  if (personal) return personal;
+
+  if (path === "/crm/prospects") {
+    const project = url.searchParams.get("project");
+    if (project && project !== "unassigned") {
+      return NextResponse.redirect(new URL(`/projects/${project}/prospects`, request.url));
+    }
+    if (project === "unassigned") {
+      return NextResponse.redirect(new URL("/projects/unassigned", request.url));
+    }
+    return NextResponse.redirect(new URL("/projects", request.url));
+  }
+
+  if (
+    path === "/crm" ||
+    path === "/crm/today" ||
+    path === "/crm/clients" ||
+    path === "/crm/stats"
+  ) {
+    return NextResponse.redirect(new URL("/projects", request.url));
+  }
+
+  if (path === "/finances" || path.startsWith("/finances/")) {
+    return NextResponse.redirect(new URL("/projects", request.url));
+  }
+
+  return null;
 }
 
 export const config = {
   matcher: [
     "/",
+    "/home",
     "/home/:path*",
+    "/personal",
+    "/personal/:path*",
+    "/crm",
     "/crm/:path*",
+    "/calendar",
     "/calendar/:path*",
+    "/english",
     "/english/:path*",
+    "/tasks",
     "/tasks/:path*",
     "/dashboard/:path*",
     "/prospects/:path*",
     "/today/:path*",
     "/clients/:path*",
     "/stats/:path*",
+    "/settings",
     "/settings/:path*",
+    "/projects",
     "/projects/:path*",
+    "/finances",
     "/finances/:path*",
+    "/notes",
     "/notes/:path*",
+    "/notifications",
     "/notifications/:path*",
     "/login",
     "/signup",

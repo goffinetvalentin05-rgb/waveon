@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ui } from "@/lib/design/tokens";
 import type { CrmSettings } from "@/lib/crm/types";
 import { PeopleManager } from "@/components/people/PeopleManager";
+import { PersonalSecuritySettings } from "@/components/settings/PersonalSecuritySettings";
 
 const TIMEZONES = [
   "Europe/Zurich",
@@ -149,6 +150,8 @@ export default function SettingsPage() {
           {saving ? "Enregistrement…" : "Enregistrer"}
         </button>
       </form>
+
+      <PersonalSecuritySettings />
 
       <PeopleManager />
     </div>

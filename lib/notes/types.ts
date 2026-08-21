@@ -4,6 +4,7 @@ export type WorkspaceNote = {
   title: string;
   content: string;
   project_id: string | null;
+  scope?: "personal" | "project";
   tags: string[];
   created_at: string;
   updated_at: string;

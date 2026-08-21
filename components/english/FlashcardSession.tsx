@@ -64,7 +64,7 @@ export function FlashcardSession() {
     <div className="mx-auto flex max-w-xl flex-col gap-6 crm-animate-in">
       <div>
         <Link
-          href="/english"
+          href="/personal/english"
           className="inline-flex items-center gap-1.5 text-sm font-medium text-[#8b869c] transition hover:text-violet-300"
         >
           <IconArrowLeft className="h-4 w-4" stroke={1.75} />
@@ -84,7 +84,7 @@ export function FlashcardSession() {
             Aucune carte à réviser pour aujourd&apos;hui. Revenez plus tard ou ajoutez du nouveau
             vocabulaire.
           </p>
-          <Link href="/english" className={`${ui.btnPrimary} mt-2`}>
+          <Link href="/personal/english" className={`${ui.btnPrimary} mt-2`}>
             Retour à English
           </Link>
         </div>
@@ -98,7 +98,7 @@ export function FlashcardSession() {
             <button type="button" className={ui.btnSecondary} onClick={() => void load()}>
               Vérifier à nouveau
             </button>
-            <Link href="/english" className={ui.btnPrimary}>
+            <Link href="/personal/english" className={ui.btnPrimary}>
               Retour à English
             </Link>
           </div>

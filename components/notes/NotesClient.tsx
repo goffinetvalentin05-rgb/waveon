@@ -10,7 +10,7 @@ import { EmptyState, ConfirmModal } from "@/components/ui/ConfirmModal";
 import type { WorkspaceNote } from "@/lib/notes/types";
 import type { Project } from "@/lib/projects/types";
 
-export function NotesClient({ projectId }: { projectId?: string }) {
+export function NotesClient({ projectId, scope }: { projectId?: string; scope?: "personal" | "project" }) {
   const searchParams = useSearchParams();
   const focusId = searchParams.get("id");
   const [notes, setNotes] = useState<WorkspaceNote[]>([]);
@@ -20,7 +20,10 @@ export function NotesClient({ projectId }: { projectId?: string }) {
   const [toDelete, setToDelete] = useState<WorkspaceNote | null>(null);
 
   const load = useCallback(async () => {
-    const sp = projectId ? `?project=${projectId}` : "";
+    const params = new URLSearchParams();
+    if (scope === "personal") params.set("scope", "personal");
+    else if (projectId) params.set("project", projectId);
+    const sp = params.toString() ? `?${params.toString()}` : "";
     const [n, p] = await Promise.all([
       fetch(`/api/notes${sp}`).then((r) => r.json()),
       fetch("/api/projects").then((r) => r.json()),
@@ -33,7 +36,7 @@ export function NotesClient({ projectId }: { projectId?: string }) {
       if (current) return list.find((x) => x.id === current.id) ?? list[0] ?? null;
       return list[0] ?? null;
     });
-  }, [projectId, focusId]);
+  }, [projectId, focusId, scope]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -88,6 +91,7 @@ export function NotesClient({ projectId }: { projectId?: string }) {
               key={active.id}
               note={active}
               projects={projects}
+              scope={scope}
               onChange={(n) => {
                 setActive(n);
                 setNotes((prev) => prev.map((x) => (x.id === n.id ? n : x)));
@@ -101,6 +105,7 @@ export function NotesClient({ projectId }: { projectId?: string }) {
       {showNew ? (
         <NewNote
           projectId={projectId}
+          scope={scope}
           projects={projects}
           onClose={() => setShowNew(false)}
           onCreated={(n) => {
@@ -132,11 +137,13 @@ export function NotesClient({ projectId }: { projectId?: string }) {
 function NoteEditor({
   note,
   projects,
+  scope,
   onChange,
   onDelete,
 }: {
   note: WorkspaceNote;
   projects: Project[];
+  scope?: "personal" | "project";
   onChange: (n: WorkspaceNote) => void;
   onDelete: () => void;
 }) {
@@ -171,12 +178,13 @@ function NoteEditor({
         onBlur={() => void save({ title })}
       />
       <div className="mt-3 flex flex-wrap gap-2">
+        {scope === "personal" ? null : (
         <select
           className={ui.input}
           value={project}
           onChange={(e) => {
             setProject(e.target.value);
-            void save({ project_id: e.target.value || null });
+            void save({ project_id: e.target.value || null, scope: "project" });
           }}
         >
           <option value="">Sans projet</option>
@@ -186,6 +194,7 @@ function NoteEditor({
             </option>
           ))}
         </select>
+        )}
         <button type="button" className={ui.btnSecondary} onClick={convert}>
           Convertir en tâche
         </button>
@@ -205,11 +214,13 @@ function NoteEditor({
 
 function NewNote({
   projectId,
+  scope,
   projects,
   onClose,
   onCreated,
 }: {
   projectId?: string;
+  scope?: "personal" | "project";
   projects: Project[];
   onClose: () => void;
   onCreated: (n: WorkspaceNote) => void;
@@ -223,7 +234,8 @@ function NewNote({
       body: JSON.stringify({
         title: fd.get("title"),
         content: fd.get("content"),
-        project_id: fd.get("project_id") || projectId || null,
+        project_id: scope === "personal" ? null : fd.get("project_id") || projectId || null,
+        scope: scope === "personal" ? "personal" : "project",
         tags: String(fd.get("tags") ?? ""),
       }),
     });
@@ -239,6 +251,7 @@ function NewNote({
         <div className="mt-4 space-y-3">
           <input name="title" className={ui.input} placeholder="Titre" required />
           <textarea name="content" className={`${ui.input} min-h-[140px]`} placeholder="Contenu" />
+          {scope === "personal" ? null : (
           <select name="project_id" className={ui.input} defaultValue={projectId ?? ""}>
             <option value="">Sans projet</option>
             {projects.filter((p) => p.status === "active").map((p) => (
@@ -247,6 +260,7 @@ function NewNote({
               </option>
             ))}
           </select>
+          )}
           <input name="tags" className={ui.input} placeholder="Tags, séparés par des virgules" />
         </div>
         <div className="mt-6 flex justify-end gap-2">

@@ -2,30 +2,21 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  IconChecklist,
-  IconCreditCard,
-  IconFolder,
-  IconNote,
-  IconReceipt,
-  IconSearch,
-  IconUsers,
-} from "@tabler/icons-react";
+import { IconSearch } from "@tabler/icons-react";
 
-type SearchResults = {
-  projects: { id: string; name: string; color: string | null }[];
-  prospects: { id: string; club_name: string; status: string }[];
-  tasks: { id: string; title: string; status: string }[];
-  notes: { id: string; title: string }[];
-  expenses: { id: string; title: string; amount: number }[];
-  subscriptions: { id: string; name: string }[];
+type Hit = {
+  id: string;
+  kind: string;
+  label: string;
+  href: string;
+  context: string;
 };
 
 export function CommandPalette() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
-  const [results, setResults] = useState<SearchResults | null>(null);
+  const [results, setResults] = useState<Hit[]>([]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -48,12 +39,12 @@ export function CommandPalette() {
     if (!open) return;
     const t = setTimeout(async () => {
       if (q.trim().length < 2) {
-        setResults(null);
+        setResults([]);
         return;
       }
       const res = await fetch(`/api/search?q=${encodeURIComponent(q.trim())}`);
       const data = await res.json();
-      if (res.ok) setResults(data);
+      if (res.ok) setResults(data.results ?? []);
     }, 180);
     return () => clearTimeout(t);
   }, [q, open]);
@@ -69,65 +60,6 @@ export function CommandPalette() {
 
   if (!open) return null;
 
-  const groups = results
-    ? [
-        {
-          label: "Projets",
-          icon: IconFolder,
-          items: results.projects.map((p) => ({
-            id: p.id,
-            label: p.name,
-            href: `/projects/${p.id}`,
-          })),
-        },
-        {
-          label: "Prospects",
-          icon: IconUsers,
-          items: results.prospects.map((p) => ({
-            id: p.id,
-            label: p.club_name,
-            href: `/crm/prospects/${p.id}`,
-          })),
-        },
-        {
-          label: "Tâches",
-          icon: IconChecklist,
-          items: results.tasks.map((t) => ({
-            id: t.id,
-            label: t.title,
-            href: `/tasks`,
-          })),
-        },
-        {
-          label: "Notes",
-          icon: IconNote,
-          items: results.notes.map((n) => ({
-            id: n.id,
-            label: n.title,
-            href: `/notes?id=${n.id}`,
-          })),
-        },
-        {
-          label: "Dépenses",
-          icon: IconReceipt,
-          items: results.expenses.map((e) => ({
-            id: e.id,
-            label: e.title,
-            href: "/finances",
-          })),
-        },
-        {
-          label: "Abonnements",
-          icon: IconCreditCard,
-          items: results.subscriptions.map((s) => ({
-            id: s.id,
-            label: s.name,
-            href: "/finances/subscriptions",
-          })),
-        },
-      ].filter((g) => g.items.length)
-    : [];
-
   return (
     <div className="fixed inset-0 z-[80] flex items-start justify-center px-4 pt-[12vh]">
       <button type="button" className="absolute inset-0 bg-black/65 backdrop-blur-sm" onClick={() => setOpen(false)} />
@@ -138,7 +70,7 @@ export function CommandPalette() {
             autoFocus
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Rechercher un projet, prospect, tâche…"
+            placeholder="Rechercher dans tous les espaces…"
             className="h-12 w-full bg-transparent text-sm text-[#f3f0fa] outline-none placeholder:text-[#6a6578]"
           />
           <kbd className="hidden rounded-md border border-white/10 px-1.5 py-0.5 text-[10px] text-[#6a6578] sm:inline">
@@ -148,30 +80,24 @@ export function CommandPalette() {
         <div className="max-h-[50vh] overflow-y-auto p-2">
           {q.trim().length < 2 ? (
             <p className="px-3 py-6 text-center text-sm text-[#6a6578]">Tapez au moins 2 caractères.</p>
-          ) : groups.length === 0 ? (
+          ) : results.length === 0 ? (
             <p className="px-3 py-6 text-center text-sm text-[#6a6578]">Aucun résultat.</p>
           ) : (
-            groups.map((g) => {
-              const Icon = g.icon;
-              return (
-                <div key={g.label} className="mb-2">
-                  <p className="px-2 py-1.5 text-[10px] font-medium uppercase tracking-wider text-[#6a6578]">
-                    {g.label}
-                  </p>
-                  {g.items.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => go(item.href)}
-                      className="flex w-full items-center gap-2 rounded-[10px] px-2 py-2 text-left text-sm text-[#e8e4f0] hover:bg-white/[0.05]"
-                    >
-                      <Icon className="h-4 w-4 text-[#8b869c]" stroke={1.6} />
-                      <span className="truncate">{item.label}</span>
-                    </button>
-                  ))}
-                </div>
-              );
-            })
+            results.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => go(item.href)}
+                className="flex w-full items-center justify-between gap-3 rounded-[10px] px-3 py-2.5 text-left hover:bg-white/[0.05]"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-sm text-[#e8e4f0]">{item.label}</span>
+                  <span className="text-[11px] text-[#8b869c]">
+                    {item.kind} · {item.context}
+                  </span>
+                </span>
+              </button>
+            ))
           )}
         </div>
       </div>

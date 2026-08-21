@@ -76,7 +76,7 @@ export function ProjectActions({ project }: { project: Project }) {
         onCancel={() => setConfirm(null)}
         onConfirm={async () => {
           await fetch(`/api/projects/${project.id}`, { method: "DELETE" });
-          router.push("/home");
+          router.push("/projects");
           router.refresh();
         }}
       />

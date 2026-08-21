@@ -34,6 +34,8 @@ export type EventModalProps = {
   onClose: () => void;
   onSaved: (event: CalendarEvent) => void;
   onDeleted: (id: string) => void;
+  scope?: "personal" | "project";
+  projectId?: string;
 };
 
 /**
@@ -49,6 +51,8 @@ export function EventModal({
   onClose,
   onSaved,
   onDeleted,
+  scope,
+  projectId,
 }: EventModalProps) {
   if (!open) return null;
   return (
@@ -59,6 +63,8 @@ export function EventModal({
       onClose={onClose}
       onSaved={onSaved}
       onDeleted={onDeleted}
+      scope={scope}
+      projectId={projectId}
     />
   );
 }
@@ -70,6 +76,8 @@ function EventModalInner({
   onClose,
   onSaved,
   onDeleted,
+  scope,
+  projectId,
 }: Omit<EventModalProps, "open">) {
   const isEdit = Boolean(event);
 
@@ -142,6 +150,8 @@ function EventModalInner({
       description: description.trim() || null,
       color,
       location: location.trim() || null,
+      scope: scope ?? event?.scope ?? "personal",
+      project_id: projectId ?? event?.project_id ?? null,
     };
 
     setSaving(true);

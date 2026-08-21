@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/crm/server";
 import { logWorkspaceEvent } from "@/lib/workspace/events";
 import { TASK_PRIORITIES, TASK_STATUSES, type TaskPriority, type TaskStatus } from "@/lib/tasks/types";
+import { parseScopeInput } from "@/lib/workspace/scope";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -42,7 +43,11 @@ export async function PATCH(request: Request, { params }: Params) {
   if ("description" in body) patch.description = String(body.description ?? "").trim() || null;
   if ("due_date" in body) patch.due_date = body.due_date || null;
   if ("due_time" in body) patch.due_time = body.due_time || null;
-  if ("project_id" in body) patch.project_id = body.project_id || null;
+  if ("project_id" in body || "scope" in body) {
+    const scoped = parseScopeInput(body);
+    patch.project_id = scoped.project_id;
+    patch.scope = scoped.scope;
+  }
   if ("assigned_to" in body) patch.assigned_to = body.assigned_to || null;
   if ("prospect_id" in body) patch.prospect_id = body.prospect_id || null;
   if ("notes" in body) patch.notes = String(body.notes ?? "").trim() || null;

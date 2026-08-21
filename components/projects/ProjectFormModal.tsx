@@ -4,6 +4,14 @@ import { useState } from "react";
 import { ui } from "@/lib/design/tokens";
 import { PROJECT_COLORS } from "@/lib/projects/types";
 import type { Project } from "@/lib/projects/types";
+import {
+  PROJECT_MODULE_KEYS,
+  PROJECT_MODULE_LABELS,
+  PROJECT_TEMPLATES,
+  normalizeModules,
+  type ProjectModuleKey,
+  type ProjectTemplateId,
+} from "@/lib/projects/modules";
 
 export function ProjectFormModal({
   project,
@@ -20,12 +28,30 @@ export function ProjectFormModal({
   const [description, setDescription] = useState(project?.description ?? "");
   const [icon, setIcon] = useState(project?.icon ?? "");
   const [color, setColor] = useState(project?.color ?? PROJECT_COLORS[0]);
+  const [template, setTemplate] = useState<ProjectTemplateId>(project ? "custom" : "commercial");
+  const [modules, setModules] = useState<ProjectModuleKey[]>(
+    normalizeModules(project?.enabledModules ?? PROJECT_TEMPLATES.find((t) => t.id === "commercial")?.modules)
+  );
+
+  const applyTemplate = (id: ProjectTemplateId) => {
+    setTemplate(id);
+    const found = PROJECT_TEMPLATES.find((t) => t.id === id);
+    if (found && id !== "custom") setModules(normalizeModules(found.modules));
+  };
+
+  const toggleModule = (key: ProjectModuleKey) => {
+    if (key === "overview") return;
+    setTemplate("custom");
+    setModules((prev) =>
+      prev.includes(key) ? prev.filter((m) => m !== key) : normalizeModules([...prev, key])
+    );
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const payload = { name, description, icon, color };
+    const payload = { name, description, icon, color, modules, template };
     const res = await fetch(project ? `/api/projects/${project.id}` : "/api/projects", {
       method: project ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
@@ -43,11 +69,11 @@ export function ProjectFormModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button type="button" className={ui.overlay} onClick={onClose} />
-      <form onSubmit={submit} className={`${ui.modal} max-w-md p-6`}>
+      <form onSubmit={submit} className={`${ui.modal} max-h-[90vh] max-w-lg overflow-y-auto p-6`}>
         <h2 className="text-lg font-semibold text-[#f3f0fa]">
           {project ? "Modifier le projet" : "Nouveau projet"}
         </h2>
-        <div className="mt-5 space-y-3">
+        <div className="mt-5 space-y-4">
           <div>
             <label className={ui.label}>Nom *</label>
             <input className={ui.input} value={name} onChange={(e) => setName(e.target.value)} required />
@@ -55,7 +81,7 @@ export function ProjectFormModal({
           <div>
             <label className={ui.label}>Description</label>
             <textarea
-              className={`${ui.input} min-h-[88px] resize-y`}
+              className={`${ui.input} min-h-[72px] resize-y`}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
@@ -83,6 +109,49 @@ export function ProjectFormModal({
                   style={{ background: c }}
                   aria-label={c}
                 />
+              ))}
+            </div>
+          </div>
+
+          {!project ? (
+            <div>
+              <label className={ui.label}>Template</label>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                {PROJECT_TEMPLATES.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => applyTemplate(t.id)}
+                    className={`rounded-[12px] border px-3 py-2.5 text-left ${
+                      template === t.id
+                        ? "border-violet-500/50 bg-violet-500/10"
+                        : "border-white/[0.08] hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    <p className="text-sm font-medium text-[#f3f0fa]">{t.label}</p>
+                    <p className="mt-0.5 text-[11px] text-[#8b869c]">{t.description}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div>
+            <label className={ui.label}>Modules</label>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {PROJECT_MODULE_KEYS.map((key) => (
+                <label
+                  key={key}
+                  className="flex items-center gap-2 rounded-[10px] border border-white/[0.06] px-3 py-2 text-sm text-[#e8e4f0]"
+                >
+                  <input
+                    type="checkbox"
+                    checked={modules.includes(key)}
+                    disabled={key === "overview"}
+                    onChange={() => toggleModule(key)}
+                  />
+                  {PROJECT_MODULE_LABELS[key]}
+                </label>
               ))}
             </div>
           </div>

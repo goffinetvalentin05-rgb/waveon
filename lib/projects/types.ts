@@ -1,3 +1,5 @@
+import type { ProjectModuleKey } from "@/lib/projects/modules";
+
 export const PROJECT_STATUSES = ["active", "archived"] as const;
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
@@ -22,6 +24,7 @@ export type Project = {
   status: ProjectStatus;
   created_at: string;
   updated_at: string;
+  enabledModules?: ProjectModuleKey[];
 };
 
 export type ProjectSummary = Project & {

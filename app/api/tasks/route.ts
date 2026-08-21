@@ -3,6 +3,7 @@ import { addDays } from "date-fns";
 import { requireUser, todayISO } from "@/lib/crm/server";
 import { logWorkspaceEvent } from "@/lib/workspace/events";
 import { TASK_PRIORITIES, TASK_STATUSES, type TaskPriority, type TaskStatus } from "@/lib/tasks/types";
+import { parseScopeInput } from "@/lib/workspace/scope";
 
 const TASK_SELECT =
   "*, prospect:prospects(id, club_name, status), project:projects(id, name, color), assignee:people!daily_tasks_assigned_to_fkey(id, name), subtasks:task_subtasks(*)";
@@ -14,6 +15,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const view = url.searchParams.get("view") ?? "today";
   const projectId = url.searchParams.get("project");
+  const scope = url.searchParams.get("scope");
   const today = todayISO();
   const weekEnd = addDays(new Date(`${today}T12:00:00`), 7).toISOString().slice(0, 10);
 
@@ -24,7 +26,15 @@ export async function GET(request: Request) {
     .order("due_date", { ascending: true })
     .order("created_at", { ascending: true });
 
-  if (projectId) query = query.eq("project_id", projectId);
+  if (scope === "personal") {
+    query = query.eq("scope", "personal");
+  } else if (projectId === "unassigned") {
+    query = query.eq("scope", "project").is("project_id", null);
+  } else if (projectId) {
+    query = query.eq("scope", "project").eq("project_id", projectId);
+  } else {
+    query = query.eq("scope", "project");
+  }
 
   if (view === "today") {
     query = query.eq("due_date", today).neq("status", "Terminé");
@@ -69,6 +79,8 @@ export async function POST(request: Request) {
     ? (body.status as TaskStatus)
     : "À faire";
 
+  const scoped = parseScopeInput(body);
+
   const { data, error } = await supabase
     .from("daily_tasks")
     .insert({
@@ -78,7 +90,8 @@ export async function POST(request: Request) {
       due_date: body.due_date || todayISO(),
       due_time: body.due_time || null,
       prospect_id: body.prospect_id || null,
-      project_id: body.project_id || null,
+      project_id: scoped.project_id,
+      scope: scoped.scope,
       assigned_to: body.assigned_to || null,
       task_kind: body.task_kind || "custom",
       priority,
@@ -122,7 +135,7 @@ export async function POST(request: Request) {
   await logWorkspaceEvent(supabase, user.id, {
     event_type: "task_created",
     title: `Tâche créée : ${title}`,
-    project_id: body.project_id || null,
+    project_id: scoped.project_id,
     entity_type: "task",
     entity_id: data.id,
   });

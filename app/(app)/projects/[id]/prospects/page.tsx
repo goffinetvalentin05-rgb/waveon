@@ -4,6 +4,7 @@ import { normalizeProspectFromDb } from "@/lib/crm/prospect-payload";
 import type { Prospect } from "@/lib/crm/types";
 import { parseProspectListParams } from "@/lib/crm/prospect-list-params";
 import { fetchProspectList } from "@/lib/crm/prospect-query";
+import { requireProjectModule } from "@/lib/projects/guard";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -21,6 +22,7 @@ function toUrlSearchParams(raw: Record<string, string | string[] | undefined>) {
 
 export default async function ProjectProspectsPage({ params, searchParams }: Props) {
   const { id } = await params;
+  await requireProjectModule(id, "prospects");
   const supabase = await createServerComponentSupabase();
   const {
     data: { user },

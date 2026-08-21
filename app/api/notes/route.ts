@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/crm/server";
+import { parseScopeInput } from "@/lib/workspace/scope";
 
 export async function GET(request: Request) {
   const auth = await requireUser();
   if (auth.response) return auth.response;
   const { supabase, user } = auth;
   const projectId = new URL(request.url).searchParams.get("project");
+  const scope = new URL(request.url).searchParams.get("scope");
 
   let query = supabase
     .from("workspace_notes")
@@ -13,7 +15,13 @@ export async function GET(request: Request) {
     .eq("user_id", user.id)
     .order("updated_at", { ascending: false });
 
-  if (projectId) query = query.eq("project_id", projectId);
+  if (scope === "personal") {
+    query = query.eq("scope", "personal");
+  } else if (projectId === "unassigned") {
+    query = query.eq("scope", "project").is("project_id", null);
+  } else if (projectId) {
+    query = query.eq("scope", "project").eq("project_id", projectId);
+  }
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -32,13 +40,16 @@ export async function POST(request: Request) {
       ? body.tags.split(",").map((t: string) => t.trim()).filter(Boolean)
       : [];
 
+  const scoped = parseScopeInput(body);
+
   const { data, error } = await supabase
     .from("workspace_notes")
     .insert({
       user_id: user.id,
       title,
       content: String(body.content ?? ""),
-      project_id: body.project_id || null,
+      project_id: scoped.project_id,
+      scope: scoped.scope,
       tags,
     })
     .select("*")
