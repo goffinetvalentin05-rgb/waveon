@@ -4,6 +4,7 @@ import { fetchProjects } from "@/lib/projects/server";
 import { ProjectOverview } from "@/components/projects/ProjectOverview";
 import { monthlyAmount } from "@/lib/finance/types";
 import type { FinanceSubscription } from "@/lib/finance/types";
+import { countProspectWork } from "@/lib/crm/counters";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -70,9 +71,7 @@ export default async function ProjectPage({ params }: Props) {
   ]);
 
   const prospects = prospectsRes.data ?? [];
-  const followUps = prospects.filter(
-    (p) => p.next_follow_up && p.next_follow_up <= today && p.status !== "Client" && p.status !== "Refusé"
-  ).length;
+  const work = countProspectWork(prospects, today);
   const monthSpend = (expensesRes.data ?? []).reduce((s, e) => s + Number(e.amount || 0), 0);
   const monthlySubs = ((subsRes.data as FinanceSubscription[] | null) ?? []).reduce(
     (s, sub) => s + monthlyAmount(sub),
@@ -86,7 +85,12 @@ export default async function ProjectPage({ params }: Props) {
       enabledModules={project.enabledModules}
       stats={{
         prospects: prospects.length,
-        followUps,
+        followUps: work.followToday,
+        toContact: work.toContact,
+        overdue: work.overdue,
+        demos: work.demoScheduled,
+        considering: work.considering,
+        clients: work.clients,
         openTasks: (tasksRes.data ?? []).length,
         monthSpend,
         monthlySubs,

@@ -56,7 +56,7 @@ export function resolveQuickActionAt(
     }
     if (action === "refus") {
       return {
-        status: "Refusé",
+        status: "Pas intéressé",
         lastAction: "Refus",
         nextFollowUp: null,
         activityTitle: "Refus enregistré",
@@ -77,7 +77,7 @@ export function resolveQuickActionAt(
   switch (action) {
     case "mail_sent": {
       const nextStatus: ProspectStatus =
-        currentStatus === "À contacter" ? "Contacté" : currentStatus;
+        currentStatus === "À contacter" ? "1er contact envoyé" : currentStatus;
       return {
         status: nextStatus,
         lastAction: "Mail envoyé",
@@ -89,7 +89,7 @@ export function resolveQuickActionAt(
     }
     case "call_made": {
       const nextStatus: ProspectStatus =
-        currentStatus === "À contacter" ? "Contacté" : currentStatus;
+        currentStatus === "À contacter" ? "1er contact envoyé" : currentStatus;
       return {
         status: nextStatus,
         lastAction: "Appel effectué",
@@ -119,7 +119,7 @@ export function resolveQuickActionAt(
       };
     case "refus":
       return {
-        status: "Refusé",
+        status: "Pas intéressé",
         lastAction: "Refus",
         nextFollowUp: null,
         activityTitle: "Refus enregistré",

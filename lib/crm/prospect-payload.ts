@@ -1,3 +1,5 @@
+import { migrateProspectStatus } from "@/lib/crm/status";
+
 /** Convertit une valeur absente ou vide en NULL (jamais de chaîne vide en base). */
 export function nullIfEmpty(value: unknown): string | null {
   if (value == null) return null;
@@ -20,6 +22,7 @@ export type ProspectInput = {
   contact_channel?: unknown;
   tags?: unknown;
   next_follow_up?: unknown;
+  next_action?: unknown;
 };
 
 /** Champs prospect normalisés pour insert/update Supabase. */
@@ -61,6 +64,7 @@ export function buildProspectFields(input: ProspectInput) {
     contact_channel: nullIfEmpty(input.contact_channel),
     tags,
     next_follow_up: nullIfEmpty(input.next_follow_up),
+    next_action: nullIfEmpty(input.next_action),
   };
 }
 
@@ -69,6 +73,7 @@ export function buildProspectInsertPayload(userId: string, input: ProspectInput)
     ...buildProspectFields(input),
     user_id: userId,
     status: "À contacter" as const,
+    next_action: "Premier contact",
     last_action: "Créé",
     last_action_at: new Date().toISOString(),
   };
@@ -79,6 +84,7 @@ export function buildProspectImportPayload(userId: string, input: ProspectInput)
     ...buildProspectFields(input),
     user_id: userId,
     status: "À contacter" as const,
+    next_action: "Premier contact",
     last_action: "Importé",
     last_action_at: new Date().toISOString(),
   };
@@ -101,5 +107,13 @@ export function normalizeProspectFromDb(row: Record<string, unknown>) {
     row.potential_value == null || row.potential_value === ""
       ? null
       : Number(row.potential_value);
-  return { ...row, phone, archived_at, tags, potential_value };
+  return {
+    ...row,
+    phone,
+    archived_at,
+    tags,
+    potential_value,
+    status: migrateProspectStatus(String(row.status ?? "À contacter")),
+    next_action: row.next_action == null || row.next_action === "" ? null : String(row.next_action),
+  };
 }

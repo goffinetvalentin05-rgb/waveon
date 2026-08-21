@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { resolveQuickActionAt, QUICK_ACTION_LABELS } from "@/lib/crm/actions";
 import type { ProspectStatus, QuickAction } from "@/lib/crm/types";
 import { getOrCreateSettings, requireUser, todayISO } from "@/lib/crm/server";
+import { defaultNextActionFor } from "@/lib/crm/next-action";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -52,6 +53,7 @@ export async function POST(request: Request, { params }: Params) {
     last_action: result.lastAction,
     last_action_at: new Date().toISOString(),
     next_follow_up: result.nextFollowUp,
+    next_action: defaultNextActionFor(result.status),
   };
 
   if (action === "demo_scheduled") {

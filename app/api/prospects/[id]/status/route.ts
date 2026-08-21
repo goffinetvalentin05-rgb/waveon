@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/crm/server";
 import type { ProspectStatus } from "@/lib/crm/types";
 import { PROSPECT_STATUSES } from "@/lib/crm/types";
-import { recomputeProspectDerivatives } from "@/lib/crm/recompute-prospect";
+import { isClosedProspectStatus } from "@/lib/crm/closed";
+import { defaultNextActionFor } from "@/lib/crm/next-action";
+import { migrateProspectStatus } from "@/lib/crm/status";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -13,7 +15,7 @@ export async function POST(request: Request, { params }: Params) {
   const { id } = await params;
 
   const body = await request.json();
-  const nextStatus = body.status as ProspectStatus;
+  const nextStatus = migrateProspectStatus(String(body.status ?? "")) as ProspectStatus;
 
   if (!PROSPECT_STATUSES.includes(nextStatus)) {
     return NextResponse.json({ error: "Statut invalide" }, { status: 400 });
@@ -21,7 +23,7 @@ export async function POST(request: Request, { params }: Params) {
 
   const { data: prospect, error } = await supabase
     .from("prospects")
-    .select("id, club_name, status")
+    .select("id, club_name, status, next_action, next_follow_up")
     .eq("id", id)
     .eq("user_id", user.id)
     .maybeSingle();
@@ -30,6 +32,30 @@ export async function POST(request: Request, { params }: Params) {
   if (!prospect) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
 
   const fromStatus = prospect.status as ProspectStatus;
+  const nextAction =
+    typeof body.next_action === "string"
+      ? body.next_action.trim() || null
+      : isClosedProspectStatus(nextStatus)
+        ? null
+        : prospect.next_action || defaultNextActionFor(nextStatus);
+  const nextFollowUp =
+    "next_follow_up" in body
+      ? (body.next_follow_up ? String(body.next_follow_up).slice(0, 10) : null)
+      : isClosedProspectStatus(nextStatus)
+        ? null
+        : prospect.next_follow_up;
+
+  await supabase
+    .from("prospects")
+    .update({
+      status: nextStatus,
+      next_action: nextAction,
+      next_follow_up: nextFollowUp,
+      last_action: `Statut : ${nextStatus}`,
+      last_action_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .eq("user_id", user.id);
 
   await supabase.from("prospect_activities").insert({
     user_id: user.id,
@@ -39,13 +65,26 @@ export async function POST(request: Request, { params }: Params) {
     description: nextStatus,
   });
 
-  const recomputed = await recomputeProspectDerivatives(supabase, user.id, id);
+  const { data: updated } = await supabase
+    .from("prospects")
+    .select("*")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const { data: activities } = await supabase
+    .from("prospect_activities")
+    .select("*")
+    .eq("prospect_id", id)
+    .eq("user_id", user.id)
+    .order("occurred_at", { ascending: false })
+    .order("created_at", { ascending: false });
+
   return NextResponse.json(
     {
-      prospect: recomputed.prospect,
-      activities: recomputed.activities,
+      prospect: updated,
+      activities: activities ?? [],
     },
     { status: 200 }
   );
 }
-

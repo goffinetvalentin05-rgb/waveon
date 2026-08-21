@@ -1,84 +1,39 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
-  IconChevronDown,
   IconChevronLeft,
   IconChevronRight,
-  IconChevronUp,
   IconFilter,
   IconPlus,
   IconSearch,
-  IconSelector,
   IconUpload,
 } from "@tabler/icons-react";
-import { StatusBadge } from "@/components/crm/StatusBadge";
 import { ImportProspectsModal } from "@/components/crm/ImportProspectsModal";
 import { ProspectsFilterPanel } from "@/components/crm/ProspectsFilterPanel";
 import { PipelineStats, ProspectsPipeline } from "@/components/crm/ProspectsPipeline";
-import type { Prospect } from "@/lib/crm/types";
+import { SmartViewBar } from "@/components/crm/SmartViewBar";
+import { ProspectListRow, ProspectWorkSections } from "@/components/crm/ProspectWorkList";
+import type { Prospect, ProspectStatus } from "@/lib/crm/types";
+import { PROSPECT_STATUSES } from "@/lib/crm/types";
+import type { ProspectWorkCounts } from "@/lib/crm/counters";
+import type { SmartViewId } from "@/lib/crm/smart-views";
 import {
   EMPTY_FILTERS,
   buildProspectListPath,
   buildProspectListSearchParams,
   countActiveFilters,
-  cycleSortColumn,
   defaultProspectListParams,
   hasActiveSearchOrFilters,
   parseProspectListParams,
   type ProspectListFilters,
   type ProspectListParams,
-  type SortableColumn,
 } from "@/lib/crm/prospect-list-params";
 import { ui } from "@/lib/design/tokens";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
-const SORT_COLUMNS: { key: SortableColumn; label: string }[] = [
-  { key: "club_name", label: "Organisation" },
-  { key: "sport", label: "Sport" },
-  { key: "canton", label: "Canton" },
-  { key: "contact_name", label: "Contact" },
-  { key: "phone", label: "Téléphone" },
-  { key: "email", label: "Email" },
-  { key: "website", label: "Site" },
-  { key: "status", label: "Statut" },
-  { key: "last_action_at", label: "Dernière action" },
-  { key: "next_follow_up", label: "Prochaine relance" },
-];
-
-function fmtDate(value: string | null) {
-  if (!value) return "—";
-  try {
-    return format(new Date(value.length === 10 ? `${value}T12:00:00` : value), "d MMM yyyy", {
-      locale: fr,
-    });
-  } catch {
-    return value;
-  }
-}
-
-function SortIcon({
-  column,
-  sort,
-  order,
-}: {
-  column: SortableColumn;
-  sort: string;
-  order: "asc" | "desc";
-}) {
-  if (sort !== column) {
-    return <IconSelector className="h-3.5 w-3.5 opacity-30" stroke={1.75} />;
-  }
-  if (order === "asc") {
-    return <IconChevronUp className="h-3.5 w-3.5 text-emerald-400" stroke={2} />;
-  }
-  return <IconChevronDown className="h-3.5 w-3.5 text-emerald-400" stroke={2} />;
-}
 
 type FilterOptions = {
   sports: string[];
@@ -123,10 +78,13 @@ export function ProspectsClient({
     sports: [],
     cantons: [],
     villes: [],
-    statuses: [],
+    statuses: [...PROSPECT_STATUSES],
   });
   const [importMsg, setImportMsg] = useState<string | null>(null);
-  const [view, setView] = useState<"pipeline" | "list">(clientsOnly ? "list" : "pipeline");
+  const [view, setView] = useState<"pipeline" | "list">(
+    clientsOnly || params.smartView !== "all" ? "list" : "pipeline"
+  );
+  const [smartCounts, setSmartCounts] = useState<ProspectWorkCounts | null>(null);
 
   const skipNextSearchDebounce = useRef(true);
   const skipInitialUrlFetch = useRef(true);
@@ -163,6 +121,52 @@ export function ProspectsClient({
     },
     []
   );
+
+  const fetchCounts = useCallback(() => {
+    const project = projectId ?? params.projectId;
+    const sp = project ? `?project=${encodeURIComponent(project)}` : "";
+    void fetch(`/api/prospects/smart-counts${sp}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.counts) setSmartCounts(data.counts);
+      });
+  }, [projectId, params.projectId]);
+
+  useEffect(() => {
+    fetchCounts();
+  }, [fetchCounts, allCount]);
+
+  const changeStatus = useCallback(
+    (id: string, status: ProspectStatus) => {
+      startTransition(async () => {
+        const res = await fetch(`/api/prospects/${id}/status`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        setProspects((list) =>
+          list.map((p) => (p.id === id ? { ...p, ...data.prospect } : p))
+        );
+        fetchCounts();
+      });
+    },
+    [fetchCounts]
+  );
+
+  const applySmartView = (smartView: SmartViewId) => {
+    const next = {
+      ...params,
+      smartView,
+      followUpPreset: null,
+      statuses: [] as string[],
+      page: 1,
+      pageSize: smartView === "today_work" || smartView === "overdue" ? 200 : params.pageSize,
+    };
+    if (smartView !== "all") setView("list");
+    applyParams(next);
+  };
 
   const applyParams = useCallback(
     (next: ProspectListParams) => {
@@ -209,7 +213,7 @@ export function ProspectsClient({
     fetch(`/api/prospects/filter-options?${sp}`)
       .then((r) => r.json())
       .then((data) => {
-        if (data.sports) setFilterOptions(data);
+        if (data.sports) setFilterOptions({ ...data, statuses: [...PROSPECT_STATUSES] });
       })
       .catch(() => {});
   }, [clientsOnly]);
@@ -221,11 +225,6 @@ export function ProspectsClient({
     // Charge un volume suffisant pour le kanban, sans toucher à la vue liste.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, clientsOnly]);
-
-  const onSortColumn = (column: SortableColumn) => {
-    const { sort, order } = cycleSortColumn(params.sort, params.order, column);
-    applyParams({ ...params, sort, order, page: 1 });
-  };
 
   const openFilters = () => {
     setFilterDraft({
@@ -245,6 +244,7 @@ export function ProspectsClient({
       tags: params.tags,
       channel: params.channel,
       followUpPreset: params.followUpPreset,
+      smartView: params.smartView,
       minValue: params.minValue,
       maxValue: params.maxValue,
     });
@@ -299,10 +299,6 @@ export function ProspectsClient({
   const totalPages = Math.max(1, Math.ceil(count / params.pageSize));
   const listReturnUrl = buildProspectListPath(params, listPath);
 
-  const visibleSortColumns = clientsOnly
-    ? SORT_COLUMNS.filter((c) => c.key !== "status")
-    : SORT_COLUMNS;
-
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -310,41 +306,12 @@ export function ProspectsClient({
           {projectId ? null : <h1 className={ui.h1}>{clientsOnly ? "Clients" : "Ma pipeline"}</h1>}
           <p className={`${projectId ? "" : "mt-1"} text-sm text-[#8a9e96]`}>{resultLabel}</p>
           {!clientsOnly ? (
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                type="button"
-                className={`rounded-full px-3 py-1 text-xs font-medium ${
-                  params.followUpPreset === "today"
-                    ? "bg-amber-500/15 text-amber-200"
-                    : "bg-white/[0.05] text-[#8a9e96] hover:text-[#eef6f2]"
-                }`}
-                onClick={() =>
-                  applyParams({
-                    ...params,
-                    followUpPreset: params.followUpPreset === "today" ? null : "today",
-                    page: 1,
-                  })
-                }
-              >
-                À relancer aujourd&apos;hui
-              </button>
-              <button
-                type="button"
-                className={`rounded-full px-3 py-1 text-xs font-medium ${
-                  params.followUpPreset === "overdue"
-                    ? "bg-rose-500/15 text-rose-200"
-                    : "bg-white/[0.05] text-[#8a9e96] hover:text-[#eef6f2]"
-                }`}
-                onClick={() =>
-                  applyParams({
-                    ...params,
-                    followUpPreset: params.followUpPreset === "overdue" ? null : "overdue",
-                    page: 1,
-                  })
-                }
-              >
-                Relances en retard
-              </button>
+            <div className="mt-4">
+              <SmartViewBar
+                active={params.smartView}
+                counts={smartCounts}
+                onSelect={applySmartView}
+              />
             </div>
           ) : null}
         </div>
@@ -432,89 +399,39 @@ export function ProspectsClient({
         <div className={pending ? "opacity-70" : ""}>
           <ProspectsPipeline prospects={prospects} listReturnUrl={listReturnUrl} />
         </div>
+      ) : params.smartView === "today_work" ? (
+        <div className={pending ? "opacity-70" : ""}>
+          <ProspectWorkSections
+            prospects={prospects}
+            listReturnUrl={listReturnUrl}
+            onStatusChange={changeStatus}
+          />
+        </div>
       ) : (
-      <div className={`crm-table-wrap crm-animate-in ${pending ? "opacity-70" : ""}`}>
-        <table className="crm-table">
-          <thead>
-            <tr>
-              {visibleSortColumns.map(({ key, label }) => (
-                <th key={key}>
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-1.5 hover:text-[#eef6f2]"
-                    onClick={() => onSortColumn(key)}
-                  >
-                    {label}
-                    <SortIcon column={key} sort={params.sort} order={params.order} />
-                  </button>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {prospects.length === 0 ? (
-              <tr>
-                <td colSpan={visibleSortColumns.length} className="!cursor-default py-12 text-center">
-                  {isFiltered ? (
-                    <div className="space-y-3">
-                      <p className="text-[#8a9e96]">
-                        Aucun prospect ne correspond à votre recherche.
-                      </p>
-                      <button type="button" className={ui.btnSecondary} onClick={resetAll}>
-                        Réinitialiser la recherche et les filtres
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="text-[#6b7d76]">
-                      Aucun prospect. Importez un fichier ou créez-en un.
-                    </span>
-                  )}
-                </td>
-              </tr>
+      <div className={`space-y-2 ${pending ? "opacity-70" : ""}`}>
+        {prospects.length === 0 ? (
+          <div className={`${ui.card} px-4 py-12 text-center`}>
+            {isFiltered ? (
+              <div className="space-y-3">
+                <p className="text-[#8a9e96]">Aucun prospect ne correspond à votre recherche.</p>
+                <button type="button" className={ui.btnSecondary} onClick={resetAll}>
+                  Réinitialiser la recherche et les filtres
+                </button>
+              </div>
             ) : (
-              prospects.map((p) => (
-                <tr
-                  key={p.id}
-                  onClick={() => {
-                    const back = encodeURIComponent(listReturnUrl);
-                    router.push(`/crm/prospects/${p.id}?back=${back}`);
-                  }}
-                >
-                  <td className="font-medium text-[#eef6f2]">{p.club_name}</td>
-                  <td>{p.sport ?? "—"}</td>
-                  <td>{p.canton ?? "—"}</td>
-                  <td>{p.contact_name ?? "—"}</td>
-                  <td>{p.phone ?? "—"}</td>
-                  <td>{p.email ?? "—"}</td>
-                  <td>
-                    {p.website ? (
-                      <Link
-                        href={p.website.startsWith("http") ? p.website : `https://${p.website}`}
-                        target="_blank"
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-emerald-400 hover:underline"
-                      >
-                        Lien
-                      </Link>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                  {!clientsOnly ? (
-                    <td>
-                      <StatusBadge status={p.status} />
-                    </td>
-                  ) : null}
-                  <td>
-                    <div className="text-[#c2d4cc]">{p.last_action ?? "—"}</div>
-                    <div className="text-xs text-[#6b7d76]">{fmtDate(p.last_action_at)}</div>
-                  </td>
-                  <td>{fmtDate(p.next_follow_up)}</td>
-                </tr>
-              ))
+              <span className="text-[#6b7d76]">Aucun prospect. Importez un fichier ou créez-en un.</span>
             )}
-          </tbody>
-        </table>
+          </div>
+        ) : (
+          prospects.map((p) => (
+            <ProspectListRow
+              key={p.id}
+              prospect={p}
+              listReturnUrl={listReturnUrl}
+              onStatusChange={changeStatus}
+            />
+          ))
+        )}
       </div>
       )}
 

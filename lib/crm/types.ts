@@ -1,13 +1,41 @@
-export const PROSPECT_STATUSES = [
-  "À contacter",
-  "Contacté",
-  "Répondu",
-  "Démo prévue",
-  "Démo faite",
-  "Négociation",
-  "Client",
-  "Refusé",
+export const PROSPECT_STATUS_PHASES = [
+  {
+    id: "prospection" as const,
+    label: "Prospection",
+    statuses: [
+      "À contacter",
+      "1er contact envoyé",
+      "Relance 1",
+      "Relance 2",
+      "Relance 3 / dernière relance",
+      "Sans réponse",
+      "À recontacter plus tard",
+    ],
+  },
+  {
+    id: "discussion" as const,
+    label: "Discussion",
+    statuses: [
+      "Réponse reçue",
+      "À qualifier",
+      "Intéressé",
+      "Démo à planifier",
+      "Démo prévue",
+      "Démo effectuée",
+      "À relancer après démo",
+      "En réflexion",
+      "Discussion avec comité / équipe",
+      "Offre / prix envoyé",
+    ],
+  },
+  {
+    id: "result" as const,
+    label: "Résultat",
+    statuses: ["Client", "Pas maintenant", "Pas intéressé", "Perdu"],
+  },
 ] as const;
+
+export const PROSPECT_STATUSES = PROSPECT_STATUS_PHASES.flatMap((p) => [...p.statuses]);
 
 export type ProspectStatus = (typeof PROSPECT_STATUSES)[number];
 
@@ -29,16 +57,24 @@ export const ACTION_TYPES = [
   "meeting",
   "demo",
   "other",
+  "first_contact",
+  "follow_up",
+  "reply",
+  "offer",
 ] as const;
 
 export type ActionType = (typeof ACTION_TYPES)[number];
 
 export const INTERACTION_TYPES = [
+  "first_contact",
+  "follow_up",
   "call",
   "whatsapp",
   "email",
+  "reply",
   "meeting",
   "demo",
+  "offer",
   "note",
   "other",
 ] as const;
@@ -46,11 +82,15 @@ export const INTERACTION_TYPES = [
 export type InteractionType = (typeof INTERACTION_TYPES)[number];
 
 export const INTERACTION_LABELS: Record<InteractionType, string> = {
+  first_contact: "Premier contact",
+  follow_up: "Relance",
   call: "Appel",
   whatsapp: "WhatsApp",
   email: "Email",
+  reply: "Réponse",
   meeting: "Réunion",
   demo: "Démo",
+  offer: "Offre",
   note: "Note",
   other: "Autre",
 };
@@ -83,6 +123,7 @@ export type Prospect = {
   last_action: string | null;
   last_action_at: string | null;
   next_follow_up: string | null;
+  next_action: string | null;
   notes: string | null;
   demo_at: string | null;
   archived_at: string | null;
@@ -93,6 +134,7 @@ export type Prospect = {
   potential_value: number | null;
   contact_channel: string | null;
   tags: string[];
+  contact_count?: number;
   project?: { id: string; name: string; color: string | null } | null;
   assignee?: { id: string; name: string } | null;
 };
@@ -107,6 +149,7 @@ export type ProspectActivity = {
   created_at: string;
   occurred_at?: string | null;
   actor_name?: string | null;
+  channel?: string | null;
 };
 
 export type DailyTask = {

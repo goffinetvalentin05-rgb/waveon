@@ -1,56 +1,79 @@
-import type { Prospect } from "@/lib/crm/types";
+import type { Prospect, ProspectStatus } from "@/lib/crm/types";
 import { isClosedProspectStatus, isDemoScheduledStatus } from "@/lib/crm/closed";
+import { migrateProspectStatus } from "@/lib/crm/status";
 
 export type PipelineColumnId =
   | "to_contact"
-  | "contacted"
-  | "replied"
-  | "demo_scheduled"
-  | "demo_done"
-  | "negotiation"
+  | "outreach"
+  | "waiting"
+  | "discussion"
+  | "demo"
+  | "considering"
   | "client"
-  | "refus";
+  | "lost";
 
 export type PipelineColumn = {
   id: PipelineColumnId;
   label: string;
   accent: string;
+  statuses: ProspectStatus[];
 };
 
 export const PIPELINE_COLUMNS: PipelineColumn[] = [
-  { id: "to_contact", label: "À contacter", accent: "bg-[#8a9e96]" },
-  { id: "contacted", label: "Contacté", accent: "bg-teal-400" },
-  { id: "replied", label: "Répondu", accent: "bg-sky-400" },
-  { id: "demo_scheduled", label: "Démo prévue", accent: "bg-cyan-400" },
-  { id: "demo_done", label: "Démo faite", accent: "bg-emerald-400" },
-  { id: "negotiation", label: "Négociation", accent: "bg-amber-400" },
-  { id: "client", label: "Client", accent: "bg-emerald-300" },
-  { id: "refus", label: "Refusé", accent: "bg-rose-400" },
+  { id: "to_contact", label: "À contacter", accent: "bg-[#8d8f8e]", statuses: ["À contacter"] },
+  {
+    id: "outreach",
+    label: "Relances",
+    accent: "bg-amber-400",
+    statuses: ["1er contact envoyé", "Relance 1", "Relance 2", "Relance 3 / dernière relance"],
+  },
+  {
+    id: "waiting",
+    label: "En attente",
+    accent: "bg-slate-400",
+    statuses: ["Sans réponse", "À recontacter plus tard"],
+  },
+  {
+    id: "discussion",
+    label: "Discussion",
+    accent: "bg-violet-400",
+    statuses: ["Réponse reçue", "À qualifier", "Intéressé"],
+  },
+  {
+    id: "demo",
+    label: "Démo",
+    accent: "bg-cyan-400",
+    statuses: ["Démo à planifier", "Démo prévue", "Démo effectuée", "À relancer après démo"],
+  },
+  {
+    id: "considering",
+    label: "Décision",
+    accent: "bg-amber-300",
+    statuses: ["En réflexion", "Discussion avec comité / équipe", "Offre / prix envoyé"],
+  },
+  { id: "client", label: "Clients", accent: "bg-emerald-400", statuses: ["Client"] },
+  {
+    id: "lost",
+    label: "Perdus",
+    accent: "bg-rose-400",
+    statuses: ["Pas maintenant", "Pas intéressé", "Perdu"],
+  },
 ];
 
 export function pipelineColumnId(prospect: Prospect): PipelineColumnId {
-  if (prospect.status === "À contacter") return "to_contact";
-  if (prospect.status === "Contacté") return "contacted";
-  if (prospect.status === "Répondu") return "replied";
-  if (prospect.status === "Démo faite") return "demo_done";
-  if (isDemoScheduledStatus(prospect.status)) return "demo_scheduled";
-  if (prospect.status === "Négociation") return "negotiation";
-  if (prospect.status === "Client") return "client";
-  if (isClosedProspectStatus(prospect.status)) return "refus";
-  return "contacted";
+  const status = migrateProspectStatus(prospect.status);
+  const col = PIPELINE_COLUMNS.find((c) => c.statuses.includes(status));
+  if (col) return col.id;
+  if (isDemoScheduledStatus(status)) return "demo";
+  if (isClosedProspectStatus(status)) return status === "Client" ? "client" : "lost";
+  return "outreach";
 }
 
 export function groupProspectsByPipeline(prospects: Prospect[]): Record<PipelineColumnId, Prospect[]> {
-  const groups: Record<PipelineColumnId, Prospect[]> = {
-    to_contact: [],
-    contacted: [],
-    replied: [],
-    demo_scheduled: [],
-    demo_done: [],
-    negotiation: [],
-    client: [],
-    refus: [],
-  };
+  const groups = Object.fromEntries(PIPELINE_COLUMNS.map((c) => [c.id, [] as Prospect[]])) as Record<
+    PipelineColumnId,
+    Prospect[]
+  >;
   for (const p of prospects) {
     groups[pipelineColumnId(p)].push(p);
   }
@@ -58,7 +81,7 @@ export function groupProspectsByPipeline(prospects: Prospect[]): Record<Pipeline
 }
 
 export function isFollowedProspect(prospect: Prospect): boolean {
-  return !isClosedProspectStatus(prospect.status);
+  return !isClosedProspectStatus(migrateProspectStatus(prospect.status));
 }
 
 const AVATAR_TONES = [

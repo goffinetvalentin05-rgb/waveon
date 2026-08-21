@@ -5,6 +5,9 @@ import {
   sanitizeStatuses,
 } from "@/lib/crm/prospect-list-params";
 import { extractPhoneDigits, normalizeSearchText } from "@/lib/crm/search";
+import { CLOSED_STATUS_POSTGREST } from "@/lib/crm/closed";
+import { SMART_VIEW_STATUSES } from "@/lib/crm/smart-views";
+import { expandStatusesForQuery } from "@/lib/crm/status";
 
 const ALLOWED_SORT = new Set([
   "club_name",
@@ -20,6 +23,7 @@ const ALLOWED_SORT = new Set([
   "updated_at",
   "created_at",
   "potential_value",
+  "next_action",
 ]);
 
 export type ProspectQueryResult = {
@@ -42,10 +46,19 @@ export function applyProspectListQuery(
     query = query.is("archived_at", null);
   }
 
+  const today = new Date().toISOString().slice(0, 10);
+  const smart = params.smartView && params.smartView !== "all" ? params.smartView : null;
+
   if (params.clientsOnly) {
     query = query.eq("status", "Client");
+  } else if (smart === "today_work") {
+    query = query.lte("next_follow_up", today).not("status", "in", CLOSED_STATUS_POSTGREST);
+  } else if (smart === "overdue") {
+    query = query.lt("next_follow_up", today).not("status", "in", CLOSED_STATUS_POSTGREST);
+  } else if (smart && SMART_VIEW_STATUSES[smart]) {
+    query = query.in("status", expandStatusesForQuery(SMART_VIEW_STATUSES[smart]!));
   } else if (params.statuses.length) {
-    query = query.in("status", sanitizeStatuses(params.statuses));
+    query = query.in("status", expandStatusesForQuery(sanitizeStatuses(params.statuses)));
   }
 
   if (params.sports.length) query = query.in("sport", params.sports);
@@ -98,11 +111,12 @@ export function applyProspectListQuery(
     query = query.lte("potential_value", Number(params.maxValue));
   }
 
-  const today = new Date().toISOString().slice(0, 10);
-  if (params.followUpPreset === "today") {
-    query = query.eq("next_follow_up", today);
-  } else if (params.followUpPreset === "overdue") {
-    query = query.lt("next_follow_up", today);
+  if (!smart) {
+    if (params.followUpPreset === "today") {
+      query = query.eq("next_follow_up", today);
+    } else if (params.followUpPreset === "overdue") {
+      query = query.lt("next_follow_up", today);
+    }
   }
 
   const q = params.q.trim();
@@ -200,7 +214,7 @@ export async function fetchProspectList(
     if (params.clientsOnly) {
       legacyQuery = legacyQuery.eq("status", "Client");
     } else if (params.statuses.length) {
-      legacyQuery = legacyQuery.in("status", sanitizeStatuses(params.statuses));
+      legacyQuery = legacyQuery.in("status", expandStatusesForQuery(sanitizeStatuses(params.statuses)));
     }
 
     if (params.sports.length) legacyQuery = legacyQuery.in("sport", params.sports);

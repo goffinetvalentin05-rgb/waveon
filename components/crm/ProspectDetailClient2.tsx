@@ -18,8 +18,9 @@ import {
   IconUserCheck,
   IconUserX,
 } from "@tabler/icons-react";
-import { isDemoScheduledStatus } from "@/lib/crm/closed";
+import { isClosedProspectStatus, isDemoScheduledStatus } from "@/lib/crm/closed";
 import { StatusBadge } from "@/components/crm/StatusBadge";
+import { StatusSelect } from "@/components/crm/StatusSelect";
 import { InteractionForm } from "@/components/crm/InteractionForm";
 import { QUICK_ACTION_LABELS } from "@/lib/crm/actions";
 import type {
@@ -29,8 +30,10 @@ import type {
   ProspectStatus,
   ActionType,
 } from "@/lib/crm/types";
-import { PROSPECT_STATUSES } from "@/lib/crm/types";
+import { INTERACTION_LABELS, type InteractionType } from "@/lib/crm/types";
 import { ui } from "@/lib/design/tokens";
+import { formatRelativeDay } from "@/lib/crm/format";
+import { isContactActivity } from "@/lib/crm/next-action";
 
 function fmtDay(iso: string) {
   return format(new Date(iso), "d MMMM yyyy", { locale: fr });
@@ -497,17 +500,10 @@ function ProspectActivityEditorModal({
           {state.action_type === "status_change" ? (
             <div className="sm:col-span-2">
               <label className={ui.label}>Nouveau statut</label>
-              <select
-                className={ui.input}
+              <StatusSelect
                 value={state.to_status}
-                onChange={(e) => setState((s) => ({ ...s, to_status: e.target.value as ProspectStatus }))}
-              >
-                {PROSPECT_STATUSES.map((st) => (
-                  <option key={st} value={st}>
-                    {st}
-                  </option>
-                ))}
-              </select>
+                onChange={(to_status) => setState((s) => ({ ...s, to_status }))}
+              />
             </div>
           ) : null}
 
@@ -582,6 +578,7 @@ export function ProspectDetailClient2({
     contact_channel: initial.contact_channel ?? "",
     tags: (initial.tags ?? []).join(", "),
     next_follow_up: initial.next_follow_up ?? "",
+    next_action: initial.next_action ?? "",
   });
 
   const [inlineEditing, setInlineEditing] = useState<{
@@ -657,7 +654,7 @@ export function ProspectDetailClient2({
     });
   };
 
-  const saveInlineField = (field: InlineField, value: string) => {
+  const saveInlineField = (field: string, value: string) => {
     startTransition(async () => {
       const payload: Record<string, string> = { [field]: value };
       const res = await fetch(`/api/prospects/${prospect.id}`, {
@@ -695,6 +692,7 @@ export function ProspectDetailClient2({
         contact_channel: draft.contact_channel,
         tags: draft.tags,
         next_follow_up: draft.next_follow_up,
+        next_action: draft.next_action,
       };
 
       const patchRes = await fetch(`/api/prospects/${prospect.id}`, {
@@ -728,7 +726,7 @@ export function ProspectDetailClient2({
       await refreshAll();
     };
 
-    if ((nextStatus === "Client" || nextStatus === "Refusé") && nextStatus !== originalStatus) {
+    if (isClosedProspectStatus(nextStatus) && nextStatus !== originalStatus) {
       setConfirm({
         tone: "default",
         title: "Confirmer le changement de statut ?",
@@ -858,14 +856,13 @@ export function ProspectDetailClient2({
   };
 
   const statusSelector = (
-    <select
-      className={ui.input + " w-56"}
+    <StatusSelect
       value={prospect.status}
-      onChange={(e) => {
-        const next = e.target.value as ProspectStatus;
+      className={ui.input + " w-64"}
+      onChange={(next) => {
         if (next === prospect.status) return;
 
-        if (next === "Client" || next === "Refusé") {
+        if (isClosedProspectStatus(next)) {
           setConfirm({
             tone: "default",
             title: "Confirmer le changement de statut ?",
@@ -912,13 +909,7 @@ export function ProspectDetailClient2({
           await refreshAll();
         });
       }}
-    >
-      {PROSPECT_STATUSES.map((s) => (
-        <option key={s} value={s}>
-          {s}
-        </option>
-      ))}
-    </select>
+    />
   );
 
   const quickActions = [
@@ -1072,6 +1063,7 @@ export function ProspectDetailClient2({
                     contact_channel: prospect.contact_channel ?? "",
                     tags: (prospect.tags ?? []).join(", "),
                     next_follow_up: prospect.next_follow_up ?? "",
+                    next_action: prospect.next_action ?? "",
                   });
                   setEditMode(true);
                   setMsg(null);
@@ -1096,6 +1088,56 @@ export function ProspectDetailClient2({
           {errorMsg}
         </p>
       ) : null}
+
+      <section className={`${ui.card} p-5 sm:p-6`}>
+        <h2 className={ui.h2}>Suivi commercial</h2>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.08em] text-[#6b7d76]">Dernier contact</p>
+            <p className="mt-1 text-sm text-[#eef6f2]">{formatRelativeDay(prospect.last_action_at)}</p>
+            <p className="text-xs text-[#8a9e96]">{prospect.last_action ?? "—"}</p>
+          </div>
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.08em] text-[#6b7d76]">Contacts</p>
+            <p className="mt-1 text-sm text-[#eef6f2]">
+              {activities.filter((a) => isContactActivity(a.action_type)).length}
+            </p>
+            <p className="text-xs text-[#8a9e96]">{prospect.contact_channel ?? "Canal —"}</p>
+          </div>
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.08em] text-[#6b7d76]">Responsable</p>
+            <p className="mt-1 text-sm text-[#eef6f2]">{prospect.assignee?.name ?? "—"}</p>
+          </div>
+          <div className="sm:col-span-2">
+            <label className={ui.label}>Prochaine action</label>
+            <input
+              className={`${ui.input} mt-1`}
+              value={editMode ? draft.next_action : (prospect.next_action ?? "")}
+              disabled={editMode}
+              onChange={(e) => setProspect((p) => ({ ...p, next_action: e.target.value }))}
+              onBlur={(e) => {
+                if (editMode) return;
+                saveInlineField("next_action", e.target.value);
+              }}
+              placeholder="Ex. Envoyer relance 2"
+            />
+          </div>
+          <div>
+            <label className={ui.label}>Date prochaine action</label>
+            <input
+              type="date"
+              className={`${ui.input} mt-1`}
+              value={editMode ? draft.next_follow_up : (prospect.next_follow_up ?? "")}
+              disabled={editMode}
+              onChange={(e) => {
+                const value = e.target.value;
+                setProspect((p) => ({ ...p, next_follow_up: value || null }));
+                if (!editMode) saveInlineField("next_follow_up", value);
+              }}
+            />
+          </div>
+        </div>
+      </section>
 
       <section className={`${ui.card} p-5 sm:p-6`}>
         <h2 className={ui.h2}>Actions rapides</h2>
@@ -1350,7 +1392,15 @@ export function ProspectDetailClient2({
                 />
               </div>
               <div>
-                <label className={ui.label}>Prochaine relance</label>
+                <label className={ui.label}>Prochaine action</label>
+                <input
+                  className={ui.input}
+                  value={draft.next_action}
+                  onChange={(e) => setDraft((d) => ({ ...d, next_action: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className={ui.label}>Date prochaine action</label>
                 <input
                   type="date"
                   className={ui.input}
@@ -1360,17 +1410,10 @@ export function ProspectDetailClient2({
               </div>
               <div className="sm:col-span-2">
                 <label className={ui.label}>Statut</label>
-                <select
-                  className={ui.input}
+                <StatusSelect
                   value={draft.status}
-                  onChange={(e) => setDraft((d) => ({ ...d, status: e.target.value as ProspectStatus }))}
-                >
-                  {PROSPECT_STATUSES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(status) => setDraft((d) => ({ ...d, status }))}
+                />
               </div>
             </div>
           )}
@@ -1409,7 +1452,12 @@ export function ProspectDetailClient2({
           ) : null}
         </div>
 
-        <InteractionForm prospectId={prospect.id} onAdded={() => void refreshAll()} />
+        <InteractionForm
+          prospectId={prospect.id}
+          currentStatus={prospect.status}
+          defaultChannel={prospect.contact_channel}
+          onAdded={() => void refreshAll()}
+        />
 
         {activities.length === 0 ? (
           <p className="mt-4 text-sm text-[#6b7d76]">Aucune action pour le moment.</p>
@@ -1433,6 +1481,10 @@ export function ProspectDetailClient2({
                       <div className="min-w-0">
                         <p className="text-xs font-medium uppercase tracking-wide text-[#6b7d76]">
                           {fmtDay(a.occurred_at || a.created_at)}
+                          {a.channel ? ` · ${a.channel}` : ""}
+                          {a.action_type in INTERACTION_LABELS
+                            ? ` · ${INTERACTION_LABELS[a.action_type as InteractionType]}`
+                            : ""}
                           {a.actor_name ? ` · ${a.actor_name}` : ""}
                         </p>
                         <p className="mt-0.5 text-sm font-medium text-[#dce8e3]">{a.title}</p>

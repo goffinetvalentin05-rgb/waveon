@@ -103,7 +103,9 @@ export function ProspectsPipeline({
 
 export function PipelineStats({ prospects, conversionRate }: { prospects: Prospect[]; conversionRate?: number }) {
   const followed = prospects.filter(isFollowedProspect).length;
-  const meetings = prospects.filter((p) => isDemoScheduledStatus(p.status) || p.status === "Démo faite").length;
+  const meetings = prospects.filter(
+    (p) => isDemoScheduledStatus(p.status) || p.status === "Démo effectuée" || p.status === "Démo à planifier"
+  ).length;
   const clients = prospects.filter((p) => p.status === "Client").length;
   const rate =
     conversionRate ??

@@ -7,6 +7,7 @@ import {
 import { fetchProspectList } from "@/lib/crm/prospect-query";
 import { parseProspectListParams } from "@/lib/crm/prospect-list-params";
 import { logWorkspaceEvent } from "@/lib/workspace/events";
+import { enrichProspects } from "@/lib/crm/enrich-prospects";
 
 export async function GET(request: Request) {
   const auth = await requireUser();
@@ -23,7 +24,7 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
-    prospects: (data ?? []).map((p) => normalizeProspectFromDb(p)),
+    prospects: await enrichProspects(supabase, user.id, (data ?? []) as Record<string, unknown>[]),
     total: count ?? 0,
     page: params.page,
     pageSize: params.pageSize,

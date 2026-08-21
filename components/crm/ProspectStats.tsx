@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ui } from "@/lib/design/tokens";
-import { PROSPECT_STATUSES } from "@/lib/crm/types";
+import { PROSPECT_STATUS_PHASES } from "@/lib/crm/types";
 import { statusStyle } from "@/lib/crm/status";
 
 type Stats = {
@@ -70,23 +70,34 @@ export function ProspectStats({ projectId }: { projectId?: string }) {
       </div>
       <section className={`${ui.card} p-5 sm:p-6`}>
         <h2 className={ui.h2}>Répartition par statut</h2>
-        <ul className="mt-5 space-y-3">
-          {PROSPECT_STATUSES.map((s) => {
-            const n = stats.byStatus[s] ?? 0;
-            const max = Math.max(1, ...PROSPECT_STATUSES.map((x) => stats.byStatus[x] ?? 0));
-            const style = statusStyle(s);
+        <ul className="mt-5 space-y-6">
+          {PROSPECT_STATUS_PHASES.map((phase) => {
+            const max = Math.max(1, ...phase.statuses.map((x) => stats.byStatus[x] ?? 0));
             return (
-              <li key={s}>
-                <div className="mb-1 flex justify-between text-sm">
-                  <span className="flex items-center gap-2 text-[#c2d4cc]">
-                    <span className={`h-2 w-2 rounded-full ${style.dot}`} />
-                    {s}
-                  </span>
-                  <span className="font-medium text-[#eef6f2]">{n}</span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
-                  <div className={`h-full rounded-full ${style.dot} opacity-80`} style={{ width: `${(n / max) * 100}%` }} />
-                </div>
+              <li key={phase.id}>
+                <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.08em] text-[#6b7d76]">
+                  {phase.label}
+                </p>
+                <ul className="space-y-3">
+                  {phase.statuses.map((s) => {
+                    const n = stats.byStatus[s] ?? 0;
+                    const style = statusStyle(s);
+                    return (
+                      <li key={s}>
+                        <div className="mb-1 flex justify-between text-sm">
+                          <span className="flex items-center gap-2 text-[#c2d4cc]">
+                            <span className={`h-2 w-2 rounded-full ${style.dot}`} />
+                            {s}
+                          </span>
+                          <span className="font-medium text-[#eef6f2]">{n}</span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
+                          <div className={`h-full rounded-full ${style.dot} opacity-80`} style={{ width: `${(n / max) * 100}%` }} />
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
               </li>
             );
           })}

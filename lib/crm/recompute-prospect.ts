@@ -1,6 +1,8 @@
 import { addDays, formatISO } from "date-fns";
 import { resolveQuickActionAt } from "@/lib/crm/actions";
 import { isClosedProspectStatus, isDemoScheduledStatus } from "@/lib/crm/closed";
+import { migrateProspectStatus } from "@/lib/crm/status";
+import { defaultNextActionFor } from "@/lib/crm/next-action";
 import type { CrmSettings, Prospect, ProspectActivity, ProspectStatus, QuickAction } from "@/lib/crm/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -36,12 +38,12 @@ function parseStatusChangeToStatus(description: string | null): ProspectStatus |
     const obj = parsed as Record<string, unknown>;
     const to = obj.to ?? obj.toStatus ?? obj.status;
     if (typeof to === "string") {
-      return to as ProspectStatus;
+      return migrateProspectStatus(to);
     }
   }
   // Fallback: description stocké comme valeur brute ("Client", etc.)
   if (typeof description === "string") {
-    return description.trim() as ProspectStatus;
+    return migrateProspectStatus(description.trim());
   }
   return null;
 }
@@ -60,13 +62,23 @@ function statusToNextFollowUpDate(
   switch (status) {
     case "À contacter":
       return dateOnly(actionDate);
-    case "Contacté":
+    case "1er contact envoyé":
       return dateOnly(addDays(actionDate, settings.delay_relance_1_days));
-    case "Répondu":
-      return dateOnly(addDays(actionDate, settings.delay_relance_1_days));
+    case "Relance 1":
+      return dateOnly(addDays(actionDate, settings.delay_relance_2_days));
+    case "Relance 2":
+    case "Relance 3 / dernière relance":
+      return dateOnly(addDays(actionDate, settings.delay_relance_3_days));
+    case "Réponse reçue":
+    case "À qualifier":
+    case "Intéressé":
+    case "Démo à planifier":
     case "Démo prévue":
-    case "Démo faite":
-    case "Négociation":
+    case "Démo effectuée":
+    case "À relancer après démo":
+    case "En réflexion":
+    case "Discussion avec comité / équipe":
+    case "Offre / prix envoyé":
       return dateOnly(actionDate);
     default:
       return dateOnly(actionDate);
@@ -81,7 +93,7 @@ function taskFromStatus(clubName: string, status: ProspectStatus): {
   if (status === "À contacter") {
     return { taskKind: "first_contact", title: `Premier contact ${clubName}` };
   }
-  if (isDemoScheduledStatus(status) || status === "Démo faite") {
+  if (isDemoScheduledStatus(status) || status === "Démo effectuée") {
     return { taskKind: "demo", title: `Démonstration ${clubName}` };
   }
   return { taskKind: "follow_up", title: `Relancer ${clubName}` };
@@ -218,6 +230,7 @@ export async function recomputeProspectDerivatives(
       last_action: lastAction,
       last_action_at: lastActionAt,
       next_follow_up: nextFollowUp,
+      next_action: isTerminalStatus(currentStatus) ? null : (prospectRow.next_action as string | null) ?? defaultNextActionFor(currentStatus),
       demo_at: demoAtIso,
     })
     .eq("id", prospectId)

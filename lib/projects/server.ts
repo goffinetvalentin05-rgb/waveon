@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Project } from "@/lib/projects/types";
-import { CLOSED_STATUS_POSTGREST, isDemoScheduledStatus } from "@/lib/crm/closed";
+import { isClosedProspectStatus, isDemoScheduledStatus } from "@/lib/crm/closed";
 import {
   DEFAULT_ENABLED_MODULES,
   modulesFromRows,
@@ -89,8 +89,7 @@ export async function fetchProjectSummaries(supabase: SupabaseClient, userId: st
       (p) =>
         p.next_follow_up &&
         p.next_follow_up <= today &&
-        p.status !== "Client" &&
-        p.status !== "Refusé"
+        !isClosedProspectStatus(p.status)
     ).length;
     const demosUpcoming = rows.filter((p) => isDemoScheduledStatus(p.status)).length;
     const clientsCount = rows.filter((p) => p.status === "Client").length;
@@ -121,8 +120,7 @@ export async function fetchProjectSummaries(supabase: SupabaseClient, userId: st
         (p) =>
           p.next_follow_up &&
           p.next_follow_up <= today &&
-          p.status !== "Client" &&
-          p.status !== "Refusé"
+          !isClosedProspectStatus(p.status)
       ).length,
       demosUpcoming: unassigned.filter((p) => isDemoScheduledStatus(p.status)).length,
       clientsCount: unassigned.filter((p) => p.status === "Client").length,
@@ -132,5 +130,3 @@ export async function fetchProjectSummaries(supabase: SupabaseClient, userId: st
 
   return summaries;
 }
-
-export { CLOSED_STATUS_POSTGREST };

@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 import { createServerComponentSupabase } from "@/lib/supabase/server-component";
 import { ProspectsClient } from "@/components/crm/ProspectsClient";
-import { normalizeProspectFromDb } from "@/lib/crm/prospect-payload";
-import type { Prospect } from "@/lib/crm/types";
+import { enrichProspects } from "@/lib/crm/enrich-prospects";
 import {
   defaultProspectListParams,
   parseProspectListParams,
@@ -62,9 +61,7 @@ export default async function CrmProspectsPage({ searchParams }: PageProps) {
 
   return (
     <ProspectsClient
-      initial={(data ?? []).map(
-        (p) => normalizeProspectFromDb(p as Record<string, unknown>) as Prospect
-      )}
+      initial={await enrichProspects(supabase, user.id, (data ?? []) as Record<string, unknown>[])}
       total={count ?? 0}
       totalAll={totalAll ?? 0}
       initialParams={params}

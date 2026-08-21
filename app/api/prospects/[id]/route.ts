@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/crm/server";
 import { nullIfEmpty, normalizeProspectFromDb } from "@/lib/crm/prospect-payload";
-import { recomputeProspectDerivatives } from "@/lib/crm/recompute-prospect";
+import type { Prospect } from "@/lib/crm/types";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -29,8 +29,20 @@ export async function GET(_request: Request, { params }: Params) {
     .order("occurred_at", { ascending: false })
     .order("created_at", { ascending: false });
 
+  const normalized = normalizeProspectFromDb(prospect as Record<string, unknown>) as Prospect;
+  let assignee: { id: string; name: string } | null = null;
+  if (normalized.assigned_to) {
+    const { data: person } = await supabase
+      .from("people")
+      .select("id, name")
+      .eq("id", normalized.assigned_to)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (person) assignee = person;
+  }
+
   return NextResponse.json({
-    prospect: normalizeProspectFromDb(prospect as Record<string, unknown>),
+    prospect: { ...normalized, assignee },
     activities: activities ?? [],
   });
 }
@@ -59,6 +71,7 @@ export async function PATCH(request: Request, { params }: Params) {
     "contact_channel",
     "tags",
     "next_follow_up",
+    "next_action",
   ] as const;
 
   const patch: Record<string, unknown> = {};
@@ -103,9 +116,8 @@ export async function PATCH(request: Request, { params }: Params) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
 
-  const recomputed = await recomputeProspectDerivatives(supabase, user.id, id);
   return NextResponse.json({
-    prospect: normalizeProspectFromDb(recomputed.prospect as Record<string, unknown>),
+    prospect: normalizeProspectFromDb(data as Record<string, unknown>),
   });
 }
 

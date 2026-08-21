@@ -25,6 +25,11 @@ export function ProjectOverview({
   stats: {
     prospects: number;
     followUps: number;
+    toContact?: number;
+    overdue?: number;
+    demos?: number;
+    considering?: number;
+    clients?: number;
     openTasks: number;
     monthSpend: number;
     monthlySubs: number;
@@ -39,7 +44,7 @@ export function ProjectOverview({
       ? { label: "Tâches restantes", value: String(stats.openTasks), href: `${base}/tasks` }
       : null,
     hasModule(enabledModules, "prospects")
-      ? { label: "Prospects à relancer", value: String(stats.followUps), href: `${base}/prospects` }
+      ? { label: "Prospects à relancer", value: String(stats.followUps), href: `${base}/prospects?view=today_work` }
       : null,
     hasModule(enabledModules, "calendar")
       ? { label: "Prochains rendez-vous", value: String(calendarEvents.length), href: `${base}/calendar` }
@@ -64,6 +69,27 @@ export function ProjectOverview({
           </Link>
         ))}
       </div>
+
+      {hasModule(enabledModules, "prospects") ? (
+        <section className={`${ui.widget} p-5`}>
+          <h2 className={ui.h2}>Pipeline</h2>
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+            {[
+              { label: "À contacter", value: stats.toContact ?? 0, href: `${base}/prospects?view=to_contact` },
+              { label: "Relances aujourd'hui", value: stats.followUps, href: `${base}/prospects?view=today_work` },
+              { label: "En retard", value: stats.overdue ?? 0, href: `${base}/prospects?view=overdue` },
+              { label: "Démos prévues", value: stats.demos ?? 0, href: `${base}/prospects?view=demo_scheduled` },
+              { label: "En réflexion", value: stats.considering ?? 0, href: `${base}/prospects?view=considering` },
+              { label: "Clients", value: stats.clients ?? 0, href: `${base}/prospects?view=clients` },
+            ].map((c) => (
+              <Link key={c.label} href={c.href} className="rounded-2xl border border-white/[0.06] bg-[#101010] px-3 py-3 transition hover:border-white/[0.12]">
+                <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#8a9e96]">{c.label}</p>
+                <p className="mt-1.5 text-xl font-semibold tabular-nums text-[#eef6f2]">{c.value}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         {hasModule(enabledModules, "tasks") ? (

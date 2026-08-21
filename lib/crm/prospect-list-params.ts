@@ -1,4 +1,6 @@
 import { PROSPECT_STATUSES } from "@/lib/crm/types";
+import { migrateProspectStatus } from "@/lib/crm/status";
+import { isSmartViewId, type SmartViewId } from "@/lib/crm/smart-views";
 import { normalizeSearchText } from "@/lib/crm/search";
 
 export const DEFAULT_SORT_COLUMN = "updated_at";
@@ -51,6 +53,7 @@ export type ProspectListParams = {
   tags: string[];
   channel: string;
   followUpPreset: FollowUpPreset;
+  smartView: SmartViewId;
   minValue: string;
   maxValue: string;
 };
@@ -77,6 +80,7 @@ export const EMPTY_FILTERS: ProspectListFilters = {
   tags: [],
   channel: "",
   followUpPreset: null,
+  smartView: "all",
   minValue: "",
   maxValue: "",
 };
@@ -156,6 +160,7 @@ export function parseProspectListParams(
       searchParams.get("follow") === "today" || searchParams.get("follow") === "overdue"
         ? (searchParams.get("follow") as FollowUpPreset)
         : null,
+    smartView: isSmartViewId(searchParams.get("view")) ? (searchParams.get("view") as SmartViewId) : "all",
     minValue: searchParams.get("min_value")?.trim() ?? "",
     maxValue: searchParams.get("max_value")?.trim() ?? "",
   };
@@ -202,6 +207,7 @@ export function buildProspectListSearchParams(
   if (params.tags.length) sp.set("tag", params.tags.join(","));
   if (params.channel) sp.set("channel", params.channel);
   if (params.followUpPreset) sp.set("follow", params.followUpPreset);
+  if (params.smartView && params.smartView !== "all") sp.set("view", params.smartView);
   if (params.minValue) sp.set("min_value", params.minValue);
   if (params.maxValue) sp.set("max_value", params.maxValue);
 
@@ -233,6 +239,7 @@ export function countActiveFilters(filters: ProspectListFilters): number {
   if (filters.tags.length) n++;
   if (filters.channel) n++;
   if (filters.followUpPreset) n++;
+  if (filters.smartView && filters.smartView !== "all") n++;
   if (filters.minValue || filters.maxValue) n++;
   return n;
 }
@@ -259,10 +266,10 @@ export function cycleSortColumn(
   return { sort: DEFAULT_SORT_COLUMN, order: DEFAULT_SORT_ORDER };
 }
 
-/** Valide les statuts filtrés contre la liste connue. */
+/** Valide les statuts filtrés contre la liste connue (y compris anciens alias). */
 export function sanitizeStatuses(values: string[]): string[] {
   const allowed = new Set<string>(PROSPECT_STATUSES);
-  return values.filter((v) => allowed.has(v));
+  return values.map((v) => migrateProspectStatus(v)).filter((v) => allowed.has(v));
 }
 
 export function normalizedQueryForApi(q: string): string {

@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { dateInTimezone, getUserTimezone } from "@/lib/calendar/timezone";
 import type { CalendarEvent } from "@/lib/calendar/types";
 import type { DailyTask, Prospect } from "@/lib/crm/types";
+import { CLOSED_STATUS_POSTGREST } from "@/lib/crm/closed";
 import { todayDateISO } from "@/lib/english/srs";
 import { ensureTodayTasks } from "@/lib/crm/ensure-today-tasks";
 import { normalizeProspectFromDb } from "@/lib/crm/prospect-payload";
@@ -89,14 +90,14 @@ export async function loadCockpitData(
       .eq("user_id", userId)
       .is("archived_at", null)
       .lte("next_follow_up", today)
-      .not("status", "in", '("Client","Refusé","Refus","Pas intéressé")'),
+      .not("status", "in", CLOSED_STATUS_POSTGREST),
     supabase
       .from("prospects")
       .select("*")
       .eq("user_id", userId)
       .is("archived_at", null)
       .lte("next_follow_up", today)
-      .not("status", "in", '("Client","Refusé","Refus","Pas intéressé")')
+      .not("status", "in", CLOSED_STATUS_POSTGREST)
       .order("next_follow_up", { ascending: true })
       .limit(6),
     supabase

@@ -4,6 +4,7 @@ import {
   nextBirthdayDate,
 } from "@/lib/calendar/helpers";
 import { dateInTimezone, getUserTimezone } from "@/lib/calendar/timezone";
+import { CLOSED_STATUS_POSTGREST } from "@/lib/crm/closed";
 import { todayDateISO } from "@/lib/english/srs";
 import type { HomeSummary, HomeSummaryId } from "@/modules/types";
 
@@ -40,7 +41,7 @@ async function getCrmFollowUpsSummary(
     .eq("user_id", userId)
     .is("archived_at", null)
     .lte("next_follow_up", today)
-    .not("status", "in", '("Client","Refusé","Refus","Pas intéressé")');
+    .not("status", "in", CLOSED_STATUS_POSTGREST);
 
   if (error) return null;
 
