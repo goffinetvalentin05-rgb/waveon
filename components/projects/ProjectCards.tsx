@@ -78,10 +78,10 @@ export function ProjectCards({
           <button
             type="button"
             onClick={() => setShowCreate(true)}
-            className="flex min-h-[180px] flex-col items-center justify-center gap-2 rounded-[14px] border border-dashed border-white/[0.1] text-sm text-[#8a9e96] transition hover:border-emerald-500/40 hover:text-[#eef6f2]"
+            className="wo-card-cta flex min-h-[180px] flex-col items-start justify-between p-5 text-left"
           >
             <IconPlus className="h-5 w-5" />
-            Nouveau projet
+            <span className="font-display text-lg font-semibold">Nouveau projet</span>
           </button>
         </div>
       )}

@@ -60,17 +60,42 @@ export default async function PersonalHomePage() {
       <div className="grid gap-3 sm:grid-cols-2">
         {modules.map((m, i) => {
           const Icon = m.icon;
+          const variant = i === 0 ? "featured" : i === 2 ? "cta" : "quiet";
           return (
             <Link
               key={m.href}
               href={m.href}
-              className={`${i === 0 ? ui.cardFeatured : ui.cardInteractive} p-5`}
+              className={`${
+                variant === "featured"
+                  ? ui.cardFeatured
+                  : variant === "cta"
+                    ? ui.cardCta
+                    : ui.cardInteractive
+              } flex min-h-[150px] flex-col justify-between p-5`}
             >
-              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-300">
+              <span
+                className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
+                  variant === "cta"
+                    ? "bg-black/10 text-[#0a0a0a]"
+                    : variant === "featured"
+                      ? "bg-white/10 text-white"
+                      : "bg-white/[0.06] text-[#8d8f8e]"
+                }`}
+              >
                 <Icon className="h-5 w-5" />
               </span>
-              <h2 className="mt-3 font-display text-base font-semibold text-[#eef6f2]">{m.label}</h2>
-              <p className="mt-1 text-sm text-[#8a9e96]">{m.hint}</p>
+              <div>
+                <h2
+                  className={`mt-4 font-display text-base font-semibold ${
+                    variant === "cta" ? "text-[#0a0a0a]" : "text-[#f3f4f3]"
+                  }`}
+                >
+                  {m.label}
+                </h2>
+                <p className={`mt-1 text-sm ${variant === "cta" ? "text-black/55" : "text-[#8d8f8e]"}`}>
+                  {m.hint}
+                </p>
+              </div>
             </Link>
           );
         })}

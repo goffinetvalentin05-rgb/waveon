@@ -41,25 +41,25 @@ export function SpaceLauncher({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 crm-animate-in-delay-1">
-        <Link href="/personal" className="wo-card-featured group p-6">
+        <Link href="/personal" className="wo-card-featured group flex min-h-[200px] flex-col justify-between p-6">
           <div className="relative flex items-start justify-between gap-3">
             <div>
               <p className={ui.kicker}>Espace</p>
-              <h2 className="mt-1 font-display text-xl font-semibold text-[#eef6f2]">Personnel</h2>
+              <h2 className="mt-1 font-display text-xl font-semibold text-white">Personnel</h2>
             </div>
             {data.personal.lockEnabled ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-black/20 px-2 py-1 text-[11px] text-[#c2d4cc]">
+              <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-black/25 px-2 py-1 text-[11px] text-[#c8cbc9]">
                 <IconLock className="h-3.5 w-3.5" />
                 {data.personal.unlocked ? "Session ouverte" : "Verrouillé"}
               </span>
             ) : null}
           </div>
-          <div className="relative mt-8 space-y-1.5 text-sm text-[#a7f3d0]/80">
+          <div className="relative space-y-1.5 text-sm text-white/70">
             <p>
               {data.personal.openTasks} tâche{data.personal.openTasks > 1 ? "s" : ""} personnelle
               {data.personal.openTasks > 1 ? "s" : ""}
             </p>
-            <p className="text-[#8a9e96]">
+            <p className="text-white/45">
               {nextPersonal ? `Prochain : ${data.personal.nextEventTitle} · ${nextPersonal}` : "Aucun événement à venir"}
             </p>
           </div>
@@ -68,28 +68,24 @@ export function SpaceLauncher({
         {data.projects.map((project) => {
           const when = formatWhen(project.nextEventAt);
           return (
-            <Link key={project.id} href={`/projects/${project.id}`} className={`${ui.cardInteractive} group relative overflow-hidden p-6`}>
-              <span
-                className="absolute inset-y-4 left-0 w-[3px] rounded-full"
-                style={{ background: project.color ?? "#10b981" }}
-              />
-              <div className="flex items-start justify-between gap-3 pl-1">
+            <Link key={project.id} href={`/projects/${project.id}`} className={`${ui.cardInteractive} group relative flex min-h-[200px] flex-col justify-between overflow-hidden p-6`}>
+              <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <span
                     className="flex h-11 w-11 items-center justify-center rounded-2xl text-lg"
-                    style={{ background: `${project.color ?? "#10b981"}22` }}
+                    style={{ background: `${project.color ?? "#3dff8a"}22` }}
                   >
                     {project.icon || project.name.slice(0, 1).toUpperCase()}
                   </span>
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6b7d76]">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6a6c6b]">
                       {project.status === "active" ? "Projet actif" : "Archivé"}
                     </p>
-                    <h2 className="font-display text-xl font-semibold text-[#eef6f2]">{project.name}</h2>
+                    <h2 className="font-display text-xl font-semibold text-[#f3f4f3]">{project.name}</h2>
                   </div>
                 </div>
               </div>
-              <div className="mt-8 space-y-1.5 text-sm text-[#8a9e96]">
+              <div className="space-y-1.5 text-sm text-[#8d8f8e]">
                 <p>
                   {project.openTasks} tâche{project.openTasks > 1 ? "s" : ""}
                 </p>
@@ -107,12 +103,12 @@ export function SpaceLauncher({
         <button
           type="button"
           onClick={() => setCreate(true)}
-          className="flex min-h-[180px] flex-col items-center justify-center gap-2 rounded-[1.5rem] border border-dashed border-white/[0.12] text-sm text-[#8a9e96] transition hover:border-emerald-400/40 hover:bg-emerald-500/[0.04] hover:text-[#eef6f2]"
+          className="wo-card-cta flex min-h-[200px] flex-col items-start justify-between p-6 text-left"
         >
-          <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.03]">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/10">
             <IconPlus className="h-5 w-5" />
           </span>
-          Nouveau projet
+          <span className="font-display text-xl font-semibold tracking-tight">Nouveau projet</span>
         </button>
       </div>
 

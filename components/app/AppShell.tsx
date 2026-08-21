@@ -307,7 +307,7 @@ export function AppShell({
         </div>
       </aside>
 
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-white/[0.06] bg-[#06110e]/80 px-4 backdrop-blur-xl lg:hidden">
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-white/[0.06] bg-[#0a0a0a]/80 px-4 backdrop-blur-xl lg:hidden">
         <Link href="/home" className="flex items-center gap-2">
           <span className="wo-brand-mark !h-7 !w-7">W</span>
           <span className="text-sm font-semibold text-[#eef6f2]">{chromeTitle}</span>
@@ -413,7 +413,7 @@ export function AppShell({
               key={item.href}
               href={item.href}
               className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 py-2.5 text-[10px] font-medium transition ${
-                active ? "text-emerald-300" : "text-[#6b7d76]"
+                active ? "text-white" : "text-[#6a6c6b]"
               }`}
             >
               <Icon className="h-[18px] w-[18px]" stroke={active ? 1.9 : 1.5} />
@@ -477,10 +477,10 @@ function SideLink({
   void exact;
   return (
     <Link href={href} onClick={onClick} className={`wo-nav-link ${active ? "wo-nav-link-active" : ""}`}>
-      <Icon className={`wo-nav-icon h-[18px] w-[18px] ${active ? "text-emerald-300" : ""}`} stroke={1.6} />
+      <Icon className="wo-nav-icon h-[18px] w-[18px]" stroke={1.6} />
       <span className="flex-1 truncate">{label}</span>
       {badge ? (
-        <span className="rounded-full bg-emerald-500/20 px-1.5 text-[10px] font-semibold tabular-nums text-emerald-200">
+        <span data-badge className="rounded-full bg-white/10 px-1.5 text-[10px] font-semibold tabular-nums text-[#c8cbc9]">
           {badge}
         </span>
       ) : null}

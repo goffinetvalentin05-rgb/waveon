@@ -4,20 +4,20 @@
  */
 
 export const colors = {
-  bg: "#06110e",
-  sidebar: "#071412",
-  surface: "#0c1916",
-  elevated: "#12211d",
-  border: "rgba(134,239,172,0.1)",
-  borderStrong: "rgba(134,239,172,0.18)",
-  text: "#eef6f2",
-  textMuted: "#8a9e96",
-  textDim: "#6b7d76",
-  accent: "#10b981",
-  accentSoft: "rgba(16,185,129,0.14)",
+  bg: "#0a0a0a",
+  sidebar: "#121212",
+  surface: "#141414",
+  elevated: "#1c1c1c",
+  border: "rgba(255,255,255,0.08)",
+  borderStrong: "rgba(255,255,255,0.14)",
+  text: "#f3f4f3",
+  textMuted: "#8d8f8e",
+  textDim: "#6a6c6b",
+  accent: "#3dff8a",
+  accentSoft: "rgba(61,255,138,0.12)",
   danger: "#fb7185",
   warning: "#fbbf24",
-  success: "#34d399",
+  success: "#3dff8a",
 } as const;
 
 export const ui = {
@@ -26,6 +26,7 @@ export const ui = {
   card: "wo-card",
   cardInteractive: "wo-card wo-card-interactive",
   cardFeatured: "wo-card-featured",
+  cardCta: "wo-card-cta",
 
   btnPrimary: "wo-btn wo-btn-primary",
   btnSecondary: "wo-btn wo-btn-secondary",
