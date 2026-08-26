@@ -1,8 +1,8 @@
 import { createServerComponentSupabase } from "@/lib/supabase/server-component";
 import { firstNameFromDisplay } from "@/lib/brand/config";
+import { fetchProjects } from "@/lib/projects/server";
 import { getPersonalSecurityState } from "@/lib/personal/security";
-import { loadCommandCenter } from "@/lib/home/command-center";
-import { HomeDashboard } from "@/components/home/HomeDashboard";
+import { HomeEntry } from "@/components/home/HomeEntry";
 
 export default async function HomePage() {
   const supabase = await createServerComponentSupabase();
@@ -16,8 +16,16 @@ export default async function HomePage() {
     user.email?.split("@")[0] ||
     "toi";
 
-  const security = await getPersonalSecurityState(supabase, user.id);
-  const data = await loadCommandCenter(supabase, user.id, security);
+  const [projects, security] = await Promise.all([
+    fetchProjects(supabase, user.id, false),
+    getPersonalSecurityState(supabase, user.id),
+  ]);
 
-  return <HomeDashboard firstName={firstNameFromDisplay(displayName)} data={data} />;
+  return (
+    <HomeEntry
+      firstName={firstNameFromDisplay(displayName)}
+      projects={projects}
+      personalLocked={security.lockEnabled}
+    />
+  );
 }

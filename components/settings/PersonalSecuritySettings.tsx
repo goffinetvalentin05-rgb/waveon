@@ -51,10 +51,10 @@ export function PersonalSecuritySettings() {
   return (
     <section className={`${ui.card} space-y-4 p-5 sm:p-6`}>
       <div>
-        <h2 className={ui.h2}>Verrouillage Personnel</h2>
+        <h2 className={ui.h2}>Protection de l&apos;espace personnel</h2>
         <p className="mt-1 text-sm text-wo-muted">
-          PIN secondaire pour l&apos;espace Personnel. Vous restez connecté à WaveOne. Le PIN n&apos;est jamais
-          stocké en clair.
+          Couche supplémentaire de confidentialité. Le PIN n&apos;est jamais stocké en clair. Il ne remplace pas
+          la connexion WaveOne.
         </p>
       </div>
 
@@ -73,7 +73,7 @@ export function PersonalSecuritySettings() {
             });
           }}
         />
-        Activer le verrouillage de l&apos;espace Personnel
+        PIN activé — protéger l&apos;espace Personnel
       </label>
 
       {hasPin ? (
@@ -102,7 +102,7 @@ export function PersonalSecuritySettings() {
         />
       </div>
 
-      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
+      {error ? <p className="text-sm text-rose-600">{error}</p> : null}
       {msg ? <p className={ui.alertInfo}>{msg}</p> : null}
 
       <div className="flex flex-wrap gap-2">

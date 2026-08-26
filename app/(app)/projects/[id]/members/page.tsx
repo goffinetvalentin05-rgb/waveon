@@ -74,6 +74,7 @@ export default async function ProjectMembersPage({ params }: Props) {
       projectId={id}
       projectName={project.name}
       myRole={role}
+      joinCode={project.join_code ?? null}
       members={fallbackOwner}
       invitations={invitesRes.error ? [] : invitations}
     />

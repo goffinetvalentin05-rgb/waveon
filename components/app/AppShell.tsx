@@ -6,7 +6,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   IconBell,
   IconChevronDown,
-  IconHome,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
   IconLogout,
@@ -237,8 +236,12 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
                 ) : null}
               </div>
             ) : null}
-            <h1 className="wo-h1">{meta.title}</h1>
-            {meta.subtitle ? <p className="mt-1 text-sm text-wo-muted">{meta.subtitle}</p> : null}
+            {meta.title ? (
+              <>
+                <h1 className="wo-h1">{meta.title}</h1>
+                {meta.subtitle ? <p className="mt-1 text-sm text-wo-muted">{meta.subtitle}</p> : null}
+              </>
+            ) : null}
           </div>
           <div className="flex shrink-0 items-center gap-2 pt-1">
             <button type="button" className="wo-topbar-search" onClick={openSearch}>
@@ -265,10 +268,12 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
         </div>
 
         <div className="mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:pt-6">
-          <div className="mb-5 lg:hidden">
-            <h1 className="wo-h1">{meta.title}</h1>
-            {meta.subtitle ? <p className="mt-1 text-sm text-wo-muted">{meta.subtitle}</p> : null}
-          </div>
+          {meta.title ? (
+            <div className="mb-5 lg:hidden">
+              <h1 className="wo-h1">{meta.title}</h1>
+              {meta.subtitle ? <p className="mt-1 text-sm text-wo-muted">{meta.subtitle}</p> : null}
+            </div>
+          ) : null}
           {children}
         </div>
       </main>
@@ -356,18 +361,6 @@ function SidebarBody({
       ) : null}
 
       <nav className="flex flex-1 flex-col gap-5 overflow-y-auto px-3 py-1">
-        <div>
-          {compact ? null : <SectionLabel>Accueil</SectionLabel>}
-          <SideLink
-            href="/home"
-            label="Tableau de bord"
-            icon={IconHome}
-            active={pathname === "/home"}
-            compact={compact}
-            onClick={onNavigate}
-          />
-        </div>
-
         <div>
           {compact ? null : <SectionLabel>Personnel</SectionLabel>}
           <div className="flex flex-col gap-0.5">

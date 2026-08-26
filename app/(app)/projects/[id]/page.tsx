@@ -93,6 +93,7 @@ export default async function ProjectPage({ params }: Props) {
     <ProjectDashboard
       projectId={id}
       projectName={project.name}
+      projectColor={project.color}
       enabledModules={project.enabledModules}
       stats={{
         prospects: prospects.length,

@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/crm/server";
 import { logWorkspaceEvent } from "@/lib/workspace/events";
 import { PROJECT_COLORS } from "@/lib/projects/types";
 import { fetchProjects, replaceProjectModules } from "@/lib/projects/server";
+import { generateJoinCode } from "@/lib/projects/join-code";
 import { normalizeModules, PROJECT_TEMPLATES, type ProjectTemplateId } from "@/lib/projects/modules";
 
 export async function GET() {
@@ -39,6 +40,7 @@ export async function POST(request: Request) {
       icon: String(body.icon ?? "").trim() || null,
       color,
       status: body.status === "archived" ? "archived" : "active",
+      join_code: generateJoinCode(name),
     })
     .select("*")
     .single();

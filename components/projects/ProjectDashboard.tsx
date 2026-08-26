@@ -18,6 +18,7 @@ type PipelineStat = { label: string; value: number; href: string };
 export function ProjectDashboard({
   projectId,
   projectName,
+  projectColor,
   enabledModules,
   stats,
   tasks,
@@ -28,6 +29,7 @@ export function ProjectDashboard({
 }: {
   projectId: string;
   projectName: string;
+  projectColor?: string | null;
   enabledModules?: ProjectModuleKey[];
   stats: {
     prospects: number;
@@ -97,9 +99,12 @@ export function ProjectDashboard({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-12">
-        <section className="wo-card-featured flex min-h-[210px] flex-col justify-between p-6 lg:col-span-5">
+        <section
+          className="wo-card-featured flex min-h-[210px] flex-col justify-between p-6 lg:col-span-5"
+          style={projectColor ? { background: `linear-gradient(135deg, ${projectColor} 0%, color-mix(in srgb, ${projectColor} 72%, #1e1b4b) 100%)` } : undefined}
+        >
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">Pipeline</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">{projectName}</p>
             <p className="mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
               {stats.prospects}
             </p>

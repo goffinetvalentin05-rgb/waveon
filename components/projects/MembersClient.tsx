@@ -11,12 +11,14 @@ import type { ProjectInvitationRow, ProjectMemberRow } from "@/lib/projects/memb
 export function MembersClient({
   projectId,
   projectName,
+  joinCode,
   myRole,
   members,
   invitations,
 }: {
   projectId: string;
   projectName: string;
+  joinCode: string | null;
   myRole: ProjectRole;
   members: ProjectMemberRow[];
   invitations: ProjectInvitationRow[];
@@ -25,10 +27,12 @@ export function MembersClient({
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<InvitableRole>("member");
-  const [mode, setMode] = useState<"email" | "link">("link");
+  const [mode, setMode] = useState<"email" | "link" | "code">("link");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdLink, setCreatedLink] = useState<string | null>(null);
+  const [code, setCode] = useState(joinCode);
+  const [copied, setCopied] = useState(false);
   const canInvite = can(myRole, "members.invite");
 
   const pending = useMemo(
@@ -36,8 +40,30 @@ export function MembersClient({
     [invitations]
   );
 
+  const copyCode = async () => {
+    if (!code) return;
+    await navigator.clipboard.writeText(code);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
+  };
+
+  const regenerate = async () => {
+    setLoading(true);
+    setError(null);
+    const res = await fetch(`/api/projects/${projectId}/join-code`, { method: "POST" });
+    const data = await res.json();
+    setLoading(false);
+    if (!res.ok) {
+      setError(data.error ?? "Impossible de régénérer le code");
+      return;
+    }
+    setCode(data.join_code ?? null);
+    router.refresh();
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (mode === "code") return;
     setLoading(true);
     setError(null);
     const res = await fetch(`/api/projects/${projectId}/invitations`, {
@@ -76,6 +102,26 @@ export function MembersClient({
           </button>
         ) : null}
       </div>
+
+      <section className={`${ui.widget} p-5 sm:p-6`}>
+        <h2 className={ui.h2}>Code du projet</h2>
+        <p className="mt-1 text-sm text-wo-muted">
+          Ce code ne donne accès qu&apos;à {projectName}. Pas à votre espace Personnel, ni aux autres projets.
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <code className="rounded-xl border border-wo-border bg-slate-50 px-3 py-2 font-mono text-sm tracking-wide text-wo-text">
+            {code || "—"}
+          </code>
+          <button type="button" className={ui.btnSecondary} onClick={() => void copyCode()} disabled={!code}>
+            {copied ? "Copié" : "Copier"}
+          </button>
+          {canInvite ? (
+            <button type="button" className={ui.btnGhost} onClick={() => void regenerate()} disabled={loading}>
+              Régénérer
+            </button>
+          ) : null}
+        </div>
+      </section>
 
       <section className={`${ui.widget} p-5 sm:p-6`}>
         <h2 className={ui.h2}>Membres de {projectName}</h2>
@@ -130,28 +176,20 @@ export function MembersClient({
           <button type="button" className={ui.overlay} onClick={() => setOpen(false)} aria-label="Fermer" />
           <form onSubmit={submit} className={`${ui.modal} max-w-md p-6`}>
             <h2 className="text-lg font-semibold text-wo-text">Inviter dans {projectName}</h2>
-            <p className="mt-1 text-sm text-wo-muted">
-              L&apos;invitation ne donne accès qu&apos;à ce projet.
-            </p>
-            <div className="mt-5 flex gap-2 rounded-xl bg-slate-50 p-1">
-              <button
-                type="button"
-                onClick={() => setMode("link")}
-                className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-medium ${
-                  mode === "link" ? "bg-white text-wo-text shadow-sm" : "text-wo-muted"
-                }`}
-              >
-                Lien
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode("email")}
-                className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-medium ${
-                  mode === "email" ? "bg-white text-wo-text shadow-sm" : "text-wo-muted"
-                }`}
-              >
-                Email
-              </button>
+            <p className="mt-1 text-sm text-wo-muted">L&apos;invitation ne donne accès qu&apos;à ce projet.</p>
+            <div className="mt-5 grid grid-cols-3 gap-1 rounded-xl bg-slate-50 p-1">
+              {(["link", "email", "code"] as const).map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => setMode(item)}
+                  className={`rounded-lg px-2 py-1.5 text-sm font-medium ${
+                    mode === item ? "bg-white text-wo-text shadow-sm" : "text-wo-muted"
+                  }`}
+                >
+                  {item === "link" ? "Lien" : item === "email" ? "Email" : "Code"}
+                </button>
+              ))}
             </div>
             {mode === "email" ? (
               <div className="mt-4">
@@ -166,17 +204,29 @@ export function MembersClient({
                 />
               </div>
             ) : null}
-            <div className="mt-4">
-              <label className={ui.label}>Rôle</label>
-              <select className={ui.input} value={role} onChange={(e) => setRole(e.target.value as InvitableRole)}>
-                {INVITABLE_ROLES.map((r) => (
-                  <option key={r} value={r}>
-                    {PROJECT_ROLE_LABELS[r]}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1.5 text-[12px] text-wo-muted">{PROJECT_ROLE_HINTS[role]}</p>
-            </div>
+            {mode === "code" ? (
+              <div className="mt-4 space-y-3">
+                <p className="text-sm text-wo-muted">Partagez ce code. La personne rejoint uniquement {projectName}.</p>
+                <code className="block rounded-xl border border-wo-border bg-slate-50 px-3 py-2 font-mono text-sm">
+                  {code || "—"}
+                </code>
+                <button type="button" className={ui.btnSecondary} onClick={() => void copyCode()} disabled={!code}>
+                  {copied ? "Copié" : "Copier le code"}
+                </button>
+              </div>
+            ) : (
+              <div className="mt-4">
+                <label className={ui.label}>Rôle</label>
+                <select className={ui.input} value={role} onChange={(e) => setRole(e.target.value as InvitableRole)}>
+                  {INVITABLE_ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {PROJECT_ROLE_LABELS[r]}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1.5 text-[12px] text-wo-muted">{PROJECT_ROLE_HINTS[role]}</p>
+              </div>
+            )}
             {createdLink ? (
               <div className={`${ui.alertSuccess} mt-4 break-all text-xs`}>{createdLink}</div>
             ) : null}
@@ -185,9 +235,11 @@ export function MembersClient({
               <button type="button" className={ui.btnSecondary} onClick={() => setOpen(false)}>
                 Fermer
               </button>
-              <button type="submit" className={ui.btnPrimary} disabled={loading}>
-                {loading ? "Création…" : mode === "link" ? "Générer le lien" : "Créer l'invitation"}
-              </button>
+              {mode !== "code" ? (
+                <button type="submit" className={ui.btnPrimary} disabled={loading}>
+                  {loading ? "Création…" : mode === "link" ? "Générer le lien" : "Créer l'invitation"}
+                </button>
+              ) : null}
             </div>
           </form>
         </div>

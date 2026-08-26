@@ -52,13 +52,22 @@ export async function GET(request: Request) {
 
   const { data, error } = await query;
   if (error) {
-    const fallback = await supabase
+    let fallback = supabase
       .from("daily_tasks")
       .select("*, prospect:prospects(id, club_name, status)")
       .eq("user_id", user.id)
       .order("due_date", { ascending: true });
-    if (fallback.error) return NextResponse.json({ error: fallback.error.message }, { status: 500 });
-    return NextResponse.json({ tasks: fallback.data ?? [], todayISO: today });
+    if (scope === "personal") fallback = fallback.eq("scope", "personal");
+    else if (projectId && projectId !== "unassigned") {
+      fallback = fallback.eq("scope", "project").eq("project_id", projectId);
+    } else if (projectId === "unassigned") {
+      fallback = fallback.eq("scope", "project").is("project_id", null);
+    } else {
+      fallback = fallback.eq("scope", "project");
+    }
+    const retry = await fallback;
+    if (retry.error) return NextResponse.json({ error: retry.error.message }, { status: 500 });
+    return NextResponse.json({ tasks: retry.data ?? [], todayISO: today });
   }
 
   return NextResponse.json({ tasks: data ?? [], todayISO: today });

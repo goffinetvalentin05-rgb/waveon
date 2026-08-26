@@ -27,6 +27,7 @@ export type Project = {
   updated_at: string;
   enabledModules?: ProjectModuleKey[];
   myRole?: ProjectRole;
+  join_code?: string | null;
 };
 
 export type ProjectSummary = Project & {

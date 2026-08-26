@@ -78,7 +78,7 @@ export function pageMetaFromPath(pathname: string | null, projectName?: string |
   if (!pathname) return { title: "WaveOne" };
 
   if (pathname === "/home") {
-    return { title: "Tableau de bord", subtitle: "Vue d'ensemble de votre workspace." };
+    return { title: "", subtitle: undefined };
   }
   if (pathname === "/personal") {
     return { title: "Personnel", subtitle: "Espace privé, uniquement pour vous." };
