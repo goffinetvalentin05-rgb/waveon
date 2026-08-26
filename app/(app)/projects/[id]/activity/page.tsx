@@ -18,7 +18,6 @@ export default async function ProjectActivityPage({ params }: Props) {
   const { data } = await supabase
     .from("workspace_events")
     .select("id, title, created_at, event_type")
-    .eq("user_id", user.id)
     .eq("project_id", id)
     .order("created_at", { ascending: false })
     .limit(40);

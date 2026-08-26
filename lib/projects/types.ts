@@ -8,10 +8,10 @@ export const PROJECT_COLORS = [
   "#6366F1",
   "#8B5CF6",
   "#0EA5E9",
-  "#10B981",
+  "#818CF8",
   "#F59E0B",
   "#F43F5E",
-  "#14B8A6",
+  "#A78BFA",
   "#64748B",
 ] as const;
 

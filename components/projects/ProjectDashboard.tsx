@@ -4,7 +4,6 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
-  IconBuilding,
   IconChecklist,
   IconPlus,
   IconSparkles,
@@ -73,12 +72,6 @@ export function ProjectDashboard({
             Ajouter un prospect
           </Link>
         ) : null}
-        {hasModule(enabledModules, "companies") ? (
-          <Link href={`${base}/companies`} className={ui.btnSecondary}>
-            <IconBuilding className="h-4 w-4" />
-            Ajouter une entreprise
-          </Link>
-        ) : null}
         {hasModule(enabledModules, "tasks") ? (
           <Link href={`${base}/tasks`} className={ui.btnSecondary}>
             <IconChecklist className="h-4 w-4" />
@@ -122,7 +115,7 @@ export function ProjectDashboard({
           {[
             { label: "Contactés", value: stats.contacted, tone: "bg-indigo-50 text-indigo-600", icon: IconUsers },
             { label: "Réponses reçues", value: stats.replies || stats.considering, tone: "bg-sky-50 text-sky-600", icon: IconUsers },
-            { label: "Rendez-vous", value: stats.meetings || stats.demos, tone: "bg-emerald-50 text-emerald-600", icon: IconUsers },
+            { label: "Rendez-vous", value: stats.meetings || stats.demos, tone: "bg-indigo-50 text-indigo-600", icon: IconUsers },
             { label: "Tâches restantes", value: stats.openTasks, tone: "bg-amber-50 text-amber-600", icon: IconChecklist },
           ].map((card) => {
             const Icon = card.icon;

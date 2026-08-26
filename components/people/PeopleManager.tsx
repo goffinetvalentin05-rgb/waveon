@@ -48,13 +48,13 @@ export function PeopleManager() {
         {people.map((p) => (
           <li key={p.id} className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20 text-[11px] font-semibold text-emerald-200">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-50 text-[11px] font-semibold text-indigo-700">
                 {personInitials(p.name)}
               </span>
               <div>
                 <p className="text-sm font-medium text-wo-text">
                   {p.name}
-                  {p.is_self ? <span className="ml-2 text-[10px] text-emerald-300">toi</span> : null}
+                  {p.is_self ? <span className="ml-2 text-[10px] text-wo-accent">toi</span> : null}
                 </p>
                 {p.role ? <p className="text-[11px] text-wo-dim">{p.role}</p> : null}
               </div>

@@ -51,12 +51,12 @@ export function TodayTaskList({
       {local.map((task) => {
         const kindClass =
           task.task_kind === "demo"
-            ? "bg-emerald-400"
+            ? "bg-indigo-400"
             : task.task_kind === "first_contact"
               ? "bg-amber-400"
               : task.task_kind === "follow_up"
                 ? "bg-rose-400"
-                : "bg-emerald-400";
+                : "bg-slate-400";
 
         return (
           <li
@@ -72,7 +72,7 @@ export function TodayTaskList({
               className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[5px] border transition ${
                 task.completed
                   ? "border-emerald-500 bg-emerald-500 text-white"
-                  : "border-white/20 hover:border-emerald-400"
+                  : "border-white/20 hover:border-indigo-400"
               }`}
               aria-label={task.completed ? "Décocher" : "Cocher"}
             >
@@ -95,7 +95,7 @@ export function TodayTaskList({
                 {task.prospect ? (
                   <button
                     type="button"
-                    className="text-[11px] text-wo-dim hover:text-emerald-300"
+                    className="text-[11px] text-wo-dim hover:text-wo-accent"
                     onClick={() => router.push(`/crm/prospects/${task.prospect!.id}`)}
                   >
                     {task.prospect.club_name}

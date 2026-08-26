@@ -57,7 +57,7 @@ export function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[1.35rem] border border-dashed border-white/[0.1] bg-white/[0.015] px-6 py-12 text-center">
+    <div className="rounded-[1.35rem] border border-dashed border-wo-border bg-white px-6 py-12 text-center">
       <p className="text-sm font-medium text-wo-text">{title}</p>
       {description ? <p className="mt-1 text-sm text-wo-dim">{description}</p> : null}
       {action ? <div className="mt-4 flex justify-center">{action}</div> : null}

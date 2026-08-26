@@ -66,7 +66,7 @@ export function BalancesClient() {
                 <span className="text-wo-muted"> → </span>
                 <span className="font-semibold text-wo-text">{b.toName}</span>
               </p>
-              <p className="text-base font-semibold tabular-nums text-emerald-200">{chf(b.amount)}</p>
+              <p className="text-base font-semibold tabular-nums text-indigo-700">{chf(b.amount)}</p>
             </button>
           ))}
         </div>

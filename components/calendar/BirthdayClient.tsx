@@ -147,7 +147,7 @@ export function BirthdayClient({ initial }: { initial: Birthday[] }) {
         </div>
       ) : sorted.length === 0 ? (
         <div className={`${ui.card} px-6 py-16 text-center`}>
-          <IconCake className="mx-auto h-8 w-8 text-[#3d524c]" stroke={1.5} />
+          <IconCake className="mx-auto h-8 w-8 text-wo-dim" stroke={1.5} />
           <p className="mt-3 text-sm text-wo-muted">Aucun anniversaire enregistré.</p>
           <button type="button" className={`${ui.btnSecondary} mt-4`} onClick={() => setModalBirthday(null)}>
             <IconPlus className="h-4 w-4" />
@@ -289,7 +289,7 @@ function ReminderToggle({
       onClick={onClick}
       className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
         active
-          ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-200"
+          ? "border-indigo-200 bg-indigo-50 text-indigo-700"
           : "border-wo-border bg-transparent text-wo-dim hover:bg-wo-hover"
       }`}
       title={active ? `Rappel ${label} activé` : `Rappel ${label} désactivé`}
@@ -417,7 +417,7 @@ function BirthdayModal({
                 type="checkbox"
                 checked={remindDayBefore}
                 onChange={(e) => setRemindDayBefore(e.target.checked)}
-                className="h-4 w-4 rounded border-white/20 text-emerald-500 focus:ring-emerald-500/30"
+                className="h-4 w-4 rounded border-white/20 text-indigo-600 focus:ring-indigo-500/30"
               />
               Rappel la veille
             </label>
@@ -426,7 +426,7 @@ function BirthdayModal({
                 type="checkbox"
                 checked={remindSameDay}
                 onChange={(e) => setRemindSameDay(e.target.checked)}
-                className="h-4 w-4 rounded border-white/20 text-emerald-500 focus:ring-emerald-500/30"
+                className="h-4 w-4 rounded border-white/20 text-indigo-600 focus:ring-indigo-500/30"
               />
               Rappel le jour J
             </label>

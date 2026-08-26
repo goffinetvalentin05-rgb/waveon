@@ -74,7 +74,7 @@ export function NotesClient({ projectId, scope }: { projectId?: string; scope?: 
                   type="button"
                   onClick={() => setActive(n)}
                   className={`w-full rounded-xl px-3 py-2.5 text-left transition ${
-                    active?.id === n.id ? "bg-emerald-500/12 shadow-[inset_0_0_0_1px_rgba(52,211,153,0.2)]" : "hover:bg-wo-hover"
+                    active?.id === n.id ? "bg-indigo-50 shadow-[inset_0_0_0_1px_rgba(99,102,241,0.25)]" : "hover:bg-wo-hover"
                   }`}
                 >
                   <p className="truncate text-sm font-medium text-wo-text">{n.title || "Sans titre"}</p>

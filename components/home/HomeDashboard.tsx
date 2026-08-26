@@ -107,7 +107,7 @@ export function HomeDashboard({
               value: data.todayEvents.length,
               icon: IconCalendarEvent,
               href: "/personal/calendar",
-              tone: "bg-emerald-50 text-emerald-600",
+              tone: "bg-indigo-50 text-indigo-600",
             },
           ].map((card) => {
             const Icon = card.icon;

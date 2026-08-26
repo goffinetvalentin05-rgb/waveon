@@ -65,7 +65,7 @@ export function FlashcardSession() {
       <div>
         <Link
           href="/personal/english"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-wo-muted transition hover:text-emerald-300"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-wo-muted transition hover:text-wo-accent"
         >
           <IconArrowLeft className="h-4 w-4" stroke={1.75} />
           English
@@ -114,7 +114,7 @@ export function FlashcardSession() {
             </div>
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-wo-hover">
               <div
-                className="h-full rounded-full bg-emerald-500 transition-all"
+                className="h-full rounded-full bg-indigo-500 transition-all"
                 style={{ width: `${(index / total) * 100}%` }}
               />
             </div>
@@ -138,7 +138,7 @@ export function FlashcardSession() {
                     &ldquo;{current.example_english}&rdquo;
                   </p>
                 ) : null}
-                <span className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-emerald-300">
+                <span className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-wo-accent">
                   <IconRotate2 className="h-4 w-4" stroke={1.75} />
                   Voir la traduction
                 </span>
@@ -157,7 +157,7 @@ export function FlashcardSession() {
                   </p>
                 ) : null}
                 {current.personal_note ? (
-                  <p className="max-w-sm rounded-[12px] bg-emerald-500/15 px-3 py-2 text-sm text-emerald-200">
+                  <p className="max-w-sm rounded-[12px] bg-indigo-50 px-3 py-2 text-sm text-indigo-700">
                     {current.personal_note}
                   </p>
                 ) : null}
@@ -188,7 +188,7 @@ export function FlashcardSession() {
               type="button"
               disabled={submitting}
               onClick={() => void rate("know")}
-              className="inline-flex items-center justify-center gap-2 rounded-[12px] border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-medium text-emerald-300 transition hover:bg-emerald-500/20 disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 rounded-[12px] border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-medium text-wo-accent transition hover:bg-indigo-50 disabled:opacity-50"
             >
               <IconCheck className="h-4 w-4" stroke={1.75} />
               Je connais

@@ -12,15 +12,16 @@ export async function GET(request: Request) {
   let query = supabase
     .from("workspace_notes")
     .select("*, project:projects(id, name, color)")
-    .eq("user_id", user.id)
     .order("updated_at", { ascending: false });
 
   if (scope === "personal") {
-    query = query.eq("scope", "personal");
+    query = query.eq("user_id", user.id).eq("scope", "personal");
   } else if (projectId === "unassigned") {
-    query = query.eq("scope", "project").is("project_id", null);
+    query = query.eq("user_id", user.id).eq("scope", "project").is("project_id", null);
   } else if (projectId) {
     query = query.eq("scope", "project").eq("project_id", projectId);
+  } else {
+    query = query.eq("user_id", user.id);
   }
 
   const { data, error } = await query;

@@ -84,7 +84,7 @@ export function CockpitDashboard({
                 <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-wo-muted">
                   {s.label}
                 </p>
-                <Icon className="h-3.5 w-3.5 text-emerald-400/80" stroke={1.6} />
+                <Icon className="h-3.5 w-3.5 text-wo-accent" stroke={1.6} />
               </div>
               <p className="mt-2 text-[1.75rem] font-semibold tracking-tight text-wo-text tabular-nums">
                 {s.value}
@@ -120,7 +120,7 @@ function WidgetHeader({
       <h2 className="text-sm font-semibold text-wo-text">{title}</h2>
       <Link
         href={href}
-        className="inline-flex items-center gap-1 text-xs font-medium text-wo-muted transition hover:text-emerald-300"
+        className="inline-flex items-center gap-1 text-xs font-medium text-wo-muted transition hover:text-wo-accent"
       >
         {cta}
         <IconArrowRight className="h-3.5 w-3.5" stroke={1.75} />
@@ -175,8 +175,8 @@ function CalendarWidget({ events }: { events: CalendarEvent[] }) {
           <ol className="relative space-y-0 border-l border-wo-border pl-4">
             {events.map((event) => (
               <li key={event.id} className="relative pb-3 last:pb-0">
-                <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
-                <p className="text-[11px] font-medium tabular-nums text-emerald-300">{eventTime(event)}</p>
+                <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-indigo-500" />
+                <p className="text-[11px] font-medium tabular-nums text-wo-accent">{eventTime(event)}</p>
                 <p className="text-sm font-medium text-wo-text">{event.title}</p>
                 {event.location ? (
                   <p className="text-xs text-wo-dim">{event.location}</p>
@@ -217,7 +217,7 @@ function EnglishWidget({
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-wo-hover">
               <div
-                className="h-full rounded-full bg-emerald-400 transition-all"
+                className="h-full rounded-full bg-indigo-500 transition-all"
                 style={{ width: `${english.progress}%` }}
               />
             </div>

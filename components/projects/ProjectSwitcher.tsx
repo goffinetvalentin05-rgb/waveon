@@ -25,11 +25,11 @@ export function ProjectSwitcher({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-2 rounded-full border border-wo-border bg-[#0c1916] px-3.5 py-2 text-sm font-medium text-wo-text transition hover:border-emerald-400/25"
+        className="inline-flex items-center gap-2 rounded-full border border-wo-border bg-white px-3.5 py-2 text-sm font-medium text-wo-text transition hover:border-indigo-200"
       >
         <span
           className="h-2.5 w-2.5 rounded-full"
-          style={{ background: current?.color ?? "#10b981" }}
+          style={{ background: current?.color ?? "#6366F1" }}
         />
         {current?.name ?? "Projet"}
         <IconChevronDown className="h-4 w-4 text-wo-muted" />
@@ -47,7 +47,7 @@ export function ProjectSwitcher({
                   p.id === currentId ? "bg-wo-hover text-wo-text" : "text-wo-secondary hover:bg-wo-hover"
                 }`}
               >
-                <span className="h-2 w-2 rounded-full" style={{ background: p.color ?? "#10b981" }} />
+                <span className="h-2 w-2 rounded-full" style={{ background: p.color ?? "#6366F1" }} />
                 {p.name}
               </Link>
             ))}

@@ -68,6 +68,7 @@ export const CONTACT_ACTIVITY_TYPES = [
   "call",
   "whatsapp",
   "email",
+  "linkedin",
   "mail_sent",
   "call_made",
   "meeting",

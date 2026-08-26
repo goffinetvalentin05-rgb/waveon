@@ -10,6 +10,7 @@ import {
   prospectAvatarTone,
 } from "@/lib/crm/pipeline";
 import { isDemoScheduledStatus } from "@/lib/crm/closed";
+import { prospectDetailHref } from "@/lib/crm/paths";
 import type { Prospect } from "@/lib/crm/types";
 
 function fmtDate(value: string | null) {
@@ -40,7 +41,7 @@ export function ProspectsPipeline({
         <span>
           <span className="font-semibold text-wo-text">{followed}</span> prospects en suivi
         </span>
-        <span className="text-white/20">·</span>
+        <span className="text-wo-border">·</span>
         <span>
           <span className="font-semibold text-wo-text">{prospects.length}</span> au total
         </span>
@@ -52,7 +53,7 @@ export function ProspectsPipeline({
           return (
             <div
               key={col.id}
-              className="flex w-[260px] shrink-0 flex-col rounded-[1.35rem] border border-wo-border bg-[#0a1412]/80"
+              className="flex w-[260px] shrink-0 flex-col rounded-[1.35rem] border border-wo-border bg-white"
             >
               <div className="flex items-center justify-between gap-2 px-3.5 py-3">
                 <div className="flex items-center gap-2">
@@ -72,10 +73,9 @@ export function ProspectsPipeline({
                       key={p.id}
                       type="button"
                       onClick={() => {
-                        const back = encodeURIComponent(listReturnUrl);
-                        router.push(`/crm/prospects/${p.id}?back=${back}`);
+                        router.push(prospectDetailHref(p.id, listReturnUrl));
                       }}
-                      className="flex items-center gap-2.5 rounded-[14px] border border-white/[0.05] bg-[#0c1916] px-2.5 py-2.5 text-left transition hover:border-emerald-400/20 hover:bg-[#12211d]"
+                      className="flex items-center gap-2.5 rounded-[14px] border border-wo-border bg-slate-50/70 px-2.5 py-2.5 text-left transition hover:border-indigo-200 hover:bg-white"
                     >
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-[13px] font-medium text-wo-text">{p.club_name}</p>

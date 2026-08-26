@@ -28,10 +28,14 @@ export const PROJECT_MODULE_LABELS: Record<ProjectModuleKey, string> = {
   documents: "Documents",
 };
 
+/** Modules proposés dans l’UI. `companies` reste en base pour compatibilité, plus exposé. */
+export const SELECTABLE_MODULE_KEYS: ProjectModuleKey[] = PROJECT_MODULE_KEYS.filter(
+  (key) => key !== "companies"
+);
+
 export const DEFAULT_ENABLED_MODULES: ProjectModuleKey[] = [
   "overview",
   "prospects",
-  "companies",
   "tasks",
   "content",
   "notes",
@@ -55,7 +59,6 @@ export const PROJECT_TEMPLATES = [
     modules: [
       "overview",
       "prospects",
-      "companies",
       "tasks",
       "content",
       "notes",
@@ -86,8 +89,9 @@ export function isProjectModuleKey(value: unknown): value is ProjectModuleKey {
 
 export function normalizeModules(input: unknown): ProjectModuleKey[] {
   const raw = Array.isArray(input) ? input.filter(isProjectModuleKey) : [];
-  const unique = Array.from(new Set<ProjectModuleKey>(["overview", ...raw]));
-  return PROJECT_MODULE_KEYS.filter((key) => unique.includes(key));
+  const set = new Set<ProjectModuleKey>(["overview", ...raw]);
+  set.delete("companies");
+  return SELECTABLE_MODULE_KEYS.filter((key) => set.has(key));
 }
 
 export function hasModule(
@@ -106,7 +110,7 @@ export function modulesFromRows(
 ): ProjectModuleKey[] {
   if (!rows || rows.length === 0) return [...DEFAULT_ENABLED_MODULES];
   const byKey = new Map(rows.map((row) => [row.module, row.enabled]));
-  return PROJECT_MODULE_KEYS.filter((key) => {
+  return SELECTABLE_MODULE_KEYS.filter((key) => {
     const stored = byKey.get(key);
     if (stored === undefined) return DEFAULT_ENABLED_MODULES.includes(key);
     return stored;

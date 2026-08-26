@@ -38,7 +38,13 @@ export function applyProspectListQuery(
   userId: string,
   params: ProspectListParams
 ) {
-  let query = supabase.from("prospects").select("*", { count: "exact" }).eq("user_id", userId);
+  let query = supabase.from("prospects").select("*", { count: "exact" });
+
+  if (params.projectId && params.projectId !== "unassigned") {
+    query = query.eq("project_id", params.projectId);
+  } else {
+    query = query.eq("user_id", userId);
+  }
 
   if (params.archived === "archived") {
     query = query.not("archived_at", "is", null);

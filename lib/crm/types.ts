@@ -54,6 +54,7 @@ export const ACTION_TYPES = [
   "call",
   "whatsapp",
   "email",
+  "linkedin",
   "meeting",
   "demo",
   "other",
@@ -71,6 +72,7 @@ export const INTERACTION_TYPES = [
   "call",
   "whatsapp",
   "email",
+  "linkedin",
   "reply",
   "meeting",
   "demo",
@@ -87,6 +89,7 @@ export const INTERACTION_LABELS: Record<InteractionType, string> = {
   call: "Appel",
   whatsapp: "WhatsApp",
   email: "Email",
+  linkedin: "LinkedIn",
   reply: "Réponse",
   meeting: "Réunion",
   demo: "Démo",
@@ -119,6 +122,12 @@ export type Prospect = {
   phone: string | null;
   email: string | null;
   website: string | null;
+  logo_url?: string | null;
+  address?: string | null;
+  country?: string | null;
+  linkedin_url?: string | null;
+  source?: string | null;
+  priority?: "Faible" | "Normale" | "Haute" | "Urgente" | null;
   status: ProspectStatus;
   last_action: string | null;
   last_action_at: string | null;
@@ -135,6 +144,7 @@ export type Prospect = {
   contact_channel: string | null;
   tags: string[];
   contact_count?: number;
+  people_count?: number;
   project?: { id: string; name: string; color: string | null } | null;
   assignee?: { id: string; name: string } | null;
 };

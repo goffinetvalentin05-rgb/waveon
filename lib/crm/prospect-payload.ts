@@ -23,6 +23,13 @@ export type ProspectInput = {
   tags?: unknown;
   next_follow_up?: unknown;
   next_action?: unknown;
+  ville?: unknown;
+  logo_url?: unknown;
+  address?: unknown;
+  country?: unknown;
+  linkedin_url?: unknown;
+  source?: unknown;
+  priority?: unknown;
 };
 
 /** Champs prospect normalisés pour insert/update Supabase. */
@@ -65,6 +72,13 @@ export function buildProspectFields(input: ProspectInput) {
     tags,
     next_follow_up: nullIfEmpty(input.next_follow_up),
     next_action: nullIfEmpty(input.next_action),
+    ville: nullIfEmpty(input.ville),
+    logo_url: nullIfEmpty(input.logo_url),
+    address: nullIfEmpty(input.address),
+    country: nullIfEmpty(input.country),
+    linkedin_url: nullIfEmpty(input.linkedin_url),
+    source: nullIfEmpty(input.source),
+    priority: nullIfEmpty(input.priority) ?? "Normale",
   };
 }
 

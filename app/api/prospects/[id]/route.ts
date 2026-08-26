@@ -8,14 +8,13 @@ type Params = { params: Promise<{ id: string }> };
 export async function GET(_request: Request, { params }: Params) {
   const auth = await requireUser();
   if (auth.response) return auth.response;
-  const { supabase, user } = auth;
+  const { supabase } = auth;
   const { id } = await params;
 
   const { data: prospect, error } = await supabase
     .from("prospects")
     .select("*")
     .eq("id", id)
-    .eq("user_id", user.id)
     .maybeSingle();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -25,7 +24,6 @@ export async function GET(_request: Request, { params }: Params) {
     .from("prospect_activities")
     .select("*")
     .eq("prospect_id", id)
-    .eq("user_id", user.id)
     .order("occurred_at", { ascending: false })
     .order("created_at", { ascending: false });
 
@@ -36,21 +34,28 @@ export async function GET(_request: Request, { params }: Params) {
       .from("people")
       .select("id, name")
       .eq("id", normalized.assigned_to)
-      .eq("user_id", user.id)
       .maybeSingle();
     if (person) assignee = person;
   }
 
+  const { data: contacts } = await supabase
+    .from("prospect_contacts")
+    .select("*")
+    .eq("prospect_id", id)
+    .order("is_primary", { ascending: false })
+    .order("created_at", { ascending: true });
+
   return NextResponse.json({
-    prospect: { ...normalized, assignee },
+    prospect: { ...normalized, assignee, people_count: (contacts ?? []).length },
     activities: activities ?? [],
+    contacts: contacts ?? [],
   });
 }
 
 export async function PATCH(request: Request, { params }: Params) {
   const auth = await requireUser();
   if (auth.response) return auth.response;
-  const { supabase, user } = auth;
+  const { supabase } = auth;
   const { id } = await params;
   const body = await request.json();
 
@@ -72,6 +77,12 @@ export async function PATCH(request: Request, { params }: Params) {
     "tags",
     "next_follow_up",
     "next_action",
+    "logo_url",
+    "address",
+    "country",
+    "linkedin_url",
+    "source",
+    "priority",
   ] as const;
 
   const patch: Record<string, unknown> = {};
@@ -109,7 +120,6 @@ export async function PATCH(request: Request, { params }: Params) {
     .from("prospects")
     .update(patch)
     .eq("id", id)
-    .eq("user_id", user.id)
     .select("*")
     .maybeSingle();
 

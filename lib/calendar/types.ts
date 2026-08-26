@@ -82,10 +82,10 @@ export const CALENDAR_CATEGORY_LABELS: Record<CalendarCategory, string> = {
 };
 
 export const CALENDAR_CATEGORY_COLORS: Record<CalendarCategory, string> = {
-  appointment: "#14b8a6",
-  demo: "#2dd4bf",
-  room: "#67e8f9",
-  personal_task: "#34d399",
-  birthday: "#fb7185",
-  other: "#8a9e96",
+  appointment: "#6366F1",
+  demo: "#8B5CF6",
+  room: "#0EA5E9",
+  personal_task: "#4F46E5",
+  birthday: "#F43F5E",
+  other: "#64748B",
 };

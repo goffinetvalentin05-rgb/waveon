@@ -1,7 +1,6 @@
 import type { ProjectModuleKey } from "@/lib/projects/modules";
 import type { ModuleIcon } from "@/modules/types";
 import {
-  IconBuilding,
   IconCalendarEvent,
   IconCash,
   IconChartBar,
@@ -46,7 +45,6 @@ export type ProjectNavItem = {
 export const PROJECT_NAV: ProjectNavItem[] = [
   { key: "overview", label: "Vue d'ensemble", suffix: "", icon: IconLayoutDashboard, module: "overview", exact: true, always: true },
   { key: "prospects", label: "Prospects", suffix: "/prospects", icon: IconUsers, module: "prospects" },
-  { key: "companies", label: "Entreprises", suffix: "/companies", icon: IconBuilding, module: "companies" },
   { key: "tasks", label: "Tâches", suffix: "/tasks", icon: IconChecklist, module: "tasks" },
   { key: "content", label: "Contenu", suffix: "/content", icon: IconSparkles, module: "content" },
   { key: "notes", label: "Notes", suffix: "/notes", icon: IconNote, module: "notes" },

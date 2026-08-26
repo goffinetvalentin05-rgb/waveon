@@ -70,7 +70,7 @@ function SignupContent() {
       footer={
         <>
           Déjà un compte ?{" "}
-          <Link href="/login" className="font-semibold text-emerald-400 hover:underline">
+          <Link href="/login" className="font-semibold text-wo-accent hover:underline">
             Se connecter
           </Link>
         </>

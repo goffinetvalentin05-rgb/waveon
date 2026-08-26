@@ -94,7 +94,7 @@ function LoginPageContent() {
         forgotView ? null : (
           <>
             Pas encore de compte ?{" "}
-            <Link href="/signup" className="font-semibold text-emerald-400 hover:underline">
+            <Link href="/signup" className="font-semibold text-wo-accent hover:underline">
               S&apos;inscrire
             </Link>
           </>
@@ -157,7 +157,7 @@ function LoginPageContent() {
               </label>
               <button
                 type="button"
-                className="mb-1.5 text-xs text-wo-dim hover:text-emerald-300"
+                className="mb-1.5 text-xs text-wo-dim hover:text-wo-accent"
                 onClick={() => {
                   setForgotView(true);
                   setMessage(null);

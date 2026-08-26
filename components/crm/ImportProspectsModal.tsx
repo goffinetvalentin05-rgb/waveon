@@ -230,10 +230,10 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
               </p>
 
               <label
-                className={`flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-wo-border bg-wo-hover/50 px-6 py-10 transition hover:border-emerald-400/40 hover:bg-emerald-500/10 ${loading ? "pointer-events-none opacity-60" : ""}`}
+                className={`flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-wo-border bg-wo-hover/50 px-6 py-10 transition hover:border-indigo-300 hover:bg-indigo-50 ${loading ? "pointer-events-none opacity-60" : ""}`}
               >
                 {loading ? (
-                  <IconLoader2 className="h-8 w-8 animate-spin text-emerald-400" />
+                  <IconLoader2 className="h-8 w-8 animate-spin text-wo-accent" />
                 ) : (
                   <IconUpload className="h-8 w-8 text-wo-dim" stroke={1.5} />
                 )}
@@ -284,7 +284,7 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
                       <span className="w-2/5 truncate text-sm text-wo-muted" title={col}>
                         {col || "(sans nom)"}
                       </span>
-                      <span className="text-[#3d524c]">→</span>
+                      <span className="text-wo-dim">→</span>
                       <select
                         className={`${ui.input} flex-1 text-sm`}
                         value={mapping[col] ?? ""}
@@ -329,7 +329,7 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
                       key={value}
                       className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 transition ${
                         duplicateStrategy === value
-                          ? "border-emerald-500/30 bg-emerald-500/10"
+                          ? "border-indigo-200 bg-indigo-50"
                           : "border-wo-border hover:bg-wo-hover"
                       }`}
                     >
@@ -381,8 +381,8 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
 
               {/* Compteur avant import */}
               {hasClubMapping && previewCounts ? (
-                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3">
-                  <p className="text-sm font-medium text-emerald-200">
+                <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3">
+                  <p className="text-sm font-medium text-indigo-700">
                     {previewCounts.willImport} prospect{previewCounts.willImport > 1 ? "s" : ""}{" "}
                     {previewCounts.willImport > 1 ? "seront importés" : "sera importé"}
                     {previewCounts.willUpdate > 0
@@ -391,7 +391,7 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
                     .
                   </p>
                   {previewCounts.willSkip > 0 ? (
-                    <p className="mt-0.5 text-xs text-emerald-400">
+                    <p className="mt-0.5 text-xs text-wo-accent">
                       {previewCounts.willSkip} ligne{previewCounts.willSkip > 1 ? "s" : ""} ignorée
                       {previewCounts.willSkip > 1 ? "s" : ""}.
                     </p>

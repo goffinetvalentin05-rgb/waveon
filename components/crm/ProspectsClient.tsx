@@ -187,7 +187,6 @@ export function ProspectsClient({
       return;
     }
     // Synchronise la barre de recherche lors d'une navigation arrière/avancer.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync URL → champ recherche
     setSearchInput(params.q);
     fetchList(params);
   }, [paramsKey, params, fetchList]);
@@ -317,7 +316,7 @@ export function ProspectsClient({
         </div>
         <div className="flex flex-wrap gap-2">
           {!clientsOnly ? (
-            <div className="inline-flex rounded-full border border-wo-border bg-[#0c1916] p-1">
+            <div className="inline-flex rounded-full border border-wo-border bg-white p-1">
               <button
                 type="button"
                 onClick={() => {
@@ -540,12 +539,15 @@ function CreateProspectModal({
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {(
             [
-              ["club_name", "Organisation *", true],
+              ["club_name", "Nom / entreprise *", true],
+              ["sport", "Secteur", false],
               ["contact_name", "Contact", false],
               ["phone", "Téléphone", false],
               ["email", "Email", false],
               ["website", "Site web", false],
-              ["contact_channel", "Canal", false],
+              ["ville", "Ville", false],
+              ["country", "Pays", false],
+              ["source", "Source", false],
             ] as const
           ).map(([name, label, required]) => (
             <div key={name} className={name === "club_name" || name === "website" ? "sm:col-span-2" : ""}>

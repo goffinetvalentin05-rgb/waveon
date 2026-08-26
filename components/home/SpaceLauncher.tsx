@@ -73,7 +73,7 @@ export function SpaceLauncher({
                 <div className="flex items-center gap-3">
                   <span
                     className="flex h-11 w-11 items-center justify-center rounded-2xl text-lg"
-                    style={{ background: `${project.color ?? "#3dff8a"}22` }}
+                    style={{ background: `${project.color ?? "#6366F1"}22` }}
                   >
                     {project.icon || project.name.slice(0, 1).toUpperCase()}
                   </span>

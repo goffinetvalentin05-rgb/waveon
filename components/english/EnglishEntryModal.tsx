@@ -146,7 +146,7 @@ export function EnglishEntryModal({
                   onClick={() => setField("type", t)}
                   className={`rounded-xl border px-3.5 py-2 text-sm font-medium transition ${
                     values.type === t
-                      ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-200"
+                      ? "border-indigo-300 bg-indigo-50 text-indigo-700"
                       : "border-wo-border bg-transparent text-wo-muted hover:bg-wo-hover"
                   }`}
                 >

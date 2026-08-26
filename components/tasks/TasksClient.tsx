@@ -176,7 +176,7 @@ function TaskRow({
         type="button"
         onClick={onToggle}
         className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[5px] border ${
-          done ? "border-emerald-500 bg-emerald-500 text-white" : "border-white/20 hover:border-emerald-400"
+          done ? "border-emerald-500 bg-emerald-500 text-white" : "border-wo-border hover:border-indigo-400"
         }`}
         aria-label="Terminer"
       >
@@ -223,7 +223,7 @@ function Kanban({
         return (
           <div
             key={status}
-            className="flex w-[260px] shrink-0 flex-col rounded-[1.35rem] border border-wo-border bg-[#0a1412]/80"
+            className="flex w-[260px] shrink-0 flex-col rounded-[1.35rem] border border-wo-border bg-white"
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               const id = e.dataTransfer.getData("text/plain");
@@ -242,7 +242,7 @@ function Kanban({
                   draggable
                   onDragStart={(e) => e.dataTransfer.setData("text/plain", t.id)}
                   onClick={() => onOpen(t)}
-                  className="rounded-[14px] border border-white/[0.05] bg-[#0c1916] px-3 py-2.5 text-left transition hover:border-emerald-400/20"
+                  className="rounded-[14px] border border-white/[0.05] bg-white px-3 py-2.5 text-left transition hover:border-indigo-200"
                 >
                   <p className="text-[13px] font-medium text-wo-text">{t.title}</p>
                   <p className="mt-1 text-[11px] text-wo-dim">{formatDay(t.due_date)}</p>
@@ -330,7 +330,7 @@ function TaskEditor({
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <button type="button" className={ui.overlay} onClick={onClose} />
-      <div className="relative h-full w-full max-w-md overflow-y-auto border-l border-wo-border bg-[#0e1c19] p-6">
+      <div className="relative h-full w-full max-w-md overflow-y-auto border-l border-wo-border bg-white p-6">
         <h2 className="text-lg font-semibold text-wo-text">{task ? "Modifier la tâche" : "Nouvelle tâche"}</h2>
         <div className="mt-5 space-y-3">
           <div>

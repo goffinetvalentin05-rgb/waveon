@@ -24,8 +24,8 @@ export const APP_MODULES: AppModule[] = [
     homeOrder: 1,
     homeSummaryId: "crm-follow-ups",
     accent: {
-      iconBg: "bg-emerald-500/15",
-      iconColor: "text-emerald-300",
+      iconBg: "bg-indigo-50",
+      iconColor: "text-wo-accent",
     },
   },
   {
@@ -38,8 +38,8 @@ export const APP_MODULES: AppModule[] = [
     homeOrder: 3,
     homeSummaryId: "english-review",
     accent: {
-      iconBg: "bg-emerald-500/15",
-      iconColor: "text-emerald-300",
+      iconBg: "bg-indigo-50",
+      iconColor: "text-wo-accent",
     },
   },
   {
@@ -52,8 +52,8 @@ export const APP_MODULES: AppModule[] = [
     homeOrder: 2,
     homeSummaryId: "calendar-today",
     accent: {
-      iconBg: "bg-emerald-500/15",
-      iconColor: "text-emerald-300",
+      iconBg: "bg-indigo-50",
+      iconColor: "text-wo-accent",
     },
   },
   {

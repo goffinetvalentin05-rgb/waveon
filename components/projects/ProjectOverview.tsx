@@ -82,7 +82,7 @@ export function ProjectOverview({
               { label: "En réflexion", value: stats.considering ?? 0, href: `${base}/prospects?view=considering` },
               { label: "Clients", value: stats.clients ?? 0, href: `${base}/prospects?view=clients` },
             ].map((c) => (
-              <Link key={c.label} href={c.href} className="rounded-2xl border border-wo-border bg-[#101010] px-3 py-3 transition hover:border-white/[0.12]">
+              <Link key={c.label} href={c.href} className="rounded-2xl border border-wo-border bg-white px-3 py-3 transition hover:border-white/[0.12]">
                 <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-wo-muted">{c.label}</p>
                 <p className="mt-1.5 text-xl font-semibold tabular-nums text-wo-text">{c.value}</p>
               </Link>

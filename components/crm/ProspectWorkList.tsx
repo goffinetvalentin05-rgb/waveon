@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { StatusBadge } from "@/components/crm/StatusBadge";
 import { StatusSelect } from "@/components/crm/StatusSelect";
 import { formatRelativeDay } from "@/lib/crm/format";
+import { prospectDetailHref } from "@/lib/crm/paths";
 import type { Prospect, ProspectStatus } from "@/lib/crm/types";
 
 export function ProspectListRow({
@@ -19,10 +20,9 @@ export function ProspectListRow({
 
   return (
     <article
-      className="cursor-pointer rounded-[1.15rem] border border-wo-border bg-[#101010] px-4 py-3.5 transition hover:border-white/[0.12]"
+      className="cursor-pointer rounded-[1.15rem] border border-wo-border bg-white px-4 py-3.5 transition hover:border-indigo-200 hover:bg-slate-50/70"
       onClick={() => {
-        const back = encodeURIComponent(listReturnUrl);
-        router.push(`/crm/prospects/${prospect.id}?back=${back}`);
+        router.push(prospectDetailHref(prospect.id, listReturnUrl));
       }}
     >
       <div className="flex items-start justify-between gap-3">
@@ -35,7 +35,7 @@ export function ProspectListRow({
         <div onClick={(e) => e.stopPropagation()}>
           <StatusSelect
             value={prospect.status}
-            className="h-8 min-w-[10.5rem] rounded-full border-wo-border bg-[#0a0a0a] px-2.5 py-0 text-xs"
+            className="h-8 min-w-[10.5rem] rounded-full border-wo-border bg-white px-2.5 py-0 text-xs"
             onChange={(status) => onStatusChange(prospect.id, status)}
           />
         </div>
@@ -45,7 +45,11 @@ export function ProspectListRow({
         <StatusBadge status={prospect.status} />
         <span>{prospect.contact_channel || "Canal —"}</span>
         <span>Dernier contact : {formatRelativeDay(prospect.last_action_at)}</span>
-        {prospect.contact_count != null ? (
+        {prospect.people_count != null ? (
+          <span>
+            {prospect.people_count} personne{prospect.people_count > 1 ? "s" : ""}
+          </span>
+        ) : prospect.contact_count != null ? (
           <span>
             {prospect.contact_count} contact{prospect.contact_count > 1 ? "s" : ""}
           </span>

@@ -252,7 +252,7 @@ function ExpenseModal({
                   onClick={() => toggle(p.id)}
                   className={`rounded-full px-3 py-1 text-xs ${
                     participants.includes(p.id)
-                      ? "bg-emerald-500/20 text-emerald-200"
+                      ? "bg-indigo-50 text-indigo-700"
                       : "bg-wo-hover text-wo-muted"
                   }`}
                 >

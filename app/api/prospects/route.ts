@@ -58,6 +58,21 @@ export async function POST(request: Request) {
       title: "Prospect créé",
     });
 
+    const firstName = String(body.contact_name ?? "").trim();
+    if (firstName || body.email || body.phone) {
+      const parts = firstName.split(/\s+/).filter(Boolean);
+      await supabase.from("prospect_contacts").insert({
+        user_id: user.id,
+        prospect_id: data.id,
+        first_name: parts[0] || "Contact",
+        last_name: parts.slice(1).join(" ") || null,
+        job_title: String(body.contact_function ?? "").trim() || null,
+        email: String(body.email ?? "").trim() || null,
+        phone: String(body.phone ?? "").trim() || null,
+        is_primary: true,
+      });
+    }
+
     await logWorkspaceEvent(supabase, user.id, {
       event_type: "prospect_created",
       title: `Prospect ajouté : ${data.club_name}`,

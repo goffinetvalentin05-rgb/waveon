@@ -17,15 +17,16 @@ export async function GET(request: Request) {
   let query = supabase
     .from("calendar_events")
     .select("*")
-    .eq("user_id", user.id)
     .order("start_at", { ascending: true });
 
   if (scope === "personal") {
-    query = query.eq("scope", "personal");
+    query = query.eq("user_id", user.id).eq("scope", "personal");
   } else if (projectId === "unassigned") {
-    query = query.eq("scope", "project").is("project_id", null);
+    query = query.eq("user_id", user.id).eq("scope", "project").is("project_id", null);
   } else if (projectId) {
     query = query.eq("scope", "project").eq("project_id", projectId);
+  } else {
+    query = query.eq("user_id", user.id);
   }
 
   if (from) query = query.gte("end_at", from);

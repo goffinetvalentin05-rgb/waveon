@@ -272,7 +272,7 @@ export function CalendarClient({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex rounded-full border border-wo-border bg-[#0c1916] p-1">
+        <div className="inline-flex rounded-full border border-wo-border bg-white p-1">
           {(["month", "week", "day"] as const).map((v) => (
             <button
               key={v}
@@ -428,7 +428,7 @@ function BirthdayChip({ occurrence }: { occurrence: BirthdayOccurrence }) {
     <Link
       href="/personal/calendar/birthdays"
       onClick={(e) => e.stopPropagation()}
-      className="flex items-center gap-1 truncate rounded-md border border-rose-500/20 bg-rose-500/10 px-1.5 py-0.5 text-[11px] font-medium text-rose-300 transition hover:bg-rose-500/20"
+      className="flex items-center gap-1 truncate rounded-md border border-rose-200 bg-rose-50 px-1.5 py-0.5 text-[11px] font-medium text-rose-700 transition hover:bg-rose-100"
       title={occurrence.person_name}
     >
       <IconCake className="h-3 w-3 shrink-0" stroke={1.75} />
@@ -504,8 +504,8 @@ function MonthGrid({
   setDraggingId: (id: string | null) => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-[1.35rem] border border-wo-border bg-[#0c1916]">
-      <div className="grid grid-cols-7 border-b border-wo-border bg-[#0a1512]">
+    <div className="overflow-hidden rounded-[1.35rem] border border-wo-border bg-white">
+      <div className="grid grid-cols-7 border-b border-wo-border bg-slate-50">
         {WEEKDAY_LABELS.map((d) => (
           <div key={d} className="px-2 py-2 text-center text-xs font-medium text-wo-muted">
             {d}
@@ -541,13 +541,13 @@ function MonthGrid({
                 const id = e.dataTransfer.getData("text/plain");
                 if (id) onDropEvent(day, id);
               }}
-              className={`flex min-h-[92px] cursor-pointer flex-col gap-1 border-b border-r border-wo-border p-1.5 transition hover:bg-wo-hover [&:nth-of-type(7n)]:border-r-0 sm:min-h-[120px] ${
-                inMonth ? "bg-transparent" : "bg-white/[0.015]"
+              className={`flex min-h-[92px] cursor-pointer flex-col gap-1 border-b border-r border-wo-border p-1.5 transition hover:bg-indigo-50/60 [&:nth-of-type(7n)]:border-r-0 sm:min-h-[120px] ${
+                inMonth ? "bg-white" : "bg-slate-50/80"
               }`}
             >
               <span
                 className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
-                  isToday(day) ? "bg-emerald-500 text-white" : inMonth ? "text-wo-secondary" : "text-[#3d524c]"
+                  isToday(day) ? "bg-indigo-500 text-white" : inMonth ? "text-wo-text" : "text-wo-dim"
                 }`}
               >
                 {format(day, "d")}
@@ -577,7 +577,7 @@ function MonthGrid({
                       e.stopPropagation();
                       onExpandDay(day);
                     }}
-                    className="text-left text-[11px] font-medium text-wo-dim hover:text-emerald-300"
+                    className="text-left text-[11px] font-medium text-wo-dim hover:text-wo-accent"
                   >
                     +{hiddenCount} de plus
                   </button>
@@ -607,7 +607,7 @@ function TimeGrid({
   const gridCols = `56px repeat(${days.length}, 1fr)`;
 
   return (
-    <div className="overflow-hidden rounded-[1.35rem] border border-wo-border bg-[#0c1916]">
+    <div className="overflow-hidden rounded-[1.35rem] border border-wo-border bg-white">
       <div className="grid border-b border-wo-border" style={{ gridTemplateColumns: gridCols }}>
         <div />
         {days.map((d) => (
@@ -617,7 +617,7 @@ function TimeGrid({
             </div>
             <div
               className={`mx-auto mt-0.5 flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold ${
-                isToday(d) ? "bg-emerald-500 text-white" : "text-wo-text"
+                isToday(d) ? "bg-indigo-500 text-white" : "text-wo-text"
               }`}
             >
               {format(d, "d")}
@@ -626,7 +626,7 @@ function TimeGrid({
         ))}
       </div>
 
-      <div className="grid border-b border-wo-border bg-[#0a1512]" style={{ gridTemplateColumns: gridCols }}>
+      <div className="grid border-b border-wo-border bg-slate-50" style={{ gridTemplateColumns: gridCols }}>
         <div className="px-2 py-1.5 text-[10px] text-wo-dim">Journée</div>
         {days.map((d) => {
           const dStr = format(d, "yyyy-MM-dd");
@@ -666,7 +666,7 @@ function TimeGrid({
                   <div
                     key={h}
                     style={{ height: ROW_HEIGHT }}
-                    className="cursor-pointer border-b border-wo-border transition hover:bg-emerald-500/10"
+                    className="cursor-pointer border-b border-wo-border transition hover:bg-indigo-50"
                     onClick={() => onSlotClick(d, h)}
                   />
                 ))}
@@ -736,14 +736,14 @@ function AgendaList({
               <button
                 type="button"
                 onClick={() => onDayClick(d)}
-                className={`text-sm font-semibold capitalize ${isToday(d) ? "text-emerald-300" : "text-wo-text"}`}
+                className={`text-sm font-semibold capitalize ${isToday(d) ? "text-indigo-600" : "text-wo-text"}`}
               >
                 {format(d, "EEEE d MMMM", { locale: fr })}
               </button>
               <button
                 type="button"
                 onClick={() => onAddClick(d)}
-                className="rounded-lg p-1 text-wo-dim hover:bg-wo-hover hover:text-emerald-300"
+                className="rounded-lg p-1 text-wo-dim hover:bg-wo-hover hover:text-wo-accent"
                 aria-label="Ajouter un événement"
               >
                 <IconPlus className="h-4 w-4" />

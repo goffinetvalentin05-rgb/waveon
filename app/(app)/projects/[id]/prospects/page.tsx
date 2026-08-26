@@ -38,7 +38,6 @@ export default async function ProjectProspectsPage({ params, searchParams }: Pro
     supabase
       .from("prospects")
       .select("*", { count: "exact", head: true })
-      .eq("user_id", user.id)
       .eq("project_id", id)
       .is("archived_at", null),
   ]);

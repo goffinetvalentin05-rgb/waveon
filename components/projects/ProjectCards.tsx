@@ -50,7 +50,7 @@ export function ProjectCards({
                 <div className="flex items-center gap-3">
                   <span
                     className="flex h-10 w-10 items-center justify-center rounded-[12px] text-lg"
-                    style={{ background: `${p.color ?? "#10b981"}22`, color: p.color ?? "#10b981" }}
+                    style={{ background: `${p.color ?? "#6366F1"}22`, color: p.color ?? "#6366F1" }}
                   >
                     {p.icon || p.name.slice(0, 1).toUpperCase()}
                   </span>

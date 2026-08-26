@@ -5,8 +5,8 @@ import { ui } from "@/lib/design/tokens";
 import { PROJECT_COLORS } from "@/lib/projects/types";
 import type { Project } from "@/lib/projects/types";
 import {
-  PROJECT_MODULE_KEYS,
   PROJECT_MODULE_LABELS,
+  SELECTABLE_MODULE_KEYS,
   PROJECT_TEMPLATES,
   normalizeModules,
   type ProjectModuleKey,
@@ -139,7 +139,7 @@ export function ProjectFormModal({
           <div>
             <label className={ui.label}>Modules</label>
             <div className="mt-2 grid grid-cols-2 gap-2">
-              {PROJECT_MODULE_KEYS.map((key) => (
+              {SELECTABLE_MODULE_KEYS.map((key) => (
                 <label
                   key={key}
                   className="flex items-center gap-2 rounded-[10px] border border-wo-border px-3 py-2 text-sm text-wo-text"

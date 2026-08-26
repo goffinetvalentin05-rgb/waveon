@@ -56,7 +56,7 @@ function MultiCheckboxGroup({
                 type="checkbox"
                 checked={checked}
                 onChange={() => onToggle(value)}
-                className="rounded border-white/20 text-emerald-500 focus:ring-emerald-500/30"
+                className="rounded border-white/20 text-indigo-600 focus:ring-indigo-500/30"
               />
               <span className="truncate">{value}</span>
             </label>

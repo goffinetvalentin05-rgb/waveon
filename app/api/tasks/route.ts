@@ -16,24 +16,28 @@ export async function GET(request: Request) {
   const view = url.searchParams.get("view") ?? "today";
   const projectId = url.searchParams.get("project");
   const scope = url.searchParams.get("scope");
+  const prospectId = url.searchParams.get("prospect");
   const today = todayISO();
   const weekEnd = addDays(new Date(`${today}T12:00:00`), 7).toISOString().slice(0, 10);
 
   let query = supabase
     .from("daily_tasks")
     .select(TASK_SELECT)
-    .eq("user_id", user.id)
     .order("due_date", { ascending: true })
     .order("created_at", { ascending: true });
 
   if (scope === "personal") {
-    query = query.eq("scope", "personal");
+    query = query.eq("user_id", user.id).eq("scope", "personal");
   } else if (projectId === "unassigned") {
-    query = query.eq("scope", "project").is("project_id", null);
+    query = query.eq("user_id", user.id).eq("scope", "project").is("project_id", null);
   } else if (projectId) {
     query = query.eq("scope", "project").eq("project_id", projectId);
   } else {
-    query = query.eq("scope", "project");
+    query = query.eq("user_id", user.id).eq("scope", "project");
+  }
+
+  if (prospectId) {
+    query = query.eq("prospect_id", prospectId);
   }
 
   if (view === "today") {
@@ -55,15 +59,14 @@ export async function GET(request: Request) {
     let fallback = supabase
       .from("daily_tasks")
       .select("*, prospect:prospects(id, club_name, status)")
-      .eq("user_id", user.id)
       .order("due_date", { ascending: true });
-    if (scope === "personal") fallback = fallback.eq("scope", "personal");
+    if (scope === "personal") fallback = fallback.eq("user_id", user.id).eq("scope", "personal");
     else if (projectId && projectId !== "unassigned") {
       fallback = fallback.eq("scope", "project").eq("project_id", projectId);
     } else if (projectId === "unassigned") {
-      fallback = fallback.eq("scope", "project").is("project_id", null);
+      fallback = fallback.eq("user_id", user.id).eq("scope", "project").is("project_id", null);
     } else {
-      fallback = fallback.eq("scope", "project");
+      fallback = fallback.eq("user_id", user.id).eq("scope", "project");
     }
     const retry = await fallback;
     if (retry.error) return NextResponse.json({ error: retry.error.message }, { status: 500 });

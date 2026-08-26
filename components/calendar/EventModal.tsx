@@ -284,7 +284,7 @@ function EventModalInner({
               type="checkbox"
               checked={allDay}
               onChange={(e) => setAllDay(e.target.checked)}
-              className="h-4 w-4 rounded border-white/20 bg-transparent text-emerald-500 focus:ring-emerald-500/30"
+              className="h-4 w-4 rounded border-wo-border text-indigo-600 focus:ring-indigo-500/30"
             />
             Toute la journée
           </label>

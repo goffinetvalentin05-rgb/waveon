@@ -22,6 +22,8 @@ import { isClosedProspectStatus, isDemoScheduledStatus } from "@/lib/crm/closed"
 import { StatusBadge } from "@/components/crm/StatusBadge";
 import { StatusSelect } from "@/components/crm/StatusSelect";
 import { InteractionForm } from "@/components/crm/InteractionForm";
+import { ProspectContactsPanel } from "@/components/crm/ProspectContactsPanel";
+import { ProspectLinkedTasks } from "@/components/crm/ProspectLinkedTasks";
 import { QUICK_ACTION_LABELS } from "@/lib/crm/actions";
 import type {
   Prospect,
@@ -242,7 +244,7 @@ function InlineValue({
             {telHref ? (
               <a
                 href={telHref}
-                className="text-emerald-400 hover:underline"
+                className="text-wo-accent hover:underline"
                 onClick={(e) => {
                   e.preventDefault();
                   onStart();
@@ -253,7 +255,7 @@ function InlineValue({
             ) : mailHref ? (
               <a
                 href={mailHref}
-                className="text-emerald-400 hover:underline"
+                className="text-wo-accent hover:underline"
                 onClick={(e) => {
                   e.preventDefault();
                   onStart();
@@ -263,7 +265,7 @@ function InlineValue({
               </a>
             ) : (
               <span
-                className="cursor-pointer hover:text-emerald-400"
+                className="cursor-pointer hover:text-wo-accent"
                 onClick={() => onStart()}
               >
                 {value}
@@ -281,7 +283,7 @@ function InlineValue({
         ) : (
           <div className="flex items-center justify-end gap-2">
             <span
-              className="cursor-pointer text-wo-dim hover:text-emerald-400"
+              className="cursor-pointer text-wo-dim hover:text-wo-accent"
               onClick={() => onStart()}
             >
               —
@@ -546,7 +548,8 @@ export function ProspectDetailClient2({
       back?.startsWith("/crm/prospects") ||
       back?.startsWith("/crm/clients") ||
       back?.startsWith("/prospects") ||
-      back?.startsWith("/clients")
+      back?.startsWith("/clients") ||
+      back?.startsWith("/projects/")
     ) {
       return back
         .replace(/^\/prospects/, "/crm/prospects")
@@ -572,6 +575,12 @@ export function ProspectDetailClient2({
     phone: initial.phone ?? "",
     email: initial.email ?? "",
     website: initial.website ?? "",
+    logo_url: initial.logo_url ?? "",
+    address: initial.address ?? "",
+    country: initial.country ?? "",
+    linkedin_url: initial.linkedin_url ?? "",
+    source: initial.source ?? "",
+    priority: initial.priority ?? "Normale",
     notes: initial.notes ?? "",
     status: initial.status as ProspectStatus,
     potential_value: initial.potential_value != null ? String(initial.potential_value) : "",
@@ -687,6 +696,12 @@ export function ProspectDetailClient2({
         phone: draft.phone,
         email: draft.email,
         website: draft.website,
+        logo_url: draft.logo_url,
+        address: draft.address,
+        country: draft.country,
+        linkedin_url: draft.linkedin_url,
+        source: draft.source,
+        priority: draft.priority,
         notes: draft.notes,
         potential_value: draft.potential_value === "" ? null : Number(draft.potential_value),
         contact_channel: draft.contact_channel,
@@ -1057,6 +1072,12 @@ export function ProspectDetailClient2({
                     phone: prospect.phone ?? "",
                     email: prospect.email ?? "",
                     website: prospect.website ?? "",
+                    logo_url: prospect.logo_url ?? "",
+                    address: prospect.address ?? "",
+                    country: prospect.country ?? "",
+                    linkedin_url: prospect.linkedin_url ?? "",
+                    source: prospect.source ?? "",
+                    priority: prospect.priority ?? "Normale",
                     notes: prospect.notes ?? "",
                     status: prospect.status,
                     potential_value: prospect.potential_value != null ? String(prospect.potential_value) : "",
@@ -1181,7 +1202,7 @@ export function ProspectDetailClient2({
           {!editMode ? (
             <dl className="mt-4 space-y-0 text-sm">
               <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-                <dt className="text-wo-dim">Sport</dt>
+                <dt className="text-wo-dim">Secteur</dt>
                 <dd className="text-right font-medium text-wo-text">{prospect.sport ?? "—"}</dd>
               </div>
               <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
@@ -1189,8 +1210,12 @@ export function ProspectDetailClient2({
                 <dd className="text-right font-medium text-wo-text">{prospect.canton ?? "—"}</dd>
               </div>
               <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-                <dt className="text-wo-dim">Ville</dt>
-                <dd className="text-right font-medium text-wo-text">{prospect.ville ?? "—"}</dd>
+                <dt className="text-wo-dim">Pays</dt>
+                <dd className="text-right font-medium text-wo-text">{prospect.country ?? "—"}</dd>
+              </div>
+              <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
+                <dt className="text-wo-dim">Adresse</dt>
+                <dd className="text-right font-medium text-wo-text">{prospect.address ?? "—"}</dd>
               </div>
               <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
                 <dt className="text-wo-dim">Fonction du contact</dt>
@@ -1247,7 +1272,7 @@ export function ProspectDetailClient2({
                       href={prospect.website.startsWith("http") ? prospect.website : `https://${prospect.website}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-emerald-400 hover:underline"
+                      className="text-wo-accent hover:underline"
                     >
                       {prospect.website}
                     </a>
@@ -1257,6 +1282,32 @@ export function ProspectDetailClient2({
                 </dd>
               </div>
 
+              <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
+                <dt className="text-wo-dim">LinkedIn</dt>
+                <dd className="text-right font-medium text-wo-text">
+                  {prospect.linkedin_url ? (
+                    <a
+                      href={prospect.linkedin_url.startsWith("http") ? prospect.linkedin_url : `https://${prospect.linkedin_url}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-wo-accent hover:underline"
+                    >
+                      {prospect.linkedin_url}
+                    </a>
+                  ) : (
+                    "—"
+                  )}
+                </dd>
+              </div>
+
+              <div className="flex justify-between gap-4 border-b border-wo-border pb-2">
+                <dt className="text-wo-dim">Source</dt>
+                <dd className="text-right font-medium text-wo-text">{prospect.source ?? "—"}</dd>
+              </div>
+              <div className="flex justify-between gap-4 border-b border-wo-border pb-2">
+                <dt className="text-wo-dim">Priorité</dt>
+                <dd className="text-right font-medium text-wo-text">{prospect.priority ?? "Normale"}</dd>
+              </div>
               <div className="flex justify-between gap-4 border-b border-wo-border pb-2">
                 <dt className="text-wo-dim">Valeur potentielle</dt>
                 <dd className="text-right font-medium text-wo-text">
@@ -1303,7 +1354,7 @@ export function ProspectDetailClient2({
                 />
               </div>
               <div>
-                <label className={ui.label}>Sport</label>
+                <label className={ui.label}>Secteur</label>
                 <input
                   className={ui.input}
                   value={draft.sport}
@@ -1325,6 +1376,52 @@ export function ProspectDetailClient2({
                   value={draft.ville}
                   onChange={(e) => setDraft((d) => ({ ...d, ville: e.target.value }))}
                 />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={ui.label}>Adresse</label>
+                <input
+                  className={ui.input}
+                  value={draft.address}
+                  onChange={(e) => setDraft((d) => ({ ...d, address: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className={ui.label}>Pays</label>
+                <input
+                  className={ui.input}
+                  value={draft.country}
+                  onChange={(e) => setDraft((d) => ({ ...d, country: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className={ui.label}>LinkedIn</label>
+                <input
+                  className={ui.input}
+                  value={draft.linkedin_url}
+                  onChange={(e) => setDraft((d) => ({ ...d, linkedin_url: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className={ui.label}>Source</label>
+                <input
+                  className={ui.input}
+                  value={draft.source}
+                  onChange={(e) => setDraft((d) => ({ ...d, source: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className={ui.label}>Priorité</label>
+                <select
+                  className={ui.input}
+                  value={draft.priority}
+                  onChange={(e) => setDraft((d) => ({ ...d, priority: e.target.value as typeof d.priority }))}
+                >
+                  {["Faible", "Normale", "Haute", "Urgente"].map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="sm:col-span-2">
                 <label className={ui.label}>Fonction du contact</label>
@@ -1364,6 +1461,15 @@ export function ProspectDetailClient2({
                   className={ui.input}
                   value={draft.website}
                   onChange={(e) => setDraft((d) => ({ ...d, website: e.target.value }))}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={ui.label}>Logo (URL)</label>
+                <input
+                  className={ui.input}
+                  value={draft.logo_url}
+                  onChange={(e) => setDraft((d) => ({ ...d, logo_url: e.target.value }))}
+                  placeholder="https://…"
                 />
               </div>
               <div>
@@ -1419,6 +1525,10 @@ export function ProspectDetailClient2({
           )}
         </section>
 
+        <ProspectContactsPanel prospectId={prospect.id} onChanged={() => void refreshAll()} />
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-2">
         <section className={`${ui.card} p-5 sm:p-6`}>
           <h2 className={ui.h2}>Notes</h2>
           <textarea
@@ -1439,6 +1549,7 @@ export function ProspectDetailClient2({
             ) : null}
           </div>
         </section>
+        <ProspectLinkedTasks prospectId={prospect.id} projectId={prospect.project_id} />
       </div>
 
       <section className={`${ui.card} p-5 sm:p-6`}>
@@ -1474,7 +1585,7 @@ export function ProspectDetailClient2({
                   {idx < activities.length - 1 ? (
                     <span className="absolute left-[7px] top-3 h-full w-px bg-wo-hover" />
                   ) : null}
-                  <span className="relative mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full border-2 border-emerald-500 bg-[#0c1916]" />
+                  <span className="relative mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full border-2 border-indigo-500 bg-white" />
 
                   <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                     <div className="flex items-start justify-between gap-3">
@@ -1502,7 +1613,7 @@ export function ProspectDetailClient2({
                           </button>
 
                           {activityMenuOpen === a.id ? (
-                            <div className="absolute right-0 top-9 z-20 w-44 rounded-[12px] border border-wo-border bg-[#0e1c19] p-2">
+                            <div className="absolute right-0 top-9 z-20 w-44 rounded-[12px] border border-wo-border bg-white p-2 shadow-lg">
                               <button
                                 type="button"
                                 className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-wo-secondary hover:bg-wo-hover"
