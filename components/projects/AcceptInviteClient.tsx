@@ -7,6 +7,7 @@ import { brand } from "@/lib/brand/config";
 import { ui } from "@/lib/design/tokens";
 import { invitePath } from "@/lib/auth/invite";
 import { PROJECT_ROLE_LABELS, type ProjectRole } from "@/lib/access/roles";
+import { ProjectAvatar } from "@/components/projects/ProjectAvatar";
 
 type InvitePayload = {
   role: string;
@@ -20,6 +21,7 @@ type InvitePayload = {
     id: string;
     name: string;
     icon: string | null;
+    logo_url?: string | null;
     color: string | null;
     description?: string | null;
   } | null;
@@ -79,7 +81,6 @@ export function AcceptInviteClient({
   }, [autoJoin, loading, invite]);
 
   const projectName = invite?.project?.name ?? "ce projet";
-  const color = invite?.project?.color ?? "#6366F1";
   const role = (invite?.role ?? "member") as ProjectRole;
   const inactive = Boolean(invite?.accepted || invite?.revoked || invite?.expired);
   const emailMismatch =
@@ -129,12 +130,14 @@ export function AcceptInviteClient({
                     rejoindre
                   </p>
                   <div className="mt-4 flex items-center gap-3">
-                    <span
-                      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-xl font-semibold"
-                      style={{ background: `${color}22`, color }}
-                    >
-                      {invite?.project?.icon || projectName.slice(0, 1).toUpperCase()}
-                    </span>
+                    <ProjectAvatar
+                      project={{
+                        name: projectName,
+                        icon: invite?.project?.icon,
+                        logo_url: invite?.project?.logo_url,
+                      }}
+                      size="lg"
+                    />
                     <h1 className="font-display text-[1.75rem] font-semibold leading-tight tracking-tight text-wo-text">
                       {projectName}
                     </h1>

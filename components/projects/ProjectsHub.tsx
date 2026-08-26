@@ -11,6 +11,7 @@ import type { LauncherProjectCard } from "@/lib/home/launcher";
 import { ProjectFormModal } from "@/components/projects/ProjectFormModal";
 import { ConfirmModal, EmptyState } from "@/components/ui/ConfirmModal";
 import { DeleteProjectModal } from "@/components/projects/DeleteProjectModal";
+import { ProjectAvatar } from "@/components/projects/ProjectAvatar";
 import { can } from "@/lib/access/permissions";
 import type { Project } from "@/lib/projects/types";
 
@@ -117,12 +118,7 @@ export function ProjectsHub({
               <div key={p.id} className={`${ui.cardInteractive} p-5`}>
                 <Link href={`/projects/${p.id}`} className="block">
                   <div className="flex items-center gap-3">
-                    <span
-                      className="flex h-10 w-10 items-center justify-center rounded-[12px] text-lg"
-                      style={{ background: `${p.color ?? "#6366F1"}22` }}
-                    >
-                      {p.icon || p.name.slice(0, 1).toUpperCase()}
-                    </span>
+                    <ProjectAvatar project={p} size="md" />
                     <div>
                       <h2 className="text-base font-semibold text-wo-text">{p.name}</h2>
                       <p className="text-xs text-wo-muted">{p.status === "active" ? "Actif" : "Archivé"}</p>

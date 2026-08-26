@@ -16,6 +16,7 @@ import {
 } from "@tabler/icons-react";
 import { ui } from "@/lib/design/tokens";
 import { ProjectFormModal } from "@/components/projects/ProjectFormModal";
+import { ProjectAvatar } from "@/components/projects/ProjectAvatar";
 import type { CommandCenterData } from "@/lib/home/command-center";
 
 function when(iso: string) {
@@ -198,12 +199,7 @@ export function HomeDashboard({
                     className="flex items-center justify-between gap-3 rounded-xl px-2 py-2.5 transition hover:bg-wo-hover"
                   >
                     <span className="flex min-w-0 items-center gap-3">
-                      <span
-                        className="flex h-9 w-9 items-center justify-center rounded-xl text-sm"
-                        style={{ background: `${project.color ?? "#6366F1"}18`, color: project.color ?? "#6366F1" }}
-                      >
-                        {project.icon || project.name.slice(0, 1).toUpperCase()}
-                      </span>
+                      <ProjectAvatar project={project} size="sm" />
                       <span className="min-w-0">
                         <span className="block truncate text-sm font-medium text-wo-text">{project.name}</span>
                         <span className="block text-[11px] text-wo-dim">

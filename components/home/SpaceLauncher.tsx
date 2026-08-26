@@ -8,6 +8,7 @@ import { fr } from "date-fns/locale";
 import { IconLock, IconPlus } from "@tabler/icons-react";
 import { ui } from "@/lib/design/tokens";
 import { ProjectFormModal } from "@/components/projects/ProjectFormModal";
+import { ProjectAvatar } from "@/components/projects/ProjectAvatar";
 import type { LauncherData } from "@/lib/home/launcher";
 
 function formatWhen(iso: string | null) {
@@ -71,12 +72,7 @@ export function SpaceLauncher({
             <Link key={project.id} href={`/projects/${project.id}`} className={`${ui.cardInteractive} group relative flex min-h-[200px] flex-col justify-between overflow-hidden p-6`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <span
-                    className="flex h-11 w-11 items-center justify-center rounded-2xl text-lg"
-                    style={{ background: `${project.color ?? "#6366F1"}22` }}
-                  >
-                    {project.icon || project.name.slice(0, 1).toUpperCase()}
-                  </span>
+                  <ProjectAvatar project={project} size="md" />
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-wo-dim">
                       {project.status === "active" ? "Projet actif" : "Archivé"}

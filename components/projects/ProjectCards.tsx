@@ -8,6 +8,7 @@ import { ui } from "@/lib/design/tokens";
 import type { ProjectSummary } from "@/lib/projects/types";
 import { ProjectFormModal } from "@/components/projects/ProjectFormModal";
 import { EmptyState } from "@/components/ui/ConfirmModal";
+import { ProjectAvatar } from "@/components/projects/ProjectAvatar";
 
 function formatChf(n: number) {
   return new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(n);
@@ -48,12 +49,7 @@ export function ProjectCards({
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <span
-                    className="flex h-10 w-10 items-center justify-center rounded-[12px] text-lg"
-                    style={{ background: `${p.color ?? "#6366F1"}22`, color: p.color ?? "#6366F1" }}
-                  >
-                    {p.icon || p.name.slice(0, 1).toUpperCase()}
-                  </span>
+                  <ProjectAvatar project={p} size="md" />
                   <div>
                     <h2 className="text-base font-semibold text-wo-text">{p.name}</h2>
                     {p.description ? (

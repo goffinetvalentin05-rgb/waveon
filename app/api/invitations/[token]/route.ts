@@ -14,7 +14,7 @@ function publicInvite(row: {
   accepted_at: string | null;
   revoked_at: string | null;
   inviter_name?: string | null;
-  project: { id: string; name: string; icon: string | null; color: string | null; description?: string | null } | null;
+  project: { id: string; name: string; icon: string | null; logo_url?: string | null; color: string | null; description?: string | null } | null;
 }) {
   const expired = new Date(row.expires_at).getTime() < Date.now();
   return {
@@ -51,7 +51,7 @@ export async function GET(_request: Request, { params }: Params) {
   const admin = createAdminSupabaseClient();
   const { data, error } = await admin
     .from("project_invitations")
-    .select("token, role, email, expires_at, accepted_at, revoked_at, inviter_name, project:projects(id, name, icon, color, description)")
+    .select("token, role, email, expires_at, accepted_at, revoked_at, inviter_name, project:projects(id, name, icon, logo_url, color, description)")
     .eq("token", token)
     .maybeSingle();
   if (error || !data) return NextResponse.json({ error: "Invitation introuvable" }, { status: 404 });

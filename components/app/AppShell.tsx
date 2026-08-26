@@ -18,6 +18,7 @@ import { brand } from "@/lib/brand/config";
 import { supabase } from "@/lib/supabase/client";
 import { CommandPalette } from "@/components/search/CommandPalette";
 import { ProjectFormModal } from "@/components/projects/ProjectFormModal";
+import { ProjectAvatar } from "@/components/projects/ProjectAvatar";
 import { hasModule } from "@/lib/projects/modules";
 import {
   BOTTOM_NAV,
@@ -198,10 +199,7 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
                   onClick={() => setSwitcherOpen((v) => !v)}
                   className="inline-flex items-center gap-2 rounded-xl border border-wo-border bg-white px-3 py-1.5 text-sm font-medium text-wo-text transition hover:bg-slate-50"
                 >
-                  <span
-                    className="h-2.5 w-2.5 rounded-full"
-                    style={{ background: currentProject.color ?? "#6366F1" }}
-                  />
+                  <ProjectAvatar project={currentProject} size="xs" />
                   {currentProject.name}
                   <IconChevronDown className="h-4 w-4 text-wo-dim" />
                 </button>
@@ -217,7 +215,7 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
                             : "text-wo-secondary hover:bg-wo-hover"
                         }`}
                       >
-                        <span className="h-2 w-2 rounded-full" style={{ background: p.color ?? "#6366F1" }} />
+                        <ProjectAvatar project={p} size="xs" />
                         {p.name}
                       </Link>
                     ))}
@@ -409,15 +407,7 @@ function SidebarBody({
                     title={project.name}
                     className={`wo-nav-link ${active ? "wo-nav-link-active" : ""} ${compact ? "justify-center px-0" : ""}`}
                   >
-                    <span
-                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[11px] leading-none"
-                      style={{
-                        background: active ? "rgba(255,255,255,0.18)" : `${project.color ?? "#6366F1"}22`,
-                        color: active ? "#fff" : project.color ?? "#6366F1",
-                      }}
-                    >
-                      {project.icon?.slice(0, 2) || project.name.slice(0, 1).toUpperCase()}
-                    </span>
+                    <ProjectAvatar project={project} size="xs" inverted={active} />
                     {compact ? null : <span className="truncate">{project.name}</span>}
                   </Link>
                   {active && !compact && currentProject ? (

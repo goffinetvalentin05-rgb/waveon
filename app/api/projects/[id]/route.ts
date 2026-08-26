@@ -33,7 +33,7 @@ export async function PATCH(request: Request, { params }: Params) {
   if ("error" in access) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const patch: Record<string, unknown> = {};
-  if ("name" in body || "description" in body || "icon" in body || "color" in body || "modules" in body) {
+  if ("name" in body || "description" in body || "icon" in body || "logo_url" in body || "color" in body || "modules" in body) {
     if (!can(access.role, "project.edit_settings")) {
       return NextResponse.json({ error: "Permissions insuffisantes" }, { status: 403 });
     }
@@ -49,15 +49,35 @@ export async function PATCH(request: Request, { params }: Params) {
   }
   if ("description" in body) patch.description = String(body.description ?? "").trim() || null;
   if ("icon" in body) patch.icon = String(body.icon ?? "").trim() || null;
+  if ("logo_url" in body) {
+    const logo = typeof body.logo_url === "string" ? body.logo_url.trim() : "";
+    patch.logo_url = logo || null;
+  }
   if ("color" in body) patch.color = String(body.color ?? "").trim() || null;
   if ("status" in body) patch.status = body.status === "archived" ? "archived" : "active";
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("projects")
     .update(Object.keys(patch).length ? patch : { updated_at: new Date().toISOString() })
     .eq("id", id)
     .select("*")
     .maybeSingle();
+
+  if (error && /logo_url/i.test(error.message)) {
+    const fallback = { ...patch };
+    if ("logo_url" in fallback) {
+      fallback.icon = fallback.logo_url || fallback.icon || null;
+      delete fallback.logo_url;
+    }
+    const retry = await supabase
+      .from("projects")
+      .update(fallback)
+      .eq("id", id)
+      .select("*")
+      .maybeSingle();
+    data = retry.data;
+    error = retry.error;
+  }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: "Introuvable" }, { status: 404 });

@@ -13,6 +13,7 @@ import {
 } from "@tabler/icons-react";
 import { ui } from "@/lib/design/tokens";
 import { ProjectFormModal } from "@/components/projects/ProjectFormModal";
+import { ProjectAvatar } from "@/components/projects/ProjectAvatar";
 import type { Project } from "@/lib/projects/types";
 
 export function HomeEntry({
@@ -88,15 +89,7 @@ export function HomeEntry({
               className={`${ui.cardInteractive} flex min-h-[132px] flex-col justify-between p-5`}
             >
               <span className="flex items-center gap-3">
-                <span
-                  className="flex h-11 w-11 items-center justify-center rounded-2xl text-lg"
-                  style={{
-                    background: `${project.color ?? "#6366F1"}18`,
-                    color: project.color ?? "#6366F1",
-                  }}
-                >
-                  {project.icon || project.name.slice(0, 1).toUpperCase()}
-                </span>
+                <ProjectAvatar project={project} size="md" />
                 <span>
                   <span className="block font-display text-lg font-semibold text-wo-text">{project.name}</span>
                   {project.description ? (

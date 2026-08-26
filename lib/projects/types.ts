@@ -1,19 +1,12 @@
 import type { ProjectRole } from "@/lib/access/roles";
 import type { ProjectModuleKey } from "@/lib/projects/modules";
+import { DEFAULT_PROJECT_COLOR } from "@/lib/projects/logo";
 
 export const PROJECT_STATUSES = ["active", "archived"] as const;
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
-export const PROJECT_COLORS = [
-  "#6366F1",
-  "#8B5CF6",
-  "#0EA5E9",
-  "#818CF8",
-  "#F59E0B",
-  "#F43F5E",
-  "#A78BFA",
-  "#64748B",
-] as const;
+/** Conservé pour les projets existants. Les nouveaux projets utilisent indigo. */
+export const PROJECT_COLORS = [DEFAULT_PROJECT_COLOR] as const;
 
 export type Project = {
   id: string;
@@ -21,6 +14,7 @@ export type Project = {
   name: string;
   description: string | null;
   icon: string | null;
+  logo_url?: string | null;
   color: string | null;
   status: ProjectStatus;
   created_at: string;
