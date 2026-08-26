@@ -57,14 +57,17 @@ export function applyProspectListQuery(
 
   if (params.clientsOnly) {
     query = query.eq("status", "Client");
-  } else if (smart === "today_work") {
-    query = query.lte("next_follow_up", today).not("status", "in", CLOSED_STATUS_POSTGREST);
-  } else if (smart === "overdue") {
-    query = query.lt("next_follow_up", today).not("status", "in", CLOSED_STATUS_POSTGREST);
-  } else if (smart && SMART_VIEW_STATUSES[smart]) {
-    query = query.in("status", expandStatusesForQuery(SMART_VIEW_STATUSES[smart]!));
-  } else if (params.statuses.length) {
-    query = query.in("status", expandStatusesForQuery(sanitizeStatuses(params.statuses)));
+  } else {
+    if (smart === "today_work") {
+      query = query.lte("next_follow_up", today).not("status", "in", CLOSED_STATUS_POSTGREST);
+    } else if (smart === "overdue") {
+      query = query.lt("next_follow_up", today).not("status", "in", CLOSED_STATUS_POSTGREST);
+    } else if (smart && SMART_VIEW_STATUSES[smart]) {
+      query = query.in("status", expandStatusesForQuery(SMART_VIEW_STATUSES[smart]!));
+    } else if (params.statuses.length) {
+      query = query.in("status", expandStatusesForQuery(sanitizeStatuses(params.statuses)));
+    }
+    query = query.neq("status", "Client");
   }
 
   if (params.sports.length) query = query.in("sport", params.sports);
@@ -219,8 +222,11 @@ export async function fetchProspectList(
 
     if (params.clientsOnly) {
       legacyQuery = legacyQuery.eq("status", "Client");
-    } else if (params.statuses.length) {
-      legacyQuery = legacyQuery.in("status", expandStatusesForQuery(sanitizeStatuses(params.statuses)));
+    } else {
+      if (params.statuses.length) {
+        legacyQuery = legacyQuery.in("status", expandStatusesForQuery(sanitizeStatuses(params.statuses)));
+      }
+      legacyQuery = legacyQuery.neq("status", "Client");
     }
 
     if (params.sports.length) legacyQuery = legacyQuery.in("sport", params.sports);
@@ -282,6 +288,8 @@ export async function fetchProspectFilterOptions(
 
   if (clientsOnly) {
     query = query.eq("status", "Client");
+  } else {
+    query = query.neq("status", "Client");
   }
 
   const { data, error } = await query.limit(5000);

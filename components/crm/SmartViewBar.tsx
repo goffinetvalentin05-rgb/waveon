@@ -30,7 +30,7 @@ export function SmartViewBar({
 }) {
   return (
     <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
-      {SMART_VIEWS.map((view) => {
+      {SMART_VIEWS.filter((view) => view.id !== "clients").map((view) => {
         const selected = active === view.id;
         const key = COUNT_KEY[view.id];
         const n = counts && key ? counts[key] : null;

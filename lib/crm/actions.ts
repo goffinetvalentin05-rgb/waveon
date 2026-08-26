@@ -133,6 +133,6 @@ export const QUICK_ACTION_LABELS: Record<QuickAction, string> = {
   mail_sent: "Mail envoyé",
   call_made: "Appel effectué",
   demo_scheduled: "Démonstration planifiée",
-  client: "Client",
+  client: "Passer en client",
   refus: "Refus",
 };

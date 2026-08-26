@@ -27,7 +27,7 @@ export function countProspectWork(
   today: string
 ): ProspectWorkCounts {
   const counts: ProspectWorkCounts = {
-    all: rows.length,
+    all: rows.filter((r) => migrateProspectStatus(r.status) !== "Client").length,
     toContact: 0,
     followToday: 0,
     overdue: 0,

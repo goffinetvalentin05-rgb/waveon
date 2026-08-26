@@ -542,6 +542,12 @@ export function ProspectDetailClient2({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const clientsHref = initial.project_id
+    ? `/projects/${initial.project_id}/clients`
+    : "/crm/clients";
+  const prospectsHref = initial.project_id
+    ? `/projects/${initial.project_id}/prospects`
+    : "/crm/prospects";
   const backHref = (() => {
     const back = searchParams.get("back");
     if (
@@ -555,7 +561,7 @@ export function ProspectDetailClient2({
         .replace(/^\/prospects/, "/crm/prospects")
         .replace(/^\/clients/, "/crm/clients");
     }
-    return "/crm/prospects";
+    return initial.status === "Client" ? clientsHref : prospectsHref;
   })();
   const backLabel = backHref.includes("/clients") ? "Clients" : "Prospects";
   const [pending, startTransition] = useTransition();
@@ -628,7 +634,12 @@ export function ProspectDetailClient2({
     router.refresh();
   };
 
-  const runAction = (action: QuickAction) => {
+  const goToClientsList = () => {
+    router.push(clientsHref);
+    router.refresh();
+  };
+
+  const executeQuickAction = (action: QuickAction) => {
     setMsg(null);
     startTransition(async () => {
       const res = await fetch(`/api/prospects/${prospect.id}/actions`, {
@@ -641,9 +652,31 @@ export function ProspectDetailClient2({
         setMsg(data.error ?? "Erreur");
         return;
       }
+      if (action === "client") {
+        goToClientsList();
+        return;
+      }
       setMsg(`${QUICK_ACTION_LABELS[action]} — enregistré.`);
       await refreshAll();
     });
+  };
+
+  const runAction = (action: QuickAction) => {
+    if (action === "client") {
+      setConfirm({
+        tone: "default",
+        title: "Passer en client ?",
+        description: `${prospect.club_name} quittera Prospects et apparaîtra dans Clients. Toutes les informations et l’historique sont conservés.`,
+        confirmLabel: "Passer en client",
+        cancelLabel: "Annuler",
+        onConfirm: () => {
+          setConfirm(null);
+          executeQuickAction("client");
+        },
+      });
+      return;
+    }
+    executeQuickAction(action);
   };
 
   const saveNotes = () => {
@@ -738,6 +771,10 @@ export function ProspectDetailClient2({
 
       setEditMode(false);
       setMsg("Informations enregistrées.");
+      if (nextStatus === "Client") {
+        goToClientsList();
+        return;
+      }
       await refreshAll();
     };
 
@@ -897,6 +934,10 @@ export function ProspectDetailClient2({
                   setMsg(data.error ?? "Erreur.");
                   return;
                 }
+                if (next === "Client") {
+                  goToClientsList();
+                  return;
+                }
                 setMsg("Statut mis à jour.");
                 setProspect(data.prospect as Prospect);
                 setActivities(data.activities as ProspectActivity[]);
@@ -946,13 +987,17 @@ export function ProspectDetailClient2({
       icon: <IconPresentation className="h-4 w-4" />,
       className: ui.btnSecondary,
     },
-    {
-      key: "client" as const,
-      label: "Client",
-      icon: <IconUserCheck className="h-4 w-4" />,
-      className:
-        "inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100",
-    },
+    ...(prospect.status === "Client"
+      ? []
+      : [
+          {
+            key: "client" as const,
+            label: "Passer en client",
+            icon: <IconUserCheck className="h-4 w-4" />,
+            className:
+              "inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100",
+          },
+        ]),
     {
       key: "refus" as const,
       label: "Refus",

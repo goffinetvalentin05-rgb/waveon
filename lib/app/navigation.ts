@@ -14,6 +14,7 @@ import {
   IconSparkles,
   IconActivity,
   IconUsers,
+  IconUserCheck,
   IconUserCircle,
   IconUserPlus,
 } from "@tabler/icons-react";
@@ -45,6 +46,7 @@ export type ProjectNavItem = {
 export const PROJECT_NAV: ProjectNavItem[] = [
   { key: "overview", label: "Vue d'ensemble", suffix: "", icon: IconLayoutDashboard, module: "overview", exact: true, always: true },
   { key: "prospects", label: "Prospects", suffix: "/prospects", icon: IconUsers, module: "prospects" },
+  { key: "clients", label: "Clients", suffix: "/clients", icon: IconUserCheck, module: "prospects" },
   { key: "tasks", label: "Tâches", suffix: "/tasks", icon: IconChecklist, module: "tasks" },
   { key: "content", label: "Contenu", suffix: "/content", icon: IconSparkles, module: "content" },
   { key: "notes", label: "Notes", suffix: "/notes", icon: IconNote, module: "notes" },

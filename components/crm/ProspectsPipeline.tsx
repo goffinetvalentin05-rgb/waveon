@@ -48,7 +48,7 @@ export function ProspectsPipeline({
       </div>
 
       <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-        {PIPELINE_COLUMNS.map((col) => {
+        {PIPELINE_COLUMNS.filter((col) => col.id !== "client").map((col) => {
           const items = groups[col.id];
           return (
             <div

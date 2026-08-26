@@ -89,11 +89,12 @@ export function ProspectsClient({
   const skipNextSearchDebounce = useRef(true);
   const skipInitialUrlFetch = useRef(true);
   const urlChangeFromSelf = useRef(false);
-  const listPath = clientsOnly
-    ? "/crm/clients"
-    : projectId && projectId !== "unassigned"
-      ? `/projects/${projectId}/prospects`
-      : "/crm/prospects";
+  const listPath =
+    projectId && projectId !== "unassigned"
+      ? `/projects/${projectId}/${clientsOnly ? "clients" : "prospects"}`
+      : clientsOnly
+        ? "/crm/clients"
+        : "/crm/prospects";
 
   const activeFilterCount = countActiveFilters(params);
   const isFiltered = hasActiveSearchOrFilters(params);
@@ -146,13 +147,14 @@ export function ProspectsClient({
         });
         if (!res.ok) return;
         const data = await res.json();
-        setProspects((list) =>
-          list.map((p) => (p.id === id ? { ...p, ...data.prospect } : p))
-        );
+        setProspects((list) => {
+          const next = list.map((p) => (p.id === id ? { ...p, ...data.prospect } : p));
+          return clientsOnly ? next : next.filter((p) => p.status !== "Client");
+        });
         fetchCounts();
       });
     },
-    [fetchCounts]
+    [clientsOnly, fetchCounts]
   );
 
   const applySmartView = (smartView: SmartViewId) => {

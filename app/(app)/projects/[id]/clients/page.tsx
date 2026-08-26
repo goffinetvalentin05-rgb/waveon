@@ -1,5 +1,5 @@
 import { createServerComponentSupabase } from "@/lib/supabase/server-component";
-import { ProspectsClient } from "@/components/crm/ProspectsClient";
+import { ClientsClient } from "@/components/crm/ClientsClient";
 import { enrichProspects } from "@/lib/crm/enrich-prospects";
 import { parseProspectListParams } from "@/lib/crm/prospect-list-params";
 import { fetchProspectList } from "@/lib/crm/prospect-query";
@@ -19,7 +19,7 @@ function toUrlSearchParams(raw: Record<string, string | string[] | undefined>) {
   return sp;
 }
 
-export default async function ProjectProspectsPage({ params, searchParams }: Props) {
+export default async function ProjectClientsPage({ params, searchParams }: Props) {
   const { id } = await params;
   await requireProjectModule(id, "prospects");
   const supabase = await createServerComponentSupabase();
@@ -29,13 +29,14 @@ export default async function ProjectProspectsPage({ params, searchParams }: Pro
   if (!user) return null;
 
   const sp = toUrlSearchParams(await searchParams);
-  if (!sp.get("project")) sp.set("project", id);
-  const parsed = parseProspectListParams(sp);
+  const parsed = parseProspectListParams(sp, true);
   const listParams = {
     ...parsed,
     projectId: id,
-    clientsOnly: false,
-    pageSize: parsed.pageSize === 25 ? 200 : parsed.pageSize,
+    clientsOnly: true,
+    sort: sp.get("sort") ? parsed.sort : "last_action_at",
+    order: sp.get("order") ? parsed.order : ("desc" as const),
+    pageSize: 200,
   };
 
   const [{ data, count }, { count: totalAll }] = await Promise.all([
@@ -44,16 +45,15 @@ export default async function ProjectProspectsPage({ params, searchParams }: Pro
       .from("prospects")
       .select("*", { count: "exact", head: true })
       .eq("project_id", id)
-      .neq("status", "Client")
+      .eq("status", "Client")
       .is("archived_at", null),
   ]);
 
   return (
-    <ProspectsClient
+    <ClientsClient
       initial={await enrichProspects(supabase, user.id, (data ?? []) as Record<string, unknown>[])}
       total={count ?? 0}
       totalAll={totalAll ?? 0}
-      initialParams={listParams}
       projectId={id}
     />
   );
