@@ -47,6 +47,21 @@ export async function POST(request: Request) {
 
   const enabledModules = await replaceProjectModules(supabase, user.id, data.id, modules);
 
+  await supabase.from("project_members").upsert(
+    {
+      project_id: data.id,
+      user_id: user.id,
+      role: "owner",
+      email: user.email ?? null,
+      display_name:
+        (user.user_metadata?.full_name as string | undefined)?.trim() ||
+        user.email?.split("@")[0] ||
+        "Owner",
+      created_by: user.id,
+    },
+    { onConflict: "project_id,user_id" }
+  );
+
   await logWorkspaceEvent(supabase, user.id, {
     event_type: "project_created",
     title: `Projet créé : ${name}`,

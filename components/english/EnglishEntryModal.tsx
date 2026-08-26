@@ -122,12 +122,12 @@ export function EnglishEntryModal({
         className={`${ui.modal} max-h-[90vh] max-w-lg overflow-y-auto p-6`}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[#eef6f2]">
+          <h2 className="text-lg font-semibold text-wo-text">
             {isEdit ? "Modifier l'entrée" : "Ajouter une entrée"}
           </h2>
           <button
             type="button"
-            className="rounded-lg p-1.5 text-[#6b7d76] transition hover:bg-white/[0.06] hover:text-[#eef6f2]"
+            className="rounded-lg p-1.5 text-wo-dim transition hover:bg-wo-hover hover:text-wo-text"
             onClick={onClose}
             aria-label="Fermer"
           >
@@ -147,7 +147,7 @@ export function EnglishEntryModal({
                   className={`rounded-xl border px-3.5 py-2 text-sm font-medium transition ${
                     values.type === t
                       ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-200"
-                      : "border-white/[0.08] bg-transparent text-[#8a9e96] hover:bg-white/[0.04]"
+                      : "border-wo-border bg-transparent text-wo-muted hover:bg-wo-hover"
                   }`}
                 >
                   {ENGLISH_TYPE_LABELS[t]}

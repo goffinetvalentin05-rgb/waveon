@@ -55,7 +55,7 @@ export function NotesClient({ projectId, scope }: { projectId?: string; scope?: 
         <div className="flex items-end justify-between gap-3">
           <div>
             <h1 className={ui.h1}>Notes</h1>
-            <p className="mt-1 text-sm text-[#8a9e96]">Capturer vite, convertir en tâche si besoin.</p>
+            <p className="mt-1 text-sm text-wo-muted">Capturer vite, convertir en tâche si besoin.</p>
           </div>
           <button type="button" className={ui.btnPrimary} onClick={() => setShowNew(true)}>
             <IconPlus className="h-4 w-4" /> Nouvelle note
@@ -74,11 +74,11 @@ export function NotesClient({ projectId, scope }: { projectId?: string; scope?: 
                   type="button"
                   onClick={() => setActive(n)}
                   className={`w-full rounded-xl px-3 py-2.5 text-left transition ${
-                    active?.id === n.id ? "bg-emerald-500/12 shadow-[inset_0_0_0_1px_rgba(52,211,153,0.2)]" : "hover:bg-white/[0.04]"
+                    active?.id === n.id ? "bg-emerald-500/12 shadow-[inset_0_0_0_1px_rgba(52,211,153,0.2)]" : "hover:bg-wo-hover"
                   }`}
                 >
-                  <p className="truncate text-sm font-medium text-[#eef6f2]">{n.title || "Sans titre"}</p>
-                  <p className="text-[11px] text-[#6b7d76]">
+                  <p className="truncate text-sm font-medium text-wo-text">{n.title || "Sans titre"}</p>
+                  <p className="text-[11px] text-wo-dim">
                     {format(new Date(n.updated_at), "d MMM", { locale: fr })}
                     {n.project?.name ? ` · ${n.project.name}` : ""}
                   </p>
@@ -172,7 +172,7 @@ function NoteEditor({
   return (
     <div className={`${ui.card} p-5`}>
       <input
-        className="w-full bg-transparent text-lg font-semibold text-[#eef6f2] outline-none"
+        className="w-full bg-transparent text-lg font-semibold text-wo-text outline-none"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         onBlur={() => void save({ title })}

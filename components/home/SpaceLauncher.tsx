@@ -34,10 +34,10 @@ export function SpaceLauncher({
     <div className="mx-auto max-w-4xl space-y-8">
       <div className="crm-animate-in">
         <p className={ui.kicker}>Cockpit</p>
-        <h1 className="mt-2 font-display text-[2rem] font-semibold tracking-tight text-[#eef6f2] sm:text-[2.4rem]">
+        <h1 className="mt-2 font-display text-[2rem] font-semibold tracking-tight text-wo-text sm:text-[2.4rem]">
           Bonjour {firstName}.
         </h1>
-        <p className="mt-2 text-base text-[#8a9e96]">Sur quoi voulez-vous travailler ?</p>
+        <p className="mt-2 text-base text-wo-muted">Sur quoi voulez-vous travailler ?</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 crm-animate-in-delay-1">
@@ -48,7 +48,7 @@ export function SpaceLauncher({
               <h2 className="mt-1 font-display text-xl font-semibold text-white">Personnel</h2>
             </div>
             {data.personal.lockEnabled ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-black/25 px-2 py-1 text-[11px] text-[#c8cbc9]">
+              <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-black/25 px-2 py-1 text-[11px] text-wo-secondary">
                 <IconLock className="h-3.5 w-3.5" />
                 {data.personal.unlocked ? "Session ouverte" : "Verrouillé"}
               </span>
@@ -78,14 +78,14 @@ export function SpaceLauncher({
                     {project.icon || project.name.slice(0, 1).toUpperCase()}
                   </span>
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6a6c6b]">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-wo-dim">
                       {project.status === "active" ? "Projet actif" : "Archivé"}
                     </p>
-                    <h2 className="font-display text-xl font-semibold text-[#f3f4f3]">{project.name}</h2>
+                    <h2 className="font-display text-xl font-semibold text-wo-text">{project.name}</h2>
                   </div>
                 </div>
               </div>
-              <div className="space-y-1.5 text-sm text-[#8d8f8e]">
+              <div className="space-y-1.5 text-sm text-wo-muted">
                 <p>
                   {project.openTasks} tâche{project.openTasks > 1 ? "s" : ""}
                 </p>
@@ -113,8 +113,8 @@ export function SpaceLauncher({
       </div>
 
       {data.unassigned.prospects + data.unassigned.tasks + data.unassigned.notes > 0 ? (
-        <Link href="/projects?filter=unassigned" className={`${ui.cardInteractive} block p-4 text-sm text-[#8a9e96]`}>
-          <span className="font-medium text-[#c2d4cc]">Sans projet</span>
+        <Link href="/projects?filter=unassigned" className={`${ui.cardInteractive} block p-4 text-sm text-wo-muted`}>
+          <span className="font-medium text-wo-secondary">Sans projet</span>
           {" · "}
           {data.unassigned.prospects} prospect{data.unassigned.prospects > 1 ? "s" : ""}
           {data.unassigned.tasks ? ` · ${data.unassigned.tasks} tâches` : ""}

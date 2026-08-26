@@ -35,7 +35,7 @@ export function ProspectStats({ projectId }: { projectId?: string }) {
       .then(setStats);
   }, [projectId]);
 
-  if (!stats) return <p className="text-sm text-[#6b7d76]">Chargement des statistiques…</p>;
+  if (!stats) return <p className="text-sm text-wo-dim">Chargement des statistiques…</p>;
 
   const cards = [
     { label: "Prospects", value: String(stats.total) },
@@ -57,14 +57,14 @@ export function ProspectStats({ projectId }: { projectId?: string }) {
       {projectId ? null : (
         <div>
           <h1 className={ui.h1}>Statistiques</h1>
-          <p className="mt-1 text-sm text-[#8a9e96]">Vue d&apos;ensemble de la prospection.</p>
+          <p className="mt-1 text-sm text-wo-muted">Vue d&apos;ensemble de la prospection.</p>
         </div>
       )}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((c) => (
           <div key={c.label} className={ui.statCard}>
-            <p className="text-xs font-medium uppercase tracking-wide text-[#8a9e96]">{c.label}</p>
-            <p className="mt-2 text-2xl font-semibold tracking-tight text-[#eef6f2]">{c.value}</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-wo-muted">{c.label}</p>
+            <p className="mt-2 text-2xl font-semibold tracking-tight text-wo-text">{c.value}</p>
           </div>
         ))}
       </div>
@@ -75,7 +75,7 @@ export function ProspectStats({ projectId }: { projectId?: string }) {
             const max = Math.max(1, ...phase.statuses.map((x) => stats.byStatus[x] ?? 0));
             return (
               <li key={phase.id}>
-                <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.08em] text-[#6b7d76]">
+                <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.08em] text-wo-dim">
                   {phase.label}
                 </p>
                 <ul className="space-y-3">
@@ -85,13 +85,13 @@ export function ProspectStats({ projectId }: { projectId?: string }) {
                     return (
                       <li key={s}>
                         <div className="mb-1 flex justify-between text-sm">
-                          <span className="flex items-center gap-2 text-[#c2d4cc]">
+                          <span className="flex items-center gap-2 text-wo-secondary">
                             <span className={`h-2 w-2 rounded-full ${style.dot}`} />
                             {s}
                           </span>
-                          <span className="font-medium text-[#eef6f2]">{n}</span>
+                          <span className="font-medium text-wo-text">{n}</span>
                         </div>
-                        <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
+                        <div className="h-2 overflow-hidden rounded-full bg-wo-hover">
                           <div className={`h-full rounded-full ${style.dot} opacity-80`} style={{ width: `${(n / max) * 100}%` }} />
                         </div>
                       </li>

@@ -44,8 +44,8 @@ export function PersonalLockScreen() {
       <span className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-200 shadow-[0_0_32px_rgba(16,185,129,0.28)]">
         <IconLock className="h-6 w-6" />
       </span>
-      <h1 className="mt-5 font-display text-2xl font-semibold text-[#eef6f2]">Espace Personnel</h1>
-      <p className="mt-2 text-center text-sm text-[#8a9e96]">
+      <h1 className="mt-5 font-display text-2xl font-semibold text-wo-text">Espace Personnel</h1>
+      <p className="mt-2 text-center text-sm text-wo-muted">
         Entrez votre PIN pour ouvrir cet espace. Cela ne vous déconnecte pas de WaveOne.
       </p>
 
@@ -82,7 +82,7 @@ export function PersonalLockScreen() {
             <button
               key={key}
               type="button"
-              className="rounded-2xl border border-white/[0.06] bg-white/[0.03] py-3 text-lg font-medium text-[#eef6f2] transition hover:border-emerald-400/20 hover:bg-white/[0.07]"
+              className="rounded-2xl border border-wo-border bg-wo-hover py-3 text-lg font-medium text-wo-text transition hover:border-emerald-400/20 hover:bg-white/[0.07]"
               onClick={() => {
                 if (key === "⌫") setPin((v) => v.slice(0, -1));
                 else append(key);

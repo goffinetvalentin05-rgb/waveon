@@ -55,9 +55,9 @@ export function ProjectCards({
                     {p.icon || p.name.slice(0, 1).toUpperCase()}
                   </span>
                   <div>
-                    <h2 className="text-base font-semibold text-[#eef6f2]">{p.name}</h2>
+                    <h2 className="text-base font-semibold text-wo-text">{p.name}</h2>
                     {p.description ? (
-                      <p className="mt-0.5 line-clamp-1 text-xs text-[#8a9e96]">{p.description}</p>
+                      <p className="mt-0.5 line-clamp-1 text-xs text-wo-muted">{p.description}</p>
                     ) : null}
                   </div>
                 </div>
@@ -69,7 +69,7 @@ export function ProjectCards({
                 <Stat label="Clients" value={String(p.clientsCount)} />
               </div>
               {p.potentialValue > 0 ? (
-                <p className="mt-4 text-xs text-[#8a9e96]">
+                <p className="mt-4 text-xs text-wo-muted">
                   Potentiel {formatChf(p.potentialValue)}
                 </p>
               ) : null}
@@ -88,13 +88,13 @@ export function ProjectCards({
 
       {archived.length > 0 ? (
         <div>
-          <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-[#6b7d76]">Archivés</h3>
+          <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-wo-dim">Archivés</h3>
           <div className="flex flex-wrap gap-2">
             {archived.map((p) => (
               <Link
                 key={p.id}
                 href={hrefFor(p.id)}
-                className="rounded-full border border-white/[0.08] px-3 py-1 text-xs text-[#8a9e96] hover:text-[#eef6f2]"
+                className="rounded-full border border-wo-border px-3 py-1 text-xs text-wo-muted hover:text-wo-text"
               >
                 {p.name}
               </Link>
@@ -119,9 +119,9 @@ export function ProjectCards({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[10px] bg-white/[0.03] px-3 py-2">
-      <p className="text-[10px] uppercase tracking-wide text-[#6b7d76]">{label}</p>
-      <p className="mt-0.5 font-semibold tabular-nums text-[#eef6f2]">{value}</p>
+    <div className="rounded-[10px] bg-wo-hover px-3 py-2">
+      <p className="text-[10px] uppercase tracking-wide text-wo-dim">{label}</p>
+      <p className="mt-0.5 font-semibold tabular-nums text-wo-text">{value}</p>
     </div>
   );
 }

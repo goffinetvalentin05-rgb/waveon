@@ -70,9 +70,9 @@ export function CockpitDashboard({
   return (
     <div className="space-y-7">
       <div className="crm-animate-in">
-        <p className="text-xs font-medium capitalize tracking-wide text-[#6b7d76]">{dateLabel}</p>
+        <p className="text-xs font-medium capitalize tracking-wide text-wo-dim">{dateLabel}</p>
         <h1 className={`${ui.h1} mt-1`}>Bonjour {firstName}</h1>
-        <p className="mt-1.5 text-sm text-[#8a9e96]">Voici ce qui t&apos;attend aujourd&apos;hui.</p>
+        <p className="mt-1.5 text-sm text-wo-muted">Voici ce qui t&apos;attend aujourd&apos;hui.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 crm-animate-in-delay-1">
@@ -81,12 +81,12 @@ export function CockpitDashboard({
           return (
             <div key={s.label} className={ui.statCard}>
               <div className="flex items-center justify-between gap-2">
-                <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#8a9e96]">
+                <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-wo-muted">
                   {s.label}
                 </p>
                 <Icon className="h-3.5 w-3.5 text-emerald-400/80" stroke={1.6} />
               </div>
-              <p className="mt-2 text-[1.75rem] font-semibold tracking-tight text-[#eef6f2] tabular-nums">
+              <p className="mt-2 text-[1.75rem] font-semibold tracking-tight text-wo-text tabular-nums">
                 {s.value}
               </p>
             </div>
@@ -117,10 +117,10 @@ function WidgetHeader({
 }) {
   return (
     <div className="flex items-center justify-between gap-3 px-4 pt-4 sm:px-5">
-      <h2 className="text-sm font-semibold text-[#eef6f2]">{title}</h2>
+      <h2 className="text-sm font-semibold text-wo-text">{title}</h2>
       <Link
         href={href}
-        className="inline-flex items-center gap-1 text-xs font-medium text-[#8a9e96] transition hover:text-emerald-300"
+        className="inline-flex items-center gap-1 text-xs font-medium text-wo-muted transition hover:text-emerald-300"
       >
         {cta}
         <IconArrowRight className="h-3.5 w-3.5" stroke={1.75} />
@@ -135,13 +135,13 @@ function ProspectsWidget({ prospects }: { prospects: Prospect[] }) {
       <WidgetHeader title="Prospection — À rappeler" href="/crm" cta="Voir la prospection" />
       <div className="flex flex-1 flex-col gap-1.5 p-3 sm:p-4">
         {prospects.length === 0 ? (
-          <p className="px-1 py-8 text-center text-sm text-[#6b7d76]">Aucune relance en attente.</p>
+          <p className="px-1 py-8 text-center text-sm text-wo-dim">Aucune relance en attente.</p>
         ) : (
           prospects.map((p) => (
             <Link
               key={p.id}
               href={`/crm/prospects/${p.id}`}
-              className="flex items-center gap-3 rounded-[12px] px-2.5 py-2 transition hover:bg-white/[0.04]"
+              className="flex items-center gap-3 rounded-[12px] px-2.5 py-2 transition hover:bg-wo-hover"
             >
               <span
                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${prospectAvatarTone(p.club_name)}`}
@@ -149,8 +149,8 @@ function ProspectsWidget({ prospects }: { prospects: Prospect[] }) {
                 {p.club_name.charAt(0).toUpperCase()}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-[#eef6f2]">{p.club_name}</p>
-                <p className="truncate text-xs text-[#6b7d76]">
+                <p className="truncate text-sm font-medium text-wo-text">{p.club_name}</p>
+                <p className="truncate text-xs text-wo-dim">
                   {[p.ville, p.sport].filter(Boolean).join(" · ") || p.status}
                   {p.next_follow_up ? ` · ${fmtFollowUp(p.next_follow_up)}` : ""}
                 </p>
@@ -170,16 +170,16 @@ function CalendarWidget({ events }: { events: CalendarEvent[] }) {
       <WidgetHeader title="Calendrier — Aujourd'hui" href="/calendar" cta="Voir le calendrier" />
       <div className="flex flex-1 flex-col gap-0 p-4 sm:px-5 sm:pb-5">
         {events.length === 0 ? (
-          <p className="py-8 text-center text-sm text-[#6b7d76]">Aucun événement aujourd&apos;hui.</p>
+          <p className="py-8 text-center text-sm text-wo-dim">Aucun événement aujourd&apos;hui.</p>
         ) : (
-          <ol className="relative space-y-0 border-l border-white/[0.08] pl-4">
+          <ol className="relative space-y-0 border-l border-wo-border pl-4">
             {events.map((event) => (
               <li key={event.id} className="relative pb-3 last:pb-0">
                 <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
                 <p className="text-[11px] font-medium tabular-nums text-emerald-300">{eventTime(event)}</p>
-                <p className="text-sm font-medium text-[#eef6f2]">{event.title}</p>
+                <p className="text-sm font-medium text-wo-text">{event.title}</p>
                 {event.location ? (
-                  <p className="text-xs text-[#6b7d76]">{event.location}</p>
+                  <p className="text-xs text-wo-dim">{event.location}</p>
                 ) : null}
               </li>
             ))}
@@ -200,22 +200,22 @@ function EnglishWidget({
       <WidgetHeader title="English" href="/english" cta="Continuer" />
       <div className="flex flex-1 flex-col justify-between gap-5 p-4 sm:p-5">
         <div className="space-y-3">
-          <p className="text-2xl font-semibold tracking-tight text-[#eef6f2]">
+          <p className="text-2xl font-semibold tracking-tight text-wo-text">
             {english.dueToday}{" "}
-            <span className="text-sm font-medium text-[#8a9e96]">
+            <span className="text-sm font-medium text-wo-muted">
               carte{english.dueToday > 1 ? "s" : ""} à réviser
             </span>
           </p>
-          <p className="flex items-center gap-1.5 text-sm text-[#c2d4cc]">
+          <p className="flex items-center gap-1.5 text-sm text-wo-secondary">
             <IconFlame className="h-4 w-4 text-orange-400" stroke={1.75} />
             Série : {english.streak} jour{english.streak > 1 ? "s" : ""}
           </p>
           <div>
-            <div className="mb-1.5 flex items-center justify-between text-xs text-[#8a9e96]">
+            <div className="mb-1.5 flex items-center justify-between text-xs text-wo-muted">
               <span>Progression du jour</span>
               <span className="tabular-nums">{english.progress}%</span>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+            <div className="h-1.5 overflow-hidden rounded-full bg-wo-hover">
               <div
                 className="h-full rounded-full bg-emerald-400 transition-all"
                 style={{ width: `${english.progress}%` }}
@@ -255,12 +255,12 @@ function FinanceWidget({ monthSpend, monthlySubs }: { monthSpend: number; monthl
       <WidgetHeader title="Finances" href="/finances" cta="Ouvrir" />
       <div className="grid grid-cols-2 gap-3 p-4 sm:p-5">
         <div>
-          <p className="text-[10px] uppercase tracking-wide text-[#8a9e96]">Dépenses du mois</p>
-          <p className="mt-1 text-xl font-semibold tabular-nums text-[#eef6f2]">{chf(monthSpend)}</p>
+          <p className="text-[10px] uppercase tracking-wide text-wo-muted">Dépenses du mois</p>
+          <p className="mt-1 text-xl font-semibold tabular-nums text-wo-text">{chf(monthSpend)}</p>
         </div>
         <div>
-          <p className="text-[10px] uppercase tracking-wide text-[#8a9e96]">Abonnements / mois</p>
-          <p className="mt-1 text-xl font-semibold tabular-nums text-[#eef6f2]">{chf(monthlySubs)}</p>
+          <p className="text-[10px] uppercase tracking-wide text-wo-muted">Abonnements / mois</p>
+          <p className="mt-1 text-xl font-semibold tabular-nums text-wo-text">{chf(monthlySubs)}</p>
         </div>
       </div>
     </section>
@@ -273,13 +273,13 @@ function ActivityWidget({ events }: { events: CockpitData["recentEvents"] }) {
       <WidgetHeader title="Activité récente" href="/notifications" cta="Alertes" />
       <div className="p-4 sm:p-5">
         {events.length === 0 ? (
-          <p className="py-6 text-center text-sm text-[#6b7d76]">Pas encore d&apos;activité enregistrée.</p>
+          <p className="py-6 text-center text-sm text-wo-dim">Pas encore d&apos;activité enregistrée.</p>
         ) : (
           <ul className="space-y-2">
             {events.map((e) => (
               <li key={e.id} className="text-sm">
-                <p className="text-[#dce8e3]">{e.title}</p>
-                <p className="text-[11px] text-[#6b7d76]">
+                <p className="text-wo-text">{e.title}</p>
+                <p className="text-[11px] text-wo-dim">
                   {format(new Date(e.created_at), "d MMM HH:mm", { locale: fr })}
                 </p>
               </li>

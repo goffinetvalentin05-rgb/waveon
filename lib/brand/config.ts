@@ -5,14 +5,14 @@
 export const brand = {
   name: "Waveone",
   shortName: "Waveone",
-  tagline: "Votre cockpit personnel.",
-  promise: "Prospection, anglais, calendrier et tâches, en un seul endroit.",
+  tagline: "Votre command center.",
+  promise: "Personnel et projets, clairement séparés.",
   legalEntityHint: "Waveone",
   contactEmail: "contact@obillz.com",
   supportEmail: "support@obillz.com",
   domain: "localhost",
   description:
-    "Espace de travail personnel : prospection, calendrier, anglais et organisation.",
+    "Command center personnel et professionnel : projets, prospection et organisation.",
 } as const;
 
 export type Brand = typeof brand;

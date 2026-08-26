@@ -117,9 +117,9 @@ export function InteractionForm({
         />
       </div>
       {pendingStatus ? (
-        <div className="sm:col-span-2 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
-          <p className="text-sm text-[#dce8e3]">
-            Passer le statut à <span className="font-medium text-[#eef6f2]">{pendingStatus}</span> ?
+        <div className="sm:col-span-2 rounded-xl border border-wo-border bg-wo-hover p-3">
+          <p className="text-sm text-wo-text">
+            Passer le statut à <span className="font-medium text-wo-text">{pendingStatus}</span> ?
           </p>
           <div className="mt-3 flex justify-end gap-2">
             <button

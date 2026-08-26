@@ -117,13 +117,13 @@ export function BirthdayClient({ initial }: { initial: Birthday[] }) {
         <div>
           <Link
             href="/personal/calendar"
-            className="mb-2 inline-flex items-center gap-1.5 text-sm font-medium text-[#8a9e96] transition hover:text-[#dce8e3]"
+            className="mb-2 inline-flex items-center gap-1.5 text-sm font-medium text-wo-muted transition hover:text-wo-text"
           >
             <IconArrowLeft className="h-4 w-4" stroke={1.75} />
             Calendrier
           </Link>
           <h1 className={ui.h1}>Anniversaires</h1>
-          <p className="mt-1 text-sm text-[#8a9e96]">
+          <p className="mt-1 text-sm text-wo-muted">
             {birthdays.length} anniversaire{birthdays.length > 1 ? "s" : ""} enregistré
             {birthdays.length > 1 ? "s" : ""}
           </p>
@@ -141,14 +141,14 @@ export function BirthdayClient({ initial }: { initial: Birthday[] }) {
       ) : null}
 
       {loading ? (
-        <div className={`${ui.card} flex items-center justify-center gap-2 px-6 py-16 text-sm text-[#6b7d76]`}>
+        <div className={`${ui.card} flex items-center justify-center gap-2 px-6 py-16 text-sm text-wo-dim`}>
           <IconLoader2 className="h-4 w-4 animate-spin" />
           Chargement…
         </div>
       ) : sorted.length === 0 ? (
         <div className={`${ui.card} px-6 py-16 text-center`}>
           <IconCake className="mx-auto h-8 w-8 text-[#3d524c]" stroke={1.5} />
-          <p className="mt-3 text-sm text-[#8a9e96]">Aucun anniversaire enregistré.</p>
+          <p className="mt-3 text-sm text-wo-muted">Aucun anniversaire enregistré.</p>
           <button type="button" className={`${ui.btnSecondary} mt-4`} onClick={() => setModalBirthday(null)}>
             <IconPlus className="h-4 w-4" />
             Ajouter un anniversaire
@@ -166,18 +166,18 @@ export function BirthdayClient({ initial }: { initial: Birthday[] }) {
                   <IconCake className="h-5 w-5" stroke={1.75} />
                 </span>
                 <div>
-                  <p className="text-sm font-semibold text-[#eef6f2]">{b.person_name}</p>
-                  <p className="text-xs text-[#8a9e96]">Né(e) le {fmtDay(b.birth_date)}</p>
-                  {b.note ? <p className="mt-0.5 text-xs text-[#6b7d76]">{b.note}</p> : null}
+                  <p className="text-sm font-semibold text-wo-text">{b.person_name}</p>
+                  <p className="text-xs text-wo-muted">Né(e) le {fmtDay(b.birth_date)}</p>
+                  {b.note ? <p className="mt-0.5 text-xs text-wo-dim">{b.note}</p> : null}
                 </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-3 sm:gap-5">
                 <div className="text-right">
-                  <p className="text-sm font-medium text-[#dce8e3]">
+                  <p className="text-sm font-medium text-wo-text">
                     {days === 0 ? "Aujourd'hui 🎉" : days === 1 ? "Demain" : `Dans ${days} jours`}
                   </p>
-                  <p className="text-xs text-[#6b7d76]">
+                  <p className="text-xs text-wo-dim">
                     {format(new Date(`${next}T12:00:00`), "d MMMM", { locale: fr })}
                     {age !== null ? ` · ${age} ans` : ""}
                   </p>
@@ -199,7 +199,7 @@ export function BirthdayClient({ initial }: { initial: Birthday[] }) {
                 <div className="flex gap-1">
                   <button
                     type="button"
-                    className="rounded-lg p-2 text-[#6b7d76] transition hover:bg-white/[0.06] hover:text-[#c2d4cc]"
+                    className="rounded-lg p-2 text-wo-dim transition hover:bg-wo-hover hover:text-wo-secondary"
                     onClick={() => setModalBirthday(b)}
                     aria-label="Modifier"
                   >
@@ -207,7 +207,7 @@ export function BirthdayClient({ initial }: { initial: Birthday[] }) {
                   </button>
                   <button
                     type="button"
-                    className="rounded-lg p-2 text-[#6b7d76] transition hover:bg-rose-500/10 hover:text-rose-300"
+                    className="rounded-lg p-2 text-wo-dim transition hover:bg-rose-500/10 hover:text-rose-300"
                     onClick={() => setDeleteTarget(b)}
                     aria-label="Supprimer"
                   >
@@ -244,8 +244,8 @@ export function BirthdayClient({ initial }: { initial: Birthday[] }) {
             aria-label="Fermer"
           />
           <div className={`${ui.modal} max-w-md p-6`}>
-            <h3 className="text-lg font-semibold text-[#eef6f2]">Supprimer cet anniversaire ?</h3>
-            <p className="mt-2 text-sm text-[#8a9e96]">
+            <h3 className="text-lg font-semibold text-wo-text">Supprimer cet anniversaire ?</h3>
+            <p className="mt-2 text-sm text-wo-muted">
               L&apos;anniversaire de <strong>{deleteTarget.person_name}</strong> sera définitivement
               supprimé.
             </p>
@@ -290,7 +290,7 @@ function ReminderToggle({
       className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
         active
           ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-200"
-          : "border-white/[0.08] bg-transparent text-[#6b7d76] hover:bg-white/[0.04]"
+          : "border-wo-border bg-transparent text-wo-dim hover:bg-wo-hover"
       }`}
       title={active ? `Rappel ${label} activé` : `Rappel ${label} désactivé`}
     >
@@ -368,13 +368,13 @@ function BirthdayModal({
         className={`${ui.modal} max-w-md p-6`}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[#eef6f2]">
+          <h2 className="text-lg font-semibold text-wo-text">
             {isEdit ? "Modifier l'anniversaire" : "Nouvel anniversaire"}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-[#6b7d76] transition hover:bg-white/[0.06] hover:text-[#8a9e96]"
+            className="rounded-lg p-1.5 text-wo-dim transition hover:bg-wo-hover hover:text-wo-muted"
             aria-label="Fermer"
           >
             <IconX className="h-5 w-5" />
@@ -412,7 +412,7 @@ function BirthdayModal({
             />
           </div>
           <div className="flex gap-4">
-            <label className="flex items-center gap-2 text-sm text-[#c2d4cc]">
+            <label className="flex items-center gap-2 text-sm text-wo-secondary">
               <input
                 type="checkbox"
                 checked={remindDayBefore}
@@ -421,7 +421,7 @@ function BirthdayModal({
               />
               Rappel la veille
             </label>
-            <label className="flex items-center gap-2 text-sm text-[#c2d4cc]">
+            <label className="flex items-center gap-2 text-sm text-wo-secondary">
               <input
                 type="checkbox"
                 checked={remindSameDay}

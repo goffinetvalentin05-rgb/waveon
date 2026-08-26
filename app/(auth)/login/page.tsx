@@ -124,7 +124,7 @@ function LoginPageContent() {
           </button>
           <button
             type="button"
-            className="block w-full text-center text-xs text-[#6b7d76] hover:text-[#eef6f2]"
+            className="block w-full text-center text-xs text-wo-dim hover:text-wo-text"
             onClick={() => {
               setForgotView(false);
               setMessage(null);
@@ -157,7 +157,7 @@ function LoginPageContent() {
               </label>
               <button
                 type="button"
-                className="mb-1.5 text-xs text-[#6b7d76] hover:text-emerald-300"
+                className="mb-1.5 text-xs text-wo-dim hover:text-emerald-300"
                 onClick={() => {
                   setForgotView(true);
                   setMessage(null);
@@ -202,7 +202,7 @@ export default function LoginPage() {
     <Suspense
       fallback={
         <AuthShell title={brand.name} subtitle={brand.tagline}>
-          <p className="text-sm text-[#6b7d76]">Chargement…</p>
+          <p className="text-sm text-wo-dim">Chargement…</p>
         </AuthShell>
       }
     >

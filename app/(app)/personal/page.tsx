@@ -49,9 +49,9 @@ export default async function PersonalHomePage() {
       <div>
         <p className={ui.kicker}>Personnel</p>
         <h1 className={`${ui.h1} mt-2`}>Mon espace</h1>
-        <p className="mt-1 text-sm text-[#8a9e96]">Uniquement vos outils personnels.</p>
+        <p className="mt-1 text-sm text-wo-muted">Uniquement vos outils personnels.</p>
         {next ? (
-          <p className="mt-3 text-sm text-[#c2d4cc]">
+          <p className="mt-3 text-sm text-wo-secondary">
             Prochain événement : {next.title} ·{" "}
             {format(new Date(next.start_at), "d MMM HH:mm", { locale: fr })}
           </p>
@@ -79,7 +79,7 @@ export default async function PersonalHomePage() {
                     ? "bg-black/10 text-[#0a0a0a]"
                     : variant === "featured"
                       ? "bg-white/10 text-white"
-                      : "bg-white/[0.06] text-[#8d8f8e]"
+                      : "bg-indigo-50 text-indigo-600"
                 }`}
               >
                 <Icon className="h-5 w-5" />
@@ -87,12 +87,12 @@ export default async function PersonalHomePage() {
               <div>
                 <h2
                   className={`mt-4 font-display text-base font-semibold ${
-                    variant === "cta" ? "text-[#0a0a0a]" : "text-[#f3f4f3]"
+                    variant === "cta" ? "text-[#0a0a0a]" : "text-wo-text"
                   }`}
                 >
                   {m.label}
                 </h2>
-                <p className={`mt-1 text-sm ${variant === "cta" ? "text-black/55" : "text-[#8d8f8e]"}`}>
+                <p className={`mt-1 text-sm ${variant === "cta" ? "text-black/55" : "text-wo-muted"}`}>
                   {m.hint}
                 </p>
               </div>

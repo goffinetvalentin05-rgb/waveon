@@ -57,15 +57,15 @@ export function ProjectOverview({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-display text-[1.35rem] font-semibold tracking-tight text-[#eef6f2]">{projectName}</h2>
-        <p className="mt-1 text-sm text-[#8a9e96]">Voici ce qui demande votre attention.</p>
+        <h2 className="font-display text-[1.35rem] font-semibold tracking-tight text-wo-text">{projectName}</h2>
+        <p className="mt-1 text-sm text-wo-muted">Voici ce qui demande votre attention.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {cards.map((c) => (
           <Link key={c.label} href={c.href} className={ui.statCard}>
-            <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#8a9e96]">{c.label}</p>
-            <p className="mt-2 text-xl font-semibold tabular-nums tracking-tight text-[#eef6f2]">{c.value}</p>
+            <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-wo-muted">{c.label}</p>
+            <p className="mt-2 text-xl font-semibold tabular-nums tracking-tight text-wo-text">{c.value}</p>
           </Link>
         ))}
       </div>
@@ -82,9 +82,9 @@ export function ProjectOverview({
               { label: "En réflexion", value: stats.considering ?? 0, href: `${base}/prospects?view=considering` },
               { label: "Clients", value: stats.clients ?? 0, href: `${base}/prospects?view=clients` },
             ].map((c) => (
-              <Link key={c.label} href={c.href} className="rounded-2xl border border-white/[0.06] bg-[#101010] px-3 py-3 transition hover:border-white/[0.12]">
-                <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#8a9e96]">{c.label}</p>
-                <p className="mt-1.5 text-xl font-semibold tabular-nums text-[#eef6f2]">{c.value}</p>
+              <Link key={c.label} href={c.href} className="rounded-2xl border border-wo-border bg-[#101010] px-3 py-3 transition hover:border-white/[0.12]">
+                <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-wo-muted">{c.label}</p>
+                <p className="mt-1.5 text-xl font-semibold tabular-nums text-wo-text">{c.value}</p>
               </Link>
             ))}
           </div>
@@ -96,13 +96,13 @@ export function ProjectOverview({
           <section className={`${ui.widget} p-5`}>
             <h2 className={ui.h2}>Tâches</h2>
             {tasks.length === 0 ? (
-              <p className="mt-4 text-sm text-[#6b7d76]">Aucune tâche ouverte.</p>
+              <p className="mt-4 text-sm text-wo-dim">Aucune tâche ouverte.</p>
             ) : (
               <ul className="mt-4 space-y-2">
                 {tasks.map((t) => (
                   <li key={t.id} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="truncate text-[#eef6f2]">{t.title}</span>
-                    <span className="shrink-0 text-xs text-[#8a9e96]">
+                    <span className="truncate text-wo-text">{t.title}</span>
+                    <span className="shrink-0 text-xs text-wo-muted">
                       {format(new Date(`${t.due_date}T12:00:00`), "d MMM", { locale: fr })}
                     </span>
                   </li>
@@ -119,13 +119,13 @@ export function ProjectOverview({
           <section className={`${ui.widget} p-5`}>
             <h2 className={ui.h2}>Prochains rendez-vous</h2>
             {calendarEvents.length === 0 ? (
-              <p className="mt-4 text-sm text-[#6b7d76]">Rien de prévu.</p>
+              <p className="mt-4 text-sm text-wo-dim">Rien de prévu.</p>
             ) : (
               <ul className="mt-4 space-y-2">
                 {calendarEvents.map((e) => (
                   <li key={e.id} className="text-sm">
-                    <p className="text-[#dce8e3]">{e.title}</p>
-                    <p className="text-[11px] text-[#6b7d76]">
+                    <p className="text-wo-text">{e.title}</p>
+                    <p className="text-[11px] text-wo-dim">
                       {format(new Date(e.start_at), "d MMM HH:mm", { locale: fr })}
                     </p>
                   </li>
@@ -142,11 +142,11 @@ export function ProjectOverview({
           <section className={`${ui.widget} p-5`}>
             <h2 className={ui.h2}>Dernières notes</h2>
             {notes.length === 0 ? (
-              <p className="mt-4 text-sm text-[#6b7d76]">Aucune note.</p>
+              <p className="mt-4 text-sm text-wo-dim">Aucune note.</p>
             ) : (
               <ul className="mt-4 space-y-2">
                 {notes.map((n) => (
-                  <li key={n.id} className="text-sm text-[#dce8e3]">
+                  <li key={n.id} className="text-sm text-wo-text">
                     {n.title || "Sans titre"}
                   </li>
                 ))}
@@ -161,7 +161,7 @@ export function ProjectOverview({
         {hasModule(enabledModules, "finances") ? (
           <section className={`${ui.widget} p-5`}>
             <h2 className={ui.h2}>Finances</h2>
-            <p className="mt-4 text-sm text-[#c2d4cc]">Abonnements : {chf(stats.monthlySubs)} / mois</p>
+            <p className="mt-4 text-sm text-wo-secondary">Abonnements : {chf(stats.monthlySubs)} / mois</p>
             <Link href={`${base}/finances`} className={`${ui.link} mt-4 inline-block text-sm`}>
               Ouvrir les finances
             </Link>

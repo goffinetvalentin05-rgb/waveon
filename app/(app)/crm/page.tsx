@@ -16,7 +16,7 @@ export default async function CrmIndexPage() {
     <div className="space-y-6">
       <div className="crm-animate-in">
         <h1 className={ui.h1}>Prospects</h1>
-        <p className="mt-1 text-sm text-[#8a9e96]">Choisis un projet pour voir son pipeline.</p>
+        <p className="mt-1 text-sm text-wo-muted">Choisis un projet pour voir son pipeline.</p>
       </div>
       <div className="crm-animate-in-delay-1">
         <ProjectCards

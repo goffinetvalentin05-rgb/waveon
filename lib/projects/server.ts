@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { isProjectRole } from "@/lib/access/roles";
 import type { Project } from "@/lib/projects/types";
 import { isClosedProspectStatus, isDemoScheduledStatus } from "@/lib/crm/closed";
 import {
@@ -20,10 +21,10 @@ function mapProject(row: ProjectRow): Project {
   };
 }
 
-export async function fetchProjects(
+async function fetchOwnedProjects(
   supabase: SupabaseClient,
   userId: string,
-  includeArchived = false
+  includeArchived: boolean
 ): Promise<Project[]> {
   let query = supabase
     .from("projects")
@@ -44,9 +45,48 @@ export async function fetchProjects(
     return ((retry.data ?? []) as Project[]).map((p) => ({
       ...p,
       enabledModules: [...DEFAULT_ENABLED_MODULES],
+      myRole: "owner" as const,
     }));
   }
-  return ((data ?? []) as ProjectRow[]).map(mapProject);
+  return ((data ?? []) as ProjectRow[]).map((row) => ({
+    ...mapProject(row),
+    myRole: "owner" as const,
+  }));
+}
+
+export async function fetchProjects(
+  supabase: SupabaseClient,
+  userId: string,
+  includeArchived = false
+): Promise<Project[]> {
+  const owned = await fetchOwnedProjects(supabase, userId, includeArchived);
+  const byId = new Map(owned.map((p) => [p.id, p]));
+
+  const { data: memberships, error } = await supabase
+    .from("project_members")
+    .select("role, project:projects(*, project_modules(module, enabled))")
+    .eq("user_id", userId);
+
+  if (!error && memberships) {
+    for (const row of memberships as {
+      role: string;
+      project: ProjectRow | ProjectRow[] | null;
+    }[]) {
+      const raw = Array.isArray(row.project) ? row.project[0] : row.project;
+      if (!raw) continue;
+      if (!includeArchived && raw.status === "archived") continue;
+      const mapped = mapProject(raw);
+      const role = isProjectRole(row.role)
+        ? row.role
+        : mapped.user_id === userId
+          ? "owner"
+          : "member";
+      const existing = byId.get(mapped.id);
+      byId.set(mapped.id, { ...(existing ?? mapped), ...mapped, myRole: role });
+    }
+  }
+
+  return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name, "fr"));
 }
 
 export async function replaceProjectModules(

@@ -39,7 +39,7 @@ export function ProjectsHub({
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className={ui.h1}>Projets</h1>
-          <p className="mt-1 text-sm text-[#8a9e96]">Choisissez un espace business, puis travaillez dedans.</p>
+          <p className="mt-1 text-sm text-wo-muted">Choisissez un espace business, puis travaillez dedans.</p>
         </div>
         <button type="button" className={ui.btnPrimary} onClick={() => setCreate(true)}>
           <IconPlus className="h-4 w-4" />
@@ -64,8 +64,8 @@ export function ProjectsHub({
 
       {unassigned.prospects + unassigned.tasks + unassigned.notes > 0 && filter === "active" ? (
         <Link href="/projects/unassigned" className={`${ui.cardInteractive} block p-4`}>
-          <p className="text-sm font-semibold text-[#eef6f2]">Sans projet</p>
-          <p className="mt-1 text-sm text-[#8a9e96]">
+          <p className="text-sm font-semibold text-wo-text">Sans projet</p>
+          <p className="mt-1 text-sm text-wo-muted">
             {unassigned.prospects} prospect{unassigned.prospects > 1 ? "s" : ""} · {unassigned.tasks} tâche
             {unassigned.tasks > 1 ? "s" : ""} · {unassigned.notes} note{unassigned.notes > 1 ? "s" : ""}
           </p>
@@ -96,12 +96,12 @@ export function ProjectsHub({
                       {p.icon || p.name.slice(0, 1).toUpperCase()}
                     </span>
                     <div>
-                      <h2 className="text-base font-semibold text-[#eef6f2]">{p.name}</h2>
-                      <p className="text-xs text-[#8a9e96]">{p.status === "active" ? "Actif" : "Archivé"}</p>
+                      <h2 className="text-base font-semibold text-wo-text">{p.name}</h2>
+                      <p className="text-xs text-wo-muted">{p.status === "active" ? "Actif" : "Archivé"}</p>
                     </div>
                   </div>
                   {"openTasks" in card ? (
-                    <div className="mt-4 space-y-1 text-sm text-[#8a9e96]">
+                    <div className="mt-4 space-y-1 text-sm text-wo-muted">
                       <p>
                         {card.openTasks} tâche{card.openTasks > 1 ? "s" : ""}
                       </p>

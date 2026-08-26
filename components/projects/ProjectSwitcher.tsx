@@ -25,14 +25,14 @@ export function ProjectSwitcher({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-[#0c1916] px-3.5 py-2 text-sm font-medium text-[#eef6f2] transition hover:border-emerald-400/25"
+        className="inline-flex items-center gap-2 rounded-full border border-wo-border bg-[#0c1916] px-3.5 py-2 text-sm font-medium text-wo-text transition hover:border-emerald-400/25"
       >
         <span
           className="h-2.5 w-2.5 rounded-full"
           style={{ background: current?.color ?? "#10b981" }}
         />
         {current?.name ?? "Projet"}
-        <IconChevronDown className="h-4 w-4 text-[#8a9e96]" />
+        <IconChevronDown className="h-4 w-4 text-wo-muted" />
       </button>
       {open ? (
         <div className="wo-modal absolute left-0 z-30 mt-2 w-56 overflow-hidden p-1">
@@ -44,7 +44,7 @@ export function ProjectSwitcher({
                 href={`/projects/${p.id}${rest}`}
                 onClick={() => setOpen(false)}
                 className={`flex items-center gap-2 rounded-[10px] px-3 py-2 text-sm ${
-                  p.id === currentId ? "bg-white/[0.06] text-[#eef6f2]" : "text-[#c2d4cc] hover:bg-white/[0.04]"
+                  p.id === currentId ? "bg-wo-hover text-wo-text" : "text-wo-secondary hover:bg-wo-hover"
                 }`}
               >
                 <span className="h-2 w-2 rounded-full" style={{ background: p.color ?? "#10b981" }} />
@@ -54,7 +54,7 @@ export function ProjectSwitcher({
           <Link
             href="/projects"
             onClick={() => setOpen(false)}
-            className="mt-1 flex items-center gap-2 rounded-[10px] border-t border-white/[0.06] px-3 py-2 text-sm text-[#8a9e96] hover:bg-white/[0.04] hover:text-[#eef6f2]"
+            className="mt-1 flex items-center gap-2 rounded-[10px] border-t border-wo-border px-3 py-2 text-sm text-wo-muted hover:bg-wo-hover hover:text-wo-text"
           >
             Tous les projets
           </Link>

@@ -1,10 +1,13 @@
 export const PROJECT_MODULE_KEYS = [
   "overview",
   "prospects",
+  "companies",
   "tasks",
+  "content",
+  "notes",
+  "activity",
   "calendar",
   "finances",
-  "notes",
   "stats",
   "documents",
 ] as const;
@@ -12,23 +15,29 @@ export const PROJECT_MODULE_KEYS = [
 export type ProjectModuleKey = (typeof PROJECT_MODULE_KEYS)[number];
 
 export const PROJECT_MODULE_LABELS: Record<ProjectModuleKey, string> = {
-  overview: "Overview",
+  overview: "Vue d'ensemble",
   prospects: "Prospects",
+  companies: "Entreprises",
   tasks: "Tâches",
+  content: "Contenu",
+  notes: "Notes",
+  activity: "Activité",
   calendar: "Calendrier",
   finances: "Finances",
-  notes: "Notes",
-  stats: "Stats",
+  stats: "Statistiques",
   documents: "Documents",
 };
 
 export const DEFAULT_ENABLED_MODULES: ProjectModuleKey[] = [
   "overview",
   "prospects",
+  "companies",
   "tasks",
+  "content",
+  "notes",
+  "activity",
   "calendar",
   "finances",
-  "notes",
   "stats",
 ];
 
@@ -36,20 +45,30 @@ export const PROJECT_TEMPLATES = [
   {
     id: "saas",
     label: "SaaS",
-    description: "Produit, roadmap, finances et stats.",
-    modules: ["overview", "tasks", "calendar", "finances", "notes", "stats"] as ProjectModuleKey[],
+    description: "Produit, contenu, finances et stats.",
+    modules: ["overview", "tasks", "content", "notes", "activity", "calendar", "finances", "stats"] as ProjectModuleKey[],
   },
   {
     id: "commercial",
     label: "Business commercial",
-    description: "Pipeline, relances, agenda et finances.",
-    modules: ["overview", "prospects", "tasks", "calendar", "finances", "notes"] as ProjectModuleKey[],
+    description: "Pipeline, relances, contenu et collaboration.",
+    modules: [
+      "overview",
+      "prospects",
+      "companies",
+      "tasks",
+      "content",
+      "notes",
+      "activity",
+      "calendar",
+      "finances",
+    ] as ProjectModuleKey[],
   },
   {
     id: "simple",
     label: "Projet simple",
-    description: "Tâches, calendrier et notes.",
-    modules: ["overview", "tasks", "calendar", "notes"] as ProjectModuleKey[],
+    description: "Tâches, notes et activité.",
+    modules: ["overview", "tasks", "notes", "activity", "calendar"] as ProjectModuleKey[],
   },
   {
     id: "custom",
@@ -86,7 +105,10 @@ export function modulesFromRows(
   rows: { module: string; enabled: boolean }[] | null | undefined
 ): ProjectModuleKey[] {
   if (!rows || rows.length === 0) return [...DEFAULT_ENABLED_MODULES];
-  return PROJECT_MODULE_KEYS.filter((key) =>
-    rows.some((row) => row.module === key && row.enabled)
-  );
+  const byKey = new Map(rows.map((row) => [row.module, row.enabled]));
+  return PROJECT_MODULE_KEYS.filter((key) => {
+    const stored = byKey.get(key);
+    if (stored === undefined) return DEFAULT_ENABLED_MODULES.includes(key);
+    return stored;
+  });
 }

@@ -1,8 +1,8 @@
 import { createServerComponentSupabase } from "@/lib/supabase/server-component";
 import { firstNameFromDisplay } from "@/lib/brand/config";
-import { loadLauncherData } from "@/lib/home/launcher";
 import { getPersonalSecurityState } from "@/lib/personal/security";
-import { SpaceLauncher } from "@/components/home/SpaceLauncher";
+import { loadCommandCenter } from "@/lib/home/command-center";
+import { HomeDashboard } from "@/components/home/HomeDashboard";
 
 export default async function HomePage() {
   const supabase = await createServerComponentSupabase();
@@ -17,7 +17,7 @@ export default async function HomePage() {
     "toi";
 
   const security = await getPersonalSecurityState(supabase, user.id);
-  const data = await loadLauncherData(supabase, user.id, security);
+  const data = await loadCommandCenter(supabase, user.id, security);
 
-  return <SpaceLauncher firstName={firstNameFromDisplay(displayName)} data={data} />;
+  return <HomeDashboard firstName={firstNameFromDisplay(displayName)} data={data} />;
 }

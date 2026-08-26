@@ -70,7 +70,7 @@ export function ProjectFormModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button type="button" className={ui.overlay} onClick={onClose} />
       <form onSubmit={submit} className={`${ui.modal} max-h-[90vh] max-w-lg overflow-y-auto p-6`}>
-        <h2 className="text-lg font-semibold text-[#eef6f2]">
+        <h2 className="text-lg font-semibold text-wo-text">
           {project ? "Modifier le projet" : "Nouveau projet"}
         </h2>
         <div className="mt-5 space-y-4">
@@ -104,7 +104,7 @@ export function ProjectFormModal({
                   type="button"
                   onClick={() => setColor(c)}
                   className={`h-7 w-7 rounded-full border ${
-                    color === c ? "border-white ring-2 ring-white/30" : "border-transparent"
+                    color === c ? "border-slate-900 ring-2 ring-indigo-200" : "border-transparent"
                   }`}
                   style={{ background: c }}
                   aria-label={c}
@@ -124,12 +124,12 @@ export function ProjectFormModal({
                     onClick={() => applyTemplate(t.id)}
                     className={`rounded-[12px] border px-3 py-2.5 text-left ${
                       template === t.id
-                        ? "border-emerald-500/50 bg-emerald-500/10"
-                        : "border-white/[0.08] hover:bg-white/[0.04]"
+                        ? "border-indigo-300 bg-indigo-50"
+                        : "border-wo-border hover:bg-wo-hover"
                     }`}
                   >
-                    <p className="text-sm font-medium text-[#eef6f2]">{t.label}</p>
-                    <p className="mt-0.5 text-[11px] text-[#8a9e96]">{t.description}</p>
+                    <p className="text-sm font-medium text-wo-text">{t.label}</p>
+                    <p className="mt-0.5 text-[11px] text-wo-muted">{t.description}</p>
                   </button>
                 ))}
               </div>
@@ -142,7 +142,7 @@ export function ProjectFormModal({
               {PROJECT_MODULE_KEYS.map((key) => (
                 <label
                   key={key}
-                  className="flex items-center gap-2 rounded-[10px] border border-white/[0.06] px-3 py-2 text-sm text-[#dce8e3]"
+                  className="flex items-center gap-2 rounded-[10px] border border-wo-border px-3 py-2 text-sm text-wo-text"
                 >
                   <input
                     type="checkbox"

@@ -42,12 +42,12 @@ export function SmartViewBar({
             className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${
               selected
                 ? "bg-white text-[#111]"
-                : "bg-white/[0.05] text-[#8a9e96] hover:bg-white/[0.08] hover:text-[#eef6f2]"
+                : "bg-wo-hover text-wo-muted hover:bg-white/[0.08] hover:text-wo-text"
             }`}
           >
             {view.label}
             {n != null ? (
-              <span className={`tabular-nums ${selected ? "text-[#111]/55" : "text-[#6b7d76]"}`}>{n}</span>
+              <span className={`tabular-nums ${selected ? "text-[#111]/55" : "text-wo-dim"}`}>{n}</span>
             ) : null}
           </button>
         );

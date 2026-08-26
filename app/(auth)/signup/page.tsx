@@ -120,7 +120,7 @@ function SignupContent() {
           />
         </div>
         {message ? (
-          <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-xs text-[#c2d4cc]">
+          <p className="rounded-xl border border-wo-border bg-wo-hover px-3 py-2 text-xs text-wo-secondary">
             {message}
           </p>
         ) : null}
@@ -137,7 +137,7 @@ export default function SignupPage() {
     <Suspense
       fallback={
         <AuthShell title="Créer un compte">
-          <p className="text-sm text-[#6b7d76]">Chargement…</p>
+          <p className="text-sm text-wo-dim">Chargement…</p>
         </AuthShell>
       }
     >

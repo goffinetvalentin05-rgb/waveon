@@ -40,7 +40,7 @@ export function TodayTaskList({
 
   if (!local.length) {
     return (
-      <p className="rounded-[12px] border border-dashed border-white/[0.08] px-4 py-8 text-center text-sm text-[#6b7d76]">
+      <p className="rounded-[12px] border border-dashed border-wo-border px-4 py-8 text-center text-sm text-wo-dim">
         {emptyLabel}
       </p>
     );
@@ -61,7 +61,7 @@ export function TodayTaskList({
         return (
           <li
             key={task.id}
-            className={`flex items-center gap-3 rounded-[12px] px-2 py-2 transition hover:bg-white/[0.03] ${
+            className={`flex items-center gap-3 rounded-[12px] px-2 py-2 transition hover:bg-wo-hover ${
               task.completed ? "opacity-50" : ""
             }`}
           >
@@ -85,7 +85,7 @@ export function TodayTaskList({
             <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${kindClass}`} />
             <div className="min-w-0 flex-1">
               <p
-                className={`truncate text-sm font-medium text-[#eef6f2] ${
+                className={`truncate text-sm font-medium text-wo-text ${
                   task.completed ? "line-through" : ""
                 }`}
               >
@@ -95,13 +95,13 @@ export function TodayTaskList({
                 {task.prospect ? (
                   <button
                     type="button"
-                    className="text-[11px] text-[#6b7d76] hover:text-emerald-300"
+                    className="text-[11px] text-wo-dim hover:text-emerald-300"
                     onClick={() => router.push(`/crm/prospects/${task.prospect!.id}`)}
                   >
                     {task.prospect.club_name}
                   </button>
                 ) : (
-                  <span className="text-[11px] text-[#6b7d76]">
+                  <span className="text-[11px] text-wo-dim">
                     {KIND_LABEL[task.task_kind] ?? "Tâche"}
                   </span>
                 )}

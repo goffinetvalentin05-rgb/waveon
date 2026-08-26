@@ -41,7 +41,7 @@ export function PeopleManager() {
   return (
     <section className={`${ui.card} p-5 sm:p-6`}>
       <h2 className={ui.h2}>Personnes</h2>
-      <p className="mt-1 text-sm text-[#8a9e96]">
+      <p className="mt-1 text-sm text-wo-muted">
         Carnet interne pour assigner tâches, prospects et dépenses.
       </p>
       <ul className="mt-4 space-y-2">
@@ -52,11 +52,11 @@ export function PeopleManager() {
                 {personInitials(p.name)}
               </span>
               <div>
-                <p className="text-sm font-medium text-[#eef6f2]">
+                <p className="text-sm font-medium text-wo-text">
                   {p.name}
                   {p.is_self ? <span className="ml-2 text-[10px] text-emerald-300">toi</span> : null}
                 </p>
-                {p.role ? <p className="text-[11px] text-[#6b7d76]">{p.role}</p> : null}
+                {p.role ? <p className="text-[11px] text-wo-dim">{p.role}</p> : null}
               </div>
             </div>
             {p.is_self ? null : (

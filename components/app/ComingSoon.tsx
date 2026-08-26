@@ -11,7 +11,7 @@ export function ComingSoon({ title, description }: ComingSoonProps) {
       <div className={`${ui.card} w-full px-8 py-12`}>
         <p className={ui.kicker}>Bientôt disponible</p>
         <h1 className={`${ui.h1} mt-3`}>{title}</h1>
-        <p className="mt-3 text-sm leading-relaxed text-[#8a9e96]">{description}</p>
+        <p className="mt-3 text-sm leading-relaxed text-wo-muted">{description}</p>
       </div>
     </div>
   );

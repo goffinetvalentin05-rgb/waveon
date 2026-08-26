@@ -304,7 +304,7 @@ export function ProspectsClient({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           {projectId ? null : <h1 className={ui.h1}>{clientsOnly ? "Clients" : "Ma pipeline"}</h1>}
-          <p className={`${projectId ? "" : "mt-1"} text-sm text-[#8a9e96]`}>{resultLabel}</p>
+          <p className={`${projectId ? "" : "mt-1"} text-sm text-wo-muted`}>{resultLabel}</p>
           {!clientsOnly ? (
             <div className="mt-4">
               <SmartViewBar
@@ -317,7 +317,7 @@ export function ProspectsClient({
         </div>
         <div className="flex flex-wrap gap-2">
           {!clientsOnly ? (
-            <div className="inline-flex rounded-full border border-white/[0.08] bg-[#0c1916] p-1">
+            <div className="inline-flex rounded-full border border-wo-border bg-[#0c1916] p-1">
               <button
                 type="button"
                 onClick={() => {
@@ -325,7 +325,7 @@ export function ProspectsClient({
                   if (params.pageSize < 200) applyParams({ ...params, pageSize: 200, page: 1 });
                 }}
                 className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
-                  view === "pipeline" ? "wo-subnav-active" : "text-[#8a9e96] hover:text-[#eef6f2]"
+                  view === "pipeline" ? "wo-subnav-active" : "text-wo-muted hover:text-wo-text"
                 }`}
               >
                 Pipeline
@@ -337,7 +337,7 @@ export function ProspectsClient({
                   if (params.pageSize !== 25) applyParams({ ...params, pageSize: 25, page: 1 });
                 }}
                 className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
-                  view === "list" ? "wo-subnav-active" : "text-[#8a9e96] hover:text-[#eef6f2]"
+                  view === "list" ? "wo-subnav-active" : "text-wo-muted hover:text-wo-text"
                 }`}
               >
                 Liste
@@ -374,7 +374,7 @@ export function ProspectsClient({
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
-          <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6b7d76]" />
+          <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-wo-dim" />
           <input
             className={`${ui.input} pl-9`}
             placeholder="Rechercher un club, contact, canton…"
@@ -390,7 +390,7 @@ export function ProspectsClient({
           <IconFilter className="h-4 w-4" stroke={1.75} />
           Filtrer
           {activeFilterCount > 0 ? (
-            <span className="text-[#8a9e96]"> · {activeFilterCount}</span>
+            <span className="text-wo-muted"> · {activeFilterCount}</span>
           ) : null}
         </button>
       </div>
@@ -413,13 +413,13 @@ export function ProspectsClient({
           <div className={`${ui.card} px-4 py-12 text-center`}>
             {isFiltered ? (
               <div className="space-y-3">
-                <p className="text-[#8a9e96]">Aucun prospect ne correspond à votre recherche.</p>
+                <p className="text-wo-muted">Aucun prospect ne correspond à votre recherche.</p>
                 <button type="button" className={ui.btnSecondary} onClick={resetAll}>
                   Réinitialiser la recherche et les filtres
                 </button>
               </div>
             ) : (
-              <span className="text-[#6b7d76]">Aucun prospect. Importez un fichier ou créez-en un.</span>
+              <span className="text-wo-dim">Aucun prospect. Importez un fichier ou créez-en un.</span>
             )}
           </div>
         ) : (
@@ -436,7 +436,7 @@ export function ProspectsClient({
       )}
 
       {view === "list" && count > params.pageSize ? (
-        <div className="flex items-center justify-between gap-3 text-sm text-[#8a9e96]">
+        <div className="flex items-center justify-between gap-3 text-sm text-wo-muted">
           <button
             type="button"
             className={ui.btnGhost}
@@ -536,7 +536,7 @@ function CreateProspectModal({
         onSubmit={submit}
         className={`${ui.modal} max-w-lg p-6`}
       >
-        <h2 className="text-lg font-semibold text-[#eef6f2]">Nouveau prospect</h2>
+        <h2 className="text-lg font-semibold text-wo-text">Nouveau prospect</h2>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {(
             [

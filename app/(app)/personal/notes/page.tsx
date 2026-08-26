@@ -3,7 +3,7 @@ import { Suspense } from "react";
 
 export default function PersonalNotesPage() {
   return (
-    <Suspense fallback={<p className="text-sm text-[#6b7d76]">Chargement…</p>}>
+    <Suspense fallback={<p className="text-sm text-wo-dim">Chargement…</p>}>
       <NotesClient scope="personal" />
     </Suspense>
   );

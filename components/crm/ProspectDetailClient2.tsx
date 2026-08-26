@@ -80,9 +80,9 @@ function ConfirmModal({
         aria-label="Fermer"
       />
       <div className={`${ui.modal} max-w-lg p-6`}>
-        <h3 className="text-lg font-semibold text-[#eef6f2]">{title}</h3>
+        <h3 className="text-lg font-semibold text-wo-text">{title}</h3>
         {description ? (
-          <p className="mt-2 text-sm text-[#8a9e96] whitespace-pre-line">{description}</p>
+          <p className="mt-2 text-sm text-wo-muted whitespace-pre-line">{description}</p>
         ) : null}
         <div className="mt-6 flex justify-end gap-2">
           <button type="button" className={ui.btnSecondary} onClick={onCancel}>
@@ -158,12 +158,12 @@ function DeleteProspectModalInner({
         aria-label="Fermer"
       />
       <div className={`${ui.modal} max-w-lg p-6`}>
-        <h3 className="text-lg font-semibold text-[#eef6f2]">Supprimer ce prospect ?</h3>
-        <p className="mt-2 text-sm text-[#8a9e96]">
+        <h3 className="text-lg font-semibold text-wo-text">Supprimer ce prospect ?</h3>
+        <p className="mt-2 text-sm text-wo-muted">
           Cette action supprimera définitivement ce prospect ainsi que son historique, ses notes, ses
           tâches et ses relances associées. Cette action est irréversible.
         </p>
-        <p className="mt-3 text-sm font-medium text-[#dce8e3]">
+        <p className="mt-3 text-sm font-medium text-wo-text">
           {clubName} sera définitivement supprimé.
         </p>
         <div className="mt-5">
@@ -221,8 +221,8 @@ function InlineValue({
 }) {
   return (
     <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-      <dt className="text-[#6b7d76]">{label}</dt>
-      <dd className="text-right font-medium text-[#dce8e3]">
+      <dt className="text-wo-dim">{label}</dt>
+      <dd className="text-right font-medium text-wo-text">
         {inline ? (
           <div className="flex items-center justify-end gap-2">
             <input
@@ -271,7 +271,7 @@ function InlineValue({
             )}
             <button
               type="button"
-              className="rounded-xl p-2 text-[#6b7d76] hover:bg-white/[0.04] hover:text-[#c2d4cc]"
+              className="rounded-xl p-2 text-wo-dim hover:bg-wo-hover hover:text-wo-secondary"
               onClick={onStart}
               aria-label={`Modifier ${label}`}
             >
@@ -281,14 +281,14 @@ function InlineValue({
         ) : (
           <div className="flex items-center justify-end gap-2">
             <span
-              className="cursor-pointer text-[#6b7d76] hover:text-emerald-400"
+              className="cursor-pointer text-wo-dim hover:text-emerald-400"
               onClick={() => onStart()}
             >
               —
             </span>
             <button
               type="button"
-              className="rounded-xl p-2 text-[#6b7d76] hover:bg-white/[0.04] hover:text-[#c2d4cc]"
+              className="rounded-xl p-2 text-wo-dim hover:bg-wo-hover hover:text-wo-secondary"
               onClick={onStart}
               aria-label={`Modifier ${label}`}
             >
@@ -444,12 +444,12 @@ function ProspectActivityEditorModal({
       <div className={`${ui.modal} max-w-2xl p-6`}>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h3 className="text-lg font-semibold text-[#eef6f2]">Modifier l’action</h3>
-            <p className="mt-1 text-sm text-[#8a9e96]">{activity.title}</p>
+            <h3 className="text-lg font-semibold text-wo-text">Modifier l’action</h3>
+            <p className="mt-1 text-sm text-wo-muted">{activity.title}</p>
           </div>
           <button
             type="button"
-            className="rounded-xl p-2 text-[#8a9e96] hover:bg-white/[0.04] hover:text-[#c2d4cc]"
+            className="rounded-xl p-2 text-wo-muted hover:bg-wo-hover hover:text-wo-secondary"
             onClick={onClose}
           >
             Annuler
@@ -1001,7 +1001,7 @@ export function ProspectDetailClient2({
       <div>
         <Link
           href={backHref}
-          className="inline-flex items-center gap-1.5 text-sm text-[#8a9e96] hover:text-[#dce8e3]"
+          className="inline-flex items-center gap-1.5 text-sm text-wo-muted hover:text-wo-text"
         >
           <IconArrowLeft className="h-4 w-4" />
           {backLabel}
@@ -1012,7 +1012,7 @@ export function ProspectDetailClient2({
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <StatusBadge status={prospect.status} />
               {isArchived ? (
-                <span className="crm-badge bg-white/[0.06] text-[#8a9e96]">
+                <span className="crm-badge bg-wo-hover text-wo-muted">
                   <span className="crm-badge-dot bg-slate-400" />
                   Archivé
                 </span>
@@ -1093,20 +1093,20 @@ export function ProspectDetailClient2({
         <h2 className={ui.h2}>Suivi commercial</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.08em] text-[#6b7d76]">Dernier contact</p>
-            <p className="mt-1 text-sm text-[#eef6f2]">{formatRelativeDay(prospect.last_action_at)}</p>
-            <p className="text-xs text-[#8a9e96]">{prospect.last_action ?? "—"}</p>
+            <p className="text-[11px] uppercase tracking-[0.08em] text-wo-dim">Dernier contact</p>
+            <p className="mt-1 text-sm text-wo-text">{formatRelativeDay(prospect.last_action_at)}</p>
+            <p className="text-xs text-wo-muted">{prospect.last_action ?? "—"}</p>
           </div>
           <div>
-            <p className="text-[11px] uppercase tracking-[0.08em] text-[#6b7d76]">Contacts</p>
-            <p className="mt-1 text-sm text-[#eef6f2]">
+            <p className="text-[11px] uppercase tracking-[0.08em] text-wo-dim">Contacts</p>
+            <p className="mt-1 text-sm text-wo-text">
               {activities.filter((a) => isContactActivity(a.action_type)).length}
             </p>
-            <p className="text-xs text-[#8a9e96]">{prospect.contact_channel ?? "Canal —"}</p>
+            <p className="text-xs text-wo-muted">{prospect.contact_channel ?? "Canal —"}</p>
           </div>
           <div>
-            <p className="text-[11px] uppercase tracking-[0.08em] text-[#6b7d76]">Responsable</p>
-            <p className="mt-1 text-sm text-[#eef6f2]">{prospect.assignee?.name ?? "—"}</p>
+            <p className="text-[11px] uppercase tracking-[0.08em] text-wo-dim">Responsable</p>
+            <p className="mt-1 text-sm text-wo-text">{prospect.assignee?.name ?? "—"}</p>
           </div>
           <div className="sm:col-span-2">
             <label className={ui.label}>Prochaine action</label>
@@ -1142,7 +1142,7 @@ export function ProspectDetailClient2({
       <section className={`${ui.card} p-5 sm:p-6`}>
         <h2 className={ui.h2}>Actions rapides</h2>
         {isArchived ? (
-          <p className="mt-3 text-sm text-[#8a9e96]">
+          <p className="mt-3 text-sm text-wo-muted">
             Ce prospect est archivé. Restaurez-le pour enregistrer de nouvelles actions.
           </p>
         ) : (
@@ -1181,20 +1181,20 @@ export function ProspectDetailClient2({
           {!editMode ? (
             <dl className="mt-4 space-y-0 text-sm">
               <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-                <dt className="text-[#6b7d76]">Sport</dt>
-                <dd className="text-right font-medium text-[#dce8e3]">{prospect.sport ?? "—"}</dd>
+                <dt className="text-wo-dim">Sport</dt>
+                <dd className="text-right font-medium text-wo-text">{prospect.sport ?? "—"}</dd>
               </div>
               <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-                <dt className="text-[#6b7d76]">Canton</dt>
-                <dd className="text-right font-medium text-[#dce8e3]">{prospect.canton ?? "—"}</dd>
+                <dt className="text-wo-dim">Canton</dt>
+                <dd className="text-right font-medium text-wo-text">{prospect.canton ?? "—"}</dd>
               </div>
               <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-                <dt className="text-[#6b7d76]">Ville</dt>
-                <dd className="text-right font-medium text-[#dce8e3]">{prospect.ville ?? "—"}</dd>
+                <dt className="text-wo-dim">Ville</dt>
+                <dd className="text-right font-medium text-wo-text">{prospect.ville ?? "—"}</dd>
               </div>
               <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-                <dt className="text-[#6b7d76]">Fonction du contact</dt>
-                <dd className="text-right font-medium text-[#dce8e3]">{prospect.contact_function ?? "—"}</dd>
+                <dt className="text-wo-dim">Fonction du contact</dt>
+                <dd className="text-right font-medium text-wo-text">{prospect.contact_function ?? "—"}</dd>
               </div>
 
               <InlineValue
@@ -1240,8 +1240,8 @@ export function ProspectDetailClient2({
               />
 
               <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-                <dt className="text-[#6b7d76]">Site web</dt>
-                <dd className="text-right font-medium text-[#dce8e3]">
+                <dt className="text-wo-dim">Site web</dt>
+                <dd className="text-right font-medium text-wo-text">
                   {prospect.website ? (
                     <a
                       href={prospect.website.startsWith("http") ? prospect.website : `https://${prospect.website}`}
@@ -1257,9 +1257,9 @@ export function ProspectDetailClient2({
                 </dd>
               </div>
 
-              <div className="flex justify-between gap-4 border-b border-white/[0.04] pb-2">
-                <dt className="text-[#6b7d76]">Valeur potentielle</dt>
-                <dd className="text-right font-medium text-[#dce8e3]">
+              <div className="flex justify-between gap-4 border-b border-wo-border pb-2">
+                <dt className="text-wo-dim">Valeur potentielle</dt>
+                <dd className="text-right font-medium text-wo-text">
                   {prospect.potential_value != null
                     ? new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(
                         Number(prospect.potential_value)
@@ -1267,23 +1267,23 @@ export function ProspectDetailClient2({
                     : "—"}
                 </dd>
               </div>
-              <div className="flex justify-between gap-4 border-b border-white/[0.04] pb-2">
-                <dt className="text-[#6b7d76]">Canal</dt>
-                <dd className="text-right font-medium text-[#dce8e3]">{prospect.contact_channel ?? "—"}</dd>
+              <div className="flex justify-between gap-4 border-b border-wo-border pb-2">
+                <dt className="text-wo-dim">Canal</dt>
+                <dd className="text-right font-medium text-wo-text">{prospect.contact_channel ?? "—"}</dd>
               </div>
-              <div className="flex justify-between gap-4 border-b border-white/[0.04] pb-2">
-                <dt className="text-[#6b7d76]">Tags</dt>
-                <dd className="text-right font-medium text-[#dce8e3]">
+              <div className="flex justify-between gap-4 border-b border-wo-border pb-2">
+                <dt className="text-wo-dim">Tags</dt>
+                <dd className="text-right font-medium text-wo-text">
                   {(prospect.tags ?? []).length ? prospect.tags.join(", ") : "—"}
                 </dd>
               </div>
-              <div className="flex justify-between gap-4 border-b border-white/[0.04] pb-2">
-                <dt className="text-[#6b7d76]">Dernière action</dt>
-                <dd className="text-right font-medium text-[#dce8e3]">{prospect.last_action ?? "—"}</dd>
+              <div className="flex justify-between gap-4 border-b border-wo-border pb-2">
+                <dt className="text-wo-dim">Dernière action</dt>
+                <dd className="text-right font-medium text-wo-text">{prospect.last_action ?? "—"}</dd>
               </div>
               <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-                <dt className="text-[#6b7d76]">Prochaine relance</dt>
-                <dd className="text-right font-medium text-[#dce8e3]">
+                <dt className="text-wo-dim">Prochaine relance</dt>
+                <dd className="text-right font-medium text-wo-text">
                   {prospect.next_follow_up ? (
                     format(new Date(`${prospect.next_follow_up}T12:00:00`), "d MMMM yyyy", { locale: fr })
                   ) : (
@@ -1460,7 +1460,7 @@ export function ProspectDetailClient2({
         />
 
         {activities.length === 0 ? (
-          <p className="mt-4 text-sm text-[#6b7d76]">Aucune action pour le moment.</p>
+          <p className="mt-4 text-sm text-wo-dim">Aucune action pour le moment.</p>
         ) : (
           <ol className="mt-5 space-y-0">
             {activities.map((a, idx) => {
@@ -1472,14 +1472,14 @@ export function ProspectDetailClient2({
                   onMouseLeave={() => setActivityMenuId((v) => (v === a.id ? null : v))}
                 >
                   {idx < activities.length - 1 ? (
-                    <span className="absolute left-[7px] top-3 h-full w-px bg-white/[0.06]" />
+                    <span className="absolute left-[7px] top-3 h-full w-px bg-wo-hover" />
                   ) : null}
                   <span className="relative mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full border-2 border-emerald-500 bg-[#0c1916]" />
 
                   <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-xs font-medium uppercase tracking-wide text-[#6b7d76]">
+                        <p className="text-xs font-medium uppercase tracking-wide text-wo-dim">
                           {fmtDay(a.occurred_at || a.created_at)}
                           {a.channel ? ` · ${a.channel}` : ""}
                           {a.action_type in INTERACTION_LABELS
@@ -1487,14 +1487,14 @@ export function ProspectDetailClient2({
                             : ""}
                           {a.actor_name ? ` · ${a.actor_name}` : ""}
                         </p>
-                        <p className="mt-0.5 text-sm font-medium text-[#dce8e3]">{a.title}</p>
+                        <p className="mt-0.5 text-sm font-medium text-wo-text">{a.title}</p>
                       </div>
 
                       {showMenu ? (
                         <div className="relative">
                           <button
                             type="button"
-                            className="rounded-xl p-2 text-[#6b7d76] hover:bg-white/[0.04] hover:text-[#c2d4cc]"
+                            className="rounded-xl p-2 text-wo-dim hover:bg-wo-hover hover:text-wo-secondary"
                             onClick={() => setActivityMenuId((v) => (v === a.id ? null : a.id))}
                             aria-label="Menu actions"
                           >
@@ -1502,10 +1502,10 @@ export function ProspectDetailClient2({
                           </button>
 
                           {activityMenuOpen === a.id ? (
-                            <div className="absolute right-0 top-9 z-20 w-44 rounded-[12px] border border-white/[0.08] bg-[#0e1c19] p-2">
+                            <div className="absolute right-0 top-9 z-20 w-44 rounded-[12px] border border-wo-border bg-[#0e1c19] p-2">
                               <button
                                 type="button"
-                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-[#c2d4cc] hover:bg-white/[0.04]"
+                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-wo-secondary hover:bg-wo-hover"
                                 onClick={() => {
                                   setActivityMenuId(null);
                                   setActivityToEdit(a);
@@ -1553,7 +1553,7 @@ export function ProspectDetailClient2({
                       ) : null}
                     </div>
 
-                    {a.description ? <p className="text-sm text-[#8a9e96] whitespace-pre-wrap">{a.description}</p> : null}
+                    {a.description ? <p className="text-sm text-wo-muted whitespace-pre-wrap">{a.description}</p> : null}
                   </div>
                 </li>
               );

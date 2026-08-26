@@ -39,18 +39,18 @@ export default async function UnassignedPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/projects" className="text-xs text-[#8a9e96] hover:text-[#eef6f2]">
+        <Link href="/projects" className="text-xs text-wo-muted hover:text-wo-text">
           ← Tous les projets
         </Link>
         <h1 className={`${ui.h1} mt-2`}>Sans projet</h1>
-        <p className="mt-1 text-sm text-[#8a9e96]">
+        <p className="mt-1 text-sm text-wo-muted">
           Données business non rattachées. Assignez-les à un projet quand vous le souhaitez — rien n&apos;a été
           supprimé.
         </p>
       </div>
 
       {projects.length > 0 ? (
-        <p className="text-sm text-[#8a9e96]">
+        <p className="text-sm text-wo-muted">
           Projets disponibles : {projects.map((p) => p.name).join(", ")}
         </p>
       ) : null}
@@ -60,30 +60,30 @@ export default async function UnassignedPage() {
         <ul className="mt-3 space-y-2 text-sm">
           {(prospects.data ?? []).map((p) => (
             <li key={p.id}>
-              <Link href={`/crm/prospects/${p.id}`} className="text-[#dce8e3] hover:text-white">
-                {p.club_name} <span className="text-[#6b7d76]">· {p.status}</span>
+              <Link href={`/crm/prospects/${p.id}`} className="text-wo-text hover:text-white">
+                {p.club_name} <span className="text-wo-dim">· {p.status}</span>
               </Link>
             </li>
           ))}
-          {(prospects.data ?? []).length === 0 ? <li className="text-[#6b7d76]">Aucun</li> : null}
+          {(prospects.data ?? []).length === 0 ? <li className="text-wo-dim">Aucun</li> : null}
         </ul>
       </section>
       <section className={`${ui.card} p-5`}>
         <h2 className={ui.h2}>Tâches</h2>
-        <ul className="mt-3 space-y-2 text-sm text-[#dce8e3]">
+        <ul className="mt-3 space-y-2 text-sm text-wo-text">
           {(tasks.data ?? []).map((t) => (
             <li key={t.id}>{t.title}</li>
           ))}
-          {(tasks.data ?? []).length === 0 ? <li className="text-[#6b7d76]">Aucune</li> : null}
+          {(tasks.data ?? []).length === 0 ? <li className="text-wo-dim">Aucune</li> : null}
         </ul>
       </section>
       <section className={`${ui.card} p-5`}>
         <h2 className={ui.h2}>Notes</h2>
-        <ul className="mt-3 space-y-2 text-sm text-[#dce8e3]">
+        <ul className="mt-3 space-y-2 text-sm text-wo-text">
           {(notes.data ?? []).map((n) => (
             <li key={n.id}>{n.title || "Sans titre"}</li>
           ))}
-          {(notes.data ?? []).length === 0 ? <li className="text-[#6b7d76]">Aucune</li> : null}
+          {(notes.data ?? []).length === 0 ? <li className="text-wo-dim">Aucune</li> : null}
         </ul>
       </section>
     </div>

@@ -211,10 +211,10 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
 
       <div className={`${ui.modal} flex max-h-[90vh] max-w-3xl flex-col`}>
         {/* Header */}
-        <div className="border-b border-white/[0.08] px-6 py-4">
-          <h2 className="text-lg font-semibold text-[#eef6f2]">Importer des prospects</h2>
+        <div className="border-b border-wo-border px-6 py-4">
+          <h2 className="text-lg font-semibold text-wo-text">Importer des prospects</h2>
           {fileName && step !== "select" ? (
-            <p className="mt-0.5 flex items-center gap-1.5 text-sm text-[#8a9e96]">
+            <p className="mt-0.5 flex items-center gap-1.5 text-sm text-wo-muted">
               <IconFileSpreadsheet className="h-4 w-4" stroke={1.75} />
               {fileName}
             </p>
@@ -225,22 +225,22 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
           {/* Étape 1 : sélection fichier */}
           {step === "select" ? (
             <div className="space-y-4">
-              <p className="text-sm text-[#8a9e96]">
+              <p className="text-sm text-wo-muted">
                 Formats acceptés : CSV, Excel (.xlsx, .xls). Encodage UTF-8 recommandé pour les CSV.
               </p>
 
               <label
-                className={`flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-white/[0.08] bg-white/[0.03]/50 px-6 py-10 transition hover:border-emerald-400/40 hover:bg-emerald-500/10 ${loading ? "pointer-events-none opacity-60" : ""}`}
+                className={`flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-wo-border bg-wo-hover/50 px-6 py-10 transition hover:border-emerald-400/40 hover:bg-emerald-500/10 ${loading ? "pointer-events-none opacity-60" : ""}`}
               >
                 {loading ? (
                   <IconLoader2 className="h-8 w-8 animate-spin text-emerald-400" />
                 ) : (
-                  <IconUpload className="h-8 w-8 text-[#6b7d76]" stroke={1.5} />
+                  <IconUpload className="h-8 w-8 text-wo-dim" stroke={1.5} />
                 )}
-                <span className="text-sm font-medium text-[#c2d4cc]">
+                <span className="text-sm font-medium text-wo-secondary">
                   {loading ? "Lecture du fichier…" : "Cliquez pour sélectionner un fichier"}
                 </span>
-                <span className="text-xs text-[#6b7d76]">.csv · .xlsx · .xls</span>
+                <span className="text-xs text-wo-dim">.csv · .xlsx · .xls</span>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -274,14 +274,14 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
 
               {/* Mapping colonnes */}
               <section>
-                <h3 className="text-sm font-semibold text-[#eef6f2]">Association des colonnes</h3>
-                <p className="mt-0.5 text-xs text-[#6b7d76]">
+                <h3 className="text-sm font-semibold text-wo-text">Association des colonnes</h3>
+                <p className="mt-0.5 text-xs text-wo-dim">
                   Associez chaque colonne du fichier à un champ CRM. « Nom du club » est obligatoire.
                 </p>
                 <div className="mt-3 space-y-2">
                   {parsed.columns.map((col) => (
                     <div key={col} className="flex items-center gap-3">
-                      <span className="w-2/5 truncate text-sm text-[#8a9e96]" title={col}>
+                      <span className="w-2/5 truncate text-sm text-wo-muted" title={col}>
                         {col || "(sans nom)"}
                       </span>
                       <span className="text-[#3d524c]">→</span>
@@ -313,8 +313,8 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
 
               {/* Doublons */}
               <section>
-                <h3 className="text-sm font-semibold text-[#eef6f2]">Gestion des doublons</h3>
-                <p className="mt-0.5 text-xs text-[#6b7d76]">
+                <h3 className="text-sm font-semibold text-wo-text">Gestion des doublons</h3>
+                <p className="mt-0.5 text-xs text-wo-dim">
                   Détection par email, nom de club ou téléphone.
                 </p>
                 <div className="mt-3 space-y-2">
@@ -330,7 +330,7 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
                       className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 transition ${
                         duplicateStrategy === value
                           ? "border-emerald-500/30 bg-emerald-500/10"
-                          : "border-white/[0.08] hover:bg-white/[0.03]"
+                          : "border-wo-border hover:bg-wo-hover"
                       }`}
                     >
                       <input
@@ -342,8 +342,8 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
                         className="mt-0.5"
                       />
                       <div>
-                        <p className="text-sm font-medium text-[#dce8e3]">{label}</p>
-                        <p className="text-xs text-[#6b7d76]">{hint}</p>
+                        <p className="text-sm font-medium text-wo-text">{label}</p>
+                        <p className="text-xs text-wo-dim">{hint}</p>
                       </div>
                     </label>
                   ))}
@@ -352,13 +352,13 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
 
               {/* Aperçu 5 lignes */}
               <section>
-                <h3 className="text-sm font-semibold text-[#eef6f2]">Aperçu (5 premières lignes)</h3>
-                <div className="mt-2 overflow-x-auto rounded-xl border border-white/[0.08]">
+                <h3 className="text-sm font-semibold text-wo-text">Aperçu (5 premières lignes)</h3>
+                <div className="mt-2 overflow-x-auto rounded-xl border border-wo-border">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="border-b border-white/[0.08] bg-white/[0.03]">
+                      <tr className="border-b border-wo-border bg-wo-hover">
                         {parsed.columns.map((col, i) => (
-                          <th key={i} className="whitespace-nowrap px-3 py-2 text-left font-medium text-[#8a9e96]">
+                          <th key={i} className="whitespace-nowrap px-3 py-2 text-left font-medium text-wo-muted">
                             {col || `Col ${i + 1}`}
                           </th>
                         ))}
@@ -366,9 +366,9 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
                     </thead>
                     <tbody>
                       {previewRows.map((row, ri) => (
-                        <tr key={ri} className="border-b border-white/[0.04] last:border-0">
+                        <tr key={ri} className="border-b border-wo-border last:border-0">
                           {row.map((cell, ci) => (
-                            <td key={ci} className="whitespace-nowrap px-3 py-2 text-[#c2d4cc]">
+                            <td key={ci} className="whitespace-nowrap px-3 py-2 text-wo-secondary">
                               {cell || "—"}
                             </td>
                           ))}
@@ -410,8 +410,8 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
                 <IconCheck className="h-7 w-7 text-emerald-600" stroke={2} />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-[#eef6f2]">Import terminé</h3>
-                <p className="mt-2 text-sm text-[#8a9e96]">
+                <h3 className="text-lg font-semibold text-wo-text">Import terminé</h3>
+                <p className="mt-2 text-sm text-wo-muted">
                   {result.imported} prospect{result.imported > 1 ? "s" : ""} créé
                   {result.imported > 1 ? "s" : ""}
                   {result.updated > 0
@@ -420,7 +420,7 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
                   .
                 </p>
                 {result.skipped > 0 ? (
-                  <p className="mt-1 text-sm text-[#6b7d76]">
+                  <p className="mt-1 text-sm text-wo-dim">
                     {result.skipped} ligne{result.skipped > 1 ? "s" : ""} ignorée
                     {result.skipped > 1 ? "s" : ""}.
                   </p>
@@ -438,7 +438,7 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
         </div>
 
         {/* Footer actions */}
-        <div className="flex items-center justify-between gap-2 border-t border-white/[0.08] px-6 py-4">
+        <div className="flex items-center justify-between gap-2 border-t border-wo-border px-6 py-4">
           {step === "select" ? (
             <>
               <div />
@@ -511,9 +511,9 @@ function StatCard({
   accent?: string;
 }) {
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-white/[0.03]/50 px-4 py-3">
-      <p className="text-xs text-[#6b7d76]">{label}</p>
-      <p className={`mt-0.5 text-xl font-semibold ${accent ?? "text-[#eef6f2]"}`}>{value}</p>
+    <div className="rounded-xl border border-wo-border bg-wo-hover/50 px-4 py-3">
+      <p className="text-xs text-wo-dim">{label}</p>
+      <p className={`mt-0.5 text-xl font-semibold ${accent ?? "text-wo-text"}`}>{value}</p>
     </div>
   );
 }

@@ -2,36 +2,34 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  IconArrowLeft,
   IconBell,
-  IconCalendarEvent,
-  IconCash,
-  IconChartBar,
-  IconChecklist,
-  IconFileText,
+  IconChevronDown,
   IconHome,
-  IconLanguage,
-  IconLayoutDashboard,
-  IconLock,
-  IconLockOpen,
+  IconLayoutSidebarLeftCollapse,
+  IconLayoutSidebarLeftExpand,
   IconLogout,
   IconMenu2,
-  IconNote,
   IconPlus,
   IconSearch,
-  IconSettings,
-  IconUsers,
   IconX,
 } from "@tabler/icons-react";
 import { brand } from "@/lib/brand/config";
 import { supabase } from "@/lib/supabase/client";
 import { CommandPalette } from "@/components/search/CommandPalette";
 import { ProjectFormModal } from "@/components/projects/ProjectFormModal";
-import { hasModule, PROJECT_MODULE_LABELS, type ProjectModuleKey } from "@/lib/projects/modules";
-import type { ModuleIcon } from "@/modules/types";
+import { hasModule } from "@/lib/projects/modules";
+import {
+  BOTTOM_NAV,
+  MOBILE_TABS,
+  PERSONAL_NAV,
+  PROJECT_NAV,
+  isNavActive,
+  pageMetaFromPath,
+} from "@/lib/app/navigation";
 import type { Project } from "@/lib/projects/types";
+import type { ModuleIcon } from "@/modules/types";
 
 export type AppProfile = {
   id: string;
@@ -42,21 +40,10 @@ export type AppProfile = {
 type AppShellProps = {
   profile: AppProfile;
   projects: Project[];
-  personalLockEnabled: boolean;
-  personalUnlocked: boolean;
+  personalLockEnabled?: boolean;
+  personalUnlocked?: boolean;
   children: React.ReactNode;
 };
-
-const PROJECT_NAV: { key: ProjectModuleKey; href: (id: string) => string; icon: ModuleIcon; exact?: boolean }[] = [
-  { key: "overview", href: (id) => `/projects/${id}`, icon: IconLayoutDashboard, exact: true },
-  { key: "prospects", href: (id) => `/projects/${id}/prospects`, icon: IconUsers },
-  { key: "tasks", href: (id) => `/projects/${id}/tasks`, icon: IconChecklist },
-  { key: "calendar", href: (id) => `/projects/${id}/calendar`, icon: IconCalendarEvent },
-  { key: "finances", href: (id) => `/projects/${id}/finances`, icon: IconCash },
-  { key: "notes", href: (id) => `/projects/${id}/notes`, icon: IconNote },
-  { key: "stats", href: (id) => `/projects/${id}/stats`, icon: IconChartBar },
-  { key: "documents", href: (id) => `/projects/${id}/documents`, icon: IconFileText },
-];
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -67,31 +54,27 @@ function initials(name: string): string {
 function projectIdFromPath(pathname: string | null): string | null {
   if (!pathname) return null;
   const match = pathname.match(/^\/projects\/([^/]+)/);
-  if (!match) return null;
-  if (match[1] === "unassigned") return "unassigned";
+  if (!match || match[1] === "unassigned") return null;
   return match[1];
 }
 
-export function AppShell({
-  profile,
-  projects,
-  personalLockEnabled,
-  personalUnlocked,
-  children,
-}: AppShellProps) {
+export function AppShell({ profile, projects, children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [createProject, setCreateProject] = useState(false);
   const [notifCount, setNotifCount] = useState(0);
+  const [collapsed, setCollapsed] = useState(false);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
 
   const activeProjects = projects.filter((p) => p.status === "active");
-  const inPersonal = Boolean(pathname?.startsWith("/personal"));
   const currentProjectId = projectIdFromPath(pathname);
   const currentProject = currentProjectId
     ? activeProjects.find((p) => p.id === currentProjectId) ?? projects.find((p) => p.id === currentProjectId)
     : null;
-  const inProject = Boolean(currentProjectId && currentProjectId !== "unassigned");
+  const inProject = Boolean(currentProject);
+  const meta = pageMetaFromPath(pathname, currentProject?.name ?? null);
+  const sidebarWidth = collapsed ? 80 : 260;
 
   useEffect(() => {
     void fetch("/api/notifications")
@@ -105,212 +88,52 @@ export function AppShell({
     router.replace("/login");
   };
 
-  const lockPersonal = async () => {
-    await fetch("/api/personal/lock", { method: "POST" });
-    router.push("/home");
-    router.refresh();
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      window.localStorage.setItem("waveone.sidebarCollapsed", next ? "1" : "0");
+      return next;
+    });
   };
 
   const openSearch = () => window.dispatchEvent(new Event("waveone:search"));
 
-  const nav = (() => {
-    if (inPersonal) {
-      return (
-        <>
-          <Link href="/home" onClick={() => setMobileOpen(false)} className="wo-nav-link mb-1">
-            <IconArrowLeft className="h-4 w-4" stroke={1.6} />
-            Accueil
-          </Link>
-          <NavSection label="Personnel">
-            <SideLink
-              href="/personal/calendar"
-              label="Calendrier"
-              icon={IconCalendarEvent}
-              active={Boolean(pathname?.startsWith("/personal/calendar"))}
-              onClick={() => setMobileOpen(false)}
-            />
-            <SideLink
-              href="/personal/tasks"
-              label="Tâches"
-              icon={IconChecklist}
-              active={Boolean(pathname?.startsWith("/personal/tasks"))}
-              onClick={() => setMobileOpen(false)}
-            />
-            <SideLink
-              href="/personal/english"
-              label="Anglais"
-              icon={IconLanguage}
-              active={Boolean(pathname?.startsWith("/personal/english"))}
-              onClick={() => setMobileOpen(false)}
-            />
-            <SideLink
-              href="/personal/notes"
-              label="Notes"
-              icon={IconNote}
-              active={Boolean(pathname?.startsWith("/personal/notes"))}
-              onClick={() => setMobileOpen(false)}
-            />
-          </NavSection>
-          {personalLockEnabled ? (
-            <button type="button" onClick={() => void lockPersonal()} className="wo-nav-link mt-1 w-full">
-              <IconLock className="h-[18px] w-[18px]" stroke={1.6} />
-              Verrouiller
-            </button>
-          ) : null}
-        </>
-      );
-    }
-
-    if (inProject && currentProject) {
-      return (
-        <>
-          <Link href="/projects" onClick={() => setMobileOpen(false)} className="wo-nav-link mb-1">
-            <IconArrowLeft className="h-4 w-4" stroke={1.6} />
-            Tous les projets
-          </Link>
-          <NavSection label={currentProject.name}>
-            {PROJECT_NAV.filter((item) => hasModule(currentProject.enabledModules, item.key)).map((item) => (
-              <SideLink
-                key={item.key}
-                href={item.href(currentProject.id)}
-                label={PROJECT_MODULE_LABELS[item.key]}
-                icon={item.icon}
-                exact={item.exact}
-                active={
-                  item.exact
-                    ? pathname === item.href(currentProject.id)
-                    : Boolean(pathname?.startsWith(item.href(currentProject.id)))
-                }
-                onClick={() => setMobileOpen(false)}
-              />
-            ))}
-          </NavSection>
-        </>
-      );
-    }
-
-    return (
-      <>
-        <NavSection label="WaveOne">
-          <SideLink
-            href="/home"
-            label="Accueil"
-            icon={IconHome}
-            active={pathname === "/home"}
-            onClick={() => setMobileOpen(false)}
-          />
-        </NavSection>
-
-        <NavSection label="Personnel">
-          <SideLink
-            href="/personal"
-            label="Mon espace"
-            icon={personalLockEnabled && !personalUnlocked ? IconLock : IconLockOpen}
-            active={inPersonal}
-            onClick={() => setMobileOpen(false)}
-          />
-        </NavSection>
-
-        <NavSection
-          label="Business"
-          action={
-            <button
-              type="button"
-              onClick={() => setCreateProject(true)}
-              className="rounded-full p-1 text-[#6b7d76] transition hover:bg-white/[0.06] hover:text-[#eef6f2]"
-              aria-label="Nouveau projet"
-            >
-              <IconPlus className="h-3.5 w-3.5" />
-            </button>
-          }
-        >
-          {activeProjects.map((p) => (
-            <Link
-              key={p.id}
-              href={`/projects/${p.id}`}
-              onClick={() => setMobileOpen(false)}
-              className={`wo-nav-link ${pathname?.startsWith(`/projects/${p.id}`) ? "wo-nav-link-active" : ""}`}
-            >
-              <span
-                className="h-2 w-2 shrink-0 rounded-full shadow-[0_0_8px_currentColor]"
-                style={{ background: p.color ?? "#10b981", color: p.color ?? "#10b981" }}
-              />
-              <span className="truncate">{p.name}</span>
-            </Link>
-          ))}
-          <button type="button" onClick={() => setCreateProject(true)} className="wo-nav-link w-full text-[#6b7d76]">
-            <IconPlus className="h-[18px] w-[18px]" stroke={1.6} />
-            Nouveau projet
-          </button>
-        </NavSection>
-      </>
-    );
-  })();
-
-  const chromeTitle = inPersonal ? "Personnel" : currentProject?.name ?? brand.shortName;
+  const projectModules = useMemo(() => {
+    if (!currentProject) return [];
+    return PROJECT_NAV.filter((item) => {
+      if (item.always) return true;
+      if (!item.module) return true;
+      return hasModule(currentProject.enabledModules, item.module);
+    });
+  }, [currentProject]);
 
   return (
     <div className="wo-app min-h-screen lg:flex">
       <CommandPalette />
-      <aside className="wo-sidebar fixed inset-y-3 left-3 z-40 hidden w-[var(--sidebar-width)] flex-col overflow-hidden rounded-[28px] lg:flex">
-        <span className="wo-sidebar-inner-glow" aria-hidden />
-        <div className="relative flex h-[64px] items-center justify-between px-4">
-          <Link href="/home" className="group flex items-center gap-2.5">
-            <span className="wo-brand-mark">W</span>
-            <span className="font-display text-[15px] font-semibold tracking-tight text-[#eef6f2]">
-              {brand.shortName}
-            </span>
-          </Link>
-          <button
-            type="button"
-            className="wo-icon-btn"
-            onClick={openSearch}
-            aria-label="Recherche"
-            title="Ctrl + K"
-          >
-            <IconSearch className="h-4 w-4" stroke={1.6} />
-          </button>
-        </div>
-
-        <nav className="relative flex flex-1 flex-col gap-5 overflow-y-auto px-2.5 py-1">{nav}</nav>
-
-        <div className="relative mt-auto space-y-1.5 p-2.5 pb-3.5">
-          <SideLink
-            href="/notifications"
-            label="Notifications"
-            icon={IconBell}
-            active={Boolean(pathname?.startsWith("/notifications"))}
-            badge={notifCount}
-          />
-          <SideLink
-            href="/settings"
-            label="Paramètres"
-            icon={IconSettings}
-            active={Boolean(pathname?.startsWith("/settings"))}
-          />
-          <div className="wo-profile mt-1">
-            <span className="wo-avatar">{initials(profile.displayName)}</span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-medium text-[#eef6f2]">{profile.displayName}</p>
-              <p className="truncate text-[11px] text-[#6b7d76]">{profile.email ?? "Compte personnel"}</p>
-            </div>
-            <button
-              type="button"
-              onClick={logout}
-              className="wo-icon-btn"
-              aria-label="Se déconnecter"
-              title="Se déconnecter"
-            >
-              <IconLogout className="h-4 w-4" stroke={1.6} />
-            </button>
-          </div>
-        </div>
+      <aside
+        className="wo-sidebar fixed inset-y-0 left-0 z-40 hidden flex-col overflow-hidden lg:flex"
+        style={{ width: sidebarWidth }}
+      >
+        <SidebarBody
+          compact={collapsed}
+          pathname={pathname}
+          activeProjects={activeProjects}
+          currentProject={currentProject}
+          projectModules={projectModules}
+          onCollapse={toggleCollapsed}
+          onCreateProject={() => setCreateProject(true)}
+          onNavigate={() => {
+            setMobileOpen(false);
+            setSwitcherOpen(false);
+          }}
+          onLogout={logout}
+        />
       </aside>
 
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-white/[0.06] bg-[#0a0a0a]/80 px-4 backdrop-blur-xl lg:hidden">
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-wo-border bg-white/90 px-4 backdrop-blur-xl lg:hidden">
         <Link href="/home" className="flex items-center gap-2">
           <span className="wo-brand-mark !h-7 !w-7">W</span>
-          <span className="text-sm font-semibold text-[#eef6f2]">{chromeTitle}</span>
+          <span className="text-sm font-semibold text-wo-text">{currentProject?.name ?? brand.shortName}</span>
         </Link>
         <div className="flex items-center gap-0.5">
           <button type="button" className="wo-icon-btn h-10 w-10" onClick={openSearch} aria-label="Recherche">
@@ -318,20 +141,13 @@ export function AppShell({
           </button>
           <Link
             href="/notifications"
-            className="relative flex h-10 w-10 items-center justify-center rounded-full text-[#8a9e96] hover:bg-white/[0.05] hover:text-[#eef6f2]"
+            className="relative flex h-10 w-10 items-center justify-center rounded-xl text-wo-muted hover:bg-wo-hover hover:text-wo-text"
             aria-label="Notifications"
           >
             <IconBell className="h-5 w-5" stroke={1.6} />
-            {notifCount > 0 ? (
-              <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
-            ) : null}
+            {notifCount > 0 ? <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-indigo-500" /> : null}
           </Link>
-          <button
-            type="button"
-            className="wo-icon-btn h-10 w-10"
-            onClick={() => setMobileOpen(true)}
-            aria-label="Ouvrir le menu"
-          >
+          <button type="button" className="wo-icon-btn h-10 w-10" onClick={() => setMobileOpen(true)} aria-label="Menu">
             <IconMenu2 className="h-5 w-5" />
           </button>
         </div>
@@ -341,14 +157,13 @@ export function AppShell({
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
             aria-label="Fermer"
           />
-          <aside className="wo-sidebar absolute inset-y-2 left-2 flex w-72 flex-col overflow-hidden rounded-[24px]">
-            <span className="wo-sidebar-inner-glow" aria-hidden />
-            <div className="relative flex h-14 items-center justify-between px-4">
-              <span className="flex items-center gap-2 text-sm font-semibold text-[#eef6f2]">
+          <aside className="wo-sidebar absolute inset-y-0 left-0 flex w-[min(20rem,86vw)] flex-col overflow-hidden">
+            <div className="flex h-14 items-center justify-between px-4">
+              <span className="flex items-center gap-2 text-sm font-semibold text-wo-text">
                 <span className="wo-brand-mark !h-7 !w-7">W</span>
                 {brand.name}
               </span>
@@ -356,64 +171,121 @@ export function AppShell({
                 <IconX className="h-5 w-5" />
               </button>
             </div>
-            <nav className="relative flex flex-1 flex-col gap-4 overflow-y-auto px-3 py-2">{nav}</nav>
-            <div className="relative space-y-1 p-3">
-              <SideLink
-                href="/notifications"
-                label="Notifications"
-                icon={IconBell}
-                active={Boolean(pathname?.startsWith("/notifications"))}
-                badge={notifCount}
-                onClick={() => setMobileOpen(false)}
-              />
-              <SideLink
-                href="/settings"
-                label="Paramètres"
-                icon={IconSettings}
-                active={Boolean(pathname?.startsWith("/settings"))}
-                onClick={() => setMobileOpen(false)}
-              />
-              <button type="button" onClick={logout} className="wo-nav-link mt-1 w-full">
-                <IconLogout className="h-4 w-4" />
-                Se déconnecter
-              </button>
-            </div>
+            <SidebarBody
+              compact={false}
+              pathname={pathname}
+              activeProjects={activeProjects}
+              currentProject={currentProject}
+              projectModules={projectModules}
+              onCreateProject={() => setCreateProject(true)}
+              onNavigate={() => {
+            setMobileOpen(false);
+            setSwitcherOpen(false);
+          }}
+              onLogout={logout}
+              hideCollapse
+            />
           </aside>
         </div>
       ) : null}
 
-      <main className="min-h-screen flex-1 pb-[4.5rem] lg:ml-[calc(var(--sidebar-width)+1.5rem)] lg:pb-0 lg:pt-3">
-        <div className="sticky top-3 z-20 hidden items-center gap-3 px-6 py-0 lg:flex lg:px-8">
-          <button type="button" className="wo-topbar-search" onClick={openSearch}>
-            <IconSearch className="h-4 w-4 shrink-0" stroke={1.7} />
-            <span className="flex-1 truncate text-left text-sm">Rechercher dans WaveOne…</span>
-            <kbd className="hidden rounded-md border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[10px] font-medium text-[#6b7d76] sm:inline">
-              Ctrl K
-            </kbd>
-          </button>
+      <main className={`min-h-screen flex-1 pb-[4.5rem] lg:pb-0 ${collapsed ? "lg:ml-[80px]" : "lg:ml-[260px]"}`}>
+        <div className="hidden items-start justify-between gap-4 px-8 pt-7 lg:flex">
+          <div className="min-w-0">
+            {inProject && currentProject ? (
+              <div className="relative mb-2 inline-block">
+                <button
+                  type="button"
+                  onClick={() => setSwitcherOpen((v) => !v)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-wo-border bg-white px-3 py-1.5 text-sm font-medium text-wo-text transition hover:bg-slate-50"
+                >
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{ background: currentProject.color ?? "#6366F1" }}
+                  />
+                  {currentProject.name}
+                  <IconChevronDown className="h-4 w-4 text-wo-dim" />
+                </button>
+                {switcherOpen ? (
+                  <div className="wo-modal absolute left-0 z-30 mt-2 w-60 overflow-hidden p-1">
+                    {activeProjects.map((p) => (
+                      <Link
+                        key={p.id}
+                        href={`/projects/${p.id}`}
+                        className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${
+                          p.id === currentProject.id
+                            ? "bg-wo-accent-soft text-wo-accent"
+                            : "text-wo-secondary hover:bg-wo-hover"
+                        }`}
+                      >
+                        <span className="h-2 w-2 rounded-full" style={{ background: p.color ?? "#6366F1" }} />
+                        {p.name}
+                      </Link>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSwitcherOpen(false);
+                        setCreateProject(true);
+                      }}
+                      className="mt-1 flex w-full items-center gap-2 rounded-xl border-t border-wo-border px-3 py-2 text-sm text-wo-muted hover:bg-wo-hover hover:text-wo-text"
+                    >
+                      <IconPlus className="h-4 w-4" />
+                      Nouveau projet
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            <h1 className="wo-h1">{meta.title}</h1>
+            {meta.subtitle ? <p className="mt-1 text-sm text-wo-muted">{meta.subtitle}</p> : null}
+          </div>
+          <div className="flex shrink-0 items-center gap-2 pt-1">
+            <button type="button" className="wo-topbar-search" onClick={openSearch}>
+              <IconSearch className="h-4 w-4 shrink-0" stroke={1.7} />
+              <span className="flex-1 truncate text-left text-sm">Rechercher…</span>
+              <kbd className="hidden rounded-md border border-wo-border bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-wo-dim sm:inline">
+                Ctrl K
+              </kbd>
+            </button>
+            <Link href="/notifications" className="relative wo-icon-btn h-10 w-10" aria-label="Notifications">
+              <IconBell className="h-5 w-5" stroke={1.6} />
+              {notifCount > 0 ? (
+                <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-indigo-500" />
+              ) : null}
+            </Link>
+            <Link href="/settings" className="wo-profile !gap-2.5 !py-1.5 !pl-1.5 !pr-3">
+              <span className="wo-avatar">{initials(profile.displayName)}</span>
+              <div className="min-w-0 text-left">
+                <p className="truncate text-[13px] font-medium text-wo-text">{profile.displayName}</p>
+                <p className="truncate text-[11px] text-wo-muted">{profile.email ?? "Compte"}</p>
+              </div>
+            </Link>
+          </div>
         </div>
-        <div className="mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8">{children}</div>
+
+        <div className="mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:pt-6">
+          <div className="mb-5 lg:hidden">
+            <h1 className="wo-h1">{meta.title}</h1>
+            {meta.subtitle ? <p className="mt-1 text-sm text-wo-muted">{meta.subtitle}</p> : null}
+          </div>
+          {children}
+        </div>
       </main>
 
       <nav
         aria-label="Navigation principale"
-        className="fixed inset-x-0 bottom-0 z-30 flex border-t border-white/[0.06] bg-[#071412]/92 backdrop-blur-xl lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 flex border-t border-wo-border bg-white/95 backdrop-blur-xl lg:hidden"
       >
-        {[
-          { href: "/home", label: "Accueil", icon: IconHome, match: "exact" as const },
-          { href: "/personal", label: "Personnel", icon: IconLockOpen, match: "prefix" as const },
-          { href: "/projects", label: "Projets", icon: IconLayoutDashboard, match: "prefix" as const },
-          { href: "/notifications", label: "Alertes", icon: IconBell, match: "prefix" as const },
-        ].map((item) => {
+        {MOBILE_TABS.map((item) => {
           const Icon = item.icon;
-          const active =
-            item.match === "exact" ? pathname === item.href : Boolean(pathname?.startsWith(item.href));
+          const active = isNavActive(pathname, item.href, item.match ?? "prefix");
           return (
             <Link
               key={item.href}
               href={item.href}
               className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 py-2.5 text-[10px] font-medium transition ${
-                active ? "text-white" : "text-[#6a6c6b]"
+                active ? "text-wo-accent" : "text-wo-dim"
               }`}
             >
               <Icon className="h-[18px] w-[18px]" stroke={active ? 1.9 : 1.5} />
@@ -437,22 +309,188 @@ export function AppShell({
   );
 }
 
-function NavSection({
-  label,
-  children,
-  action,
+function SidebarBody({
+  compact,
+  pathname,
+  activeProjects,
+  currentProject,
+  projectModules,
+  onCollapse,
+  onCreateProject,
+  onNavigate,
+  onLogout,
+  hideCollapse,
 }: {
-  label: string;
-  children: React.ReactNode;
-  action?: React.ReactNode;
+  compact: boolean;
+  pathname: string | null;
+  activeProjects: Project[];
+  currentProject: Project | null | undefined;
+  projectModules: typeof PROJECT_NAV;
+  onCollapse?: () => void;
+  onCreateProject: () => void;
+  onNavigate: () => void;
+  onLogout: () => void;
+  hideCollapse?: boolean;
 }) {
   return (
-    <div>
-      <div className="mb-1.5 flex items-center justify-between px-3">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6b7d76]">{label}</p>
-        {action}
+    <>
+      <div className={`flex h-[64px] items-center ${compact ? "justify-center px-2" : "justify-between px-4"}`}>
+        <Link href="/home" className="flex items-center gap-2.5" onClick={onNavigate}>
+          <span className="wo-brand-mark">W</span>
+          {compact ? null : (
+            <span className="font-display text-[15px] font-semibold tracking-tight text-wo-text">{brand.shortName}</span>
+          )}
+        </Link>
+        {!compact && !hideCollapse && onCollapse ? (
+          <button type="button" className="wo-icon-btn hidden lg:inline-flex" onClick={onCollapse} aria-label="Réduire">
+            <IconLayoutSidebarLeftCollapse className="h-4 w-4" stroke={1.6} />
+          </button>
+        ) : null}
       </div>
-      <div className="flex flex-col gap-0.5">{children}</div>
+      {compact && onCollapse ? (
+        <div className="flex justify-center pb-2">
+          <button type="button" className="wo-icon-btn" onClick={onCollapse} aria-label="Déplier">
+            <IconLayoutSidebarLeftExpand className="h-4 w-4" stroke={1.6} />
+          </button>
+        </div>
+      ) : null}
+
+      <nav className="flex flex-1 flex-col gap-5 overflow-y-auto px-3 py-1">
+        <div>
+          {compact ? null : <SectionLabel>Accueil</SectionLabel>}
+          <SideLink
+            href="/home"
+            label="Tableau de bord"
+            icon={IconHome}
+            active={pathname === "/home"}
+            compact={compact}
+            onClick={onNavigate}
+          />
+        </div>
+
+        <div>
+          {compact ? null : <SectionLabel>Personnel</SectionLabel>}
+          <div className="flex flex-col gap-0.5">
+            {PERSONAL_NAV.map((item) => (
+              <SideLink
+                key={item.href}
+                href={item.href}
+                label={item.label}
+                icon={item.icon}
+                active={isNavActive(pathname, item.href, item.match ?? "prefix")}
+                compact={compact}
+                onClick={onNavigate}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div>
+          {compact ? null : (
+            <SectionLabel
+              action={
+                <button
+                  type="button"
+                  onClick={onCreateProject}
+                  className="rounded-lg p-1 text-wo-dim transition hover:bg-wo-hover hover:text-wo-text"
+                  aria-label="Nouveau projet"
+                >
+                  <IconPlus className="h-3.5 w-3.5" />
+                </button>
+              }
+            >
+              Projets
+            </SectionLabel>
+          )}
+          <div className="flex flex-col gap-0.5">
+            {activeProjects.map((project) => {
+              const active = Boolean(pathname?.startsWith(`/projects/${project.id}`));
+              return (
+                <div key={project.id}>
+                  <Link
+                    href={`/projects/${project.id}`}
+                    onClick={onNavigate}
+                    title={project.name}
+                    className={`wo-nav-link ${active ? "wo-nav-link-active" : ""} ${compact ? "justify-center px-0" : ""}`}
+                  >
+                    <span
+                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[11px] leading-none"
+                      style={{
+                        background: active ? "rgba(255,255,255,0.18)" : `${project.color ?? "#6366F1"}22`,
+                        color: active ? "#fff" : project.color ?? "#6366F1",
+                      }}
+                    >
+                      {project.icon?.slice(0, 2) || project.name.slice(0, 1).toUpperCase()}
+                    </span>
+                    {compact ? null : <span className="truncate">{project.name}</span>}
+                  </Link>
+                  {active && !compact && currentProject ? (
+                    <div className="mt-0.5 mb-1 flex flex-col gap-px">
+                      {projectModules.map((item) => {
+                        const href = `/projects/${project.id}${item.suffix}`;
+                        const itemActive = item.exact ? pathname === href : Boolean(pathname?.startsWith(href));
+                        const Icon = item.icon;
+                        return (
+                          <Link
+                            key={item.key}
+                            href={href}
+                            onClick={onNavigate}
+                            className={`wo-nav-sub ${itemActive ? "wo-nav-sub-active" : ""}`}
+                          >
+                            <Icon className="h-3.5 w-3.5 shrink-0" stroke={1.6} />
+                            <span className="truncate">{item.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+            <button
+              type="button"
+              onClick={onCreateProject}
+              className={`wo-nav-link w-full ${compact ? "justify-center px-0" : "text-wo-muted"}`}
+              aria-label="Nouveau projet"
+            >
+              <IconPlus className="h-[18px] w-[18px]" stroke={1.6} />
+              {compact ? null : "Nouveau projet"}
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <div className="mt-auto space-y-1 p-3 pb-4">
+        {BOTTOM_NAV.map((item) => (
+          <SideLink
+            key={item.href}
+            href={item.href}
+            label={item.label}
+            icon={item.icon}
+            active={isNavActive(pathname, item.href, item.match ?? "prefix")}
+            compact={compact}
+            onClick={onNavigate}
+          />
+        ))}
+        <button
+          type="button"
+          onClick={onLogout}
+          className={`wo-nav-link w-full ${compact ? "justify-center px-0" : ""}`}
+          aria-label="Se déconnecter"
+        >
+          <IconLogout className="h-4 w-4" stroke={1.6} />
+          {compact ? null : "Déconnexion"}
+        </button>
+      </div>
+    </>
+  );
+}
+
+function SectionLabel({ children, action }: { children: React.ReactNode; action?: React.ReactNode }) {
+  return (
+    <div className="mb-1.5 flex items-center justify-between px-3">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-wo-dim">{children}</p>
+      {action}
     </div>
   );
 }
@@ -463,27 +501,24 @@ function SideLink({
   icon: Icon,
   active,
   onClick,
-  exact,
-  badge,
+  compact,
 }: {
   href: string;
   label: string;
   icon: ModuleIcon;
   active: boolean;
   onClick?: () => void;
-  exact?: boolean;
-  badge?: number;
+  compact?: boolean;
 }) {
-  void exact;
   return (
-    <Link href={href} onClick={onClick} className={`wo-nav-link ${active ? "wo-nav-link-active" : ""}`}>
+    <Link
+      href={href}
+      onClick={onClick}
+      title={label}
+      className={`wo-nav-link ${active ? "wo-nav-link-active" : ""} ${compact ? "justify-center px-0" : ""}`}
+    >
       <Icon className="wo-nav-icon h-[18px] w-[18px]" stroke={1.6} />
-      <span className="flex-1 truncate">{label}</span>
-      {badge ? (
-        <span data-badge className="rounded-full bg-white/10 px-1.5 text-[10px] font-semibold tabular-nums text-[#c8cbc9]">
-          {badge}
-        </span>
-      ) : null}
+      {compact ? null : <span className="flex-1 truncate">{label}</span>}
     </Link>
   );
 }

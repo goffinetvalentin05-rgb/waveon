@@ -65,7 +65,7 @@ export function FlashcardSession() {
       <div>
         <Link
           href="/personal/english"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-[#8a9e96] transition hover:text-emerald-300"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-wo-muted transition hover:text-emerald-300"
         >
           <IconArrowLeft className="h-4 w-4" stroke={1.75} />
           English
@@ -76,11 +76,11 @@ export function FlashcardSession() {
       {error ? <p className={ui.alertError}>{error}</p> : null}
 
       {cards === null ? (
-        <p className="text-sm text-[#6b7d76]">Chargement des cartes à réviser…</p>
+        <p className="text-sm text-wo-dim">Chargement des cartes à réviser…</p>
       ) : empty ? (
         <div className={`${ui.card} flex flex-col items-center gap-3 px-6 py-14 text-center`}>
-          <p className="text-lg font-semibold text-[#eef6f2]">Vous êtes à jour</p>
-          <p className="max-w-sm text-sm text-[#8a9e96]">
+          <p className="text-lg font-semibold text-wo-text">Vous êtes à jour</p>
+          <p className="max-w-sm text-sm text-wo-muted">
             Aucune carte à réviser pour aujourd&apos;hui. Revenez plus tard ou ajoutez du nouveau
             vocabulaire.
           </p>
@@ -90,8 +90,8 @@ export function FlashcardSession() {
         </div>
       ) : finished ? (
         <div className={`${ui.card} flex flex-col items-center gap-3 px-6 py-14 text-center`}>
-          <p className="text-lg font-semibold text-[#eef6f2]">Session terminée</p>
-          <p className="max-w-sm text-sm text-[#8a9e96]">
+          <p className="text-lg font-semibold text-wo-text">Session terminée</p>
+          <p className="max-w-sm text-sm text-wo-muted">
             Bravo, vous avez révisé {total} carte{total > 1 ? "s" : ""} aujourd&apos;hui.
           </p>
           <div className="mt-2 flex flex-wrap justify-center gap-2">
@@ -106,13 +106,13 @@ export function FlashcardSession() {
       ) : current ? (
         <>
           <div>
-            <div className="mb-2 flex items-center justify-between text-sm text-[#8a9e96]">
+            <div className="mb-2 flex items-center justify-between text-sm text-wo-muted">
               <span>
                 {index + 1} sur {total}
               </span>
               <span>{ENGLISH_TYPE_LABELS[current.type]}</span>
             </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-wo-hover">
               <div
                 className="h-full rounded-full bg-emerald-500 transition-all"
                 style={{ width: `${(index / total) * 100}%` }}
@@ -127,14 +127,14 @@ export function FlashcardSession() {
           >
             {!flipped ? (
               <>
-                <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-[#6b7d76]">
+                <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-wo-dim">
                   Anglais
                 </p>
-                <p className="text-2xl font-semibold tracking-tight text-[#eef6f2] sm:text-3xl">
+                <p className="text-2xl font-semibold tracking-tight text-wo-text sm:text-3xl">
                   {current.english_text}
                 </p>
                 {current.example_english ? (
-                  <p className="max-w-sm text-sm italic text-[#8a9e96]">
+                  <p className="max-w-sm text-sm italic text-wo-muted">
                     &ldquo;{current.example_english}&rdquo;
                   </p>
                 ) : null}
@@ -145,14 +145,14 @@ export function FlashcardSession() {
               </>
             ) : (
               <>
-                <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-[#6b7d76]">
+                <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-wo-dim">
                   Français
                 </p>
-                <p className="text-2xl font-semibold tracking-tight text-[#eef6f2] sm:text-3xl">
+                <p className="text-2xl font-semibold tracking-tight text-wo-text sm:text-3xl">
                   {current.french_translation}
                 </p>
                 {current.example_french ? (
-                  <p className="max-w-sm text-sm italic text-[#8a9e96]">
+                  <p className="max-w-sm text-sm italic text-wo-muted">
                     &ldquo;{current.example_french}&rdquo;
                   </p>
                 ) : null}

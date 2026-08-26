@@ -8,7 +8,7 @@ export default async function ProjectNotesPage({ params }: Props) {
   const { id } = await params;
   await requireProjectModule(id, "notes");
   return (
-    <Suspense fallback={<p className="text-sm text-[#6b7d76]">Chargement…</p>}>
+    <Suspense fallback={<p className="text-sm text-wo-dim">Chargement…</p>}>
       <NotesClient projectId={id} scope="project" />
     </Suspense>
   );

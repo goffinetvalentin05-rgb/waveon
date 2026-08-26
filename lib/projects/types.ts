@@ -1,17 +1,18 @@
+import type { ProjectRole } from "@/lib/access/roles";
 import type { ProjectModuleKey } from "@/lib/projects/modules";
 
 export const PROJECT_STATUSES = ["active", "archived"] as const;
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
 export const PROJECT_COLORS = [
-  "#10b981",
-  "#34d399",
-  "#38bdf8",
-  "#fbbf24",
-  "#f43f5e",
-  "#fb7185",
-  "#2dd4bf",
-  "#2dd4bf",
+  "#6366F1",
+  "#8B5CF6",
+  "#0EA5E9",
+  "#10B981",
+  "#F59E0B",
+  "#F43F5E",
+  "#14B8A6",
+  "#64748B",
 ] as const;
 
 export type Project = {
@@ -25,6 +26,7 @@ export type Project = {
   created_at: string;
   updated_at: string;
   enabledModules?: ProjectModuleKey[];
+  myRole?: ProjectRole;
 };
 
 export type ProjectSummary = Project & {

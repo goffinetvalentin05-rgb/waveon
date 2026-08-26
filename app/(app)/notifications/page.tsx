@@ -19,7 +19,7 @@ export default function NotificationsPage() {
     <div className="space-y-6">
       <div>
         <h1 className={ui.h1}>Notifications</h1>
-        <p className="mt-1 text-sm text-[#8a9e96]">Chaque alerte indique son espace.</p>
+        <p className="mt-1 text-sm text-wo-muted">Chaque alerte indique son espace.</p>
       </div>
       {items.length === 0 ? (
         <EmptyState
@@ -31,10 +31,10 @@ export default function NotificationsPage() {
           {items.map((n) => (
             <li key={n.id}>
               <Link href={n.href} className={`${ui.cardInteractive} block px-4 py-3`}>
-                <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-[#8a9e96]">
+                <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-wo-muted">
                   {n.context}
                 </p>
-                <p className="mt-1 text-sm text-[#dce8e3]">{n.title}</p>
+                <p className="mt-1 text-sm text-wo-text">{n.title}</p>
               </Link>
             </li>
           ))}

@@ -207,13 +207,13 @@ function EventModalInner({
         className={`${ui.modal} flex max-h-[90vh] max-w-lg flex-col`}
       >
         <div className={ui.modalHeader}>
-          <h2 className="text-lg font-semibold text-[#eef6f2]">
+          <h2 className="text-lg font-semibold text-wo-text">
             {isEdit ? "Modifier l'événement" : "Nouvel événement"}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-[#6b7d76] transition hover:bg-white/[0.06] hover:text-[#eef6f2]"
+            className="rounded-lg p-1.5 text-wo-dim transition hover:bg-wo-hover hover:text-wo-text"
             aria-label="Fermer"
           >
             <IconX className="h-5 w-5" />
@@ -257,10 +257,10 @@ function EventModalInner({
                     setColor(e.target.value);
                     setColorTouched(true);
                   }}
-                  className="h-[42px] w-12 cursor-pointer rounded-xl border border-white/[0.08] bg-[#081411] p-1"
+                  className="h-[42px] w-12 cursor-pointer rounded-xl border border-wo-border bg-[#081411] p-1"
                   aria-label="Couleur de l'événement"
                 />
-                <span className="text-xs text-[#6b7d76]">{color}</span>
+                <span className="text-xs text-wo-dim">{color}</span>
               </div>
             </div>
           </div>
@@ -279,7 +279,7 @@ function EventModalInner({
             />
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-[#c2d4cc]">
+          <label className="flex items-center gap-2 text-sm text-wo-secondary">
             <input
               type="checkbox"
               checked={allDay}
@@ -377,7 +377,7 @@ function EventModalInner({
           ) : null}
         </div>
 
-        <div className="flex items-center justify-between gap-2 border-t border-white/[0.06] px-6 py-4">
+        <div className="flex items-center justify-between gap-2 border-t border-wo-border px-6 py-4">
           {isEdit && !confirmDelete ? (
             <button type="button" className={ui.btnDanger} onClick={() => setConfirmDelete(true)}>
               <IconTrash className="h-4 w-4" stroke={1.75} />

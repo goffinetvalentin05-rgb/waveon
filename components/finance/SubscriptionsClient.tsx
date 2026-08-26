@@ -65,7 +65,7 @@ export function SubscriptionsClient({ projectId }: { projectId?: string }) {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className={ui.h1}>Abonnements</h1>
-            <p className="mt-1 text-sm text-[#8a9e96]">Coûts récurrents par projet et par personne.</p>
+            <p className="mt-1 text-sm text-wo-muted">Coûts récurrents par projet et par personne.</p>
           </div>
           <button type="button" className={ui.btnPrimary} onClick={() => setShow(true)}>
             <IconPlus className="h-4 w-4" />
@@ -76,15 +76,15 @@ export function SubscriptionsClient({ projectId }: { projectId?: string }) {
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className={ui.statCard}>
-          <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#8a9e96]">Mensuel</p>
+          <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-wo-muted">Mensuel</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums">{chf(monthly)}</p>
         </div>
         <div className={ui.statCard}>
-          <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#8a9e96]">Annuel estimé</p>
+          <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-wo-muted">Annuel estimé</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums">{chf(monthly * 12)}</p>
         </div>
         <div className={ui.statCard}>
-          <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#8a9e96]">Actifs</p>
+          <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-wo-muted">Actifs</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums">{active.length}</p>
         </div>
       </div>
@@ -95,8 +95,8 @@ export function SubscriptionsClient({ projectId }: { projectId?: string }) {
           <ul className="mt-3 space-y-2 text-sm">
             {byProject.map(([name, value]) => (
               <li key={name} className="flex justify-between">
-                <span className="text-[#c2d4cc]">{name}</span>
-                <span className="tabular-nums text-[#eef6f2]">{chf(value)}/mois</span>
+                <span className="text-wo-secondary">{name}</span>
+                <span className="tabular-nums text-wo-text">{chf(value)}/mois</span>
               </li>
             ))}
           </ul>
@@ -106,8 +106,8 @@ export function SubscriptionsClient({ projectId }: { projectId?: string }) {
           <ul className="mt-3 space-y-2 text-sm">
             {byPerson.map(([name, value]) => (
               <li key={name} className="flex justify-between">
-                <span className="text-[#c2d4cc]">{name}</span>
-                <span className="tabular-nums text-[#eef6f2]">{chf(value)}/mois</span>
+                <span className="text-wo-secondary">{name}</span>
+                <span className="tabular-nums text-wo-text">{chf(value)}/mois</span>
               </li>
             ))}
           </ul>
@@ -121,8 +121,8 @@ export function SubscriptionsClient({ projectId }: { projectId?: string }) {
           {subs.map((s) => (
             <li key={s.id} className={`${ui.card} flex items-center justify-between px-4 py-3`}>
               <div>
-                <p className="text-sm font-medium text-[#eef6f2]">{s.name}</p>
-                <p className="text-[11px] text-[#8a9e96]">
+                <p className="text-sm font-medium text-wo-text">{s.name}</p>
+                <p className="text-[11px] text-wo-muted">
                   {s.project?.name ?? "Personnel"} · {s.frequency === "yearly" ? "annuel" : s.frequency === "custom" ? "perso" : "mensuel"}
                   {s.next_renewal ? ` · prochain ${s.next_renewal}` : ""}
                   {s.status === "cancelled" ? " · résilié" : ""}

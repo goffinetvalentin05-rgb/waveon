@@ -1,23 +1,23 @@
 /**
- * Design system WaveOne — cockpit dark premium.
- * Tokens visuels : émeraude / teal, glass, glow subtil.
+ * Design system WaveOne — SaaS premium clair.
+ * Accent indigo, surfaces blanches, ombres très légères.
  */
 
 export const colors = {
-  bg: "#0a0a0a",
-  sidebar: "#121212",
-  surface: "#141414",
-  elevated: "#1c1c1c",
-  border: "rgba(255,255,255,0.08)",
-  borderStrong: "rgba(255,255,255,0.14)",
-  text: "#f3f4f3",
-  textMuted: "#8d8f8e",
-  textDim: "#6a6c6b",
-  accent: "#3dff8a",
-  accentSoft: "rgba(61,255,138,0.12)",
-  danger: "#fb7185",
-  warning: "#fbbf24",
-  success: "#3dff8a",
+  bg: "#F7F8FB",
+  sidebar: "#FFFFFF",
+  surface: "#FFFFFF",
+  elevated: "#FFFFFF",
+  border: "rgba(15, 23, 42, 0.08)",
+  borderStrong: "rgba(15, 23, 42, 0.14)",
+  text: "#0F172A",
+  textMuted: "#64748B",
+  textDim: "#94A3B8",
+  accent: "#6366F1",
+  accentSoft: "rgba(99, 102, 241, 0.12)",
+  danger: "#E11D48",
+  warning: "#D97706",
+  success: "#059669",
 } as const;
 
 export const ui = {
@@ -38,8 +38,8 @@ export const ui = {
   label: "wo-label",
 
   h1: "wo-h1",
-  h2: "text-base font-semibold tracking-tight text-[#eef6f2]",
-  muted: "text-[#8a9e96]",
+  h2: "text-base font-semibold tracking-tight text-wo-text",
+  muted: "text-wo-muted",
   kicker: "wo-kicker",
 
   overlay: "wo-overlay",
