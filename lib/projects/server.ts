@@ -96,7 +96,7 @@ export async function replaceProjectModules(
   modules: ProjectModuleKey[]
 ): Promise<ProjectModuleKey[]> {
   const enabled = normalizeModules(modules);
-  await supabase.from("project_modules").delete().eq("project_id", projectId).eq("user_id", userId);
+  await supabase.from("project_modules").delete().eq("project_id", projectId);
   const rows = enabled.map((module) => ({
     user_id: userId,
     project_id: projectId,

@@ -7,20 +7,16 @@ import { AuthShell } from "@/components/auth/AuthShell";
 import { brand } from "@/lib/brand/config";
 import { ui } from "@/lib/design/tokens";
 import { supabase } from "@/lib/supabase/client";
+import { safeInternalPath } from "@/lib/auth/invite";
 
 const hasSupabaseConfig = Boolean(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-function safeInternalPath(raw: string | null): string {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/home";
-  return raw;
-}
-
 function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => searchParams.get("email")?.trim().toLowerCase() ?? "");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [messageTone, setMessageTone] = useState<"error" | "success">("error");
@@ -94,7 +90,10 @@ function LoginPageContent() {
         forgotView ? null : (
           <>
             Pas encore de compte ?{" "}
-            <Link href="/signup" className="font-semibold text-wo-accent hover:underline">
+            <Link
+              href={`/signup${afterAuthPath !== "/home" ? `?redirect=${encodeURIComponent(afterAuthPath)}` : ""}`}
+              className="font-semibold text-wo-accent hover:underline"
+            >
               S&apos;inscrire
             </Link>
           </>

@@ -46,6 +46,22 @@ export function can(role: ProjectRole | null | undefined, permission: ProjectPer
   return atLeast(role, PERMISSION_MINIMUM[permission]);
 }
 
+export function canLeaveProject(role: ProjectRole | null | undefined): boolean {
+  return Boolean(role) && role !== "owner";
+}
+
+/** Qui peut modifier / retirer un autre membre. */
+export function canManageMember(
+  actor: ProjectRole | null | undefined,
+  target: ProjectRole
+): boolean {
+  if (!actor) return false;
+  if (target === "owner") return false;
+  if (actor === "owner") return true;
+  if (actor === "admin") return target === "member" || target === "viewer";
+  return false;
+}
+
 export function assertCan(role: ProjectRole | null | undefined, permission: ProjectPermission): boolean {
   return can(role, permission);
 }

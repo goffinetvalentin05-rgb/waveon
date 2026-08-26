@@ -68,6 +68,18 @@ export function HomeEntry({
 
       <section className="crm-animate-in-delay-2">
         <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-wo-dim">Mes projets</h2>
+        {active.length === 0 ? (
+          <div className="rounded-[1.35rem] border border-dashed border-wo-border bg-white px-6 py-10 text-center">
+            <p className="text-sm font-medium text-wo-text">Vous n&apos;avez encore aucun projet</p>
+            <p className="mt-1 text-sm text-wo-dim">
+              Votre espace Personnel est déjà là. Créez un projet pour collaborer.
+            </p>
+            <button type="button" className={`${ui.btnPrimary} mt-4`} onClick={() => setCreate(true)}>
+              <IconPlus className="h-4 w-4" />
+              Créer un projet
+            </button>
+          </div>
+        ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {active.map((project) => (
             <Link
@@ -111,6 +123,7 @@ export function HomeEntry({
             <span className="font-display text-lg font-semibold">Créer un projet</span>
           </button>
         </div>
+        )}
       </section>
 
       {create ? (

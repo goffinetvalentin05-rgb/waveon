@@ -17,6 +17,7 @@ export type ProjectInvitationRow = {
   token: string;
   role: InvitableRole;
   created_by: string;
+  inviter_name?: string | null;
   expires_at: string;
   accepted_at: string | null;
   revoked_at: string | null;

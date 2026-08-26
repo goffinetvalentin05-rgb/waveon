@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { Suspense, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { brand } from "@/lib/brand/config";
 import { ui } from "@/lib/design/tokens";
 import { supabase } from "@/lib/supabase/client";
+import { inviteTokenFromPath, safeInternalPath } from "@/lib/auth/invite";
 
 const hasSupabaseConfig = Boolean(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -14,7 +15,10 @@ const hasSupabaseConfig = Boolean(
 
 function SignupContent() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const searchParams = useSearchParams();
+  const afterAuthPath = safeInternalPath(searchParams.get("redirect"));
+  const inviteToken = inviteTokenFromPath(afterAuthPath);
+  const [email, setEmail] = useState(() => searchParams.get("email")?.trim().toLowerCase() ?? "");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
@@ -38,8 +42,10 @@ function SignupContent() {
     setLoading(true);
     try {
       const normalizedEmail = email.trim().toLowerCase();
-      const emailRedirectTo =
-        typeof window !== "undefined" ? `${window.location.origin}/home` : undefined;
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const emailRedirectTo = inviteToken
+        ? `${origin}${afterAuthPath}${afterAuthPath.includes("?") ? "&" : "?"}welcome=1`
+        : `${origin}/home`;
       const { data, error } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
@@ -51,8 +57,21 @@ function SignupContent() {
       }
       if (!data.session) {
         setMessage(
-          "Compte créé. Un email de confirmation vient d'être envoyé. Cliquez sur le lien reçu pour activer votre compte."
+          inviteToken
+            ? "Compte créé. Confirmez votre email : le lien vous ramènera directement au projet."
+            : "Compte créé. Un email de confirmation vient d'être envoyé. Cliquez sur le lien reçu pour activer votre compte."
         );
+        return;
+      }
+      if (inviteToken) {
+        const res = await fetch(`/api/invitations/${inviteToken}`, { method: "POST" });
+        const payload = await res.json();
+        if (res.ok && payload.projectId) {
+          router.replace(`/projects/${payload.projectId}`);
+          router.refresh();
+          return;
+        }
+        router.replace(afterAuthPath);
         return;
       }
       router.replace("/home");
@@ -63,14 +82,20 @@ function SignupContent() {
     }
   };
 
+  const loginHref = `/login${afterAuthPath !== "/home" ? `?redirect=${encodeURIComponent(afterAuthPath)}` : ""}`;
+
   return (
     <AuthShell
       title="Créer un compte"
-      subtitle={brand.tagline}
+      subtitle={
+        inviteToken
+          ? "Votre espace Personnel sera créé automatiquement. Vous rejoindrez ensuite uniquement le projet invité."
+          : brand.tagline
+      }
       footer={
         <>
           Déjà un compte ?{" "}
-          <Link href="/login" className="font-semibold text-wo-accent hover:underline">
+          <Link href={loginHref} className="font-semibold text-wo-accent hover:underline">
             Se connecter
           </Link>
         </>
@@ -125,7 +150,7 @@ function SignupContent() {
           </p>
         ) : null}
         <button type="submit" className={`${ui.btnPrimary} w-full`} disabled={loading}>
-          {loading ? "Création…" : "Créer mon compte"}
+          {loading ? "Création…" : inviteToken ? "Créer mon compte et rejoindre" : "Créer mon compte"}
         </button>
       </form>
     </AuthShell>

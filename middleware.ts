@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/auth-helpers-nextjs";
 import { type NextRequest, NextResponse } from "next/server";
+import { INVITE_COOKIE, inviteCookieOptions, invitePath, inviteTokenFromPath, isInviteToken } from "@/lib/auth/invite";
 
 const PROTECTED_PREFIXES = [
   "/home",
@@ -13,7 +14,6 @@ const PROTECTED_PREFIXES = [
   "/notes",
   "/notifications",
   "/personal",
-  "/invite",
   "/join",
   "/dashboard",
   "/prospects",
@@ -30,12 +30,22 @@ function isProtectedPath(pathname: string): boolean {
   );
 }
 
+function withInviteCookie(response: NextResponse, token: string) {
+  response.cookies.set(INVITE_COOKIE, token, inviteCookieOptions);
+  return response;
+}
+
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
   let response = NextResponse.next({
     request: { headers: request.headers },
   });
+
+  const inviteToken = inviteTokenFromPath(path);
+  if (inviteToken) {
+    response = withInviteCookie(response, inviteToken);
+  }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -59,6 +69,9 @@ export async function middleware(request: NextRequest) {
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
         });
+        if (inviteToken) {
+          response.cookies.set(INVITE_COOKIE, inviteToken, inviteCookieOptions);
+        }
       },
     },
   });
@@ -69,11 +82,20 @@ export async function middleware(request: NextRequest) {
 
   if (isProtectedPath(path) && !user) {
     const login = new URL("/login", request.url);
-    login.searchParams.set("redirect", path);
+    login.searchParams.set("redirect", `${path}${request.nextUrl.search}`);
     return NextResponse.redirect(login);
   }
 
   if (user && AUTH_PAGES.has(path)) {
+    const redirectParam = request.nextUrl.searchParams.get("redirect");
+    const fromRedirect = inviteTokenFromPath(redirectParam ?? "");
+    if (fromRedirect) {
+      return withInviteCookie(NextResponse.redirect(new URL(invitePath(fromRedirect), request.url)), fromRedirect);
+    }
+    const cookieToken = request.cookies.get(INVITE_COOKIE)?.value;
+    if (isInviteToken(cookieToken) && request.nextUrl.searchParams.get("invite") === "1") {
+      return NextResponse.redirect(new URL(invitePath(cookieToken), request.url));
+    }
     return NextResponse.redirect(new URL("/home", request.url));
   }
 

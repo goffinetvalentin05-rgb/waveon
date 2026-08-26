@@ -31,9 +31,7 @@ export default async function ProjectMembersPage({ params }: Props) {
       .order("created_at", { ascending: true }),
     supabase
       .from("project_invitations")
-      .select(
-        "id, project_id, email, token, role, created_by, expires_at, accepted_at, revoked_at, created_at"
-      )
+      .select("id, project_id, email, token, role, created_by, inviter_name, expires_at, accepted_at, revoked_at, created_at")
       .eq("project_id", id)
       .order("created_at", { ascending: false }),
   ]);
@@ -74,6 +72,7 @@ export default async function ProjectMembersPage({ params }: Props) {
       projectId={id}
       projectName={project.name}
       myRole={role}
+      currentUserId={user.id}
       joinCode={project.join_code ?? null}
       members={fallbackOwner}
       invitations={invitesRes.error ? [] : invitations}

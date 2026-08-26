@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
 import { createServerComponentSupabase } from "@/lib/supabase/server-component";
 import { fetchProjects } from "@/lib/projects/server";
-import { ProjectActions } from "@/components/projects/ProjectActions";
+import { ProjectActions, ProjectDangerZone } from "@/components/projects/ProjectActions";
 import { ui } from "@/lib/design/tokens";
 import { can } from "@/lib/access/permissions";
+import { PROJECT_ROLE_LABELS } from "@/lib/access/roles";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -28,16 +29,20 @@ export default async function ProjectSettingsPage({ params }: Props) {
         <h2 className={`${ui.h2} mt-2 text-lg`}>{project.name}</h2>
         {project.description ? <p className="mt-2 text-sm text-wo-muted">{project.description}</p> : null}
         <p className="mt-3 text-sm text-wo-secondary">
-          Votre rôle : <span className="font-medium text-wo-text">{role}</span>
+          Votre rôle :{" "}
+          <span className="font-medium text-wo-text">{PROJECT_ROLE_LABELS[role] ?? role}</span>
         </p>
         {can(role, "project.edit_settings") ? (
           <div className="mt-5">
             <ProjectActions project={project} />
           </div>
         ) : (
-          <p className="mt-4 text-sm text-wo-muted">Seuls l&apos;owner et les admins peuvent modifier ces paramètres.</p>
+          <p className="mt-4 text-sm text-wo-muted">
+            Seuls l&apos;owner et les admins peuvent modifier ces paramètres.
+          </p>
         )}
       </div>
+      <ProjectDangerZone project={project} role={role} currentUserId={user.id} />
     </div>
   );
 }

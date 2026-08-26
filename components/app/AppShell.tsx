@@ -396,6 +396,9 @@ function SidebarBody({
             </SectionLabel>
           )}
           <div className="flex flex-col gap-0.5">
+            {activeProjects.length === 0 && !compact ? (
+              <p className="px-2 py-1.5 text-[12px] text-wo-muted">Aucun projet</p>
+            ) : null}
             {activeProjects.map((project) => {
               const active = Boolean(pathname?.startsWith(`/projects/${project.id}`));
               return (
