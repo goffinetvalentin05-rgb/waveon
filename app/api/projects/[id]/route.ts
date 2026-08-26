@@ -84,7 +84,14 @@ export async function PATCH(request: Request, { params }: Params) {
 
   let enabledModules: ProjectModuleKey[] | undefined;
   if ("modules" in body) {
-    enabledModules = await replaceProjectModules(supabase, user.id, id, normalizeModules(body.modules));
+    try {
+      enabledModules = await replaceProjectModules(supabase, user.id, id, normalizeModules(body.modules));
+    } catch (err) {
+      return NextResponse.json(
+        { error: err instanceof Error ? err.message : "Impossible d'enregistrer les modules" },
+        { status: 500 }
+      );
+    }
   }
 
   return NextResponse.json({ project: { ...data, enabledModules, myRole: access.role } });

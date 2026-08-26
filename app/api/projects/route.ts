@@ -54,7 +54,15 @@ export async function POST(request: Request) {
 
   if (error || !data) return NextResponse.json({ error: error?.message ?? "Erreur" }, { status: 500 });
 
-  const enabledModules = await replaceProjectModules(supabase, user.id, data.id, modules);
+  let enabledModules;
+  try {
+    enabledModules = await replaceProjectModules(supabase, user.id, data.id, modules);
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Impossible d'enregistrer les modules" },
+      { status: 500 }
+    );
+  }
 
   await supabase.from("project_members").upsert(
     {

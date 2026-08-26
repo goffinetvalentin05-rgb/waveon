@@ -4,6 +4,7 @@ import type { Project } from "@/lib/projects/types";
 import { isClosedProspectStatus, isDemoScheduledStatus } from "@/lib/crm/closed";
 import {
   DEFAULT_ENABLED_MODULES,
+  SELECTABLE_MODULE_KEYS,
   modulesFromRows,
   normalizeModules,
   type ProjectModuleKey,
@@ -96,15 +97,19 @@ export async function replaceProjectModules(
   modules: ProjectModuleKey[]
 ): Promise<ProjectModuleKey[]> {
   const enabled = normalizeModules(modules);
-  await supabase.from("project_modules").delete().eq("project_id", projectId);
-  const rows = enabled.map((module) => ({
+  const enabledSet = new Set(enabled);
+  const rows = SELECTABLE_MODULE_KEYS.map((module) => ({
     user_id: userId,
     project_id: projectId,
     module,
-    enabled: true,
+    enabled: module === "overview" || enabledSet.has(module),
   }));
-  if (rows.length) {
-    await supabase.from("project_modules").insert(rows);
+
+  const { error } = await supabase.from("project_modules").upsert(rows, {
+    onConflict: "project_id,module",
+  });
+  if (error) {
+    throw new Error(error.message);
   }
   return enabled;
 }

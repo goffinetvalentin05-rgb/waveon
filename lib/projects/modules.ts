@@ -111,8 +111,9 @@ export function modulesFromRows(
   if (!rows || rows.length === 0) return [...DEFAULT_ENABLED_MODULES];
   const byKey = new Map(rows.map((row) => [row.module, row.enabled]));
   return SELECTABLE_MODULE_KEYS.filter((key) => {
+    if (key === "overview") return true;
     const stored = byKey.get(key);
-    if (stored === undefined) return DEFAULT_ENABLED_MODULES.includes(key);
+    if (stored === undefined) return false;
     return stored;
   });
 }
