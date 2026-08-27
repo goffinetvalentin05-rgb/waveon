@@ -4,14 +4,7 @@ import { recomputeProspectDerivatives } from "@/lib/crm/recompute-prospect";
 
 type Params = { params: Promise<{ id: string }> };
 
-const UNDO_ACTION_TYPES = new Set([
-  "mail_sent",
-  "call_made",
-  "demo_scheduled",
-  "client",
-  "refus",
-  "status_change",
-]);
+const PROTECTED_ACTION_TYPES = new Set(["created", "imported"]);
 
 export async function POST(_request: Request, { params }: Params) {
   const auth = await requireUser();
@@ -24,12 +17,11 @@ export async function POST(_request: Request, { params }: Params) {
     .select("id, action_type")
     .eq("user_id", user.id)
     .eq("prospect_id", id)
-    .in("action_type", Array.from(UNDO_ACTION_TYPES))
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
     .limit(1);
 
-  if (!latest?.length) {
+  if (!latest?.length || PROTECTED_ACTION_TYPES.has(String(latest[0].action_type))) {
     return NextResponse.json({ error: "Aucune action à annuler" }, { status: 400 });
   }
 
@@ -48,4 +40,3 @@ export async function POST(_request: Request, { params }: Params) {
     { status: 200 }
   );
 }
-

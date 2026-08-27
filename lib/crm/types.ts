@@ -89,13 +89,33 @@ export const INTERACTION_LABELS: Record<InteractionType, string> = {
 };
 
 export const CONTACT_CHANNELS = [
-  "WhatsApp",
   "Email",
+  "WhatsApp",
   "Téléphone",
   "LinkedIn",
-  "Visite",
+  "Rencontre",
   "Autre",
 ] as const;
+
+export function actionTypeFromChannel(channel: string | null | undefined): InteractionType {
+  switch (channel) {
+    case "Email":
+      return "email";
+    case "WhatsApp":
+      return "whatsapp";
+    case "Téléphone":
+      return "call";
+    case "LinkedIn":
+      return "linkedin";
+    case "Rencontre":
+    case "Visite":
+      return "meeting";
+    case "Autre":
+      return "other";
+    default:
+      return "note";
+  }
+}
 
 export const TASK_KINDS = ["follow_up", "first_contact", "demo", "custom"] as const;
 export type TaskKind = (typeof TASK_KINDS)[number];

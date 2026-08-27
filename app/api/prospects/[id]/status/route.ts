@@ -75,7 +75,7 @@ export async function POST(request: Request, { params }: Params) {
     user_id: user.id,
     prospect_id: id,
     action_type: "status_change",
-    title: `Statut modifié de ${fromStatus} à ${nextStatus}`,
+    title: `Statut modifié : ${fromStatus} → ${nextStatus}`,
     description: encodeStatusChangeDescription({
       to: nextStatus,
       from: fromStatus,

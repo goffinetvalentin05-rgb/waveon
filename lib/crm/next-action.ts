@@ -1,5 +1,4 @@
-import type { InteractionType, ProspectStatus } from "./types";
-import { isClosedProspectStatus } from "./closed";
+import type { ProspectStatus } from "./types";
 
 export const DEFAULT_NEXT_ACTION: Record<ProspectStatus, string | null> = {
   "À contacter": "Premier contact",
@@ -10,11 +9,6 @@ export const DEFAULT_NEXT_ACTION: Record<ProspectStatus, string | null> = {
   Démo: "Préparer / confirmer la démo",
   Client: null,
   Fermé: null,
-};
-
-const FOLLOW_UP_NEXT: Partial<Record<ProspectStatus, ProspectStatus>> = {
-  "À contacter": "Relance 1",
-  "Relance 1": "Relance 2",
 };
 
 export function defaultNextActionFor(status: ProspectStatus): string | null {
@@ -41,29 +35,6 @@ export function followUpDateLabel(status: ProspectStatus): string | null {
   }
 }
 
-/** Proposition de statut après une interaction — seulement si le passage est univoque. */
-export function suggestedStatusAfterInteraction(
-  type: InteractionType,
-  current: ProspectStatus
-): ProspectStatus | null {
-  if (isClosedProspectStatus(current)) return null;
-
-  if (type === "first_contact" && current === "À contacter") {
-    return "Relance 1";
-  }
-
-  if (type === "follow_up") {
-    return FOLLOW_UP_NEXT[current] ?? null;
-  }
-
-  // Une réponse ne déplace jamais le prospect : l'étape commerciale reste manuelle.
-  if (type === "reply") return null;
-
-  if (type === "demo" && current !== "Démo" && current !== "Relais") return "Démo";
-
-  return null;
-}
-
 export const CONTACT_ACTIVITY_TYPES = [
   "first_contact",
   "follow_up",
@@ -77,6 +48,8 @@ export const CONTACT_ACTIVITY_TYPES = [
   "demo",
   "reply",
   "offer",
+  "note",
+  "other",
 ] as const;
 
 export function isContactActivity(actionType: string): boolean {

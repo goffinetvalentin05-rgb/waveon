@@ -124,23 +124,36 @@ export function encodeStatusChangeDescription(input: {
 
 export function parseStatusChangePayload(description: string | null): {
   to: ProspectStatus | null;
+  from: string | null;
   closed_reason: string | null;
   closed_note: string | null;
 } {
-  if (!description) return { to: null, closed_reason: null, closed_note: null };
+  if (!description) return { to: null, from: null, closed_reason: null, closed_note: null };
   const trimmed = description.trim();
   if (trimmed.startsWith("{")) {
     try {
       const obj = JSON.parse(trimmed) as Record<string, unknown>;
       const toRaw = obj.to ?? obj.toStatus ?? obj.status;
+      const fromRaw = obj.from ?? obj.fromStatus;
       return {
         to: typeof toRaw === "string" ? migrateProspectStatus(toRaw) : null,
+        from: typeof fromRaw === "string" && fromRaw.trim() ? fromRaw : null,
         closed_reason: typeof obj.closed_reason === "string" ? obj.closed_reason : null,
         closed_note: typeof obj.closed_note === "string" ? obj.closed_note : null,
       };
     } catch {
-      return { to: migrateProspectStatus(trimmed), closed_reason: null, closed_note: null };
+      return {
+        to: migrateProspectStatus(trimmed),
+        from: null,
+        closed_reason: null,
+        closed_note: null,
+      };
     }
   }
-  return { to: migrateProspectStatus(trimmed), closed_reason: inferredClosedReason(trimmed), closed_note: trimmed === "Perdu" ? "Perdu" : null };
+  return {
+    to: migrateProspectStatus(trimmed),
+    from: null,
+    closed_reason: inferredClosedReason(trimmed),
+    closed_note: trimmed === "Perdu" ? "Perdu" : null,
+  };
 }

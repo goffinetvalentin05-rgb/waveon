@@ -39,6 +39,7 @@ import { parseStatusChangePayload } from "@/lib/crm/status";
 import { ui } from "@/lib/design/tokens";
 import { formatRelativeDay } from "@/lib/crm/format";
 import { isContactActivity, followUpDateLabel } from "@/lib/crm/next-action";
+import { formatTimelineActivity } from "@/lib/crm/activity-display";
 
 function fmtDay(iso: string) {
   return format(new Date(iso), "d MMMM yyyy", { locale: fr });
@@ -72,12 +73,17 @@ function lastContactCaption(prospect: Prospect, activities: ProspectActivity[]):
 
   const rawOutcome = prospect.last_action?.replace(/^Statut\s*:\s*/i, "").trim() || null;
   const outcome =
-    rawOutcome && !isProspectStatus(rawOutcome) && rawOutcome !== kind ? rawOutcome : null;
-  const extra = outcome || channel;
+    rawOutcome &&
+    !rawOutcome.startsWith("{") &&
+    !isProspectStatus(rawOutcome) &&
+    rawOutcome !== kind
+      ? rawOutcome
+      : null;
+  const extra = channel || outcome;
 
   if (kind && extra && extra !== kind) return `${kind} · ${extra}`;
   if (kind) return kind;
-  if (rawOutcome && !isProspectStatus(rawOutcome)) return rawOutcome;
+  if (rawOutcome && !rawOutcome.startsWith("{") && !isProspectStatus(rawOutcome)) return rawOutcome;
   return "—";
 }
 
@@ -1087,7 +1093,9 @@ export function ProspectDetailClient2({
   const showFollowUpDate =
     Boolean(followUpLabel) && !(prospect.status === "Démo" && prospect.demo_at);
 
-  const canUndo = activities.some((a) => editableActions.has(a.action_type));
+  const canUndo = activities.some(
+    (a) => a.action_type !== "created" && a.action_type !== "imported"
+  );
 
   const activityMenuOpen = activityMenuId;
 
@@ -1604,7 +1612,6 @@ export function ProspectDetailClient2({
 
         <InteractionForm
           prospectId={prospect.id}
-          currentStatus={prospect.status}
           defaultChannel={prospect.contact_channel}
           onAdded={() => void refreshAll()}
         />
@@ -1614,7 +1621,8 @@ export function ProspectDetailClient2({
         ) : (
           <ol className="mt-5 space-y-0">
             {activities.map((a, idx) => {
-              const showMenu = true; // menu disponible pour chaque action
+              const canEditActivity = editableActions.has(a.action_type);
+              const view = formatTimelineActivity(a);
               return (
                 <li
                   key={a.id}
@@ -1631,28 +1639,26 @@ export function ProspectDetailClient2({
                       <div className="min-w-0">
                         <p className="text-xs font-medium uppercase tracking-wide text-wo-dim">
                           {fmtDay(a.occurred_at || a.created_at)}
-                          {a.channel ? ` · ${a.channel}` : ""}
-                          {a.action_type in INTERACTION_LABELS
-                            ? ` · ${INTERACTION_LABELS[a.action_type as InteractionType]}`
-                            : ""}
-                          {a.actor_name ? ` · ${a.actor_name}` : ""}
+                          {view.showChannel && a.channel ? ` · ${a.channel}` : ""}
                         </p>
-                        <p className="mt-0.5 text-sm font-medium text-wo-text">{a.title}</p>
+                        {view.title ? (
+                          <p className="mt-0.5 text-sm font-medium text-wo-text">{view.title}</p>
+                        ) : null}
                       </div>
 
-                      {showMenu ? (
-                        <div className="relative">
-                          <button
-                            type="button"
-                            className="rounded-xl p-2 text-wo-dim hover:bg-wo-hover hover:text-wo-secondary"
-                            onClick={() => setActivityMenuId((v) => (v === a.id ? null : a.id))}
-                            aria-label="Menu actions"
-                          >
-                            <IconDots className="h-4 w-4" />
-                          </button>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          className="rounded-xl p-2 text-wo-dim hover:bg-wo-hover hover:text-wo-secondary"
+                          onClick={() => setActivityMenuId((v) => (v === a.id ? null : a.id))}
+                          aria-label="Menu actions"
+                        >
+                          <IconDots className="h-4 w-4" />
+                        </button>
 
-                          {activityMenuOpen === a.id ? (
-                            <div className="absolute right-0 top-9 z-20 w-44 rounded-[12px] border border-wo-border bg-white p-2 shadow-lg">
+                        {activityMenuOpen === a.id ? (
+                          <div className="absolute right-0 top-9 z-20 w-44 rounded-[12px] border border-wo-border bg-white p-2 shadow-lg">
+                            {canEditActivity ? (
                               <button
                                 type="button"
                                 className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-wo-secondary hover:bg-wo-hover"
@@ -1664,46 +1670,46 @@ export function ProspectDetailClient2({
                                 <IconEdit className="h-4 w-4" />
                                 Modifier
                               </button>
-                              <button
-                                type="button"
-                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-rose-700 hover:bg-rose-50"
-                                onClick={() => {
-                                  setActivityMenuId(null);
-                                  setConfirm({
-                                    tone: "danger",
-                                    title: "Supprimer cette action de l’historique ?",
-                                    description: "Cela supprimera l’entrée correspondante et recalculera le statut et la relance.",
-                                    confirmLabel: "Supprimer",
-                                    cancelLabel: "Annuler",
-                                    onConfirm: () => {
-                                      setConfirm(null);
-                                      startTransition(async () => {
-                                        const res = await fetch(
-                                          `/api/prospects/${prospect.id}/activities/${a.id}`,
-                                          { method: "DELETE" }
-                                        );
-                                        const data = await res.json();
-                                        if (!res.ok) {
-                                          setMsg(data.error ?? "Erreur.");
-                                          return;
-                                        }
-                                        setMsg("Action supprimée.");
-                                        await refreshAll();
-                                      });
-                                    },
-                                  });
-                                }}
-                              >
-                                <IconTrash className="h-4 w-4" />
-                                Supprimer
-                              </button>
-                            </div>
-                          ) : null}
-                        </div>
-                      ) : null}
+                            ) : null}
+                            <button
+                              type="button"
+                              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-rose-700 hover:bg-rose-50"
+                              onClick={() => {
+                                setActivityMenuId(null);
+                                setConfirm({
+                                  tone: "danger",
+                                  title: "Supprimer cette action de l’historique ?",
+                                  description: "Cela supprimera l’entrée correspondante.",
+                                  confirmLabel: "Supprimer",
+                                  cancelLabel: "Annuler",
+                                  onConfirm: () => {
+                                    setConfirm(null);
+                                    startTransition(async () => {
+                                      const res = await fetch(
+                                        `/api/prospects/${prospect.id}/activities/${a.id}`,
+                                        { method: "DELETE" }
+                                      );
+                                      const data = await res.json();
+                                      if (!res.ok) {
+                                        setMsg(data.error ?? "Erreur.");
+                                        return;
+                                      }
+                                      setMsg("Action supprimée.");
+                                      await refreshAll();
+                                    });
+                                  },
+                                });
+                              }}
+                            >
+                              <IconTrash className="h-4 w-4" />
+                              Supprimer
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
 
-                    {a.description ? <p className="text-sm text-wo-muted whitespace-pre-wrap">{a.description}</p> : null}
+                    {view.body ? <p className="text-sm text-wo-muted whitespace-pre-wrap">{view.body}</p> : null}
                   </div>
                 </li>
               );
