@@ -21,6 +21,26 @@ export function defaultNextActionFor(status: ProspectStatus): string | null {
   return DEFAULT_NEXT_ACTION[status] ?? null;
 }
 
+/** Libellé de la date de suivi, selon le statut pipeline. Null = ne pas afficher. */
+export function followUpDateLabel(status: ProspectStatus): string | null {
+  switch (status) {
+    case "À contacter":
+      return "Date de contact";
+    case "Relance 1":
+    case "Relance 2":
+      return "Date de relance";
+    case "En discussion":
+      return "Prochain suivi";
+    case "Relais":
+      return "Suivi réseau";
+    case "Démo":
+      return "Date de démo";
+    case "Client":
+    case "Fermé":
+      return null;
+  }
+}
+
 /** Proposition de statut après une interaction — seulement si le passage est univoque. */
 export function suggestedStatusAfterInteraction(
   type: InteractionType,

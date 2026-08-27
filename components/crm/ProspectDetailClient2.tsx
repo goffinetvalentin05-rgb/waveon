@@ -33,12 +33,12 @@ import type {
   ProspectStatus,
   ActionType,
 } from "@/lib/crm/types";
-import { INTERACTION_LABELS, type InteractionType } from "@/lib/crm/types";
+import { INTERACTION_LABELS, isProspectStatus, type InteractionType } from "@/lib/crm/types";
 import { formatClosedReason, type ClosedReason } from "@/lib/crm/closed";
 import { parseStatusChangePayload } from "@/lib/crm/status";
 import { ui } from "@/lib/design/tokens";
 import { formatRelativeDay } from "@/lib/crm/format";
-import { isContactActivity } from "@/lib/crm/next-action";
+import { isContactActivity, followUpDateLabel } from "@/lib/crm/next-action";
 
 function fmtDay(iso: string) {
   return format(new Date(iso), "d MMMM yyyy", { locale: fr });
@@ -51,6 +51,34 @@ function toDateInputValue(iso: string | null | undefined) {
   } catch {
     return String(iso).slice(0, 10);
   }
+}
+
+function lastContactAt(prospect: Prospect, activities: ProspectActivity[]): string | null {
+  const last = activities.find((a) => isContactActivity(a.action_type));
+  return last?.occurred_at || last?.created_at || prospect.last_action_at;
+}
+
+function lastContactCaption(prospect: Prospect, activities: ProspectActivity[]): string {
+  const last = activities.find((a) => isContactActivity(a.action_type));
+  let kind: string | null = null;
+  let channel: string | null = null;
+  if (last) {
+    kind =
+      last.action_type in QUICK_ACTION_LABELS
+        ? QUICK_ACTION_LABELS[last.action_type as QuickAction]
+        : INTERACTION_LABELS[last.action_type as InteractionType] ?? last.title.split(" — ")[0];
+    channel = last.channel || null;
+  }
+
+  const rawOutcome = prospect.last_action?.replace(/^Statut\s*:\s*/i, "").trim() || null;
+  const outcome =
+    rawOutcome && !isProspectStatus(rawOutcome) && rawOutcome !== kind ? rawOutcome : null;
+  const extra = outcome || channel;
+
+  if (kind && extra && extra !== kind) return `${kind} · ${extra}`;
+  if (kind) return kind;
+  if (rawOutcome && !isProspectStatus(rawOutcome)) return rawOutcome;
+  return "—";
 }
 
 type ConfirmTone = "default" | "danger";
@@ -596,8 +624,6 @@ export function ProspectDetailClient2({
     potential_value: initial.potential_value != null ? String(initial.potential_value) : "",
     contact_channel: initial.contact_channel ?? "",
     tags: (initial.tags ?? []).join(", "),
-    next_follow_up: initial.next_follow_up ?? "",
-    next_action: initial.next_action ?? "",
   });
 
   const [inlineEditing, setInlineEditing] = useState<{
@@ -771,8 +797,6 @@ export function ProspectDetailClient2({
         potential_value: draft.potential_value === "" ? null : Number(draft.potential_value),
         contact_channel: draft.contact_channel,
         tags: draft.tags,
-        next_follow_up: draft.next_follow_up,
-        next_action: draft.next_action,
       };
 
       const patchRes = await fetch(`/api/prospects/${prospect.id}`, {
@@ -1059,6 +1083,10 @@ export function ProspectDetailClient2({
     !isArchived &&
     (Boolean(prospect.demo_at) || isDemoScheduledStatus(prospect.status));
 
+  const followUpLabel = followUpDateLabel(prospect.status);
+  const showFollowUpDate =
+    Boolean(followUpLabel) && !(prospect.status === "Démo" && prospect.demo_at);
+
   const canUndo = activities.some((a) => editableActions.has(a.action_type));
 
   const activityMenuOpen = activityMenuId;
@@ -1140,8 +1168,6 @@ export function ProspectDetailClient2({
                     potential_value: prospect.potential_value != null ? String(prospect.potential_value) : "",
                     contact_channel: prospect.contact_channel ?? "",
                     tags: (prospect.tags ?? []).join(", "),
-                    next_follow_up: prospect.next_follow_up ?? "",
-                    next_action: prospect.next_action ?? "",
                   });
                   setEditMode(true);
                   setMsg(null);
@@ -1168,53 +1194,38 @@ export function ProspectDetailClient2({
       ) : null}
 
       <section className={`${ui.card} p-5 sm:p-6`}>
-        <h2 className={ui.h2}>Suivi commercial</h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <h2 className={ui.h2}>Suivi</h2>
+        <div
+          className={`mt-4 grid gap-4 ${
+            showFollowUpDate ? "md:grid-cols-3" : "md:grid-cols-2"
+          }`}
+        >
           <div>
             <p className="text-[11px] uppercase tracking-[0.08em] text-wo-dim">Dernier contact</p>
-            <p className="mt-1 text-sm text-wo-text">{formatRelativeDay(prospect.last_action_at)}</p>
-            <p className="text-xs text-wo-muted">{prospect.last_action ?? "—"}</p>
+            <p className="mt-1 text-sm text-wo-text">{formatRelativeDay(lastContactAt(prospect, activities))}</p>
+            <p className="text-xs text-wo-muted">{lastContactCaption(prospect, activities)}</p>
           </div>
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.08em] text-wo-dim">Contacts</p>
-            <p className="mt-1 text-sm text-wo-text">
-              {activities.filter((a) => isContactActivity(a.action_type)).length}
-            </p>
-            <p className="text-xs text-wo-muted">{prospect.contact_channel ?? "Canal —"}</p>
-          </div>
+          {showFollowUpDate ? (
+            <div>
+              <label className="text-[11px] uppercase tracking-[0.08em] text-wo-dim">
+                {followUpLabel}
+              </label>
+              <input
+                type="date"
+                className={`${ui.input} mt-1`}
+                value={prospect.next_follow_up ?? ""}
+                disabled={isArchived}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setProspect((p) => ({ ...p, next_follow_up: value || null }));
+                  saveInlineField("next_follow_up", value);
+                }}
+              />
+            </div>
+          ) : null}
           <div>
             <p className="text-[11px] uppercase tracking-[0.08em] text-wo-dim">Responsable</p>
             <p className="mt-1 text-sm text-wo-text">{prospect.assignee?.name ?? "—"}</p>
-          </div>
-          <div className="sm:col-span-2">
-            <label className={ui.label}>Prochaine action</label>
-            <input
-              className={`${ui.input} mt-1`}
-              value={editMode ? draft.next_action : (prospect.next_action ?? "")}
-              disabled={editMode}
-              onChange={(e) => setProspect((p) => ({ ...p, next_action: e.target.value }))}
-              onBlur={(e) => {
-                if (editMode) return;
-                saveInlineField("next_action", e.target.value);
-              }}
-              placeholder={prospect.status === "Relais" ? "Ex. Suivi réseau" : "Ex. Envoyer relance 2"}
-            />
-          </div>
-          <div>
-            <label className={ui.label}>
-              {prospect.status === "Relais" ? "Date de suivi réseau" : "Date prochaine action"}
-            </label>
-            <input
-              type="date"
-              className={`${ui.input} mt-1`}
-              value={editMode ? draft.next_follow_up : (prospect.next_follow_up ?? "")}
-              disabled={editMode}
-              onChange={(e) => {
-                const value = e.target.value;
-                setProspect((p) => ({ ...p, next_follow_up: value || null }));
-                if (!editMode) saveInlineField("next_follow_up", value);
-              }}
-            />
           </div>
         </div>
       </section>
@@ -1381,26 +1392,10 @@ export function ProspectDetailClient2({
                 <dt className="text-wo-dim">Canal</dt>
                 <dd className="text-right font-medium text-wo-text">{prospect.contact_channel ?? "—"}</dd>
               </div>
-              <div className="flex justify-between gap-4 border-b border-wo-border pb-2">
+              <div className="flex justify-between gap-4 border-b border-wo-border pb-2 last:border-0">
                 <dt className="text-wo-dim">Tags</dt>
                 <dd className="text-right font-medium text-wo-text">
                   {(prospect.tags ?? []).length ? prospect.tags.join(", ") : "—"}
-                </dd>
-              </div>
-              <div className="flex justify-between gap-4 border-b border-wo-border pb-2">
-                <dt className="text-wo-dim">Dernière action</dt>
-                <dd className="text-right font-medium text-wo-text">{prospect.last_action ?? "—"}</dd>
-              </div>
-              <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-                <dt className="text-wo-dim">
-                  {prospect.status === "Relais" ? "Suivi réseau" : "Prochaine relance"}
-                </dt>
-                <dd className="text-right font-medium text-wo-text">
-                  {prospect.next_follow_up ? (
-                    format(new Date(`${prospect.next_follow_up}T12:00:00`), "d MMMM yyyy", { locale: fr })
-                  ) : (
-                    "—"
-                  )}
                 </dd>
               </div>
             </dl>
@@ -1556,25 +1551,6 @@ export function ProspectDetailClient2({
                   value={draft.tags}
                   onChange={(e) => setDraft((d) => ({ ...d, tags: e.target.value }))}
                   placeholder="séparés par des virgules"
-                />
-              </div>
-              <div>
-                <label className={ui.label}>Prochaine action</label>
-                <input
-                  className={ui.input}
-                  value={draft.next_action}
-                  onChange={(e) => setDraft((d) => ({ ...d, next_action: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className={ui.label}>
-                  {draft.status === "Relais" ? "Date de suivi réseau" : "Date prochaine action"}
-                </label>
-                <input
-                  type="date"
-                  className={ui.input}
-                  value={draft.next_follow_up}
-                  onChange={(e) => setDraft((d) => ({ ...d, next_follow_up: e.target.value }))}
                 />
               </div>
               <div className="sm:col-span-2">

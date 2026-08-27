@@ -9,7 +9,7 @@ import {
   type InteractionType,
   type ProspectStatus,
 } from "@/lib/crm/types";
-import { defaultNextActionFor, suggestedStatusAfterInteraction } from "@/lib/crm/next-action";
+import { followUpDateLabel, suggestedStatusAfterInteraction } from "@/lib/crm/next-action";
 import { addDays, formatISO } from "date-fns";
 
 export function InteractionForm({
@@ -27,35 +27,32 @@ export function InteractionForm({
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [description, setDescription] = useState("");
   const [channel, setChannel] = useState(defaultChannel ?? "WhatsApp");
-  const [nextAction, setNextAction] = useState("");
   const [nextDate, setNextDate] = useState(formatISO(addDays(new Date(), 3), { representation: "date" }));
   const [saving, setSaving] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<ProspectStatus | null>(null);
 
   const suggested = suggestedStatusAfterInteraction(type, currentStatus);
+  const dateLabel = followUpDateLabel(currentStatus);
 
   const submit = async (e: React.FormEvent, applyStatus: boolean) => {
     e.preventDefault();
     setSaving(true);
+    const body: Record<string, unknown> = {
+      action_type: type,
+      occurred_at: date,
+      description,
+      channel,
+      apply_status: applyStatus,
+    };
+    if (dateLabel) body.next_follow_up = nextDate;
     await fetch(`/api/prospects/${prospectId}/activities`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action_type: type,
-        occurred_at: date,
-        description,
-        channel,
-        next_action: nextAction || defaultNextActionFor(applyStatus && suggested ? suggested : currentStatus),
-        next_follow_up: nextDate,
-        apply_status: applyStatus,
-      }),
+      body: JSON.stringify(body),
     });
     setSaving(false);
     setDescription("");
     setPendingStatus(null);
-    if (suggested && applyStatus) {
-      setNextAction(defaultNextActionFor(suggested) ?? "");
-    }
     onAdded();
   };
 
@@ -94,10 +91,12 @@ export function InteractionForm({
         <label className={ui.label}>Date</label>
         <input type="date" className={ui.input} value={date} onChange={(e) => setDate(e.target.value)} />
       </div>
-      <div>
-        <label className={ui.label}>Prochaine action — date</label>
-        <input type="date" className={ui.input} value={nextDate} onChange={(e) => setNextDate(e.target.value)} />
-      </div>
+      {dateLabel ? (
+        <div>
+          <label className={ui.label}>{dateLabel}</label>
+          <input type="date" className={ui.input} value={nextDate} onChange={(e) => setNextDate(e.target.value)} />
+        </div>
+      ) : null}
       <div className="sm:col-span-2">
         <label className={ui.label}>Description</label>
         <input
@@ -105,21 +104,6 @@ export function InteractionForm({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Ex. Relance envoyée"
-        />
-      </div>
-      <div className="sm:col-span-2">
-        <label className={ui.label}>Prochaine action</label>
-        <input
-          className={ui.input}
-          value={nextAction}
-          onChange={(e) => setNextAction(e.target.value)}
-          placeholder={
-            currentStatus === "Relais" || suggested === "Relais"
-              ? "Ex. Suivi réseau"
-              : suggested
-                ? defaultNextActionFor(suggested) ?? ""
-                : "Ex. Envoyer relance 2"
-          }
         />
       </div>
       {pendingStatus ? (
