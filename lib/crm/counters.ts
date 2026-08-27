@@ -23,6 +23,7 @@ export type ProspectWorkCounts = {
   inDiscussion: number;
   relance1: number;
   relance2: number;
+  relais: number;
   closed: number;
 };
 
@@ -47,6 +48,7 @@ export function countProspectWork(
     inDiscussion: 0,
     relance1: 0,
     relance2: 0,
+    relais: 0,
     closed: 0,
   };
 
@@ -56,6 +58,7 @@ export function countProspectWork(
     if (status === "À contacter") counts.toContact += 1;
     if (status === "Relance 1") counts.relance1 += 1;
     if (status === "Relance 2") counts.relance2 += 1;
+    if (status === "Relais") counts.relais += 1;
     if (status === "En discussion") {
       counts.inDiscussion += 1;
       counts.considering += 1;

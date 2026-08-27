@@ -53,7 +53,9 @@ export async function ensureTodayTasks(
           ? `Premier contact ${p.club_name}`
           : isDemoScheduledStatus(p.status)
             ? `Démonstration ${p.club_name}`
-            : `Relancer ${p.club_name}`,
+            : p.status === "Relais"
+              ? `Suivi réseau ${p.club_name}`
+              : `Relancer ${p.club_name}`,
       due_date: today,
       task_kind:
         p.status === "À contacter"

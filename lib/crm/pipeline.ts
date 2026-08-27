@@ -6,6 +6,7 @@ export type PipelineColumnId =
   | "to_contact"
   | "follow_up_1"
   | "follow_up_2"
+  | "relay"
   | "discussion"
   | "demo"
   | "client"
@@ -22,6 +23,7 @@ export const PIPELINE_COLUMNS: PipelineColumn[] = [
   { id: "to_contact", label: "À contacter", accent: "bg-[#8d8f8e]", status: "À contacter" },
   { id: "follow_up_1", label: "Relance 1", accent: "bg-amber-400", status: "Relance 1" },
   { id: "follow_up_2", label: "Relance 2", accent: "bg-orange-400", status: "Relance 2" },
+  { id: "relay", label: "Relais", accent: "bg-indigo-300", status: "Relais" },
   { id: "discussion", label: "En discussion", accent: "bg-violet-400", status: "En discussion" },
   { id: "demo", label: "Démo", accent: "bg-cyan-400", status: "Démo" },
   { id: "client", label: "Client", accent: "bg-emerald-400", status: "Client" },

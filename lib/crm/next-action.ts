@@ -5,6 +5,7 @@ export const DEFAULT_NEXT_ACTION: Record<ProspectStatus, string | null> = {
   "À contacter": "Premier contact",
   "Relance 1": "Envoyer relance 1",
   "Relance 2": "Envoyer relance 2",
+  Relais: "Suivi réseau",
   "En discussion": "Relancer",
   Démo: "Préparer / confirmer la démo",
   Client: null,
@@ -38,7 +39,7 @@ export function suggestedStatusAfterInteraction(
   // Une réponse ne déplace jamais le prospect : l'étape commerciale reste manuelle.
   if (type === "reply") return null;
 
-  if (type === "demo" && current !== "Démo") return "Démo";
+  if (type === "demo" && current !== "Démo" && current !== "Relais") return "Démo";
 
   return null;
 }

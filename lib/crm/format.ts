@@ -31,6 +31,22 @@ export function formatShortDate(value: string | null | undefined): string {
   }
 }
 
+export function formatMonthDay(value: string | null | undefined): string | null {
+  if (!value) return null;
+  try {
+    const d = asDate(value);
+    if (Number.isNaN(d.getTime())) return value;
+    return format(d, "d MMMM", { locale: fr });
+  } catch {
+    return value;
+  }
+}
+
+export function formatRelayFollowUp(nextFollowUp: string | null | undefined): string {
+  const date = formatMonthDay(nextFollowUp);
+  return date ? `Suivi réseau — ${date}` : "Suivi réseau";
+}
+
 export function daysOverdue(value: string | null | undefined): number | null {
   if (!value) return null;
   const d = asDate(value);

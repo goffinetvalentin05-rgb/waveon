@@ -11,6 +11,7 @@ import {
   prospectAvatarTone,
 } from "@/lib/crm/pipeline";
 import { formatClosedReason } from "@/lib/crm/closed";
+import { formatRelayFollowUp } from "@/lib/crm/format";
 import { prospectDetailHref } from "@/lib/crm/paths";
 import type { Prospect, ProspectStatus } from "@/lib/crm/types";
 
@@ -85,9 +86,17 @@ export function ProspectsPipeline({
                   <p className="px-2 py-6 text-center text-xs text-wo-dim">Vide</p>
                 ) : (
                   items.map((p) => {
-                    const closedLabel =
-                      col.id === "closed" ? formatClosedReason(p.closed_reason, p.closed_note) : null;
-                    const meta = closedLabel || [p.ville, p.sport].filter(Boolean).join(" · ");
+                    const subtitle =
+                      col.id === "closed"
+                        ? formatClosedReason(p.closed_reason, p.closed_note) || "\u00a0"
+                        : col.id === "relay"
+                          ? formatRelayFollowUp(p.next_follow_up)
+                          : (() => {
+                              const meta = [p.ville, p.sport].filter(Boolean).join(" · ");
+                              const date = fmtDate(p.next_follow_up);
+                              if (meta && date) return `${meta} · ${date}`;
+                              return meta || date || "\u00a0";
+                            })();
                     return (
                       <button
                         key={p.id}
@@ -109,12 +118,7 @@ export function ProspectsPipeline({
                       >
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-[13px] font-medium text-wo-text">{p.club_name}</p>
-                          <p className="mt-0.5 truncate text-[11px] text-wo-dim">
-                            {meta || (p.next_follow_up ? fmtDate(p.next_follow_up) : "\u00a0")}
-                            {meta && p.next_follow_up && col.id !== "closed"
-                              ? ` · ${fmtDate(p.next_follow_up)}`
-                              : ""}
-                          </p>
+                          <p className="mt-0.5 truncate text-[11px] text-wo-dim">{subtitle}</p>
                         </div>
                         <span
                           className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${prospectAvatarTone(p.club_name)}`}

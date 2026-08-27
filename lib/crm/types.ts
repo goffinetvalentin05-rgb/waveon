@@ -5,6 +5,11 @@ export const PROSPECT_STATUS_PHASES = [
     statuses: ["À contacter", "Relance 1", "Relance 2"],
   },
   {
+    id: "network" as const,
+    label: "Réseau",
+    statuses: ["Relais"],
+  },
+  {
     id: "discussion" as const,
     label: "Avancement",
     statuses: ["En discussion", "Démo"],

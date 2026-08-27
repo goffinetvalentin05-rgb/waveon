@@ -49,6 +49,8 @@ function statusToNextFollowUpDate(
       return dateOnly(addDays(actionDate, settings.delay_relance_1_days));
     case "Relance 2":
       return dateOnly(addDays(actionDate, settings.delay_relance_2_days));
+    case "Relais":
+      return dateOnly(addDays(actionDate, 30));
     case "En discussion":
     case "Démo":
       return dateOnly(actionDate);
@@ -67,6 +69,9 @@ function taskFromStatus(clubName: string, status: ProspectStatus): {
   }
   if (isDemoStatus(status)) {
     return { taskKind: "demo", title: `Démonstration ${clubName}` };
+  }
+  if (status === "Relais") {
+    return { taskKind: "follow_up", title: `Suivi réseau ${clubName}` };
   }
   return { taskKind: "follow_up", title: `Relancer ${clubName}` };
 }

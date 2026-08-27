@@ -47,7 +47,9 @@ export async function POST(request: Request, { params }: Params) {
       ? body.next_action.trim() || null
       : isClosedProspectStatus(nextStatus)
         ? null
-        : prospect.next_action || defaultNextActionFor(nextStatus);
+        : nextStatus === "Relais"
+          ? defaultNextActionFor("Relais")
+          : prospect.next_action || defaultNextActionFor(nextStatus);
   const nextFollowUp =
     "next_follow_up" in body
       ? (body.next_follow_up ? String(body.next_follow_up).slice(0, 10) : null)

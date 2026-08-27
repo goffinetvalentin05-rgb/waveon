@@ -113,7 +113,13 @@ export function InteractionForm({
           className={ui.input}
           value={nextAction}
           onChange={(e) => setNextAction(e.target.value)}
-          placeholder={suggested ? defaultNextActionFor(suggested) ?? "" : "Ex. Envoyer relance 2"}
+          placeholder={
+            currentStatus === "Relais" || suggested === "Relais"
+              ? "Ex. Suivi réseau"
+              : suggested
+                ? defaultNextActionFor(suggested) ?? ""
+                : "Ex. Envoyer relance 2"
+          }
         />
       </div>
       {pendingStatus ? (

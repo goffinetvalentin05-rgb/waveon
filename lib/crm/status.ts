@@ -8,6 +8,7 @@ export const STATUS_STYLES: Record<ProspectStatus, BadgeStyle> = {
   "À contacter": { bg: "bg-slate-100", text: "text-slate-700", dot: "bg-slate-400", label: "À contacter" },
   "Relance 1": { bg: "bg-amber-50", text: "text-amber-800", dot: "bg-amber-500", label: "Relance 1" },
   "Relance 2": { bg: "bg-orange-50", text: "text-orange-800", dot: "bg-orange-500", label: "Relance 2" },
+  Relais: { bg: "bg-indigo-50", text: "text-indigo-700", dot: "bg-indigo-300", label: "Relais" },
   "En discussion": { bg: "bg-violet-50", text: "text-violet-800", dot: "bg-violet-500", label: "En discussion" },
   Démo: { bg: "bg-cyan-50", text: "text-cyan-800", dot: "bg-cyan-500", label: "Démo" },
   Client: { bg: "bg-emerald-50", text: "text-emerald-800", dot: "bg-emerald-500", label: "Client" },
@@ -54,6 +55,10 @@ export function migrateProspectStatus(status: string): ProspectStatus {
   return LEGACY_TO_CURRENT[status] ?? "À contacter";
 }
 
+export function isRelayStatus(status: string): boolean {
+  return migrateProspectStatus(status) === "Relais";
+}
+
 export function inferredClosedReason(status: string): ClosedReason | null {
   return closedReasonFromLegacyStatus(status);
 }
@@ -75,6 +80,7 @@ export function statusesMatching(status: ProspectStatus): string[] {
     "À contacter": ["Nouveau"],
     "Relance 1": ["1er contact envoyé", "Contacté", "En conversation", "À recontacter plus tard", "Réponse reçue", "Répondu"],
     "Relance 2": ["Relance 3 / dernière relance", "Sans réponse"],
+    Relais: [],
     "En discussion": [
       "À qualifier",
       "Intéressé",

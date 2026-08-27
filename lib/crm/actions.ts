@@ -82,7 +82,7 @@ export function resolveQuickActionAt(
         lastAction: "Mail envoyé",
         nextFollowUp: followUpDateFrom(actionDate, settings.delay_relance_1_days),
         activityTitle: currentStatus === "À contacter" ? "Premier mail envoyé" : "Mail envoyé",
-        taskTitle: `Relancer ${clubName}`,
+        taskTitle: currentStatus === "Relais" ? `Suivi réseau ${clubName}` : `Relancer ${clubName}`,
         taskKind: "follow_up",
       };
     }
@@ -93,7 +93,7 @@ export function resolveQuickActionAt(
         lastAction: "Appel effectué",
         nextFollowUp: followUpDateFrom(actionDate, settings.delay_relance_1_days),
         activityTitle: "Appel effectué",
-        taskTitle: `Relancer ${clubName}`,
+        taskTitle: currentStatus === "Relais" ? `Suivi réseau ${clubName}` : `Relancer ${clubName}`,
         taskKind: "follow_up",
       };
     }

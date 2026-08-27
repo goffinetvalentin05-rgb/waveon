@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { StatusBadge } from "@/components/crm/StatusBadge";
 import { StatusSelect } from "@/components/crm/StatusSelect";
-import { formatRelativeDay } from "@/lib/crm/format";
+import { formatRelativeDay, formatRelayFollowUp } from "@/lib/crm/format";
 import { prospectDetailHref } from "@/lib/crm/paths";
 import { formatClosedReason } from "@/lib/crm/closed";
 import type { Prospect, ProspectStatus } from "@/lib/crm/types";
@@ -59,8 +59,14 @@ export function ProspectListRow({
         ) : null}
       </div>
       <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]">
-        <span className="text-wo-text">{prospect.next_action || "Pas de prochaine action"}</span>
-        <span className="text-wo-muted">{formatRelativeDay(prospect.next_follow_up)}</span>
+        <span className="text-wo-text">
+          {prospect.status === "Relais"
+            ? formatRelayFollowUp(prospect.next_follow_up)
+            : prospect.next_action || "Pas de prochaine action"}
+        </span>
+        {prospect.status === "Relais" ? null : (
+          <span className="text-wo-muted">{formatRelativeDay(prospect.next_follow_up)}</span>
+        )}
         {prospect.assignee?.name ? <span className="text-wo-dim">{prospect.assignee.name}</span> : null}
       </div>
     </article>

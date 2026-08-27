@@ -1197,11 +1197,13 @@ export function ProspectDetailClient2({
                 if (editMode) return;
                 saveInlineField("next_action", e.target.value);
               }}
-              placeholder="Ex. Envoyer relance 2"
+              placeholder={prospect.status === "Relais" ? "Ex. Suivi réseau" : "Ex. Envoyer relance 2"}
             />
           </div>
           <div>
-            <label className={ui.label}>Date prochaine action</label>
+            <label className={ui.label}>
+              {prospect.status === "Relais" ? "Date de suivi réseau" : "Date prochaine action"}
+            </label>
             <input
               type="date"
               className={`${ui.input} mt-1`}
@@ -1390,7 +1392,9 @@ export function ProspectDetailClient2({
                 <dd className="text-right font-medium text-wo-text">{prospect.last_action ?? "—"}</dd>
               </div>
               <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-                <dt className="text-wo-dim">Prochaine relance</dt>
+                <dt className="text-wo-dim">
+                  {prospect.status === "Relais" ? "Suivi réseau" : "Prochaine relance"}
+                </dt>
                 <dd className="text-right font-medium text-wo-text">
                   {prospect.next_follow_up ? (
                     format(new Date(`${prospect.next_follow_up}T12:00:00`), "d MMMM yyyy", { locale: fr })
@@ -1563,7 +1567,9 @@ export function ProspectDetailClient2({
                 />
               </div>
               <div>
-                <label className={ui.label}>Date prochaine action</label>
+                <label className={ui.label}>
+                  {draft.status === "Relais" ? "Date de suivi réseau" : "Date prochaine action"}
+                </label>
                 <input
                   type="date"
                   className={ui.input}
