@@ -44,7 +44,6 @@ export default async function ProjectProspectsPage({ params, searchParams }: Pro
       .from("prospects")
       .select("*", { count: "exact", head: true })
       .eq("project_id", id)
-      .neq("status", "Client")
       .is("archived_at", null),
   ]);
 

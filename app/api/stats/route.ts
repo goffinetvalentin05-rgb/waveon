@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/crm/server";
 import { migrateProspectStatus } from "@/lib/crm/status";
-import { isClosedProspectStatus, isDemoScheduledStatus, isDemoDoneStatus } from "@/lib/crm/closed";
+import { isLostProspectStatus, isDemoStatus } from "@/lib/crm/closed";
 
 function rate(num: number, den: number) {
   return den > 0 ? Math.round((num / den) * 1000) / 10 : 0;
@@ -28,30 +28,9 @@ export async function GET(request: Request) {
   const total = list.length;
   const clients = list.filter((p) => p.status === "Client").length;
   const contacted = list.filter((p) => p.status !== "À contacter").length;
-  const replies = list.filter((p) =>
-    [
-      "Réponse reçue",
-      "À qualifier",
-      "Intéressé",
-      "Démo à planifier",
-      "Démo prévue",
-      "Démo effectuée",
-      "À relancer après démo",
-      "En réflexion",
-      "Discussion avec comité / équipe",
-      "Offre / prix envoyé",
-      "Client",
-    ].includes(p.status)
-  ).length;
-  const demos = list.filter(
-    (p) =>
-      p.status === "Démo à planifier" ||
-      isDemoScheduledStatus(p.status) ||
-      isDemoDoneStatus(p.status) ||
-      p.status === "À relancer après démo" ||
-      p.status === "Client"
-  ).length;
-  const refus = list.filter((p) => isClosedProspectStatus(p.status) && p.status !== "Client").length;
+  const replies = list.filter((p) => p.status === "En discussion").length;
+  const demos = list.filter((p) => isDemoStatus(p.status) || p.status === "Client").length;
+  const refus = list.filter((p) => isLostProspectStatus(p.status)).length;
   const potentialValue = list.reduce((s, p) => s + (Number(p.potential_value) || 0), 0);
   const wonValue = list
     .filter((p) => p.status === "Client")

@@ -67,7 +67,6 @@ export function applyProspectListQuery(
     } else if (params.statuses.length) {
       query = query.in("status", expandStatusesForQuery(sanitizeStatuses(params.statuses)));
     }
-    query = query.neq("status", "Client");
   }
 
   if (params.sports.length) query = query.in("sport", params.sports);
@@ -118,6 +117,9 @@ export function applyProspectListQuery(
   }
   if (params.maxValue) {
     query = query.lte("potential_value", Number(params.maxValue));
+  }
+  if (params.closedReasons.length) {
+    query = query.in("closed_reason", params.closedReasons);
   }
 
   if (!smart) {
@@ -222,11 +224,11 @@ export async function fetchProspectList(
 
     if (params.clientsOnly) {
       legacyQuery = legacyQuery.eq("status", "Client");
-    } else {
-      if (params.statuses.length) {
-        legacyQuery = legacyQuery.in("status", expandStatusesForQuery(sanitizeStatuses(params.statuses)));
-      }
-      legacyQuery = legacyQuery.neq("status", "Client");
+    } else if (params.statuses.length) {
+      legacyQuery = legacyQuery.in("status", expandStatusesForQuery(sanitizeStatuses(params.statuses)));
+    }
+    if (params.closedReasons.length) {
+      legacyQuery = legacyQuery.in("closed_reason", params.closedReasons);
     }
 
     if (params.sports.length) legacyQuery = legacyQuery.in("sport", params.sports);
@@ -288,8 +290,6 @@ export async function fetchProspectFilterOptions(
 
   if (clientsOnly) {
     query = query.eq("status", "Client");
-  } else {
-    query = query.neq("status", "Client");
   }
 
   const { data, error } = await query.limit(5000);

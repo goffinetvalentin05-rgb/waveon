@@ -56,10 +56,10 @@ export function resolveQuickActionAt(
     }
     if (action === "refus") {
       return {
-        status: "Pas intéressé",
-        lastAction: "Refus",
+        status: "Fermé",
+        lastAction: "Fermé",
         nextFollowUp: null,
-        activityTitle: "Refus enregistré",
+        activityTitle: "Prospect fermé",
         taskTitle: null,
         taskKind: null,
       };
@@ -76,8 +76,7 @@ export function resolveQuickActionAt(
 
   switch (action) {
     case "mail_sent": {
-      const nextStatus: ProspectStatus =
-        currentStatus === "À contacter" ? "1er contact envoyé" : currentStatus;
+      const nextStatus: ProspectStatus = currentStatus === "À contacter" ? "Relance 1" : currentStatus;
       return {
         status: nextStatus,
         lastAction: "Mail envoyé",
@@ -88,8 +87,7 @@ export function resolveQuickActionAt(
       };
     }
     case "call_made": {
-      const nextStatus: ProspectStatus =
-        currentStatus === "À contacter" ? "1er contact envoyé" : currentStatus;
+      const nextStatus: ProspectStatus = currentStatus === "À contacter" ? "Relance 1" : currentStatus;
       return {
         status: nextStatus,
         lastAction: "Appel effectué",
@@ -101,7 +99,7 @@ export function resolveQuickActionAt(
     }
     case "demo_scheduled":
       return {
-        status: "Démo prévue",
+        status: "Démo",
         lastAction: "Démo planifiée",
         nextFollowUp: dateOnly(demoAt ?? actionDate),
         activityTitle: "Démonstration planifiée",
@@ -119,10 +117,10 @@ export function resolveQuickActionAt(
       };
     case "refus":
       return {
-        status: "Pas intéressé",
-        lastAction: "Refus",
+        status: "Fermé",
+        lastAction: "Fermé",
         nextFollowUp: null,
-        activityTitle: "Refus enregistré",
+        activityTitle: "Prospect fermé",
         taskTitle: null,
         taskKind: null,
       };
@@ -134,5 +132,5 @@ export const QUICK_ACTION_LABELS: Record<QuickAction, string> = {
   call_made: "Appel effectué",
   demo_scheduled: "Démonstration planifiée",
   client: "Passer en client",
-  refus: "Refus",
+  refus: "Fermer",
 };

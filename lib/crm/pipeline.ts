@@ -1,72 +1,41 @@
 import type { Prospect, ProspectStatus } from "@/lib/crm/types";
-import { isClosedProspectStatus, isDemoScheduledStatus } from "@/lib/crm/closed";
+import { isClosedProspectStatus, isDemoStatus, isLostProspectStatus } from "@/lib/crm/closed";
 import { migrateProspectStatus } from "@/lib/crm/status";
 
 export type PipelineColumnId =
   | "to_contact"
-  | "outreach"
-  | "waiting"
+  | "follow_up_1"
+  | "follow_up_2"
   | "discussion"
   | "demo"
-  | "considering"
   | "client"
-  | "lost";
+  | "closed";
 
 export type PipelineColumn = {
   id: PipelineColumnId;
   label: string;
   accent: string;
-  statuses: ProspectStatus[];
+  status: ProspectStatus;
 };
 
 export const PIPELINE_COLUMNS: PipelineColumn[] = [
-  { id: "to_contact", label: "À contacter", accent: "bg-[#8d8f8e]", statuses: ["À contacter"] },
-  {
-    id: "outreach",
-    label: "Relances",
-    accent: "bg-amber-400",
-    statuses: ["1er contact envoyé", "Relance 1", "Relance 2", "Relance 3 / dernière relance"],
-  },
-  {
-    id: "waiting",
-    label: "En attente",
-    accent: "bg-slate-400",
-    statuses: ["Sans réponse", "À recontacter plus tard"],
-  },
-  {
-    id: "discussion",
-    label: "Discussion",
-    accent: "bg-violet-400",
-    statuses: ["Réponse reçue", "À qualifier", "Intéressé"],
-  },
-  {
-    id: "demo",
-    label: "Démo",
-    accent: "bg-cyan-400",
-    statuses: ["Démo à planifier", "Démo prévue", "Démo effectuée", "À relancer après démo"],
-  },
-  {
-    id: "considering",
-    label: "Décision",
-    accent: "bg-amber-300",
-    statuses: ["En réflexion", "Discussion avec comité / équipe", "Offre / prix envoyé"],
-  },
-  { id: "client", label: "Clients", accent: "bg-emerald-400", statuses: ["Client"] },
-  {
-    id: "lost",
-    label: "Perdus",
-    accent: "bg-rose-400",
-    statuses: ["Pas maintenant", "Pas intéressé", "Perdu"],
-  },
+  { id: "to_contact", label: "À contacter", accent: "bg-[#8d8f8e]", status: "À contacter" },
+  { id: "follow_up_1", label: "Relance 1", accent: "bg-amber-400", status: "Relance 1" },
+  { id: "follow_up_2", label: "Relance 2", accent: "bg-orange-400", status: "Relance 2" },
+  { id: "discussion", label: "En discussion", accent: "bg-violet-400", status: "En discussion" },
+  { id: "demo", label: "Démo", accent: "bg-cyan-400", status: "Démo" },
+  { id: "client", label: "Client", accent: "bg-emerald-400", status: "Client" },
+  { id: "closed", label: "Fermé", accent: "bg-rose-400", status: "Fermé" },
 ];
 
 export function pipelineColumnId(prospect: Prospect): PipelineColumnId {
   const status = migrateProspectStatus(prospect.status);
-  const col = PIPELINE_COLUMNS.find((c) => c.statuses.includes(status));
+  const col = PIPELINE_COLUMNS.find((c) => c.status === status);
   if (col) return col.id;
-  if (isDemoScheduledStatus(status)) return "demo";
-  if (isClosedProspectStatus(status)) return status === "Client" ? "client" : "lost";
-  return "outreach";
+  if (isDemoStatus(status)) return "demo";
+  if (status === "Client") return "client";
+  if (isLostProspectStatus(status) || isClosedProspectStatus(status)) return "closed";
+  return "to_contact";
 }
 
 export function groupProspectsByPipeline(prospects: Prospect[]): Record<PipelineColumnId, Prospect[]> {

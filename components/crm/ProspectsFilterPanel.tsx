@@ -2,6 +2,7 @@
 
 import { ui } from "@/lib/design/tokens";
 import type { ProspectListFilters, PresenceFilter } from "@/lib/crm/prospect-list-params";
+import { CLOSED_REASONS } from "@/lib/crm/closed";
 
 type FilterOptions = {
   sports: string[];
@@ -107,7 +108,7 @@ export function ProspectsFilterPanel({
 }: Props) {
   if (!open) return null;
 
-  const toggle = (key: "sports" | "cantons" | "villes" | "statuses", value: string) => {
+  const toggle = (key: "sports" | "cantons" | "villes" | "statuses" | "closedReasons", value: string) => {
     const current = draft[key];
     const next = current.includes(value)
       ? current.filter((v) => v !== value)
@@ -154,6 +155,14 @@ export function ProspectsFilterPanel({
               values={options.statuses}
               selected={draft.statuses}
               onToggle={(v) => toggle("statuses", v)}
+            />
+          ) : null}
+          {!clientsOnly ? (
+            <MultiCheckboxGroup
+              label="Raison de fermeture"
+              values={[...CLOSED_REASONS]}
+              selected={draft.closedReasons}
+              onToggle={(v) => toggle("closedReasons", v)}
             />
           ) : null}
           <PresenceSelect

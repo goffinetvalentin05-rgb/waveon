@@ -75,10 +75,10 @@ export async function POST(request: Request, { params }: Params) {
 
   const settings = await getOrCreateSettings(supabase, user.id);
   const followDays =
-    nextStatus === "Relance 2" || nextStatus === "Relance 3 / dernière relance"
-      ? settings.delay_relance_3_days
+    nextStatus === "Relance 2"
+      ? settings.delay_relance_2_days
       : nextStatus === "Relance 1"
-        ? settings.delay_relance_2_days
+        ? settings.delay_relance_1_days
         : settings.delay_relance_1_days;
 
   const nextAction =

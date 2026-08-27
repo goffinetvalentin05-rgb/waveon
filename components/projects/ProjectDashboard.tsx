@@ -57,8 +57,8 @@ export function ProjectDashboard({
         { label: "À contacter", value: stats.toContact, href: `${base}/prospects?view=to_contact` },
         { label: "Relances", value: stats.followUps, href: `${base}/prospects?view=today_work` },
         { label: "En retard", value: stats.overdue, href: `${base}/prospects?view=overdue` },
-        { label: "Rendez-vous", value: stats.meetings || stats.demos, href: `${base}/prospects?view=demo_scheduled` },
-        { label: "Réponses", value: stats.replies || stats.considering, href: `${base}/prospects?view=considering` },
+        { label: "Démo", value: stats.meetings || stats.demos, href: `${base}/prospects?view=demo_scheduled` },
+        { label: "En discussion", value: stats.replies || stats.considering, href: `${base}/prospects?view=considering` },
         { label: "Clients", value: stats.clients, href: `${base}/prospects?view=clients` },
       ]
     : [];
@@ -114,7 +114,7 @@ export function ProjectDashboard({
         <div className="grid grid-cols-2 gap-3 lg:col-span-7">
           {[
             { label: "Contactés", value: stats.contacted, tone: "bg-indigo-50 text-indigo-600", icon: IconUsers },
-            { label: "Réponses reçues", value: stats.replies || stats.considering, tone: "bg-sky-50 text-sky-600", icon: IconUsers },
+            { label: "En discussion", value: stats.replies || stats.considering, tone: "bg-sky-50 text-sky-600", icon: IconUsers },
             { label: "Rendez-vous", value: stats.meetings || stats.demos, tone: "bg-indigo-50 text-indigo-600", icon: IconUsers },
             { label: "Tâches restantes", value: stats.openTasks, tone: "bg-amber-50 text-amber-600", icon: IconChecklist },
           ].map((card) => {

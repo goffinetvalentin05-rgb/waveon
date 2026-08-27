@@ -1,73 +1,61 @@
-import { PROSPECT_STATUSES, type ProspectStatus } from "./types";
+import { isProspectStatus, type ProspectStatus } from "./types";
+import { closedReasonFromLegacyStatus, type ClosedReason } from "./closed";
 
 type BadgeStyle = { bg: string; text: string; dot: string; label: string };
 
 /** Couleurs des badges — teintes douces, groupées par phase. */
 export const STATUS_STYLES: Record<ProspectStatus, BadgeStyle> = {
   "À contacter": { bg: "bg-slate-100", text: "text-slate-700", dot: "bg-slate-400", label: "À contacter" },
-  "1er contact envoyé": { bg: "bg-sky-50", text: "text-sky-800", dot: "bg-sky-500", label: "1er contact envoyé" },
   "Relance 1": { bg: "bg-amber-50", text: "text-amber-800", dot: "bg-amber-500", label: "Relance 1" },
-  "Relance 2": { bg: "bg-amber-50", text: "text-amber-800", dot: "bg-amber-500", label: "Relance 2" },
-  "Relance 3 / dernière relance": {
-    bg: "bg-orange-50",
-    text: "text-orange-800",
-    dot: "bg-orange-500",
-    label: "Relance 3 / dernière relance",
-  },
-  "Sans réponse": { bg: "bg-slate-100", text: "text-slate-600", dot: "bg-slate-400", label: "Sans réponse" },
-  "À recontacter plus tard": {
-    bg: "bg-slate-100",
-    text: "text-slate-700",
-    dot: "bg-slate-400",
-    label: "À recontacter plus tard",
-  },
-  "Réponse reçue": { bg: "bg-violet-50", text: "text-violet-800", dot: "bg-violet-500", label: "Réponse reçue" },
-  "À qualifier": { bg: "bg-violet-50", text: "text-violet-800", dot: "bg-violet-400", label: "À qualifier" },
-  Intéressé: { bg: "bg-indigo-50", text: "text-indigo-800", dot: "bg-indigo-500", label: "Intéressé" },
-  "Démo à planifier": { bg: "bg-cyan-50", text: "text-cyan-800", dot: "bg-cyan-500", label: "Démo à planifier" },
-  "Démo prévue": { bg: "bg-cyan-50", text: "text-cyan-800", dot: "bg-cyan-500", label: "Démo prévue" },
-  "Démo effectuée": { bg: "bg-indigo-50", text: "text-indigo-800", dot: "bg-indigo-500", label: "Démo effectuée" },
-  "À relancer après démo": {
-    bg: "bg-indigo-50",
-    text: "text-indigo-800",
-    dot: "bg-indigo-400",
-    label: "À relancer après démo",
-  },
-  "En réflexion": { bg: "bg-amber-50", text: "text-amber-800", dot: "bg-amber-500", label: "En réflexion" },
-  "Discussion avec comité / équipe": {
-    bg: "bg-violet-50",
-    text: "text-violet-800",
-    dot: "bg-violet-500",
-    label: "Discussion avec comité / équipe",
-  },
-  "Offre / prix envoyé": { bg: "bg-sky-50", text: "text-sky-800", dot: "bg-sky-500", label: "Offre / prix envoyé" },
+  "Relance 2": { bg: "bg-orange-50", text: "text-orange-800", dot: "bg-orange-500", label: "Relance 2" },
+  "En discussion": { bg: "bg-violet-50", text: "text-violet-800", dot: "bg-violet-500", label: "En discussion" },
+  Démo: { bg: "bg-cyan-50", text: "text-cyan-800", dot: "bg-cyan-500", label: "Démo" },
   Client: { bg: "bg-emerald-50", text: "text-emerald-800", dot: "bg-emerald-500", label: "Client" },
-  "Pas maintenant": { bg: "bg-rose-50", text: "text-rose-800", dot: "bg-rose-400", label: "Pas maintenant" },
-  "Pas intéressé": { bg: "bg-rose-50", text: "text-rose-800", dot: "bg-rose-500", label: "Pas intéressé" },
-  Perdu: { bg: "bg-rose-50", text: "text-rose-800", dot: "bg-rose-500", label: "Perdu" },
+  Fermé: { bg: "bg-rose-50", text: "text-rose-800", dot: "bg-rose-500", label: "Fermé" },
 };
 
+/**
+ * Anciens statuts (v1/v2) → pipeline à 7 colonnes.
+ * « Réponse reçue » n'est pas « En discussion » : une réponse ne suffit pas.
+ */
 const LEGACY_TO_CURRENT: Record<string, ProspectStatus> = {
-  Contacté: "1er contact envoyé",
-  Répondu: "Réponse reçue",
-  "Démo faite": "Démo effectuée",
-  Négociation: "En réflexion",
-  Refusé: "Pas intéressé",
-  Refus: "Pas intéressé",
-  Démonstration: "Démo prévue",
-  "Relance 1": "Relance 1",
-  "Relance 2": "Relance 2",
   Nouveau: "À contacter",
-  "En conversation": "1er contact envoyé",
-  "Appel booké": "Démo prévue",
+  "1er contact envoyé": "Relance 1",
+  Contacté: "Relance 1",
+  "En conversation": "Relance 1",
+  "À recontacter plus tard": "Relance 1",
+  "Réponse reçue": "Relance 1",
+  Répondu: "Relance 1",
+  "Relance 3 / dernière relance": "Relance 2",
+  "Sans réponse": "Relance 2",
+  "À qualifier": "En discussion",
+  Intéressé: "En discussion",
+  "En réflexion": "En discussion",
+  Négociation: "En discussion",
+  "Discussion avec comité / équipe": "En discussion",
+  "Offre / prix envoyé": "En discussion",
+  "Démo à planifier": "Démo",
+  "Démo prévue": "Démo",
+  Démonstration: "Démo",
+  "Démo effectuée": "Démo",
+  "Démo faite": "Démo",
+  "À relancer après démo": "Démo",
+  "Appel booké": "Démo",
   Closé: "Client",
+  "Pas maintenant": "Fermé",
+  "Pas intéressé": "Fermé",
+  Perdu: "Fermé",
+  Refusé: "Fermé",
+  Refus: "Fermé",
 };
 
 export function migrateProspectStatus(status: string): ProspectStatus {
-  if ((PROSPECT_STATUSES as readonly string[]).includes(status)) {
-    return status as ProspectStatus;
-  }
+  if (isProspectStatus(status)) return status;
   return LEGACY_TO_CURRENT[status] ?? "À contacter";
+}
+
+export function inferredClosedReason(status: string): ClosedReason | null {
+  return closedReasonFromLegacyStatus(status);
 }
 
 export function statusStyle(status: string) {
@@ -84,16 +72,69 @@ export function statusStyle(status: string) {
 
 export function statusesMatching(status: ProspectStatus): string[] {
   const aliases: Partial<Record<ProspectStatus, string[]>> = {
-    "1er contact envoyé": ["Contacté"],
-    "Réponse reçue": ["Répondu"],
-    "Démo effectuée": ["Démo faite"],
-    "En réflexion": ["Négociation"],
-    "Pas intéressé": ["Refusé", "Refus"],
-    "Démo prévue": ["Démonstration"],
+    "À contacter": ["Nouveau"],
+    "Relance 1": ["1er contact envoyé", "Contacté", "En conversation", "À recontacter plus tard", "Réponse reçue", "Répondu"],
+    "Relance 2": ["Relance 3 / dernière relance", "Sans réponse"],
+    "En discussion": [
+      "À qualifier",
+      "Intéressé",
+      "En réflexion",
+      "Négociation",
+      "Discussion avec comité / équipe",
+      "Offre / prix envoyé",
+    ],
+    Démo: [
+      "Démo à planifier",
+      "Démo prévue",
+      "Démonstration",
+      "Démo effectuée",
+      "Démo faite",
+      "À relancer après démo",
+      "Appel booké",
+    ],
+    Client: ["Closé"],
+    Fermé: ["Pas maintenant", "Pas intéressé", "Perdu", "Refusé", "Refus"],
   };
   return [status, ...(aliases[status] ?? [])];
 }
 
 export function expandStatusesForQuery(values: string[]): string[] {
   return [...new Set(values.flatMap((v) => statusesMatching(migrateProspectStatus(v))))];
+}
+
+export function encodeStatusChangeDescription(input: {
+  to: ProspectStatus;
+  from?: string | null;
+  closed_reason?: string | null;
+  closed_note?: string | null;
+}): string {
+  return JSON.stringify({
+    to: input.to,
+    from: input.from ?? null,
+    closed_reason: input.closed_reason ?? null,
+    closed_note: input.closed_note ?? null,
+  });
+}
+
+export function parseStatusChangePayload(description: string | null): {
+  to: ProspectStatus | null;
+  closed_reason: string | null;
+  closed_note: string | null;
+} {
+  if (!description) return { to: null, closed_reason: null, closed_note: null };
+  const trimmed = description.trim();
+  if (trimmed.startsWith("{")) {
+    try {
+      const obj = JSON.parse(trimmed) as Record<string, unknown>;
+      const toRaw = obj.to ?? obj.toStatus ?? obj.status;
+      return {
+        to: typeof toRaw === "string" ? migrateProspectStatus(toRaw) : null,
+        closed_reason: typeof obj.closed_reason === "string" ? obj.closed_reason : null,
+        closed_note: typeof obj.closed_note === "string" ? obj.closed_note : null,
+      };
+    } catch {
+      return { to: migrateProspectStatus(trimmed), closed_reason: null, closed_note: null };
+    }
+  }
+  return { to: migrateProspectStatus(trimmed), closed_reason: inferredClosedReason(trimmed), closed_note: trimmed === "Perdu" ? "Perdu" : null };
 }

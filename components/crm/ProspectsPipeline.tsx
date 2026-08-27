@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -9,9 +10,9 @@ import {
   isFollowedProspect,
   prospectAvatarTone,
 } from "@/lib/crm/pipeline";
-import { isDemoScheduledStatus } from "@/lib/crm/closed";
+import { formatClosedReason } from "@/lib/crm/closed";
 import { prospectDetailHref } from "@/lib/crm/paths";
-import type { Prospect } from "@/lib/crm/types";
+import type { Prospect, ProspectStatus } from "@/lib/crm/types";
 
 function fmtDate(value: string | null) {
   if (!value) return null;
@@ -27,13 +28,16 @@ function fmtDate(value: string | null) {
 export function ProspectsPipeline({
   prospects,
   listReturnUrl,
+  onStatusChange,
 }: {
   prospects: Prospect[];
   listReturnUrl: string;
+  onStatusChange?: (id: string, status: ProspectStatus) => void;
 }) {
   const router = useRouter();
   const groups = groupProspectsByPipeline(prospects);
   const followed = prospects.filter(isFollowedProspect).length;
+  const dragged = useRef(false);
 
   return (
     <div className="space-y-4">
@@ -48,12 +52,24 @@ export function ProspectsPipeline({
       </div>
 
       <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-        {PIPELINE_COLUMNS.filter((col) => col.id !== "client").map((col) => {
+        {PIPELINE_COLUMNS.map((col) => {
           const items = groups[col.id];
           return (
             <div
               key={col.id}
               className="flex w-[260px] shrink-0 flex-col rounded-[1.35rem] border border-wo-border bg-white"
+              onDragOver={(e) => {
+                if (onStatusChange) e.preventDefault();
+              }}
+              onDrop={(e) => {
+                if (!onStatusChange) return;
+                e.preventDefault();
+                const id = e.dataTransfer.getData("text/plain");
+                if (!id) return;
+                const current = items.find((p) => p.id === id);
+                if (current) return;
+                onStatusChange(id, col.status);
+              }}
             >
               <div className="flex items-center justify-between gap-2 px-3.5 py-3">
                 <div className="flex items-center gap-2">
@@ -68,29 +84,46 @@ export function ProspectsPipeline({
                 {items.length === 0 ? (
                   <p className="px-2 py-6 text-center text-xs text-wo-dim">Vide</p>
                 ) : (
-                  items.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => {
-                        router.push(prospectDetailHref(p.id, listReturnUrl));
-                      }}
-                      className="flex items-center gap-2.5 rounded-[14px] border border-wo-border bg-slate-50/70 px-2.5 py-2.5 text-left transition hover:border-indigo-200 hover:bg-white"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[13px] font-medium text-wo-text">{p.club_name}</p>
-                        <p className="mt-0.5 truncate text-[11px] text-wo-dim">
-                          {[p.ville, p.sport].filter(Boolean).join(" · ") || p.status}
-                          {p.next_follow_up ? ` · ${fmtDate(p.next_follow_up)}` : ""}
-                        </p>
-                      </div>
-                      <span
-                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${prospectAvatarTone(p.club_name)}`}
+                  items.map((p) => {
+                    const closedLabel =
+                      col.id === "closed" ? formatClosedReason(p.closed_reason, p.closed_note) : null;
+                    const meta = closedLabel || [p.ville, p.sport].filter(Boolean).join(" · ");
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        draggable={Boolean(onStatusChange)}
+                        onDragStart={(e) => {
+                          dragged.current = true;
+                          e.dataTransfer.setData("text/plain", p.id);
+                          e.dataTransfer.effectAllowed = "move";
+                        }}
+                        onClick={() => {
+                          if (dragged.current) {
+                            dragged.current = false;
+                            return;
+                          }
+                          router.push(prospectDetailHref(p.id, listReturnUrl));
+                        }}
+                        className="flex items-center gap-2.5 rounded-[14px] border border-wo-border bg-slate-50/70 px-2.5 py-2.5 text-left transition hover:border-indigo-200 hover:bg-white"
                       >
-                        {p.club_name.charAt(0).toUpperCase()}
-                      </span>
-                    </button>
-                  ))
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[13px] font-medium text-wo-text">{p.club_name}</p>
+                          <p className="mt-0.5 truncate text-[11px] text-wo-dim">
+                            {meta || (p.next_follow_up ? fmtDate(p.next_follow_up) : "\u00a0")}
+                            {meta && p.next_follow_up && col.id !== "closed"
+                              ? ` · ${fmtDate(p.next_follow_up)}`
+                              : ""}
+                          </p>
+                        </div>
+                        <span
+                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${prospectAvatarTone(p.club_name)}`}
+                        >
+                          {p.club_name.charAt(0).toUpperCase()}
+                        </span>
+                      </button>
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -103,13 +136,10 @@ export function ProspectsPipeline({
 
 export function PipelineStats({ prospects, conversionRate }: { prospects: Prospect[]; conversionRate?: number }) {
   const followed = prospects.filter(isFollowedProspect).length;
-  const meetings = prospects.filter(
-    (p) => isDemoScheduledStatus(p.status) || p.status === "Démo effectuée" || p.status === "Démo à planifier"
-  ).length;
+  const meetings = prospects.filter((p) => p.status === "Démo").length;
   const clients = prospects.filter((p) => p.status === "Client").length;
   const rate =
-    conversionRate ??
-    (prospects.length ? Math.round((clients / prospects.length) * 100) : 0);
+    conversionRate ?? (prospects.length ? Math.round((clients / prospects.length) * 100) : 0);
 
   const cards = [
     { label: "En suivi", value: String(followed) },

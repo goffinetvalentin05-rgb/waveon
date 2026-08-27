@@ -1,7 +1,7 @@
 import { addDays, formatISO } from "date-fns";
 import { resolveQuickActionAt } from "@/lib/crm/actions";
-import { isClosedProspectStatus, isDemoScheduledStatus } from "@/lib/crm/closed";
-import { migrateProspectStatus } from "@/lib/crm/status";
+import { isClosedProspectStatus, isDemoStatus, parseClosedReason } from "@/lib/crm/closed";
+import { parseStatusChangePayload } from "@/lib/crm/status";
 import { defaultNextActionFor } from "@/lib/crm/next-action";
 import type { CrmSettings, Prospect, ProspectActivity, ProspectStatus, QuickAction } from "@/lib/crm/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -31,23 +31,6 @@ function parseDemoAt(description: string | null): Date | null {
   return d;
 }
 
-function parseStatusChangeToStatus(description: string | null): ProspectStatus | null {
-  if (!description) return null;
-  const parsed = parseMaybeJson(description);
-  if (parsed && typeof parsed === "object") {
-    const obj = parsed as Record<string, unknown>;
-    const to = obj.to ?? obj.toStatus ?? obj.status;
-    if (typeof to === "string") {
-      return migrateProspectStatus(to);
-    }
-  }
-  // Fallback: description stocké comme valeur brute ("Client", etc.)
-  if (typeof description === "string") {
-    return migrateProspectStatus(description.trim());
-  }
-  return null;
-}
-
 function isTerminalStatus(status: ProspectStatus) {
   return isClosedProspectStatus(status);
 }
@@ -62,23 +45,12 @@ function statusToNextFollowUpDate(
   switch (status) {
     case "À contacter":
       return dateOnly(actionDate);
-    case "1er contact envoyé":
-      return dateOnly(addDays(actionDate, settings.delay_relance_1_days));
     case "Relance 1":
-      return dateOnly(addDays(actionDate, settings.delay_relance_2_days));
+      return dateOnly(addDays(actionDate, settings.delay_relance_1_days));
     case "Relance 2":
-    case "Relance 3 / dernière relance":
-      return dateOnly(addDays(actionDate, settings.delay_relance_3_days));
-    case "Réponse reçue":
-    case "À qualifier":
-    case "Intéressé":
-    case "Démo à planifier":
-    case "Démo prévue":
-    case "Démo effectuée":
-    case "À relancer après démo":
-    case "En réflexion":
-    case "Discussion avec comité / équipe":
-    case "Offre / prix envoyé":
+      return dateOnly(addDays(actionDate, settings.delay_relance_2_days));
+    case "En discussion":
+    case "Démo":
       return dateOnly(actionDate);
     default:
       return dateOnly(actionDate);
@@ -93,7 +65,7 @@ function taskFromStatus(clubName: string, status: ProspectStatus): {
   if (status === "À contacter") {
     return { taskKind: "first_contact", title: `Premier contact ${clubName}` };
   }
-  if (isDemoScheduledStatus(status) || status === "Démo effectuée") {
+  if (isDemoStatus(status)) {
     return { taskKind: "demo", title: `Démonstration ${clubName}` };
   }
   return { taskKind: "follow_up", title: `Relancer ${clubName}` };
@@ -143,6 +115,8 @@ export async function recomputeProspectDerivatives(
   let lastActionAt: string | null = null;
   let nextFollowUp: string | null = null;
   let demoAtIso: string | null = null;
+  let closedReason: string | null = null;
+  let closedNote: string | null = null;
 
   const titleUpdates: { id: string; title: string }[] = [];
 
@@ -158,17 +132,24 @@ export async function recomputeProspectDerivatives(
     }
 
     if (a.action_type === "status_change") {
-      const toStatus = parseStatusChangeToStatus(a.description);
-      if (!toStatus) continue;
+      const parsed = parseStatusChangePayload(a.description);
+      if (!parsed.to) continue;
 
-      const computedTitle = `Statut modifié de ${currentStatus} à ${toStatus}`;
+      const computedTitle = `Statut modifié de ${currentStatus} à ${parsed.to}`;
       titleUpdates.push({ id: a.id, title: computedTitle });
 
-      currentStatus = toStatus;
+      currentStatus = parsed.to;
       lastAction = computedTitle;
       lastActionAt = a.created_at;
-      demoAtIso = isDemoScheduledStatus(toStatus) ? actionDate.toISOString() : null;
-      nextFollowUp = statusToNextFollowUpDate(toStatus, actionDate, settings);
+      demoAtIso = isDemoStatus(parsed.to) ? actionDate.toISOString() : null;
+      nextFollowUp = statusToNextFollowUpDate(parsed.to, actionDate, settings);
+      if (parsed.to === "Fermé") {
+        closedReason = parseClosedReason(parsed.closed_reason) ?? closedReason ?? "Autre";
+        closedNote = parsed.closed_note;
+      } else {
+        closedReason = null;
+        closedNote = null;
+      }
       continue;
     }
 
@@ -189,7 +170,6 @@ export async function recomputeProspectDerivatives(
         demoAt ?? undefined
       );
 
-      // Mettre à jour le titre dans l'historique pour refléter le statut "avant" l'action.
       if (result.activityTitle !== a.title) {
         titleUpdates.push({ id: a.id, title: result.activityTitle });
       }
@@ -200,27 +180,38 @@ export async function recomputeProspectDerivatives(
       nextFollowUp = result.nextFollowUp;
 
       if (a.action_type === "demo_scheduled") {
-        // Synchroniser la date de démo sur la date prévue si fournie.
         const finalDemoAt = demoAt ?? actionDate;
         demoAtIso = finalDemoAt.toISOString();
       }
 
-      // Sécurité : si action met en terminal, on nettoie la relance.
+      if (a.action_type === "refus") {
+        const parsed = parseMaybeJson(a.description);
+        const obj = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
+        closedReason = parseClosedReason(obj?.closed_reason) ?? parseClosedReason(a.description) ?? "Pas intéressé";
+        closedNote = typeof obj?.closed_note === "string" ? obj.closed_note : null;
+      } else if (currentStatus !== "Fermé") {
+        closedReason = null;
+        closedNote = null;
+      }
+
       if (isTerminalStatus(currentStatus)) {
         nextFollowUp = null;
-        demoAtIso = null;
+        if (currentStatus !== "Démo") demoAtIso = null;
       }
       continue;
     }
 
-    // Note/autres : on garde la cohérence "dernière action"
     lastAction = a.title;
     lastActionAt = a.created_at;
   }
 
   if (isTerminalStatus(currentStatus)) {
     nextFollowUp = null;
-    demoAtIso = null;
+    if (currentStatus !== "Démo") demoAtIso = null;
+  }
+  if (currentStatus !== "Fermé") {
+    closedReason = null;
+    closedNote = null;
   }
 
   await supabase
@@ -230,13 +221,16 @@ export async function recomputeProspectDerivatives(
       last_action: lastAction,
       last_action_at: lastActionAt,
       next_follow_up: nextFollowUp,
-      next_action: isTerminalStatus(currentStatus) ? null : (prospectRow.next_action as string | null) ?? defaultNextActionFor(currentStatus),
+      next_action: isTerminalStatus(currentStatus)
+        ? null
+        : (prospectRow.next_action as string | null) ?? defaultNextActionFor(currentStatus),
       demo_at: demoAtIso,
+      closed_reason: closedReason,
+      closed_note: closedNote,
     })
     .eq("id", prospectId)
     .eq("user_id", userId);
 
-  // Nettoyage des tâches dérivées (on garde les "custom")
   await supabase
     .from("daily_tasks")
     .delete()
@@ -257,7 +251,6 @@ export async function recomputeProspectDerivatives(
     });
   }
 
-  // Réécrit les titres d'historique (cohérence après modif/suppression)
   for (const u of titleUpdates) {
     await supabase.from("prospect_activities").update({ title: u.title }).eq("id", u.id);
   }
@@ -281,4 +274,3 @@ export async function recomputeProspectDerivatives(
     activities: (updatedActivities ?? []) as ProspectActivity[],
   };
 }
-

@@ -15,8 +15,10 @@ import { ProspectsFilterPanel } from "@/components/crm/ProspectsFilterPanel";
 import { PipelineStats, ProspectsPipeline } from "@/components/crm/ProspectsPipeline";
 import { SmartViewBar } from "@/components/crm/SmartViewBar";
 import { ProspectListRow, ProspectWorkSections } from "@/components/crm/ProspectWorkList";
+import { ClosedReasonModal } from "@/components/crm/ClosedReasonModal";
 import type { Prospect, ProspectStatus } from "@/lib/crm/types";
 import { PROSPECT_STATUSES } from "@/lib/crm/types";
+import type { ClosedReason } from "@/lib/crm/closed";
 import type { ProspectWorkCounts } from "@/lib/crm/counters";
 import type { SmartViewId } from "@/lib/crm/smart-views";
 import {
@@ -85,6 +87,7 @@ export function ProspectsClient({
     clientsOnly || params.smartView !== "all" ? "list" : "pipeline"
   );
   const [smartCounts, setSmartCounts] = useState<ProspectWorkCounts | null>(null);
+  const [closePrompt, setClosePrompt] = useState<{ id: string } | null>(null);
 
   const skipNextSearchDebounce = useRef(true);
   const skipInitialUrlFetch = useRef(true);
@@ -138,24 +141,39 @@ export function ProspectsClient({
   }, [fetchCounts, allCount]);
 
   const changeStatus = useCallback(
-    (id: string, status: ProspectStatus) => {
+    (id: string, status: ProspectStatus, extra?: { closed_reason?: string; closed_note?: string }) => {
+      if (status === "Fermé" && !extra?.closed_reason) {
+        setClosePrompt({ id });
+        return;
+      }
       startTransition(async () => {
         const res = await fetch(`/api/prospects/${id}/status`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status }),
+          body: JSON.stringify({
+            status,
+            closed_reason: extra?.closed_reason,
+            closed_note: extra?.closed_note,
+          }),
         });
         if (!res.ok) return;
         const data = await res.json();
         setProspects((list) => {
           const next = list.map((p) => (p.id === id ? { ...p, ...data.prospect } : p));
-          return clientsOnly ? next : next.filter((p) => p.status !== "Client");
+          return clientsOnly ? next.filter((p) => p.status === "Client") : next;
         });
         fetchCounts();
       });
     },
     [clientsOnly, fetchCounts]
   );
+
+  const confirmClose = (reason: ClosedReason, note: string) => {
+    if (!closePrompt) return;
+    const id = closePrompt.id;
+    setClosePrompt(null);
+    changeStatus(id, "Fermé", { closed_reason: reason, closed_note: note });
+  };
 
   const applySmartView = (smartView: SmartViewId) => {
     const next = {
@@ -248,6 +266,7 @@ export function ProspectsClient({
       smartView: params.smartView,
       minValue: params.minValue,
       maxValue: params.maxValue,
+      closedReasons: params.closedReasons,
     });
     setShowFilters(true);
   };
@@ -398,7 +417,11 @@ export function ProspectsClient({
 
       {!clientsOnly && view === "pipeline" ? (
         <div className={pending ? "opacity-70" : ""}>
-          <ProspectsPipeline prospects={prospects} listReturnUrl={listReturnUrl} />
+          <ProspectsPipeline
+            prospects={prospects}
+            listReturnUrl={listReturnUrl}
+            onStatusChange={changeStatus}
+          />
         </div>
       ) : params.smartView === "today_work" ? (
         <div className={pending ? "opacity-70" : ""}>
@@ -493,6 +516,14 @@ export function ProspectsClient({
           }}
         />
       ) : null}
+
+      <ClosedReasonModal
+        key={closePrompt?.id ?? "close-reason"}
+        open={Boolean(closePrompt)}
+        clubName={prospects.find((p) => p.id === closePrompt?.id)?.club_name}
+        onConfirm={confirmClose}
+        onCancel={() => setClosePrompt(null)}
+      />
     </div>
   );
 }

@@ -24,6 +24,7 @@ import { StatusSelect } from "@/components/crm/StatusSelect";
 import { InteractionForm } from "@/components/crm/InteractionForm";
 import { ProspectContactsPanel } from "@/components/crm/ProspectContactsPanel";
 import { ProspectLinkedTasks } from "@/components/crm/ProspectLinkedTasks";
+import { ClosedReasonModal } from "@/components/crm/ClosedReasonModal";
 import { QUICK_ACTION_LABELS } from "@/lib/crm/actions";
 import type {
   Prospect,
@@ -33,6 +34,8 @@ import type {
   ActionType,
 } from "@/lib/crm/types";
 import { INTERACTION_LABELS, type InteractionType } from "@/lib/crm/types";
+import { formatClosedReason, type ClosedReason } from "@/lib/crm/closed";
+import { parseStatusChangePayload } from "@/lib/crm/status";
 import { ui } from "@/lib/design/tokens";
 import { formatRelativeDay } from "@/lib/crm/format";
 import { isContactActivity } from "@/lib/crm/next-action";
@@ -342,11 +345,12 @@ function ProspectActivityEditorModal({
   const initial = useMemo((): ActivityEditState => {
     const action_date = toDateInputValue(activity.created_at);
     if (activity.action_type === "status_change") {
+      const parsed = parseStatusChangePayload(activity.description);
       return {
         action_type: "status_change",
         action_date,
-        note: activity.description ?? "",
-        to_status: (activity.description ?? "À contacter") as ProspectStatus,
+        note: parsed.closed_note ?? "",
+        to_status: parsed.to ?? "À contacter",
         demo_at: "",
       };
     }
@@ -609,6 +613,7 @@ export function ProspectDetailClient2({
     cancelLabel: string;
     onConfirm: () => void;
   } | null>(null);
+  const [closePrompt, setClosePrompt] = useState<"status" | "refus" | "draft" | null>(null);
 
   const editableActions = useMemo(() => {
     return new Set<ActionType>(["mail_sent", "call_made", "demo_scheduled", "client", "refus", "status_change"]);
@@ -639,13 +644,13 @@ export function ProspectDetailClient2({
     router.refresh();
   };
 
-  const executeQuickAction = (action: QuickAction) => {
+  const executeQuickAction = (action: QuickAction, extra?: { closed_reason?: string; closed_note?: string }) => {
     setMsg(null);
     startTransition(async () => {
       const res = await fetch(`/api/prospects/${prospect.id}/actions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify({ action, ...extra }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -657,6 +662,29 @@ export function ProspectDetailClient2({
         return;
       }
       setMsg(`${QUICK_ACTION_LABELS[action]} — enregistré.`);
+      await refreshAll();
+    });
+  };
+
+  const applyStatus = (next: ProspectStatus, extra?: { closed_reason?: string; closed_note?: string }) => {
+    startTransition(async () => {
+      const res = await fetch(`/api/prospects/${prospect.id}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: next, ...extra }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMsg(data.error ?? "Erreur.");
+        return;
+      }
+      if (next === "Client") {
+        goToClientsList();
+        return;
+      }
+      setMsg("Statut mis à jour.");
+      setProspect(data.prospect as Prospect);
+      setActivities(data.activities as ProspectActivity[]);
       await refreshAll();
     });
   };
@@ -674,6 +702,10 @@ export function ProspectDetailClient2({
           executeQuickAction("client");
         },
       });
+      return;
+    }
+    if (action === "refus") {
+      setClosePrompt("refus");
       return;
     }
     executeQuickAction(action);
@@ -714,7 +746,7 @@ export function ProspectDetailClient2({
     });
   };
 
-  const handleSaveDraft = () => {
+  const handleSaveDraft = (extra?: { closed_reason?: string; closed_note?: string }) => {
     const originalStatus = prospect.status as ProspectStatus;
     const nextStatus = draft.status as ProspectStatus;
 
@@ -758,7 +790,7 @@ export function ProspectDetailClient2({
         const statusRes = await fetch(`/api/prospects/${prospect.id}/status`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: nextStatus }),
+          body: JSON.stringify({ status: nextStatus, ...extra }),
         });
         const statusData = await statusRes.json();
         if (!statusRes.ok) {
@@ -778,7 +810,11 @@ export function ProspectDetailClient2({
       await refreshAll();
     };
 
-    if (isClosedProspectStatus(nextStatus) && nextStatus !== originalStatus) {
+    if (nextStatus === "Fermé" && nextStatus !== originalStatus && !extra?.closed_reason) {
+      setClosePrompt("draft");
+      return;
+    }
+    if (isClosedProspectStatus(nextStatus) && nextStatus !== originalStatus && nextStatus !== "Fermé") {
       setConfirm({
         tone: "default",
         title: "Confirmer le changement de statut ?",
@@ -914,7 +950,12 @@ export function ProspectDetailClient2({
       onChange={(next) => {
         if (next === prospect.status) return;
 
-        if (isClosedProspectStatus(next)) {
+        if (next === "Fermé") {
+          setClosePrompt("status");
+          return;
+        }
+
+        if (next === "Client") {
           setConfirm({
             tone: "default",
             title: "Confirmer le changement de statut ?",
@@ -923,47 +964,13 @@ export function ProspectDetailClient2({
             cancelLabel: "Annuler",
             onConfirm: () => {
               setConfirm(null);
-              startTransition(async () => {
-                const res = await fetch(`/api/prospects/${prospect.id}/status`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ status: next }),
-                });
-                const data = await res.json();
-                if (!res.ok) {
-                  setMsg(data.error ?? "Erreur.");
-                  return;
-                }
-                if (next === "Client") {
-                  goToClientsList();
-                  return;
-                }
-                setMsg("Statut mis à jour.");
-                setProspect(data.prospect as Prospect);
-                setActivities(data.activities as ProspectActivity[]);
-                await refreshAll();
-              });
+              applyStatus(next);
             },
           });
           return;
         }
 
-        startTransition(async () => {
-          const res = await fetch(`/api/prospects/${prospect.id}/status`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ status: next }),
-          });
-          const data = await res.json();
-          if (!res.ok) {
-            setMsg(data.error ?? "Erreur.");
-            return;
-          }
-          setMsg("Statut mis à jour.");
-          setProspect(data.prospect as Prospect);
-          setActivities(data.activities as ProspectActivity[]);
-          await refreshAll();
-        });
+        applyStatus(next);
       }}
     />
   );
@@ -998,12 +1005,12 @@ export function ProspectDetailClient2({
               "inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100",
           },
         ]),
-    {
-      key: "refus" as const,
-      label: "Refus",
-      icon: <IconUserX className="h-4 w-4" />,
-      className: ui.btnDanger,
-    },
+          {
+            key: "refus" as const,
+            label: "Fermer",
+            icon: <IconUserX className="h-4 w-4" />,
+            className: ui.btnDanger,
+          },
   ];
 
   const addDemoToCalendar = async () => {
@@ -1071,6 +1078,11 @@ export function ProspectDetailClient2({
             <h1 className={ui.h1}>{prospect.club_name}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <StatusBadge status={prospect.status} />
+              {prospect.status === "Fermé" && formatClosedReason(prospect.closed_reason, prospect.closed_note) ? (
+                <span className="text-sm text-wo-muted">
+                  {formatClosedReason(prospect.closed_reason, prospect.closed_note)}
+                </span>
+              ) : null}
               {isArchived ? (
                 <span className="crm-badge bg-wo-hover text-wo-muted">
                   <span className="crm-badge-dot bg-slate-400" />
@@ -1097,7 +1109,7 @@ export function ProspectDetailClient2({
                   type="button"
                   className={ui.btnPrimary}
                   disabled={pending || !draft.club_name.trim()}
-                  onClick={handleSaveDraft}
+                  onClick={() => handleSaveDraft()}
                 >
                   Enregistrer les modifications
                 </button>
@@ -1774,6 +1786,21 @@ export function ProspectDetailClient2({
         cancelLabel={confirm?.cancelLabel ?? "Annuler"}
         onConfirm={() => confirm?.onConfirm?.()}
         onCancel={() => setConfirm(null)}
+      />
+
+      <ClosedReasonModal
+        key={closePrompt ?? "close-reason"}
+        open={Boolean(closePrompt)}
+        clubName={prospect.club_name}
+        onConfirm={(reason: ClosedReason, note: string) => {
+          const kind = closePrompt;
+          setClosePrompt(null);
+          const extra = { closed_reason: reason, closed_note: note };
+          if (kind === "refus") executeQuickAction("refus", extra);
+          else if (kind === "draft") handleSaveDraft(extra);
+          else applyStatus("Fermé", extra);
+        }}
+        onCancel={() => setClosePrompt(null)}
       />
 
       <DeleteProspectModal

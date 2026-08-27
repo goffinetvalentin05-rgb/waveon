@@ -1,5 +1,6 @@
 import { PROSPECT_STATUSES } from "@/lib/crm/types";
 import { migrateProspectStatus } from "@/lib/crm/status";
+import { isClosedReason } from "@/lib/crm/closed";
 import { isSmartViewId, type SmartViewId } from "@/lib/crm/smart-views";
 import { normalizeSearchText } from "@/lib/crm/search";
 
@@ -56,6 +57,7 @@ export type ProspectListParams = {
   smartView: SmartViewId;
   minValue: string;
   maxValue: string;
+  closedReasons: string[];
 };
 
 export type ProspectListFilters = Omit<
@@ -83,6 +85,7 @@ export const EMPTY_FILTERS: ProspectListFilters = {
   smartView: "all",
   minValue: "",
   maxValue: "",
+  closedReasons: [],
 };
 
 export function defaultProspectListParams(clientsOnly = false): ProspectListParams {
@@ -163,6 +166,7 @@ export function parseProspectListParams(
     smartView: isSmartViewId(searchParams.get("view")) ? (searchParams.get("view") as SmartViewId) : "all",
     minValue: searchParams.get("min_value")?.trim() ?? "",
     maxValue: searchParams.get("max_value")?.trim() ?? "",
+    closedReasons: parseMultiParam(searchParams.get("closed_reason")).filter(isClosedReason),
   };
 }
 
@@ -210,6 +214,7 @@ export function buildProspectListSearchParams(
   if (params.smartView && params.smartView !== "all") sp.set("view", params.smartView);
   if (params.minValue) sp.set("min_value", params.minValue);
   if (params.maxValue) sp.set("max_value", params.maxValue);
+  if (params.closedReasons.length) sp.set("closed_reason", params.closedReasons.join(","));
 
   return sp;
 }
@@ -241,6 +246,7 @@ export function countActiveFilters(filters: ProspectListFilters): number {
   if (filters.followUpPreset) n++;
   if (filters.smartView && filters.smartView !== "all") n++;
   if (filters.minValue || filters.maxValue) n++;
+  if (filters.closedReasons.length) n++;
   return n;
 }
 

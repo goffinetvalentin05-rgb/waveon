@@ -66,9 +66,14 @@ export async function PATCH(request: Request, { params }: Params) {
       note: nullIfEmpty(body.note),
     });
   } else if (nextActionType === "status_change") {
-    // Pour une entrée de statut, on stocke la destination dans description.
-    // (Recalcul côté server : ProspectStatus depuis description)
-    description = String(body.to_status ?? body.status ?? body.note ?? "").trim() || null;
+    const toStatus = String(body.to_status ?? body.status ?? body.note ?? "").trim();
+    description = toStatus
+      ? JSON.stringify({
+          to: toStatus,
+          closed_reason: body.closed_reason ?? null,
+          closed_note: body.closed_note ?? null,
+        })
+      : null;
   } else {
     description = nullIfEmpty(body.note);
   }

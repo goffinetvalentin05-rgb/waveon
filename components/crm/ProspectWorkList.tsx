@@ -5,6 +5,7 @@ import { StatusBadge } from "@/components/crm/StatusBadge";
 import { StatusSelect } from "@/components/crm/StatusSelect";
 import { formatRelativeDay } from "@/lib/crm/format";
 import { prospectDetailHref } from "@/lib/crm/paths";
+import { formatClosedReason } from "@/lib/crm/closed";
 import type { Prospect, ProspectStatus } from "@/lib/crm/types";
 
 export function ProspectListRow({
@@ -29,7 +30,9 @@ export function ProspectListRow({
         <div className="min-w-0">
           <h3 className="truncate text-[15px] font-medium text-wo-text">{prospect.club_name}</h3>
           <p className="mt-0.5 truncate text-xs text-wo-dim">
-            {[prospect.contact_name, prospect.ville || prospect.canton].filter(Boolean).join(" · ") || "—"}
+            {prospect.status === "Fermé"
+              ? formatClosedReason(prospect.closed_reason, prospect.closed_note) || "Fermé"
+              : [prospect.contact_name, prospect.ville || prospect.canton].filter(Boolean).join(" · ") || "—"}
           </p>
         </div>
         <div onClick={(e) => e.stopPropagation()}>

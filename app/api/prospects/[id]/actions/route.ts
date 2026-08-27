@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { resolveQuickActionAt, QUICK_ACTION_LABELS } from "@/lib/crm/actions";
-import type { ProspectStatus, QuickAction } from "@/lib/crm/types";
+import type { QuickAction } from "@/lib/crm/types";
 import { getOrCreateSettings, requireUser, todayISO } from "@/lib/crm/server";
 import { defaultNextActionFor } from "@/lib/crm/next-action";
+import { parseClosedReason } from "@/lib/crm/closed";
+import { migrateProspectStatus } from "@/lib/crm/status";
+import { normalizeProspectFromDb } from "@/lib/crm/prospect-payload";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -39,9 +42,18 @@ export async function POST(request: Request, { params }: Params) {
   const settings = await getOrCreateSettings(supabase, user.id);
   const actionDate = new Date();
   const demoAt = action === "demo_scheduled" && body.demo_at ? new Date(body.demo_at) : null;
+  const currentStatus = migrateProspectStatus(String(prospect.status ?? "À contacter"));
+  const closedReason = action === "refus" ? parseClosedReason(body.closed_reason) : null;
+  const closedNote =
+    action === "refus" && closedReason === "Autre" ? String(body.closed_note ?? "").trim() || null : null;
+
+  if (action === "refus" && !closedReason) {
+    return NextResponse.json({ error: "Indiquez pourquoi ce prospect est fermé." }, { status: 400 });
+  }
+
   const result = resolveQuickActionAt(
     action,
-    prospect.status as ProspectStatus,
+    currentStatus,
     settings,
     prospect.club_name,
     actionDate,
@@ -54,6 +66,8 @@ export async function POST(request: Request, { params }: Params) {
     last_action_at: new Date().toISOString(),
     next_follow_up: result.nextFollowUp,
     next_action: defaultNextActionFor(result.status),
+    closed_reason: result.status === "Fermé" ? closedReason : null,
+    closed_note: result.status === "Fermé" ? closedNote : null,
   };
 
   if (action === "demo_scheduled") {
@@ -83,10 +97,15 @@ export async function POST(request: Request, { params }: Params) {
             demoAt: body.demo_at || updatePayload.demo_at,
             note: body.note?.trim() || null,
           })
-        : body.note?.trim() || null,
+        : action === "refus"
+          ? JSON.stringify({
+              closed_reason: closedReason,
+              closed_note: closedNote,
+              note: body.note?.trim() || null,
+            })
+          : body.note?.trim() || null,
   });
 
-  // Programmer tâche pour la date de relance
   if (result.taskTitle && result.taskKind && result.nextFollowUp) {
     await supabase.from("daily_tasks").insert({
       user_id: user.id,
@@ -98,7 +117,6 @@ export async function POST(request: Request, { params }: Params) {
     });
   }
 
-  // Si client/refus : marquer tâches ouvertes comme terminées
   if (action === "client" || action === "refus") {
     await supabase
       .from("daily_tasks")
@@ -109,7 +127,7 @@ export async function POST(request: Request, { params }: Params) {
   }
 
   return NextResponse.json({
-    prospect: updated,
+    prospect: updated ? normalizeProspectFromDb(updated as Record<string, unknown>) : updated,
     action: QUICK_ACTION_LABELS[action],
     today: todayISO(),
   });

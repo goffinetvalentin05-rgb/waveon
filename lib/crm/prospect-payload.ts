@@ -129,5 +129,10 @@ export function normalizeProspectFromDb(row: Record<string, unknown>) {
     potential_value,
     status: migrateProspectStatus(String(row.status ?? "À contacter")),
     next_action: row.next_action == null || row.next_action === "" ? null : String(row.next_action),
+    closed_reason:
+      row.closed_reason == null || row.closed_reason === "" ? null : String(row.closed_reason),
+    closed_note: row.closed_note == null || row.closed_note === "" ? null : String(row.closed_note),
+    legacy_status:
+      row.legacy_status == null || row.legacy_status === "" ? null : String(row.legacy_status),
   };
 }

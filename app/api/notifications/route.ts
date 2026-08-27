@@ -48,7 +48,7 @@ export async function GET() {
       .select("id, club_name, next_follow_up, status, project_id")
       .eq("user_id", user.id)
       .is("archived_at", null)
-      .in("status", ["Démo prévue", "Démonstration"])
+      .in("status", ["Démo", "Démo prévue", "Démonstration"])
       .gte("next_follow_up", today)
       .lte("next_follow_up", tomorrow)
       .limit(20),

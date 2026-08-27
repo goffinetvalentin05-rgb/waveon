@@ -44,7 +44,6 @@ export default async function CrmProspectsPage({ searchParams }: PageProps) {
       .from("prospects")
       .select("*", { count: "exact", head: true })
       .eq("user_id", user.id)
-      .neq("status", "Client")
       .is("archived_at", null),
   ]);
 

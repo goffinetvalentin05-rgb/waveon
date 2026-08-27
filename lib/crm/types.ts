@@ -2,42 +2,27 @@ export const PROSPECT_STATUS_PHASES = [
   {
     id: "prospection" as const,
     label: "Prospection",
-    statuses: [
-      "À contacter",
-      "1er contact envoyé",
-      "Relance 1",
-      "Relance 2",
-      "Relance 3 / dernière relance",
-      "Sans réponse",
-      "À recontacter plus tard",
-    ],
+    statuses: ["À contacter", "Relance 1", "Relance 2"],
   },
   {
     id: "discussion" as const,
-    label: "Discussion",
-    statuses: [
-      "Réponse reçue",
-      "À qualifier",
-      "Intéressé",
-      "Démo à planifier",
-      "Démo prévue",
-      "Démo effectuée",
-      "À relancer après démo",
-      "En réflexion",
-      "Discussion avec comité / équipe",
-      "Offre / prix envoyé",
-    ],
+    label: "Avancement",
+    statuses: ["En discussion", "Démo"],
   },
   {
     id: "result" as const,
     label: "Résultat",
-    statuses: ["Client", "Pas maintenant", "Pas intéressé", "Perdu"],
+    statuses: ["Client", "Fermé"],
   },
 ] as const;
 
 export const PROSPECT_STATUSES = PROSPECT_STATUS_PHASES.flatMap((p) => [...p.statuses]);
 
 export type ProspectStatus = (typeof PROSPECT_STATUSES)[number];
+
+export function isProspectStatus(value: string): value is ProspectStatus {
+  return (PROSPECT_STATUSES as readonly string[]).includes(value);
+}
 
 export const ACTION_TYPES = [
   "mail_sent",
@@ -143,6 +128,9 @@ export type Prospect = {
   potential_value: number | null;
   contact_channel: string | null;
   tags: string[];
+  closed_reason: string | null;
+  closed_note: string | null;
+  legacy_status: string | null;
   contact_count?: number;
   people_count?: number;
   project?: { id: string; name: string; color: string | null } | null;

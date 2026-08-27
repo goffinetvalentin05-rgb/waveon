@@ -78,8 +78,8 @@ export function ProjectOverview({
               { label: "À contacter", value: stats.toContact ?? 0, href: `${base}/prospects?view=to_contact` },
               { label: "Relances aujourd'hui", value: stats.followUps, href: `${base}/prospects?view=today_work` },
               { label: "En retard", value: stats.overdue ?? 0, href: `${base}/prospects?view=overdue` },
-              { label: "Démos prévues", value: stats.demos ?? 0, href: `${base}/prospects?view=demo_scheduled` },
-              { label: "En réflexion", value: stats.considering ?? 0, href: `${base}/prospects?view=considering` },
+              { label: "Démo", value: stats.demos ?? 0, href: `${base}/prospects?view=demo_scheduled` },
+              { label: "En discussion", value: stats.considering ?? 0, href: `${base}/prospects?view=considering` },
               { label: "Clients", value: stats.clients ?? 0, href: `${base}/prospects?view=clients` },
             ].map((c) => (
               <Link key={c.label} href={c.href} className="rounded-2xl border border-wo-border bg-white px-3 py-3 transition hover:border-white/[0.12]">
