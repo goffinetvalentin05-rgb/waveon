@@ -802,7 +802,10 @@ export function ProspectDetailClient2({
         notes: draft.notes,
         potential_value: draft.potential_value === "" ? null : Number(draft.potential_value),
         contact_channel: draft.contact_channel,
-        tags: draft.tags,
+        tags: draft.tags
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
       };
 
       const patchRes = await fetch(`/api/prospects/${prospect.id}`, {

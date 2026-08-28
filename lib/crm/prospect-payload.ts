@@ -47,11 +47,15 @@ export function buildProspectFields(input: ProspectInput) {
     if (!Number.isNaN(n)) potential_value = n;
   }
 
+  // tags est text[] NOT NULL DEFAULT '{}' — jamais null.
   let tags: string[] = [];
   if (Array.isArray(input.tags)) {
     tags = input.tags.map((t) => String(t).trim()).filter(Boolean);
-  } else if (typeof input.tags === "string" && input.tags.trim()) {
-    tags = input.tags.split(",").map((t) => t.trim()).filter(Boolean);
+  } else if (typeof input.tags === "string") {
+    tags = input.tags
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
   }
 
   return {

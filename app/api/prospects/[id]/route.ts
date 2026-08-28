@@ -89,16 +89,22 @@ export async function PATCH(request: Request, { params }: Params) {
   for (const key of allowed) {
     if (key in body) {
       const val = body[key];
-      if (typeof val === "string") {
-        patch[key] = nullIfEmpty(val);
-        if (key === "phone") {
-          patch.phone_number = nullIfEmpty(val);
-        }
-      } else if (key === "tags") {
+      // tags est text[] NOT NULL DEFAULT '{}' — jamais null.
+      if (key === "tags") {
         if (Array.isArray(val)) {
           patch.tags = val.map((t) => String(t).trim()).filter(Boolean);
         } else if (typeof val === "string") {
-          patch.tags = val.split(",").map((t) => t.trim()).filter(Boolean);
+          patch.tags = val
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean);
+        } else {
+          patch.tags = [];
+        }
+      } else if (typeof val === "string") {
+        patch[key] = nullIfEmpty(val);
+        if (key === "phone") {
+          patch.phone_number = nullIfEmpty(val);
         }
       } else if (key === "potential_value") {
         patch.potential_value = val === null || val === "" ? null : Number(val);
