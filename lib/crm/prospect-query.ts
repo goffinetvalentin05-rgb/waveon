@@ -70,7 +70,10 @@ export function applyProspectListQuery(
   }
 
   if (params.sports.length) query = query.in("sport", params.sports);
-  if (params.cantons.length) query = query.in("canton", params.cantons);
+  if (params.cantons.length) {
+    const quoted = params.cantons.map((v) => `"${v.replace(/"/g, '\\"')}"`).join(",");
+    query = query.or(`canton.in.(${quoted}),country.in.(${quoted})`);
+  }
   if (params.villes.length) query = query.in("ville", params.villes);
 
   if (params.hasEmail === "yes") {
@@ -232,7 +235,10 @@ export async function fetchProspectList(
     }
 
     if (params.sports.length) legacyQuery = legacyQuery.in("sport", params.sports);
-    if (params.cantons.length) legacyQuery = legacyQuery.in("canton", params.cantons);
+    if (params.cantons.length) {
+      const quoted = params.cantons.map((v) => `"${v.replace(/"/g, '\\"')}"`).join(",");
+      legacyQuery = legacyQuery.or(`canton.in.(${quoted}),country.in.(${quoted})`);
+    }
     if (params.villes.length) legacyQuery = legacyQuery.in("ville", params.villes);
 
     if (params.hasEmail === "yes") {
@@ -280,13 +286,20 @@ function escapeIlike(value: string): string {
 export async function fetchProspectFilterOptions(
   supabase: SupabaseClient,
   userId: string,
-  clientsOnly: boolean
+  clientsOnly: boolean,
+  projectId?: string | null
 ) {
   let query = supabase
     .from("prospects")
-    .select("sport, canton, ville, status, tags, contact_channel")
+    .select("sport, canton, country, ville, status, tags, contact_channel")
     .eq("user_id", userId)
     .is("archived_at", null);
+
+  if (projectId === "unassigned") {
+    query = query.is("project_id", null);
+  } else if (projectId) {
+    query = query.eq("project_id", projectId);
+  }
 
   if (clientsOnly) {
     query = query.eq("status", "Client");
@@ -296,31 +309,35 @@ export async function fetchProspectFilterOptions(
   if (error) throw error;
 
   const sports = new Set<string>();
-  const cantons = new Set<string>();
+  const locations = new Set<string>();
   const villes = new Set<string>();
-  const statuses = new Set<string>();
   const tags = new Set<string>();
   const channels = new Set<string>();
 
   for (const row of data ?? []) {
-    if (row.sport) sports.add(row.sport);
-    if (row.canton) cantons.add(row.canton);
-    if (row.ville) villes.add(row.ville);
-    if (row.status) statuses.add(row.status);
+    addDistinct(sports, row.sport);
+    addDistinct(locations, row.canton);
+    addDistinct(locations, row.country);
+    addDistinct(villes, row.ville);
     if (Array.isArray(row.tags)) {
-      for (const t of row.tags) if (t) tags.add(String(t));
+      for (const t of row.tags) addDistinct(tags, t);
     }
-    if (row.contact_channel) channels.add(row.contact_channel);
+    addDistinct(channels, row.contact_channel);
   }
 
   const sortAlpha = (a: string, b: string) => a.localeCompare(b, "fr");
 
   return {
     sports: [...sports].sort(sortAlpha),
-    cantons: [...cantons].sort(sortAlpha),
+    cantons: [...locations].sort(sortAlpha),
     villes: [...villes].sort(sortAlpha),
-    statuses: [...statuses].sort(sortAlpha),
     tags: [...tags].sort(sortAlpha),
     channels: [...channels].sort(sortAlpha),
   };
+}
+
+function addDistinct(set: Set<string>, value: unknown) {
+  if (typeof value !== "string") return;
+  const trimmed = value.trim();
+  if (trimmed) set.add(trimmed);
 }

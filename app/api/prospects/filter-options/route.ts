@@ -9,9 +9,15 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const clientsOnly = url.searchParams.get("clients") === "1";
+  const projectId = url.searchParams.get("project")?.trim() ?? "";
 
   try {
-    const options = await fetchProspectFilterOptions(supabase, user.id, clientsOnly);
+    const options = await fetchProspectFilterOptions(
+      supabase,
+      user.id,
+      clientsOnly,
+      projectId || null
+    );
     return NextResponse.json(options);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Erreur";

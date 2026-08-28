@@ -229,13 +229,22 @@ export function ProspectsClient({
   useEffect(() => {
     const sp = new URLSearchParams();
     if (clientsOnly) sp.set("clients", "1");
+    const project = projectId ?? params.projectId;
+    if (project) sp.set("project", project);
     fetch(`/api/prospects/filter-options?${sp}`)
       .then((r) => r.json())
       .then((data) => {
-        if (data.sports) setFilterOptions({ ...data, statuses: [...PROSPECT_STATUSES] });
+        if (data.sports !== undefined) {
+          setFilterOptions({
+            sports: data.sports ?? [],
+            cantons: data.cantons ?? [],
+            villes: data.villes ?? [],
+            statuses: [...PROSPECT_STATUSES],
+          });
+        }
       })
       .catch(() => {});
-  }, [clientsOnly]);
+  }, [clientsOnly, projectId, params.projectId]);
 
   useEffect(() => {
     if (clientsOnly || view !== "pipeline") return;

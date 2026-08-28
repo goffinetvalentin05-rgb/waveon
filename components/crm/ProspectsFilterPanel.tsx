@@ -33,14 +33,7 @@ function MultiCheckboxGroup({
   selected: string[];
   onToggle: (value: string) => void;
 }) {
-  if (values.length === 0) {
-    return (
-      <div>
-        <p className={ui.label}>{label}</p>
-        <p className="text-sm text-wo-dim">Aucune valeur disponible</p>
-      </div>
-    );
-  }
+  if (values.length === 0) return null;
 
   return (
     <div>
@@ -116,6 +109,9 @@ export function ProspectsFilterPanel({
     onChange({ ...draft, [key]: next });
   };
 
+  const showClosedReasons =
+    !clientsOnly && (draft.statuses.includes("Fermé") || draft.closedReasons.length > 0);
+
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center p-4 sm:items-center">
       <button
@@ -127,10 +123,18 @@ export function ProspectsFilterPanel({
       <div className={`${ui.modal} max-h-[90vh] max-w-2xl overflow-y-auto p-6`}>
         <h2 className="text-lg font-semibold text-wo-text">Filtrer les prospects</h2>
         <p className="mt-1 text-sm text-wo-muted">
-          Sélectionnez vos critères puis appliquez les filtres.
+          Options basées sur les prospects de ce projet.
         </p>
 
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
+          {!clientsOnly ? (
+            <MultiCheckboxGroup
+              label="Statut"
+              values={options.statuses}
+              selected={draft.statuses}
+              onToggle={(v) => toggle("statuses", v)}
+            />
+          ) : null}
           <MultiCheckboxGroup
             label="Secteur"
             values={options.sports}
@@ -149,15 +153,7 @@ export function ProspectsFilterPanel({
             selected={draft.villes}
             onToggle={(v) => toggle("villes", v)}
           />
-          {!clientsOnly ? (
-            <MultiCheckboxGroup
-              label="Statut"
-              values={options.statuses}
-              selected={draft.statuses}
-              onToggle={(v) => toggle("statuses", v)}
-            />
-          ) : null}
-          {!clientsOnly ? (
+          {showClosedReasons ? (
             <MultiCheckboxGroup
               label="Raison de fermeture"
               values={[...CLOSED_REASONS]}
