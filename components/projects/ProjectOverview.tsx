@@ -25,6 +25,8 @@ export function ProjectOverview({
   stats: {
     prospects: number;
     followUps: number;
+    inRelance?: number;
+    actionsDue?: number;
     toContact?: number;
     overdue?: number;
     demos?: number;
@@ -76,7 +78,7 @@ export function ProjectOverview({
           <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
             {[
               { label: "À contacter", value: stats.toContact ?? 0, href: `${base}/prospects?view=to_contact` },
-              { label: "Relances aujourd'hui", value: stats.followUps, href: `${base}/prospects?view=today_work` },
+              { label: "Relances", value: stats.inRelance ?? stats.followUps, href: `${base}/prospects` },
               { label: "En retard", value: stats.overdue ?? 0, href: `${base}/prospects?view=overdue` },
               { label: "Démo", value: stats.demos ?? 0, href: `${base}/prospects?view=demo_scheduled` },
               { label: "En discussion", value: stats.considering ?? 0, href: `${base}/prospects?view=considering` },

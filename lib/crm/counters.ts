@@ -11,6 +11,8 @@ export type ProspectWorkCounts = {
   toContact: number;
   followToday: number;
   overdue: number;
+  inRelance: number;
+  actionsDue: number;
   noReply: number;
   replied: number;
   demoToPlan: number;
@@ -36,6 +38,8 @@ export function countProspectWork(
     toContact: 0,
     followToday: 0,
     overdue: 0,
+    inRelance: 0,
+    actionsDue: 0,
     noReply: 0,
     replied: 0,
     demoToPlan: 0,
@@ -74,7 +78,10 @@ export function countProspectWork(
     }
     if (open && row.next_follow_up === today) counts.followToday += 1;
     if (open && row.next_follow_up && row.next_follow_up < today) counts.overdue += 1;
+    if (open && (status === "Relance 1" || status === "Relance 2")) counts.inRelance += 1;
   }
+
+  counts.actionsDue = counts.followToday + counts.overdue;
 
   return counts;
 }

@@ -58,7 +58,7 @@ function splitCsvLine(line: string): string[] {
   return cells;
 }
 
-/** Parse un CSV club/sport/canton/contact/téléphone/email/site web. */
+/** Parse un CSV entreprise/secteur/région/contact/téléphone/email/site web. */
 export function parseProspectsCsv(text: string): {
   rows: CsvProspectRow[];
   errors: string[];
@@ -79,7 +79,7 @@ export function parseProspectsCsv(text: string): {
   if (!mapped.includes("club_name")) {
     return {
       rows: [],
-      errors: ['Colonne "Club" (ou club_name) obligatoire manquante.'],
+      errors: ['Colonne "Nom" ou "Entreprise" (club_name) obligatoire manquante.'],
     };
   }
 
@@ -107,7 +107,7 @@ export function parseProspectsCsv(text: string): {
     });
 
     if (!row.club_name) {
-      errors.push(`Ligne ${i + 1} : nom du club manquant.`);
+      errors.push(`Ligne ${i + 1} : nom / entreprise manquant.`);
       continue;
     }
     rows.push(row);

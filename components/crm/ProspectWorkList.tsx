@@ -3,10 +3,21 @@
 import { useRouter } from "next/navigation";
 import { StatusBadge } from "@/components/crm/StatusBadge";
 import { StatusSelect } from "@/components/crm/StatusSelect";
-import { formatRelativeDay, formatRelayFollowUp } from "@/lib/crm/format";
+import {
+  formatLastContact,
+  getNextActionDisplay,
+} from "@/lib/crm/follow-up-display";
+import { formatRelayFollowUp } from "@/lib/crm/format";
 import { prospectDetailHref } from "@/lib/crm/paths";
 import { formatClosedReason } from "@/lib/crm/closed";
 import type { Prospect, ProspectStatus } from "@/lib/crm/types";
+
+const TEMPORAL_STYLES = {
+  future: "text-wo-muted",
+  today: "font-medium text-amber-700",
+  overdue: "font-medium text-rose-600",
+  none: "text-wo-dim",
+} as const;
 
 export function ProspectListRow({
   prospect,
@@ -18,6 +29,7 @@ export function ProspectListRow({
   onStatusChange: (id: string, status: ProspectStatus) => void;
 }) {
   const router = useRouter();
+  const lastContact = formatLastContact(prospect);
 
   return (
     <article
@@ -47,7 +59,7 @@ export function ProspectListRow({
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-wo-muted">
         <StatusBadge status={prospect.status} />
         <span>{prospect.contact_channel || "Canal —"}</span>
-        <span>Dernier contact : {formatRelativeDay(prospect.last_action_at)}</span>
+        {lastContact ? <span>{lastContact}</span> : <span>Dernier contact : —</span>}
         {prospect.people_count != null ? (
           <span>
             {prospect.people_count} personne{prospect.people_count > 1 ? "s" : ""}
@@ -59,13 +71,23 @@ export function ProspectListRow({
         ) : null}
       </div>
       <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]">
-        <span className="text-wo-text">
-          {prospect.status === "Relais"
-            ? formatRelayFollowUp(prospect.next_follow_up)
-            : prospect.next_action || "Pas de prochaine action"}
-        </span>
-        {prospect.status === "Relais" ? null : (
-          <span className="text-wo-muted">{formatRelativeDay(prospect.next_follow_up)}</span>
+        {prospect.status === "Relais" ? (
+          <span className="text-wo-text">{formatRelayFollowUp(prospect.next_follow_up)}</span>
+        ) : (
+          (() => {
+            const { temporal, datedLabel } = getNextActionDisplay(prospect);
+            if (!datedLabel && temporal.kind === "none") {
+              return <span className="text-wo-dim">Pas de prochaine action</span>;
+            }
+            return (
+              <>
+                {datedLabel ? <span className="text-wo-text">{datedLabel}</span> : null}
+                {temporal.kind !== "none" ? (
+                  <span className={TEMPORAL_STYLES[temporal.kind]}>{temporal.primary}</span>
+                ) : null}
+              </>
+            );
+          })()
         )}
         {prospect.assignee?.name ? <span className="text-wo-dim">{prospect.assignee.name}</span> : null}
       </div>

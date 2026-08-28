@@ -141,7 +141,7 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
 
   const handleImport = async () => {
     if (!hasClubMapping) {
-      setError("La colonne « Nom du club » est obligatoire.");
+      setError("La colonne « Nom / entreprise » est obligatoire.");
       return;
     }
     if (mappedRows.length === 0) {
@@ -276,7 +276,7 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
               <section>
                 <h3 className="text-sm font-semibold text-wo-text">Association des colonnes</h3>
                 <p className="mt-0.5 text-xs text-wo-dim">
-                  Associez chaque colonne du fichier à un champ CRM. « Nom du club » est obligatoire.
+                  Associez chaque colonne du fichier à un champ CRM. « Nom / entreprise » est obligatoire.
                 </p>
                 <div className="mt-3 space-y-2">
                   {parsed.columns.map((col) => (
@@ -306,7 +306,7 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
                 {!hasClubMapping ? (
                   <p className="mt-2 flex items-center gap-1.5 text-xs text-rose-600">
                     <IconAlertCircle className="h-3.5 w-3.5" />
-                    Associez au moins une colonne au champ « Nom du club ».
+                    Associez au moins une colonne au champ « Nom / entreprise ».
                   </p>
                 ) : null}
               </section>
@@ -315,7 +315,7 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
               <section>
                 <h3 className="text-sm font-semibold text-wo-text">Gestion des doublons</h3>
                 <p className="mt-0.5 text-xs text-wo-dim">
-                  Détection par email, nom de club ou téléphone.
+                  Détection par email, nom ou téléphone.
                 </p>
                 <div className="mt-3 space-y-2">
                   {(

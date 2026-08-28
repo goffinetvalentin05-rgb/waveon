@@ -36,6 +36,7 @@ export function ProjectDashboard({
     replies: number;
     meetings: number;
     followUps: number;
+    actionsDue: number;
     toContact: number;
     overdue: number;
     demos: number;
@@ -55,7 +56,7 @@ export function ProjectDashboard({
   const pipeline: PipelineStat[] = hasModule(enabledModules, "prospects")
     ? [
         { label: "À contacter", value: stats.toContact, href: `${base}/prospects?view=to_contact` },
-        { label: "Relances", value: stats.followUps, href: `${base}/prospects?view=today_work` },
+        { label: "Relances", value: stats.followUps, href: `${base}/prospects` },
         { label: "En retard", value: stats.overdue, href: `${base}/prospects?view=overdue` },
         { label: "Démo", value: stats.meetings || stats.demos, href: `${base}/prospects?view=demo_scheduled` },
         { label: "En discussion", value: stats.replies || stats.considering, href: `${base}/prospects?view=considering` },
@@ -103,7 +104,9 @@ export function ProjectDashboard({
             </p>
             <p className="mt-1 text-sm text-white/80">prospects dans {projectName}</p>
             <span className="mt-3 inline-flex rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-medium text-white">
-              {stats.followUps} relance{stats.followUps > 1 ? "s" : ""} à faire
+              {stats.actionsDue > 0
+                ? `${stats.actionsDue} action${stats.actionsDue > 1 ? "s" : ""} à faire`
+                : "Aucune action due"}
             </span>
           </div>
           <Link href={`${base}/prospects`} className="inline-flex items-center gap-1 text-sm font-medium text-white/90">
@@ -146,7 +149,7 @@ export function ProjectDashboard({
         </section>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className={`grid gap-4 ${membersCount >= 2 ? "lg:grid-cols-2" : "lg:grid-cols-1"}`}>
         {hasModule(enabledModules, "tasks") ? (
           <section className={`${ui.widget} p-5`}>
             <div className="flex items-center justify-between">
@@ -215,26 +218,28 @@ export function ProjectDashboard({
           </section>
         ) : null}
 
-        <section className={`${ui.widget} p-5`}>
-          <div className="flex items-center justify-between">
-            <h2 className={ui.h2}>Équipe</h2>
-            <Link href={`${base}/members`} className="text-sm font-medium text-wo-accent">
-              Membres
-            </Link>
-          </div>
-          <p className="mt-4 text-sm text-wo-secondary">
-            {membersCount} membre{membersCount > 1 ? "s" : ""} actif{membersCount > 1 ? "s" : ""}
-          </p>
-          {notes.length > 0 && hasModule(enabledModules, "notes") ? (
-            <ul className="mt-4 space-y-2 border-t border-wo-border pt-4">
-              {notes.slice(0, 3).map((n) => (
-                <li key={n.id} className="truncate text-sm text-wo-text">
-                  {n.title || "Sans titre"}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </section>
+        {membersCount >= 2 ? (
+          <section className={`${ui.widget} p-5`}>
+            <div className="flex items-center justify-between">
+              <h2 className={ui.h2}>Équipe</h2>
+              <Link href={`${base}/members`} className="text-sm font-medium text-wo-accent">
+                Membres
+              </Link>
+            </div>
+            <p className="mt-4 text-sm text-wo-secondary">
+              {membersCount} membres actifs
+            </p>
+            {notes.length > 0 && hasModule(enabledModules, "notes") ? (
+              <ul className="mt-4 space-y-2 border-t border-wo-border pt-4">
+                {notes.slice(0, 3).map((n) => (
+                  <li key={n.id} className="truncate text-sm text-wo-text">
+                    {n.title || "Sans titre"}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </section>
+        ) : null}
       </div>
     </div>
   );

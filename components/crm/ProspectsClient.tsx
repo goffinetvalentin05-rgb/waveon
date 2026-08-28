@@ -397,7 +397,7 @@ export function ProspectsClient({
           <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-wo-dim" />
           <input
             className={`${ui.input} pl-9`}
-            placeholder="Rechercher un club, contact, canton…"
+            placeholder="Rechercher un prospect, une entreprise, un contact…"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
           />

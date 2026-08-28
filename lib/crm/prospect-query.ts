@@ -59,7 +59,7 @@ export function applyProspectListQuery(
     query = query.eq("status", "Client");
   } else {
     if (smart === "today_work") {
-      query = query.lte("next_follow_up", today).not("status", "in", CLOSED_STATUS_POSTGREST);
+      query = query.eq("next_follow_up", today).not("status", "in", CLOSED_STATUS_POSTGREST);
     } else if (smart === "overdue") {
       query = query.lt("next_follow_up", today).not("status", "in", CLOSED_STATUS_POSTGREST);
     } else if (smart && SMART_VIEW_STATUSES[smart]) {

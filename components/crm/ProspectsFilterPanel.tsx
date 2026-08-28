@@ -132,13 +132,13 @@ export function ProspectsFilterPanel({
 
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
           <MultiCheckboxGroup
-            label="Sport"
+            label="Secteur"
             values={options.sports}
             selected={draft.sports}
             onToggle={(v) => toggle("sports", v)}
           />
           <MultiCheckboxGroup
-            label="Canton"
+            label="Localisation"
             values={options.cantons}
             selected={draft.cantons}
             onToggle={(v) => toggle("cantons", v)}
@@ -192,7 +192,7 @@ export function ProspectsFilterPanel({
             </select>
           </div>
           <div>
-            <p className={ui.label}>Prochaine relance</p>
+            <p className={ui.label}>Date de prochaine action</p>
             <div className="mt-2 grid grid-cols-2 gap-2">
               <input
                 type="date"

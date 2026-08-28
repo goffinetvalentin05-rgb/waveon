@@ -1,8 +1,8 @@
 /** Champs CRM disponibles pour l'import. */
 export const IMPORT_FIELDS = [
-  { key: "club_name", label: "Nom du club", required: true },
-  { key: "sport", label: "Sport", required: false },
-  { key: "canton", label: "Canton", required: false },
+  { key: "club_name", label: "Nom / entreprise", required: true },
+  { key: "sport", label: "Secteur", required: false },
+  { key: "canton", label: "Région", required: false },
   { key: "contact_name", label: "Nom du contact", required: false },
   { key: "phone", label: "Téléphone", required: false },
   { key: "email", label: "Email", required: false },

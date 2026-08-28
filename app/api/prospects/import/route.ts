@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   const validRows = rows.filter((r) => r?.club_name?.trim());
   if (validRows.length === 0) {
     return NextResponse.json(
-      { error: "Colonne « Nom du club » absente ou aucune ligne valide." },
+      { error: "Colonne « Nom / entreprise » absente ou aucune ligne valide." },
       { status: 400 }
     );
   }
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
   let imported = 0;
   let updated = 0;
   let skipped = counts.skip + invalidRows.length;
-  const errors: string[] = invalidRows.map((i) => `Ligne ${i + 2} : nom du club manquant.`);
+  const errors: string[] = invalidRows.map((i) => `Ligne ${i + 2} : nom / entreprise manquant.`);
 
   const toCreate = plan.filter((p) => p.action === "create");
   const toUpdate = plan.filter((p) => p.action === "update");

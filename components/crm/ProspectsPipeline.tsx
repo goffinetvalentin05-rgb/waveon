@@ -2,29 +2,14 @@
 
 import { useRef } from "react";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { PipelineCard, PipelineCardAvatar } from "@/components/crm/PipelineCard";
 import {
   PIPELINE_COLUMNS,
   groupProspectsByPipeline,
   isFollowedProspect,
-  prospectAvatarTone,
 } from "@/lib/crm/pipeline";
-import { formatClosedReason } from "@/lib/crm/closed";
-import { formatRelayFollowUp } from "@/lib/crm/format";
 import { prospectDetailHref } from "@/lib/crm/paths";
 import type { Prospect, ProspectStatus } from "@/lib/crm/types";
-
-function fmtDate(value: string | null) {
-  if (!value) return null;
-  try {
-    return format(new Date(value.length === 10 ? `${value}T12:00:00` : value), "d MMM", {
-      locale: fr,
-    });
-  } catch {
-    return value;
-  }
-}
 
 export function ProspectsPipeline({
   prospects,
@@ -85,19 +70,7 @@ export function ProspectsPipeline({
                 {items.length === 0 ? (
                   <p className="px-2 py-6 text-center text-xs text-wo-dim">Vide</p>
                 ) : (
-                  items.map((p) => {
-                    const subtitle =
-                      col.id === "closed"
-                        ? formatClosedReason(p.closed_reason, p.closed_note) || "\u00a0"
-                        : col.id === "relay"
-                          ? formatRelayFollowUp(p.next_follow_up)
-                          : (() => {
-                              const meta = [p.ville, p.sport].filter(Boolean).join(" · ");
-                              const date = fmtDate(p.next_follow_up);
-                              if (meta && date) return `${meta} · ${date}`;
-                              return meta || date || "\u00a0";
-                            })();
-                    return (
+                  items.map((p) => (
                       <button
                         key={p.id}
                         type="button"
@@ -114,20 +87,12 @@ export function ProspectsPipeline({
                           }
                           router.push(prospectDetailHref(p.id, listReturnUrl));
                         }}
-                        className="flex items-center gap-2.5 rounded-[14px] border border-wo-border bg-slate-50/70 px-2.5 py-2.5 text-left transition hover:border-indigo-200 hover:bg-white"
+                        className="flex items-start gap-2.5 rounded-[14px] border border-wo-border bg-slate-50/70 px-2.5 py-3 text-left transition hover:border-indigo-200 hover:bg-white"
                       >
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-[13px] font-medium text-wo-text">{p.club_name}</p>
-                          <p className="mt-0.5 truncate text-[11px] text-wo-dim">{subtitle}</p>
-                        </div>
-                        <span
-                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${prospectAvatarTone(p.club_name)}`}
-                        >
-                          {p.club_name.charAt(0).toUpperCase()}
-                        </span>
+                        <PipelineCard prospect={p} columnId={col.id} />
+                        <PipelineCardAvatar name={p.club_name} />
                       </button>
-                    );
-                  })
+                    ))
                 )}
               </div>
             </div>
