@@ -35,13 +35,12 @@ export async function POST(request: Request, { params }: Params) {
     .from("prospects")
     .select("id, club_name, status, next_action, next_follow_up")
     .eq("id", id)
-    .eq("user_id", user.id)
     .maybeSingle();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!prospect) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
 
-  const fromStatus = prospect.status as ProspectStatus;
+  const fromStatus = migrateProspectStatus(String(prospect.status ?? "À contacter"));
   const nextAction =
     typeof body.next_action === "string"
       ? body.next_action.trim() || null
@@ -57,7 +56,7 @@ export async function POST(request: Request, { params }: Params) {
         ? null
         : prospect.next_follow_up;
 
-  await supabase
+  const { data: updated, error: updateError } = await supabase
     .from("prospects")
     .update({
       status: nextStatus,
@@ -69,7 +68,18 @@ export async function POST(request: Request, { params }: Params) {
       closed_note: closedNote,
     })
     .eq("id", id)
-    .eq("user_id", user.id);
+    .select("*")
+    .maybeSingle();
+
+  if (updateError) {
+    return NextResponse.json({ error: updateError.message }, { status: 500 });
+  }
+  if (!updated) {
+    return NextResponse.json(
+      { error: "Impossible de mettre à jour le statut (droits insuffisants ou prospect introuvable)." },
+      { status: 403 }
+    );
+  }
 
   await supabase.from("prospect_activities").insert({
     user_id: user.id,
@@ -84,24 +94,16 @@ export async function POST(request: Request, { params }: Params) {
     }),
   });
 
-  const { data: updated } = await supabase
-    .from("prospects")
-    .select("*")
-    .eq("id", id)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
   const { data: activities } = await supabase
     .from("prospect_activities")
     .select("*")
     .eq("prospect_id", id)
-    .eq("user_id", user.id)
     .order("occurred_at", { ascending: false })
     .order("created_at", { ascending: false });
 
   return NextResponse.json(
     {
-      prospect: updated ? normalizeProspectFromDb(updated as Record<string, unknown>) : updated,
+      prospect: normalizeProspectFromDb(updated as Record<string, unknown>),
       activities: activities ?? [],
     },
     { status: 200 }

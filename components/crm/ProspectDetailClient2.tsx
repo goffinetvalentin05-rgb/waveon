@@ -699,15 +699,22 @@ export function ProspectDetailClient2({
   };
 
   const applyStatus = (next: ProspectStatus, extra?: { closed_reason?: string; closed_note?: string }) => {
+    const previous = prospect.status as ProspectStatus;
     startTransition(async () => {
+      setProspect((p) => ({ ...p, status: next }));
+      setMsg(null);
+      setErrorMsg(null);
       const res = await fetch(`/api/prospects/${prospect.id}/status`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: next, ...extra }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setMsg(data.error ?? "Erreur.");
+        setProspect((p) => ({ ...p, status: previous }));
+        setErrorMsg(
+          typeof data.error === "string" ? data.error : "Impossible d’enregistrer le statut."
+        );
         return;
       }
       if (next === "Client") {
@@ -1103,7 +1110,7 @@ export function ProspectDetailClient2({
   const activityMenuOpen = activityMenuId;
 
   return (
-    <div className="space-y-6 crm-animate-in">
+    <div className={`space-y-6 crm-animate-in ${editMode ? "pb-24 sm:pb-0" : ""}`}>
       <div>
         <Link
           href={backHref}
@@ -1817,6 +1824,29 @@ export function ProspectDetailClient2({
           onClose={() => setActivityToEdit(null)}
           onSaved={refreshAll}
         />
+      ) : null}
+
+      {editMode ? (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-wo-border bg-white/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:hidden">
+          <div className="mx-auto flex max-w-lg gap-2">
+            <button
+              type="button"
+              className={`${ui.btnSecondary} flex-1`}
+              onClick={() => setEditMode(false)}
+              disabled={pending}
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              className={`${ui.btnPrimary} flex-1`}
+              disabled={pending || !draft.club_name.trim()}
+              onClick={() => handleSaveDraft()}
+            >
+              Enregistrer
+            </button>
+          </div>
+        </div>
       ) : null}
     </div>
   );

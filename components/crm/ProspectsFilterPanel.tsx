@@ -3,6 +3,7 @@
 import { ui } from "@/lib/design/tokens";
 import type { ProspectListFilters, PresenceFilter } from "@/lib/crm/prospect-list-params";
 import { CLOSED_REASONS } from "@/lib/crm/closed";
+import { ScrollableModal } from "@/components/ui/ScrollableModal";
 
 type FilterOptions = {
   sports: string[];
@@ -99,8 +100,6 @@ export function ProspectsFilterPanel({
   onReset,
   onClose,
 }: Props) {
-  if (!open) return null;
-
   const toggle = (key: "sports" | "cantons" | "villes" | "statuses" | "closedReasons", value: string) => {
     const current = draft[key];
     const next = current.includes(value)
@@ -113,117 +112,14 @@ export function ProspectsFilterPanel({
     !clientsOnly && (draft.statuses.includes("Fermé") || draft.closedReasons.length > 0);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 sm:items-center">
-      <button
-        type="button"
-        className={ui.overlay}
-        onClick={onClose}
-        aria-label="Fermer"
-      />
-      <div className={`${ui.modal} max-h-[90vh] max-w-2xl overflow-y-auto p-6`}>
-        <h2 className="text-lg font-semibold text-wo-text">Filtrer les prospects</h2>
-        <p className="mt-1 text-sm text-wo-muted">
-          Options basées sur les prospects de ce projet.
-        </p>
-
-        <div className="mt-5 grid gap-5 sm:grid-cols-2">
-          {!clientsOnly ? (
-            <MultiCheckboxGroup
-              label="Statut"
-              values={options.statuses}
-              selected={draft.statuses}
-              onToggle={(v) => toggle("statuses", v)}
-            />
-          ) : null}
-          <MultiCheckboxGroup
-            label="Secteur"
-            values={options.sports}
-            selected={draft.sports}
-            onToggle={(v) => toggle("sports", v)}
-          />
-          <MultiCheckboxGroup
-            label="Localisation"
-            values={options.cantons}
-            selected={draft.cantons}
-            onToggle={(v) => toggle("cantons", v)}
-          />
-          <MultiCheckboxGroup
-            label="Ville"
-            values={options.villes}
-            selected={draft.villes}
-            onToggle={(v) => toggle("villes", v)}
-          />
-          {showClosedReasons ? (
-            <MultiCheckboxGroup
-              label="Raison de fermeture"
-              values={[...CLOSED_REASONS]}
-              selected={draft.closedReasons}
-              onToggle={(v) => toggle("closedReasons", v)}
-            />
-          ) : null}
-          <PresenceSelect
-            label="Présence d'un email"
-            value={draft.hasEmail}
-            onChange={(hasEmail) => onChange({ ...draft, hasEmail })}
-          />
-          <PresenceSelect
-            label="Présence d'un téléphone"
-            value={draft.hasPhone}
-            onChange={(hasPhone) => onChange({ ...draft, hasPhone })}
-          />
-          <div>
-            <p className={ui.label}>Archivage</p>
-            <select
-              className={ui.input}
-              value={draft.archived}
-              onChange={(e) =>
-                onChange({
-                  ...draft,
-                  archived: e.target.value === "archived" ? "archived" : "active",
-                })
-              }
-            >
-              <option value="active">Actifs uniquement</option>
-              <option value="archived">Archivés uniquement</option>
-            </select>
-          </div>
-          <div>
-            <p className={ui.label}>Date de prochaine action</p>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <input
-                type="date"
-                className={ui.input}
-                value={draft.nextFollowUpFrom}
-                onChange={(e) => onChange({ ...draft, nextFollowUpFrom: e.target.value })}
-              />
-              <input
-                type="date"
-                className={ui.input}
-                value={draft.nextFollowUpTo}
-                onChange={(e) => onChange({ ...draft, nextFollowUpTo: e.target.value })}
-              />
-            </div>
-          </div>
-          <div>
-            <p className={ui.label}>Date de dernière action</p>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <input
-                type="date"
-                className={ui.input}
-                value={draft.lastActionFrom}
-                onChange={(e) => onChange({ ...draft, lastActionFrom: e.target.value })}
-              />
-              <input
-                type="date"
-                className={ui.input}
-                value={draft.lastActionTo}
-                onChange={(e) => onChange({ ...draft, lastActionTo: e.target.value })}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 flex flex-wrap justify-end gap-2">
+    <ScrollableModal
+      open={open}
+      onClose={onClose}
+      title="Filtrer les prospects"
+      subtitle="Options basées sur les prospects de ce projet."
+      maxWidthClass="max-w-2xl"
+      footer={
+        <div className="flex flex-wrap justify-end gap-2">
           <button type="button" className={ui.btnSecondary} onClick={onReset}>
             Réinitialiser
           </button>
@@ -234,7 +130,104 @@ export function ProspectsFilterPanel({
             Appliquer les filtres
           </button>
         </div>
+      }
+    >
+      <div className="grid gap-5 sm:grid-cols-2">
+        {!clientsOnly ? (
+          <MultiCheckboxGroup
+            label="Statut"
+            values={options.statuses}
+            selected={draft.statuses}
+            onToggle={(v) => toggle("statuses", v)}
+          />
+        ) : null}
+        <MultiCheckboxGroup
+          label="Secteur"
+          values={options.sports}
+          selected={draft.sports}
+          onToggle={(v) => toggle("sports", v)}
+        />
+        <MultiCheckboxGroup
+          label="Localisation"
+          values={options.cantons}
+          selected={draft.cantons}
+          onToggle={(v) => toggle("cantons", v)}
+        />
+        <MultiCheckboxGroup
+          label="Ville"
+          values={options.villes}
+          selected={draft.villes}
+          onToggle={(v) => toggle("villes", v)}
+        />
+        {showClosedReasons ? (
+          <MultiCheckboxGroup
+            label="Raison de fermeture"
+            values={[...CLOSED_REASONS]}
+            selected={draft.closedReasons}
+            onToggle={(v) => toggle("closedReasons", v)}
+          />
+        ) : null}
+        <PresenceSelect
+          label="Présence d'un email"
+          value={draft.hasEmail}
+          onChange={(hasEmail) => onChange({ ...draft, hasEmail })}
+        />
+        <PresenceSelect
+          label="Présence d'un téléphone"
+          value={draft.hasPhone}
+          onChange={(hasPhone) => onChange({ ...draft, hasPhone })}
+        />
+        <div>
+          <p className={ui.label}>Archivage</p>
+          <select
+            className={ui.input}
+            value={draft.archived}
+            onChange={(e) =>
+              onChange({
+                ...draft,
+                archived: e.target.value === "archived" ? "archived" : "active",
+              })
+            }
+          >
+            <option value="active">Actifs uniquement</option>
+            <option value="archived">Archivés uniquement</option>
+          </select>
+        </div>
+        <div>
+          <p className={ui.label}>Date de prochaine action</p>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <input
+              type="date"
+              className={ui.input}
+              value={draft.nextFollowUpFrom}
+              onChange={(e) => onChange({ ...draft, nextFollowUpFrom: e.target.value })}
+            />
+            <input
+              type="date"
+              className={ui.input}
+              value={draft.nextFollowUpTo}
+              onChange={(e) => onChange({ ...draft, nextFollowUpTo: e.target.value })}
+            />
+          </div>
+        </div>
+        <div>
+          <p className={ui.label}>Date de dernière action</p>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <input
+              type="date"
+              className={ui.input}
+              value={draft.lastActionFrom}
+              onChange={(e) => onChange({ ...draft, lastActionFrom: e.target.value })}
+            />
+            <input
+              type="date"
+              className={ui.input}
+              value={draft.lastActionTo}
+              onChange={(e) => onChange({ ...draft, lastActionTo: e.target.value })}
+            />
+          </div>
+        </div>
       </div>
-    </div>
+    </ScrollableModal>
   );
 }

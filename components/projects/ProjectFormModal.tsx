@@ -92,7 +92,7 @@ export function ProjectFormModal({
       <button type="button" className={ui.overlay} onClick={onClose} aria-label="Fermer" />
       <form
         onSubmit={submit}
-        className={`${ui.modal} relative z-10 flex max-h-[min(90vh,760px)] w-full max-w-lg flex-col overflow-hidden`}
+        className={`${ui.modal} relative z-10 flex max-h-[min(92dvh,760px)] w-full max-w-lg flex-col overflow-hidden sm:max-h-[min(90vh,760px)]`}
       >
         <div className="shrink-0 px-6 pt-6">
           <h2 className="text-lg font-semibold text-wo-text">

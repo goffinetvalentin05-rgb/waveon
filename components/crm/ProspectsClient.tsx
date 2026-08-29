@@ -16,6 +16,7 @@ import { PipelineStats, ProspectsPipeline } from "@/components/crm/ProspectsPipe
 import { SmartViewBar } from "@/components/crm/SmartViewBar";
 import { ProspectListRow, ProspectWorkSections } from "@/components/crm/ProspectWorkList";
 import { ClosedReasonModal } from "@/components/crm/ClosedReasonModal";
+import { ScrollableModal } from "@/components/ui/ScrollableModal";
 import type { Prospect, ProspectStatus } from "@/lib/crm/types";
 import { PROSPECT_STATUSES } from "@/lib/crm/types";
 import type { ClosedReason } from "@/lib/crm/closed";
@@ -88,6 +89,7 @@ export function ProspectsClient({
   );
   const [smartCounts, setSmartCounts] = useState<ProspectWorkCounts | null>(null);
   const [closePrompt, setClosePrompt] = useState<{ id: string } | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   const skipNextSearchDebounce = useRef(true);
   const skipInitialUrlFetch = useRef(true);
@@ -146,6 +148,12 @@ export function ProspectsClient({
         setClosePrompt({ id });
         return;
       }
+      setStatusError(null);
+      let previousStatus: ProspectStatus | null = null;
+      setProspects((list) => {
+        previousStatus = list.find((p) => p.id === id)?.status ?? null;
+        return list.map((p) => (p.id === id ? { ...p, status } : p));
+      });
       startTransition(async () => {
         const res = await fetch(`/api/prospects/${id}/status`, {
           method: "POST",
@@ -156,8 +164,20 @@ export function ProspectsClient({
             closed_note: extra?.closed_note,
           }),
         });
-        if (!res.ok) return;
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          if (previousStatus) {
+            setProspects((list) =>
+              list.map((p) => (p.id === id ? { ...p, status: previousStatus! } : p))
+            );
+          }
+          setStatusError(
+            typeof data.error === "string"
+              ? data.error
+              : "Impossible d’enregistrer le statut."
+          );
+          return;
+        }
         setProspects((list) => {
           const next = list.map((p) => (p.id === id ? { ...p, ...data.prospect } : p));
           return clientsOnly ? next.filter((p) => p.status === "Client") : next;
@@ -396,6 +416,11 @@ export function ProspectsClient({
       </div>
 
       {importMsg ? <p className={ui.alertSuccess}>{importMsg}</p> : null}
+      {statusError ? (
+        <p className="rounded-xl border border-rose-100 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">
+          {statusError}
+        </p>
+      ) : null}
 
       {!clientsOnly && view === "pipeline" ? (
         <PipelineStats prospects={prospects} />
@@ -571,35 +596,14 @@ function CreateProspectModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <button type="button" className={ui.overlay} onClick={onClose} />
-      <form
-        onSubmit={submit}
-        className={`${ui.modal} max-w-lg p-6`}
-      >
-        <h2 className="text-lg font-semibold text-wo-text">Nouveau prospect</h2>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          {(
-            [
-              ["club_name", "Nom / entreprise *", true],
-              ["sport", "Secteur", false],
-              ["contact_name", "Contact", false],
-              ["phone", "Téléphone", false],
-              ["email", "Email", false],
-              ["website", "Site web", false],
-              ["ville", "Ville", false],
-              ["country", "Pays", false],
-              ["source", "Source", false],
-            ] as const
-          ).map(([name, label, required]) => (
-            <div key={name} className={name === "club_name" || name === "website" ? "sm:col-span-2" : ""}>
-              <label className={ui.label}>{label}</label>
-              <input name={name} required={required} className={ui.input} />
-            </div>
-          ))}
-        </div>
-        {error ? <p className="mt-3 text-sm text-rose-300">{error}</p> : null}
-        <div className="mt-6 flex justify-end gap-2">
+    <ScrollableModal
+      open
+      onClose={onClose}
+      title="Nouveau prospect"
+      asForm
+      onSubmit={submit}
+      footer={
+        <div className="flex flex-wrap justify-end gap-2">
           <button type="button" className={ui.btnSecondary} onClick={onClose}>
             Annuler
           </button>
@@ -607,7 +611,29 @@ function CreateProspectModal({
             {loading ? "Création…" : "Créer"}
           </button>
         </div>
-      </form>
-    </div>
+      }
+    >
+      <div className="grid gap-3 sm:grid-cols-2">
+        {(
+          [
+            ["club_name", "Nom / entreprise *", true],
+            ["sport", "Secteur", false],
+            ["contact_name", "Contact", false],
+            ["phone", "Téléphone", false],
+            ["email", "Email", false],
+            ["website", "Site web", false],
+            ["ville", "Ville", false],
+            ["country", "Pays", false],
+            ["source", "Source", false],
+          ] as const
+        ).map(([name, label, required]) => (
+          <div key={name} className={name === "club_name" || name === "website" ? "sm:col-span-2" : ""}>
+            <label className={ui.label}>{label}</label>
+            <input name={name} required={required} className={ui.input} />
+          </div>
+        ))}
+      </div>
+      {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
+    </ScrollableModal>
   );
 }
