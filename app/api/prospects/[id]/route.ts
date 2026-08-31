@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/crm/server";
 import { nullIfEmpty, normalizeProspectFromDb } from "@/lib/crm/prospect-payload";
+import { upsertPrimaryContactFromProspectFields } from "@/lib/crm/sync-primary-contact";
 import type { Prospect } from "@/lib/crm/types";
 
 type Params = { params: Promise<{ id: string }> };
@@ -55,7 +56,7 @@ export async function GET(_request: Request, { params }: Params) {
 export async function PATCH(request: Request, { params }: Params) {
   const auth = await requireUser();
   if (auth.response) return auth.response;
-  const { supabase } = auth;
+  const { supabase, user } = auth;
   const { id } = await params;
   const body = await request.json();
 
@@ -131,6 +132,20 @@ export async function PATCH(request: Request, { params }: Params) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
+
+  const contactKeys = ["contact_name", "contact_function", "email", "phone"] as const;
+  if (contactKeys.some((k) => k in patch)) {
+    await upsertPrimaryContactFromProspectFields(supabase, {
+      userId: user.id,
+      prospectId: id,
+      fields: {
+        contact_name: data.contact_name,
+        contact_function: data.contact_function,
+        email: data.email,
+        phone: data.phone,
+      },
+    });
+  }
 
   return NextResponse.json({
     prospect: normalizeProspectFromDb(data as Record<string, unknown>),

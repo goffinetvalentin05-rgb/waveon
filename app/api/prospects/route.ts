@@ -4,6 +4,7 @@ import {
   buildProspectInsertPayload,
   normalizeProspectFromDb,
 } from "@/lib/crm/prospect-payload";
+import { upsertPrimaryContactFromProspectFields } from "@/lib/crm/sync-primary-contact";
 import { fetchProspectList } from "@/lib/crm/prospect-query";
 import { parseProspectListParams } from "@/lib/crm/prospect-list-params";
 import { logWorkspaceEvent } from "@/lib/workspace/events";
@@ -58,20 +59,16 @@ export async function POST(request: Request) {
       title: "Prospect créé",
     });
 
-    const firstName = String(body.contact_name ?? "").trim();
-    if (firstName || body.email || body.phone) {
-      const parts = firstName.split(/\s+/).filter(Boolean);
-      await supabase.from("prospect_contacts").insert({
-        user_id: user.id,
-        prospect_id: data.id,
-        first_name: parts[0] || "Contact",
-        last_name: parts.slice(1).join(" ") || null,
-        job_title: String(body.contact_function ?? "").trim() || null,
-        email: String(body.email ?? "").trim() || null,
-        phone: String(body.phone ?? "").trim() || null,
-        is_primary: true,
-      });
-    }
+    await upsertPrimaryContactFromProspectFields(supabase, {
+      userId: user.id,
+      prospectId: data.id,
+      fields: {
+        contact_name: body.contact_name,
+        contact_function: body.contact_function,
+        email: body.email,
+        phone: body.phone,
+      },
+    });
 
     await logWorkspaceEvent(supabase, user.id, {
       event_type: "prospect_created",

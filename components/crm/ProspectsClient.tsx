@@ -17,6 +17,7 @@ import { SmartViewBar } from "@/components/crm/SmartViewBar";
 import { ProspectListRow, ProspectWorkSections } from "@/components/crm/ProspectWorkList";
 import { ClosedReasonModal } from "@/components/crm/ClosedReasonModal";
 import { ScrollableModal } from "@/components/ui/ScrollableModal";
+import { ProspectBusinessFields } from "@/components/crm/ProspectBusinessFields";
 import type { Prospect, ProspectStatus } from "@/lib/crm/types";
 import { PROSPECT_STATUSES } from "@/lib/crm/types";
 import type { ClosedReason } from "@/lib/crm/closed";
@@ -600,6 +601,7 @@ function CreateProspectModal({
       open
       onClose={onClose}
       title="Nouveau prospect"
+      maxWidthClass="max-w-2xl"
       asForm
       onSubmit={submit}
       footer={
@@ -613,26 +615,7 @@ function CreateProspectModal({
         </div>
       }
     >
-      <div className="grid gap-3 sm:grid-cols-2">
-        {(
-          [
-            ["club_name", "Nom / entreprise *", true],
-            ["sport", "Secteur", false],
-            ["contact_name", "Contact", false],
-            ["phone", "Téléphone", false],
-            ["email", "Email", false],
-            ["website", "Site web", false],
-            ["ville", "Ville", false],
-            ["country", "Pays", false],
-            ["source", "Source", false],
-          ] as const
-        ).map(([name, label, required]) => (
-          <div key={name} className={name === "club_name" || name === "website" ? "sm:col-span-2" : ""}>
-            <label className={ui.label}>{label}</label>
-            <input name={name} required={required} className={ui.input} />
-          </div>
-        ))}
-      </div>
+      <ProspectBusinessFields mode="create" />
       {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
     </ScrollableModal>
   );

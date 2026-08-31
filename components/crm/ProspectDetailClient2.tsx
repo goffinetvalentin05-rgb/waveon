@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
@@ -23,9 +23,15 @@ import { StatusBadge } from "@/components/crm/StatusBadge";
 import { StatusSelect } from "@/components/crm/StatusSelect";
 import { InteractionForm } from "@/components/crm/InteractionForm";
 import { ProspectContactsPanel } from "@/components/crm/ProspectContactsPanel";
+import { ProspectBusinessFields } from "@/components/crm/ProspectBusinessFields";
 import { ProspectLinkedTasks } from "@/components/crm/ProspectLinkedTasks";
 import { ClosedReasonModal } from "@/components/crm/ClosedReasonModal";
 import { QUICK_ACTION_LABELS } from "@/lib/crm/actions";
+import {
+  businessFormToApiPayload,
+  prospectToBusinessForm,
+  type ProspectBusinessFormValues,
+} from "@/lib/crm/prospect-fields";
 import type {
   Prospect,
   ProspectActivity,
@@ -235,109 +241,24 @@ function DeleteProspectModalInner({
   );
 }
 
-type InlineField = "phone" | "email" | "contact_name";
-
-function InlineValue({
+function InfoRow({
   label,
-  value,
-  telHref,
-  mailHref,
-  inline,
-  onStart,
-  onChange,
-  onCancel,
-  onSave,
+  children,
 }: {
   label: string;
-  value: string | null;
-  telHref?: string;
-  mailHref?: string;
-  inline: boolean;
-  onStart: () => void;
-  onChange: (v: string) => void;
-  onCancel: () => void;
-  onSave: () => void;
+  children: ReactNode;
 }) {
   return (
     <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
       <dt className="text-wo-dim">{label}</dt>
-      <dd className="text-right font-medium text-wo-text">
-        {inline ? (
-          <div className="flex items-center justify-end gap-2">
-            <input
-              className={ui.input + " w-56"}
-              value={value ?? ""}
-              onChange={(e) => onChange(e.target.value)}
-            />
-            <button type="button" className={ui.btnPrimary} onClick={onSave}>
-              Enregistrer
-            </button>
-            <button type="button" className={ui.btnGhost} onClick={onCancel}>
-              Annuler
-            </button>
-          </div>
-        ) : value ? (
-          <div className="flex items-center justify-end gap-2">
-            {telHref ? (
-              <a
-                href={telHref}
-                className="text-wo-accent hover:underline"
-                onClick={(e) => {
-                  e.preventDefault();
-                  onStart();
-                }}
-              >
-                {value}
-              </a>
-            ) : mailHref ? (
-              <a
-                href={mailHref}
-                className="text-wo-accent hover:underline"
-                onClick={(e) => {
-                  e.preventDefault();
-                  onStart();
-                }}
-              >
-                {value}
-              </a>
-            ) : (
-              <span
-                className="cursor-pointer hover:text-wo-accent"
-                onClick={() => onStart()}
-              >
-                {value}
-              </span>
-            )}
-            <button
-              type="button"
-              className="rounded-xl p-2 text-wo-dim hover:bg-wo-hover hover:text-wo-secondary"
-              onClick={onStart}
-              aria-label={`Modifier ${label}`}
-            >
-              <IconEdit className="h-4 w-4" />
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center justify-end gap-2">
-            <span
-              className="cursor-pointer text-wo-dim hover:text-wo-accent"
-              onClick={() => onStart()}
-            >
-              —
-            </span>
-            <button
-              type="button"
-              className="rounded-xl p-2 text-wo-dim hover:bg-wo-hover hover:text-wo-secondary"
-              onClick={onStart}
-              aria-label={`Modifier ${label}`}
-            >
-              <IconEdit className="h-4 w-4" />
-            </button>
-          </div>
-        )}
-      </dd>
+      <dd className="text-right font-medium text-wo-text">{children}</dd>
     </div>
   );
+}
+
+function displayOrDash(value: string | null | undefined) {
+  const s = value?.trim();
+  return s ? s : "—";
 }
 
 type ActivityEditState = {
@@ -609,33 +530,21 @@ export function ProspectDetailClient2({
   const [msg, setMsg] = useState<string | null>(null);
 
   const [editMode, setEditMode] = useState(false);
-  const [draft, setDraft] = useState({
-    club_name: initial.club_name ?? "",
-    sport: initial.sport ?? "",
-    canton: initial.canton ?? "",
-    ville: initial.ville ?? "",
-    contact_name: initial.contact_name ?? "",
-    contact_function: initial.contact_function ?? "",
-    phone: initial.phone ?? "",
-    email: initial.email ?? "",
-    website: initial.website ?? "",
-    logo_url: initial.logo_url ?? "",
-    address: initial.address ?? "",
-    country: initial.country ?? "",
-    linkedin_url: initial.linkedin_url ?? "",
-    source: initial.source ?? "",
-    priority: initial.priority ?? "Normale",
+  const [draft, setDraft] = useState(() => ({
+    ...prospectToBusinessForm(initial),
     notes: initial.notes ?? "",
     status: initial.status as ProspectStatus,
-    potential_value: initial.potential_value != null ? String(initial.potential_value) : "",
-    contact_channel: initial.contact_channel ?? "",
-    tags: (initial.tags ?? []).join(", "),
-  });
+  }));
 
-  const [inlineEditing, setInlineEditing] = useState<{
-    field: InlineField;
-    value: string;
-  } | null>(null);
+  const enterEditMode = () => {
+    setDraft({
+      ...prospectToBusinessForm(prospect),
+      notes: prospect.notes ?? "",
+      status: prospect.status as ProspectStatus,
+    });
+    setEditMode(true);
+    setMsg(null);
+  };
 
   const [confirm, setConfirm] = useState<{
     title: string;
@@ -790,29 +699,10 @@ export function ProspectDetailClient2({
     const nextStatus = draft.status as ProspectStatus;
 
     const doSave = async () => {
+      const { notes, status: _status, ...business } = draft;
       const patchBody = {
-        club_name: draft.club_name,
-        sport: draft.sport,
-        canton: draft.canton,
-        ville: draft.ville,
-        contact_name: draft.contact_name,
-        contact_function: draft.contact_function,
-        phone: draft.phone,
-        email: draft.email,
-        website: draft.website,
-        logo_url: draft.logo_url,
-        address: draft.address,
-        country: draft.country,
-        linkedin_url: draft.linkedin_url,
-        source: draft.source,
-        priority: draft.priority,
-        notes: draft.notes,
-        potential_value: draft.potential_value === "" ? null : Number(draft.potential_value),
-        contact_channel: draft.contact_channel,
-        tags: draft.tags
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean),
+        ...businessFormToApiPayload(business as ProspectBusinessFormValues),
+        notes,
       };
 
       const patchRes = await fetch(`/api/prospects/${prospect.id}`, {
@@ -1164,32 +1054,7 @@ export function ProspectDetailClient2({
               <button
                 type="button"
                 className={ui.btnSecondary}
-                onClick={() => {
-                  setDraft({
-                    club_name: prospect.club_name ?? "",
-                    sport: prospect.sport ?? "",
-                    canton: prospect.canton ?? "",
-                    ville: prospect.ville ?? "",
-                    contact_name: prospect.contact_name ?? "",
-                    contact_function: prospect.contact_function ?? "",
-                    phone: prospect.phone ?? "",
-                    email: prospect.email ?? "",
-                    website: prospect.website ?? "",
-                    logo_url: prospect.logo_url ?? "",
-                    address: prospect.address ?? "",
-                    country: prospect.country ?? "",
-                    linkedin_url: prospect.linkedin_url ?? "",
-                    source: prospect.source ?? "",
-                    priority: prospect.priority ?? "Normale",
-                    notes: prospect.notes ?? "",
-                    status: prospect.status,
-                    potential_value: prospect.potential_value != null ? String(prospect.potential_value) : "",
-                    contact_channel: prospect.contact_channel ?? "",
-                    tags: (prospect.tags ?? []).join(", "),
-                  });
-                  setEditMode(true);
-                  setMsg(null);
-                }}
+                onClick={enterEditMode}
               >
                 <IconEdit className="h-4 w-4" stroke={1.75} />
                 Modifier les informations
@@ -1285,293 +1150,98 @@ export function ProspectDetailClient2({
 
       <div className="grid gap-5 lg:grid-cols-2">
         <section className={`${ui.card} p-5 sm:p-6`}>
-          <h2 className={ui.h2}>Informations générales</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className={ui.h2}>Informations générales</h2>
+            {!editMode ? (
+              <button type="button" className={ui.btnGhost} onClick={enterEditMode}>
+                <IconEdit className="h-4 w-4" />
+                Modifier
+              </button>
+            ) : null}
+          </div>
 
           {!editMode ? (
             <dl className="mt-4 space-y-0 text-sm">
-              <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-                <dt className="text-wo-dim">Secteur</dt>
-                <dd className="text-right font-medium text-wo-text">{prospect.sport ?? "—"}</dd>
-              </div>
-              <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-                <dt className="text-wo-dim">Canton</dt>
-                <dd className="text-right font-medium text-wo-text">{prospect.canton ?? "—"}</dd>
-              </div>
-              <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-                <dt className="text-wo-dim">Pays</dt>
-                <dd className="text-right font-medium text-wo-text">{prospect.country ?? "—"}</dd>
-              </div>
-              <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-                <dt className="text-wo-dim">Adresse</dt>
-                <dd className="text-right font-medium text-wo-text">{prospect.address ?? "—"}</dd>
-              </div>
-              <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-                <dt className="text-wo-dim">Fonction du contact</dt>
-                <dd className="text-right font-medium text-wo-text">{prospect.contact_function ?? "—"}</dd>
-              </div>
-
-              <InlineValue
-                label="Nom du contact"
-                value={inlineEditing?.field === "contact_name" ? inlineEditing.value : prospect.contact_name}
-                inline={inlineEditing?.field === "contact_name"}
-                onStart={() => setInlineEditing({ field: "contact_name", value: prospect.contact_name ?? "" })}
-                onChange={(v) => setInlineEditing((s) => (s ? { ...s, value: v } : s))}
-                onCancel={() => setInlineEditing(null)}
-                onSave={() => {
-                  if (!inlineEditing) return;
-                  saveInlineField("contact_name", inlineEditing.value);
-                  setInlineEditing(null);
-                }}
-              />
-              <InlineValue
-                label="Téléphone"
-                value={inlineEditing?.field === "phone" ? inlineEditing.value : prospect.phone}
-                telHref={prospect.phone ? `tel:${prospect.phone}` : undefined}
-                inline={inlineEditing?.field === "phone"}
-                onStart={() => setInlineEditing({ field: "phone", value: prospect.phone ?? "" })}
-                onChange={(v) => setInlineEditing((s) => (s ? { ...s, value: v } : s))}
-                onCancel={() => setInlineEditing(null)}
-                onSave={() => {
-                  if (!inlineEditing) return;
-                  saveInlineField("phone", inlineEditing.value);
-                  setInlineEditing(null);
-                }}
-              />
-              <InlineValue
-                label="Email"
-                value={inlineEditing?.field === "email" ? inlineEditing.value : prospect.email}
-                mailHref={prospect.email ? `mailto:${prospect.email}` : undefined}
-                inline={inlineEditing?.field === "email"}
-                onStart={() => setInlineEditing({ field: "email", value: prospect.email ?? "" })}
-                onChange={(v) => setInlineEditing((s) => (s ? { ...s, value: v } : s))}
-                onCancel={() => setInlineEditing(null)}
-                onSave={() => {
-                  if (!inlineEditing) return;
-                  saveInlineField("email", inlineEditing.value);
-                  setInlineEditing(null);
-                }}
-              />
-
-              <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-                <dt className="text-wo-dim">Site web</dt>
-                <dd className="text-right font-medium text-wo-text">
-                  {prospect.website ? (
-                    <a
-                      href={prospect.website.startsWith("http") ? prospect.website : `https://${prospect.website}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-wo-accent hover:underline"
-                    >
-                      {prospect.website}
-                    </a>
-                  ) : (
-                    "—"
-                  )}
-                </dd>
-              </div>
-
-              <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-                <dt className="text-wo-dim">LinkedIn</dt>
-                <dd className="text-right font-medium text-wo-text">
-                  {prospect.linkedin_url ? (
-                    <a
-                      href={prospect.linkedin_url.startsWith("http") ? prospect.linkedin_url : `https://${prospect.linkedin_url}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-wo-accent hover:underline"
-                    >
-                      {prospect.linkedin_url}
-                    </a>
-                  ) : (
-                    "—"
-                  )}
-                </dd>
-              </div>
-
-              <div className="flex justify-between gap-4 border-b border-wo-border pb-2">
-                <dt className="text-wo-dim">Source</dt>
-                <dd className="text-right font-medium text-wo-text">{prospect.source ?? "—"}</dd>
-              </div>
-              <div className="flex justify-between gap-4 border-b border-wo-border pb-2">
-                <dt className="text-wo-dim">Priorité</dt>
-                <dd className="text-right font-medium text-wo-text">{prospect.priority ?? "Normale"}</dd>
-              </div>
-              <div className="flex justify-between gap-4 border-b border-wo-border pb-2">
-                <dt className="text-wo-dim">Valeur potentielle</dt>
-                <dd className="text-right font-medium text-wo-text">
-                  {prospect.potential_value != null
-                    ? new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(
-                        Number(prospect.potential_value)
-                      )
-                    : "—"}
-                </dd>
-              </div>
-              <div className="flex justify-between gap-4 border-b border-wo-border pb-2">
-                <dt className="text-wo-dim">Canal</dt>
-                <dd className="text-right font-medium text-wo-text">{prospect.contact_channel ?? "—"}</dd>
-              </div>
-              <div className="flex justify-between gap-4 border-b border-wo-border pb-2 last:border-0">
-                <dt className="text-wo-dim">Tags</dt>
-                <dd className="text-right font-medium text-wo-text">
-                  {(prospect.tags ?? []).length ? prospect.tags.join(", ") : "—"}
-                </dd>
-              </div>
+              <InfoRow label="Secteur">{displayOrDash(prospect.sport)}</InfoRow>
+              <InfoRow label="Canton / région">{displayOrDash(prospect.canton)}</InfoRow>
+              <InfoRow label="Ville">{displayOrDash(prospect.ville)}</InfoRow>
+              <InfoRow label="Pays">{displayOrDash(prospect.country)}</InfoRow>
+              <InfoRow label="Adresse">{displayOrDash(prospect.address)}</InfoRow>
+              <InfoRow label="Fonction du contact">{displayOrDash(prospect.contact_function)}</InfoRow>
+              <InfoRow label="Nom du contact">{displayOrDash(prospect.contact_name)}</InfoRow>
+              <InfoRow label="Téléphone">
+                {prospect.phone ? (
+                  <a href={`tel:${prospect.phone}`} className="text-wo-accent hover:underline">
+                    {prospect.phone}
+                  </a>
+                ) : (
+                  "—"
+                )}
+              </InfoRow>
+              <InfoRow label="Email">
+                {prospect.email ? (
+                  <a href={`mailto:${prospect.email}`} className="text-wo-accent hover:underline">
+                    {prospect.email}
+                  </a>
+                ) : (
+                  "—"
+                )}
+              </InfoRow>
+              <InfoRow label="Site web">
+                {prospect.website ? (
+                  <a
+                    href={prospect.website.startsWith("http") ? prospect.website : `https://${prospect.website}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-wo-accent hover:underline"
+                  >
+                    {prospect.website}
+                  </a>
+                ) : (
+                  "—"
+                )}
+              </InfoRow>
+              <InfoRow label="LinkedIn">
+                {prospect.linkedin_url ? (
+                  <a
+                    href={
+                      prospect.linkedin_url.startsWith("http")
+                        ? prospect.linkedin_url
+                        : `https://${prospect.linkedin_url}`
+                    }
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-wo-accent hover:underline"
+                  >
+                    {prospect.linkedin_url}
+                  </a>
+                ) : (
+                  "—"
+                )}
+              </InfoRow>
+              <InfoRow label="Source">{displayOrDash(prospect.source)}</InfoRow>
+              <InfoRow label="Priorité">{prospect.priority ?? "Normale"}</InfoRow>
+              <InfoRow label="Valeur potentielle">
+                {prospect.potential_value != null
+                  ? new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(
+                      Number(prospect.potential_value)
+                    )
+                  : "—"}
+              </InfoRow>
+              <InfoRow label="Canal">{displayOrDash(prospect.contact_channel)}</InfoRow>
+              <InfoRow label="Tags">
+                {(prospect.tags ?? []).length ? prospect.tags.join(", ") : "—"}
+              </InfoRow>
             </dl>
           ) : (
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <label className={ui.label}>Organisation *</label>
-                <input
-                  className={ui.input}
-                  value={draft.club_name}
-                  onChange={(e) => setDraft((d) => ({ ...d, club_name: e.target.value }))}
-                />
-              </div>
+            <div className="mt-4 space-y-4">
+              <ProspectBusinessFields
+                mode="edit"
+                showLogo
+                values={draft}
+                onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))}
+              />
               <div>
-                <label className={ui.label}>Secteur</label>
-                <input
-                  className={ui.input}
-                  value={draft.sport}
-                  onChange={(e) => setDraft((d) => ({ ...d, sport: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className={ui.label}>Canton</label>
-                <input
-                  className={ui.input}
-                  value={draft.canton}
-                  onChange={(e) => setDraft((d) => ({ ...d, canton: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className={ui.label}>Ville</label>
-                <input
-                  className={ui.input}
-                  value={draft.ville}
-                  onChange={(e) => setDraft((d) => ({ ...d, ville: e.target.value }))}
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <label className={ui.label}>Adresse</label>
-                <input
-                  className={ui.input}
-                  value={draft.address}
-                  onChange={(e) => setDraft((d) => ({ ...d, address: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className={ui.label}>Pays</label>
-                <input
-                  className={ui.input}
-                  value={draft.country}
-                  onChange={(e) => setDraft((d) => ({ ...d, country: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className={ui.label}>LinkedIn</label>
-                <input
-                  className={ui.input}
-                  value={draft.linkedin_url}
-                  onChange={(e) => setDraft((d) => ({ ...d, linkedin_url: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className={ui.label}>Source</label>
-                <input
-                  className={ui.input}
-                  value={draft.source}
-                  onChange={(e) => setDraft((d) => ({ ...d, source: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className={ui.label}>Priorité</label>
-                <select
-                  className={ui.input}
-                  value={draft.priority}
-                  onChange={(e) => setDraft((d) => ({ ...d, priority: e.target.value as typeof d.priority }))}
-                >
-                  {["Faible", "Normale", "Haute", "Urgente"].map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="sm:col-span-2">
-                <label className={ui.label}>Fonction du contact</label>
-                <input
-                  className={ui.input}
-                  value={draft.contact_function}
-                  onChange={(e) => setDraft((d) => ({ ...d, contact_function: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className={ui.label}>Nom du contact</label>
-                <input
-                  className={ui.input}
-                  value={draft.contact_name}
-                  onChange={(e) => setDraft((d) => ({ ...d, contact_name: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className={ui.label}>Téléphone</label>
-                <input
-                  className={ui.input}
-                  value={draft.phone}
-                  onChange={(e) => setDraft((d) => ({ ...d, phone: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className={ui.label}>Email</label>
-                <input
-                  className={ui.input}
-                  value={draft.email}
-                  onChange={(e) => setDraft((d) => ({ ...d, email: e.target.value }))}
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <label className={ui.label}>Site web</label>
-                <input
-                  className={ui.input}
-                  value={draft.website}
-                  onChange={(e) => setDraft((d) => ({ ...d, website: e.target.value }))}
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <label className={ui.label}>Logo (URL)</label>
-                <input
-                  className={ui.input}
-                  value={draft.logo_url}
-                  onChange={(e) => setDraft((d) => ({ ...d, logo_url: e.target.value }))}
-                  placeholder="https://…"
-                />
-              </div>
-              <div>
-                <label className={ui.label}>Valeur potentielle (CHF)</label>
-                <input
-                  className={ui.input}
-                  value={draft.potential_value}
-                  onChange={(e) => setDraft((d) => ({ ...d, potential_value: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className={ui.label}>Canal</label>
-                <input
-                  className={ui.input}
-                  value={draft.contact_channel}
-                  onChange={(e) => setDraft((d) => ({ ...d, contact_channel: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className={ui.label}>Tags</label>
-                <input
-                  className={ui.input}
-                  value={draft.tags}
-                  onChange={(e) => setDraft((d) => ({ ...d, tags: e.target.value }))}
-                  placeholder="séparés par des virgules"
-                />
-              </div>
-              <div className="sm:col-span-2">
                 <label className={ui.label}>Statut</label>
                 <StatusSelect
                   value={draft.status}

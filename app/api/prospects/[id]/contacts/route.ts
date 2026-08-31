@@ -1,39 +1,14 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/crm/server";
 import { nullIfEmpty } from "@/lib/crm/prospect-payload";
-import { contactDisplayName, type ProspectContactInput } from "@/lib/crm/contacts";
+import { type ProspectContactInput } from "@/lib/crm/contacts";
+import { syncPrimaryOntoProspect } from "@/lib/crm/sync-primary-contact";
 
 type Params = { params: Promise<{ id: string }> };
 
 async function loadProspect(supabase: Awaited<ReturnType<typeof requireUser>>["supabase"], id: string) {
   const { data } = await supabase.from("prospects").select("id, user_id, project_id").eq("id", id).maybeSingle();
   return data;
-}
-
-async function syncPrimaryOntoProspect(
-  supabase: Awaited<ReturnType<typeof requireUser>>["supabase"],
-  prospectId: string
-) {
-  const { data: primary } = await supabase
-    .from("prospect_contacts")
-    .select("*")
-    .eq("prospect_id", prospectId)
-    .eq("is_primary", true)
-    .maybeSingle();
-
-  const patch = primary
-    ? {
-        contact_name: contactDisplayName(primary),
-        contact_function: primary.job_title,
-        email: primary.email,
-        phone: primary.phone,
-        phone_number: primary.phone,
-      }
-    : {};
-
-  if (Object.keys(patch).length) {
-    await supabase.from("prospects").update(patch).eq("id", prospectId);
-  }
 }
 
 export async function GET(_request: Request, { params }: Params) {

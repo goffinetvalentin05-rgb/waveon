@@ -1,32 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/crm/server";
 import { nullIfEmpty } from "@/lib/crm/prospect-payload";
-import { contactDisplayName } from "@/lib/crm/contacts";
+import { syncPrimaryOntoProspect } from "@/lib/crm/sync-primary-contact";
 
 type Params = { params: Promise<{ id: string; contactId: string }> };
-
-async function syncPrimaryOntoProspect(
-  supabase: Awaited<ReturnType<typeof requireUser>>["supabase"],
-  prospectId: string
-) {
-  const { data: primary } = await supabase
-    .from("prospect_contacts")
-    .select("*")
-    .eq("prospect_id", prospectId)
-    .eq("is_primary", true)
-    .maybeSingle();
-
-  await supabase
-    .from("prospects")
-    .update({
-      contact_name: primary ? contactDisplayName(primary) : null,
-      contact_function: primary?.job_title ?? null,
-      email: primary?.email ?? null,
-      phone: primary?.phone ?? null,
-      phone_number: primary?.phone ?? null,
-    })
-    .eq("id", prospectId);
-}
 
 export async function PATCH(request: Request, { params }: Params) {
   const auth = await requireUser();

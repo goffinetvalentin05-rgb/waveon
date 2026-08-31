@@ -12,6 +12,7 @@ export type ProspectInput = {
   sport?: unknown;
   canton?: unknown;
   contact_name?: unknown;
+  contact_function?: unknown;
   phone?: unknown;
   email?: unknown;
   website?: unknown;
@@ -64,6 +65,7 @@ export function buildProspectFields(input: ProspectInput) {
     sport: nullIfEmpty(input.sport),
     canton: nullIfEmpty(input.canton),
     contact_name: nullIfEmpty(input.contact_name),
+    contact_function: nullIfEmpty(input.contact_function),
     phone,
     phone_number: phone,
     email: nullIfEmpty(input.email),
