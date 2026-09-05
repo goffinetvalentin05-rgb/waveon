@@ -42,15 +42,20 @@ type DuplicateInfo = {
   reason: string;
 };
 
-function authorize(request: Request): boolean {
+/** Vérifie la clé API. `missing` = env absente côté serveur (ex. Vercel). */
+function authorize(
+  request: Request
+): { ok: true } | { ok: false; reason: "missing" | "unauthorized" } {
   const secret = process.env.PROSPECT_IMPORT_API_KEY?.trim();
-  if (!secret) return false;
+  if (!secret) return { ok: false, reason: "missing" };
 
   const auth = request.headers.get("authorization");
-  if (auth === `Bearer ${secret}`) return true;
+  if (auth === `Bearer ${secret}`) return { ok: true };
 
   const apiKey = request.headers.get("x-api-key");
-  return apiKey === secret;
+  if (apiKey === secret) return { ok: true };
+
+  return { ok: false, reason: "unauthorized" };
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -91,21 +96,26 @@ function validateEmail(email: string | null): string | null {
  * Auth: Authorization: Bearer PROSPECT_IMPORT_API_KEY ou header X-API-Key.
  */
 export async function POST(request: Request) {
-  if (!authorize(request)) {
+  const authResult = authorize(request);
+  if (!authResult.ok) {
+    if (authResult.reason === "missing") {
+      return NextResponse.json(
+        {
+          success: false,
+          added: 0,
+          errors: [
+            {
+              message:
+                "PROSPECT_IMPORT_API_KEY absente sur le serveur. Ajoute-la dans Vercel → Settings → Environment Variables (Production), puis Redeploy.",
+            },
+          ],
+        },
+        { status: 500 }
+      );
+    }
     return NextResponse.json(
       { success: false, added: 0, errors: [{ message: "Non autorisé" }] },
       { status: 401 }
-    );
-  }
-
-  if (!process.env.PROSPECT_IMPORT_API_KEY?.trim()) {
-    return NextResponse.json(
-      {
-        success: false,
-        added: 0,
-        errors: [{ message: "PROSPECT_IMPORT_API_KEY non configurée." }],
-      },
-      { status: 500 }
     );
   }
 

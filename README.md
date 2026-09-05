@@ -18,7 +18,19 @@ npm run dev
 Variables d'environnement (`.env.local`) — voir `.env.example` :
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY` (optionnel)
+- `SUPABASE_SERVICE_ROLE_KEY` (requis pour l’import API / cron)
+- `PROSPECT_IMPORT_API_KEY` (import machine-to-machine Obillz)
+
+## Production
+
+App déployée sur Vercel : **https://waveon-beige.vercel.app**  
+(`www.waveon.com` pointe vers Squarespace et ne sert **pas** cette app.)
+
+Import API :
+```
+POST https://waveon-beige.vercel.app/api/internal/prospects/import
+Authorization: Bearer <PROSPECT_IMPORT_API_KEY>
+```
 
 ## Migration CRM
 
