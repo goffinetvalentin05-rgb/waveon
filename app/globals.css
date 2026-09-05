@@ -104,6 +104,41 @@ input[type="radio"] {
   border-radius: 99px;
 }
 
+/* Pipeline kanban — scrollbar horizontale sticky (discrète) */
+.wo-pipeline-hscroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 23, 42, 0.28) rgba(15, 23, 42, 0.06);
+}
+
+.wo-pipeline-hscroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.wo-pipeline-hscroll::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.05);
+  border-radius: 99px;
+}
+
+.wo-pipeline-hscroll::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.22);
+  border-radius: 99px;
+}
+
+.wo-pipeline-hscroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.34);
+}
+
+/* Masque la scrollbar native du board quand la sticky est affichée */
+@media (min-width: 768px) {
+  .wo-pipeline-board {
+    scrollbar-width: none;
+  }
+
+  .wo-pipeline-board::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* ---------- App chrome ---------- */
 
 .wo-app {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PipelineCard, PipelineCardAvatar } from "@/components/crm/PipelineCard";
 import {
@@ -10,6 +10,13 @@ import {
 } from "@/lib/crm/pipeline";
 import { prospectDetailHref } from "@/lib/crm/paths";
 import type { Prospect, ProspectStatus } from "@/lib/crm/types";
+
+function isInteractiveTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return Boolean(
+    target.closest("button, a, input, textarea, select, label, [draggable='true']")
+  );
+}
 
 export function ProspectsPipeline({
   prospects,
@@ -25,6 +32,103 @@ export function ProspectsPipeline({
   const followed = prospects.filter(isFollowedProspect).length;
   const dragged = useRef(false);
 
+  const boardRef = useRef<HTMLDivElement>(null);
+  const topScrollRef = useRef<HTMLDivElement>(null);
+  const syncing = useRef(false);
+  const pan = useRef<{
+    pointerId: number;
+    startX: number;
+    startScrollLeft: number;
+  } | null>(null);
+
+  const [spacerWidth, setSpacerWidth] = useState(0);
+  const [isPanning, setIsPanning] = useState(false);
+
+  useEffect(() => {
+    const board = boardRef.current;
+    if (!board) return;
+
+    const updateSpacer = () => {
+      setSpacerWidth(board.scrollWidth);
+      const top = topScrollRef.current;
+      if (top && top.scrollLeft !== board.scrollLeft) {
+        syncing.current = true;
+        top.scrollLeft = board.scrollLeft;
+        syncing.current = false;
+      }
+    };
+
+    updateSpacer();
+
+    const ro = new ResizeObserver(updateSpacer);
+    ro.observe(board);
+    Array.from(board.children).forEach((child) => ro.observe(child));
+
+    return () => ro.disconnect();
+  }, [prospects]);
+
+  useEffect(() => {
+    const board = boardRef.current;
+    if (!board) return;
+
+    const onWheel = (e: WheelEvent) => {
+      if (!e.shiftKey || e.deltaY === 0) return;
+      e.preventDefault();
+      board.scrollLeft += e.deltaY;
+    };
+
+    board.addEventListener("wheel", onWheel, { passive: false });
+    return () => board.removeEventListener("wheel", onWheel);
+  }, []);
+
+  const syncScroll = (from: "top" | "board") => {
+    if (syncing.current) return;
+    const board = boardRef.current;
+    const top = topScrollRef.current;
+    if (!board || !top) return;
+
+    const source = from === "top" ? top : board;
+    const target = from === "top" ? board : top;
+    if (target.scrollLeft === source.scrollLeft) return;
+
+    syncing.current = true;
+    target.scrollLeft = source.scrollLeft;
+    syncing.current = false;
+  };
+
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== "mouse" || e.button !== 0) return;
+    if (isInteractiveTarget(e.target)) return;
+    const board = boardRef.current;
+    if (!board) return;
+
+    pan.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startScrollLeft: board.scrollLeft,
+    };
+    board.setPointerCapture(e.pointerId);
+    setIsPanning(true);
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const state = pan.current;
+    if (!state || state.pointerId !== e.pointerId) return;
+    const board = boardRef.current;
+    if (!board) return;
+    board.scrollLeft = state.startScrollLeft - (e.clientX - state.startX);
+  };
+
+  const endPan = (e: React.PointerEvent<HTMLDivElement>) => {
+    const state = pan.current;
+    if (!state || state.pointerId !== e.pointerId) return;
+    pan.current = null;
+    setIsPanning(false);
+    if (boardRef.current?.hasPointerCapture(e.pointerId)) {
+      boardRef.current.releasePointerCapture(e.pointerId);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3 text-xs text-wo-muted">
@@ -37,7 +141,27 @@ export function ProspectsPipeline({
         </span>
       </div>
 
-      <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+      {/* Scrollbar horizontale sticky — desktop / laptop uniquement */}
+      <div
+        ref={topScrollRef}
+        className="wo-pipeline-hscroll sticky top-14 z-20 -mx-4 hidden overflow-x-auto bg-[color:var(--wo-bg)]/95 px-4 py-1.5 backdrop-blur-sm sm:-mx-6 sm:px-6 md:block lg:top-0 lg:-mx-8 lg:px-8"
+        onScroll={() => syncScroll("top")}
+        aria-hidden="true"
+      >
+        <div style={{ width: spacerWidth, height: 1 }} />
+      </div>
+
+      <div
+        ref={boardRef}
+        className={`wo-pipeline-board -mx-4 flex gap-3 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 ${
+          isPanning ? "cursor-grabbing select-none" : "md:cursor-grab"
+        }`}
+        onScroll={() => syncScroll("board")}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endPan}
+        onPointerCancel={endPan}
+      >
         {PIPELINE_COLUMNS.map((col) => {
           const items = groups[col.id];
           return (
@@ -71,28 +195,28 @@ export function ProspectsPipeline({
                   <p className="px-2 py-6 text-center text-xs text-wo-dim">Vide</p>
                 ) : (
                   items.map((p) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        draggable={Boolean(onStatusChange)}
-                        onDragStart={(e) => {
-                          dragged.current = true;
-                          e.dataTransfer.setData("text/plain", p.id);
-                          e.dataTransfer.effectAllowed = "move";
-                        }}
-                        onClick={() => {
-                          if (dragged.current) {
-                            dragged.current = false;
-                            return;
-                          }
-                          router.push(prospectDetailHref(p.id, listReturnUrl));
-                        }}
-                        className="flex items-start gap-2.5 rounded-[14px] border border-wo-border bg-slate-50/70 px-2.5 py-3 text-left transition hover:border-indigo-200 hover:bg-white"
-                      >
-                        <PipelineCard prospect={p} columnId={col.id} />
-                        <PipelineCardAvatar name={p.club_name} />
-                      </button>
-                    ))
+                    <button
+                      key={p.id}
+                      type="button"
+                      draggable={Boolean(onStatusChange)}
+                      onDragStart={(e) => {
+                        dragged.current = true;
+                        e.dataTransfer.setData("text/plain", p.id);
+                        e.dataTransfer.effectAllowed = "move";
+                      }}
+                      onClick={() => {
+                        if (dragged.current) {
+                          dragged.current = false;
+                          return;
+                        }
+                        router.push(prospectDetailHref(p.id, listReturnUrl));
+                      }}
+                      className="flex cursor-pointer items-start gap-2.5 rounded-[14px] border border-wo-border bg-slate-50/70 px-2.5 py-3 text-left transition hover:border-indigo-200 hover:bg-white"
+                    >
+                      <PipelineCard prospect={p} columnId={col.id} />
+                      <PipelineCardAvatar name={p.club_name} />
+                    </button>
+                  ))
                 )}
               </div>
             </div>
