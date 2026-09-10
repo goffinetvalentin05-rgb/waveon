@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  formatContactLine,
-  formatLastContact,
-  formatLocationLine,
-  getNextActionDisplay,
-} from "@/lib/crm/follow-up-display";
+import { formatLastContact, formatSectorLocationLine, getNextActionDisplay } from "@/lib/crm/follow-up-display";
 import { formatClosedReason } from "@/lib/crm/closed";
 import { formatRelayFollowUp } from "@/lib/crm/format";
 import { prospectAvatarTone } from "@/lib/crm/pipeline";
@@ -29,51 +24,30 @@ export function PipelineCard({ prospect, columnId }: { prospect: Prospect; colum
     );
   }
 
+  const sectorLocation = formatSectorLocationLine(prospect);
+  const lastContact = formatLastContact(prospect);
+  const { followUp } = getNextActionDisplay(prospect);
+
   if (columnId === "relay") {
-    const contact = formatContactLine(prospect);
-    const location = formatLocationLine(prospect);
-    const relay = formatRelayFollowUp(prospect.next_follow_up);
     return (
       <div className="min-w-0 flex-1">
         <p className="truncate text-[13px] font-medium text-wo-text">{prospect.club_name}</p>
-        {contact ? <p className="mt-1 truncate text-[11px] text-wo-dim">{contact}</p> : null}
-        {location ? <p className="mt-0.5 truncate text-[11px] text-wo-dim">{location}</p> : null}
-        <p className="mt-1.5 text-[11px] text-wo-secondary">{relay}</p>
+        {sectorLocation ? <p className="mt-1 truncate text-[11px] text-wo-dim">{sectorLocation}</p> : null}
+        {lastContact ? <p className="mt-1.5 truncate text-[11px] text-wo-muted">{lastContact}</p> : null}
+        <p className="mt-1 truncate text-[11px] text-wo-secondary">{formatRelayFollowUp(prospect.next_follow_up)}</p>
       </div>
     );
   }
 
-  const contact = formatContactLine(prospect);
-  const location = formatLocationLine(prospect);
-  const lastContact = formatLastContact(prospect);
-  const { temporal, datedLabel } = getNextActionDisplay(prospect);
-
   return (
     <div className="min-w-0 flex-1">
       <p className="truncate text-[13px] font-medium leading-snug text-wo-text">{prospect.club_name}</p>
-      {contact ? <p className="mt-1 truncate text-[11px] text-wo-dim">{contact}</p> : null}
-      {location ? <p className="mt-0.5 truncate text-[11px] text-wo-dim">{location}</p> : null}
-      {lastContact ? (
-        <p className="mt-1.5 truncate text-[11px] text-wo-muted">{lastContact}</p>
-      ) : null}
-      {datedLabel || temporal.kind !== "none" ? (
-        <div className="mt-1 space-y-0.5">
-          {datedLabel && temporal.kind === "future" ? (
-            <p className="truncate text-[11px] text-wo-secondary">{datedLabel}</p>
-          ) : null}
-          {temporal.kind !== "none" && temporal.kind !== "future" ? (
-            <p className={`truncate text-[11px] ${TEMPORAL_STYLES[temporal.kind]}`}>{temporal.primary}</p>
-          ) : null}
-          {temporal.kind === "future" && temporal.primary ? (
-            <p className={`truncate text-[11px] ${TEMPORAL_STYLES.future}`}>{temporal.primary}</p>
-          ) : null}
-          {datedLabel && temporal.kind === "today" ? (
-            <p className="truncate text-[11px] text-wo-muted">{datedLabel}</p>
-          ) : null}
-          {datedLabel && temporal.kind === "overdue" ? (
-            <p className="truncate text-[11px] text-wo-muted">{datedLabel}</p>
-          ) : null}
-        </div>
+      {sectorLocation ? <p className="mt-1 truncate text-[11px] text-wo-dim">{sectorLocation}</p> : null}
+      {lastContact ? <p className="mt-1.5 truncate text-[11px] text-wo-muted">{lastContact}</p> : null}
+      {followUp.kind === "today" || followUp.kind === "overdue" ? (
+        <p className={`mt-1 truncate text-[11px] ${TEMPORAL_STYLES[followUp.kind]}`}>{followUp.alert}</p>
+      ) : followUp.kind === "future" && followUp.dateLabel ? (
+        <p className="mt-1 truncate text-[11px] text-wo-secondary">Prochaine relance : {followUp.dateLabel}</p>
       ) : null}
     </div>
   );

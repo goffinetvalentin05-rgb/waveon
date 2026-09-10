@@ -44,6 +44,7 @@ export const ACTION_TYPES = [
   "call",
   "whatsapp",
   "email",
+  "message",
   "linkedin",
   "meeting",
   "demo",
@@ -59,9 +60,13 @@ export type ActionType = (typeof ACTION_TYPES)[number];
 export const INTERACTION_TYPES = [
   "first_contact",
   "follow_up",
+  "follow_up_1",
+  "follow_up_2",
+  "follow_up_3",
   "call",
   "whatsapp",
   "email",
+  "message",
   "linkedin",
   "reply",
   "meeting",
@@ -76,9 +81,13 @@ export type InteractionType = (typeof INTERACTION_TYPES)[number];
 export const INTERACTION_LABELS: Record<InteractionType, string> = {
   first_contact: "Premier contact",
   follow_up: "Relance",
+  follow_up_1: "Relance 1",
+  follow_up_2: "Relance 2",
+  follow_up_3: "Relance 3",
   call: "Appel",
   whatsapp: "WhatsApp",
   email: "Email",
+  message: "Message",
   linkedin: "LinkedIn",
   reply: "Réponse",
   meeting: "Réunion",
@@ -101,9 +110,11 @@ export function actionTypeFromChannel(channel: string | null | undefined): Inter
   switch (channel) {
     case "Email":
       return "email";
+    case "Message":
     case "WhatsApp":
-      return "whatsapp";
+      return "message";
     case "Téléphone":
+    case "Appel":
       return "call";
     case "LinkedIn":
       return "linkedin";
@@ -173,6 +184,7 @@ export type ProspectActivity = {
   occurred_at?: string | null;
   actor_name?: string | null;
   channel?: string | null;
+  interaction_type?: string | null;
 };
 
 export type DailyTask = {
@@ -205,3 +217,4 @@ export type CrmSettings = {
 };
 
 export type QuickAction = "mail_sent" | "call_made" | "demo_scheduled" | "client" | "refus";
+export type AdvancementAction = "demo_scheduled" | "client" | "refus";

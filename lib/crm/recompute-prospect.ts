@@ -1,14 +1,10 @@
-import { addDays, formatISO } from "date-fns";
-import { resolveQuickActionAt } from "@/lib/crm/actions";
 import { isClosedProspectStatus, isDemoStatus, parseClosedReason } from "@/lib/crm/closed";
-import { parseStatusChangePayload } from "@/lib/crm/status";
+import { inferLegacyInteraction, nextStageAfterInteraction } from "@/lib/crm/interactions";
 import { defaultNextActionFor } from "@/lib/crm/next-action";
-import type { CrmSettings, Prospect, ProspectActivity, ProspectStatus, QuickAction } from "@/lib/crm/types";
+import { parseStatusChangePayload } from "@/lib/crm/status";
+import { syncProspectFollowUpTask } from "@/lib/crm/sync-follow-up-task";
+import type { Prospect, ProspectActivity, ProspectStatus } from "@/lib/crm/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
-
-function dateOnly(d: Date): string {
-  return formatISO(d, { representation: "date" });
-}
 
 function parseMaybeJson(text: string | null): unknown | null {
   if (!text) return null;
@@ -31,59 +27,41 @@ function parseDemoAt(description: string | null): Date | null {
   return d;
 }
 
-function isTerminalStatus(status: ProspectStatus) {
-  return isClosedProspectStatus(status);
+function activityWhen(activity: ProspectActivity): Date {
+  return new Date(activity.occurred_at || activity.created_at);
 }
 
-function statusToNextFollowUpDate(
-  status: ProspectStatus,
-  actionDate: Date,
-  settings: Pick<CrmSettings, "delay_relance_1_days" | "delay_relance_2_days" | "delay_relance_3_days">
-): string | null {
-  if (isTerminalStatus(status)) return null;
-
-  switch (status) {
-    case "À contacter":
-      return dateOnly(actionDate);
-    case "Relance 1":
-      return dateOnly(addDays(actionDate, settings.delay_relance_1_days));
-    case "Relance 2":
-      return dateOnly(addDays(actionDate, settings.delay_relance_2_days));
-    case "Relais":
-      return dateOnly(addDays(actionDate, 30));
-    case "En discussion":
-    case "Démo":
-      return dateOnly(actionDate);
-    default:
-      return dateOnly(actionDate);
-  }
+function isHumanContact(actionType: string): boolean {
+  return [
+    "mail_sent",
+    "call_made",
+    "email",
+    "message",
+    "call",
+    "whatsapp",
+    "linkedin",
+    "first_contact",
+    "follow_up",
+    "meeting",
+    "demo",
+    "demo_scheduled",
+    "reply",
+    "offer",
+    "note",
+    "other",
+  ].includes(actionType);
 }
 
-function taskFromStatus(clubName: string, status: ProspectStatus): {
-  taskKind: "follow_up" | "first_contact" | "demo";
-  title: string;
-} | null {
-  if (isTerminalStatus(status)) return null;
-  if (status === "À contacter") {
-    return { taskKind: "first_contact", title: `Premier contact ${clubName}` };
-  }
-  if (isDemoStatus(status)) {
-    return { taskKind: "demo", title: `Démonstration ${clubName}` };
-  }
-  if (status === "Relais") {
-    return { taskKind: "follow_up", title: `Suivi réseau ${clubName}` };
-  }
-  return { taskKind: "follow_up", title: `Relancer ${clubName}` };
-}
-
-/** Recalcule statut, dernière action, prochaine relance + tâches dérivées, à partir de l'historique. */
+/**
+ * Recalcule statut, dernier contact et tâches dérivées à partir de l'historique.
+ * Ne réinvente pas une date de relance : `next_follow_up` reste un champ indépendant,
+ * simplement nettoyé pour les clients / fermés.
+ */
 export async function recomputeProspectDerivatives(
   supabase: SupabaseClient,
   userId: string,
   prospectId: string
 ): Promise<{ prospect: Prospect; activities: ProspectActivity[] }> {
-  const today = new Date().toISOString().slice(0, 10);
-
   const { data: prospectRow } = await supabase
     .from("prospects")
     .select("*")
@@ -93,23 +71,12 @@ export async function recomputeProspectDerivatives(
 
   if (!prospectRow) throw new Error("Introuvable");
 
-  const { data: settingsRow } = await supabase
-    .from("crm_settings")
-    .select("*")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  const settings = (settingsRow ?? {
-    delay_relance_1_days: 3,
-    delay_relance_2_days: 7,
-    delay_relance_3_days: 14,
-  }) as CrmSettings;
-
   const { data: activitiesRaw } = await supabase
     .from("prospect_activities")
     .select("*")
     .eq("user_id", userId)
     .eq("prospect_id", prospectId)
+    .order("occurred_at", { ascending: true })
     .order("created_at", { ascending: true })
     .order("id", { ascending: true });
 
@@ -118,36 +85,23 @@ export async function recomputeProspectDerivatives(
   let currentStatus: ProspectStatus = "À contacter";
   let lastAction: string | null = null;
   let lastActionAt: string | null = null;
-  let nextFollowUp: string | null = null;
+  let contactChannel: string | null = (prospectRow.contact_channel as string | null) ?? null;
   let demoAtIso: string | null = null;
   let closedReason: string | null = null;
   let closedNote: string | null = null;
 
-  const titleUpdates: { id: string; title: string }[] = [];
-
-  const clubName = (prospectRow.club_name as string) ?? "";
-
   for (const a of activities) {
-    const actionDate = new Date(a.created_at);
+    const when = activityWhen(a);
 
     if (a.action_type === "created" || a.action_type === "imported") {
-      lastAction = a.title;
-      lastActionAt = a.created_at;
       continue;
     }
 
     if (a.action_type === "status_change") {
       const parsed = parseStatusChangePayload(a.description);
       if (!parsed.to) continue;
-
-      const computedTitle = `Statut modifié de ${currentStatus} à ${parsed.to}`;
-      titleUpdates.push({ id: a.id, title: computedTitle });
-
       currentStatus = parsed.to;
-      lastAction = computedTitle;
-      lastActionAt = a.created_at;
-      demoAtIso = isDemoStatus(parsed.to) ? actionDate.toISOString() : null;
-      nextFollowUp = statusToNextFollowUpDate(parsed.to, actionDate, settings);
+      demoAtIso = isDemoStatus(parsed.to) ? when.toISOString() : demoAtIso;
       if (parsed.to === "Fermé") {
         closedReason = parseClosedReason(parsed.closed_reason) ?? closedReason ?? "Autre";
         closedNote = parsed.closed_note;
@@ -158,66 +112,67 @@ export async function recomputeProspectDerivatives(
       continue;
     }
 
-    if (
-      a.action_type === "mail_sent" ||
-      a.action_type === "call_made" ||
-      a.action_type === "demo_scheduled" ||
-      a.action_type === "client" ||
-      a.action_type === "refus"
-    ) {
-      const demoAt = a.action_type === "demo_scheduled" ? parseDemoAt(a.description) : null;
-      const result = resolveQuickActionAt(
-        a.action_type as QuickAction,
+    if (a.action_type === "client") {
+      currentStatus = "Client";
+      lastAction = a.title || "Devenu client";
+      lastActionAt = a.occurred_at || a.created_at;
+      closedReason = null;
+      closedNote = null;
+      continue;
+    }
+
+    if (a.action_type === "refus") {
+      currentStatus = "Fermé";
+      lastAction = a.title || "Fermé";
+      lastActionAt = a.occurred_at || a.created_at;
+      const parsed = parseMaybeJson(a.description);
+      const obj = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
+      closedReason = parseClosedReason(obj?.closed_reason) ?? parseClosedReason(a.description) ?? "Pas intéressé";
+      closedNote = typeof obj?.closed_note === "string" ? obj.closed_note : null;
+      continue;
+    }
+
+    if (a.action_type === "demo_scheduled" || a.action_type === "demo") {
+      const demoAt = parseDemoAt(a.description);
+      currentStatus = "Démo";
+      lastAction = a.title || "Démonstration planifiée";
+      lastActionAt = a.occurred_at || a.created_at;
+      demoAtIso = (demoAt ?? when).toISOString();
+      continue;
+    }
+
+    if (isHumanContact(a.action_type)) {
+      const inferred = inferLegacyInteraction(
+        a.action_type,
         currentStatus,
-        settings,
-        clubName,
-        actionDate,
-        demoAt ?? undefined
+        a.interaction_type,
+        a.channel
       );
-
-      if (result.activityTitle !== a.title) {
-        titleUpdates.push({ id: a.id, title: result.activityTitle });
+      if (inferred.kind) {
+        currentStatus = nextStageAfterInteraction(currentStatus, inferred.kind);
       }
+      lastAction = a.title || lastAction;
+      lastActionAt = a.occurred_at || a.created_at;
+      if (a.channel) contactChannel = a.channel;
+      continue;
+    }
 
-      currentStatus = result.status;
-      lastAction = result.lastAction;
-      lastActionAt = a.created_at;
-      nextFollowUp = result.nextFollowUp;
-
-      if (a.action_type === "demo_scheduled") {
-        const finalDemoAt = demoAt ?? actionDate;
-        demoAtIso = finalDemoAt.toISOString();
-      }
-
-      if (a.action_type === "refus") {
-        const parsed = parseMaybeJson(a.description);
-        const obj = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
-        closedReason = parseClosedReason(obj?.closed_reason) ?? parseClosedReason(a.description) ?? "Pas intéressé";
-        closedNote = typeof obj?.closed_note === "string" ? obj.closed_note : null;
-      } else if (currentStatus !== "Fermé") {
-        closedReason = null;
-        closedNote = null;
-      }
-
-      if (isTerminalStatus(currentStatus)) {
-        nextFollowUp = null;
-        if (currentStatus !== "Démo") demoAtIso = null;
-      }
+    if (a.action_type === "archived" || a.action_type === "restored") {
       continue;
     }
 
     lastAction = a.title;
-    lastActionAt = a.created_at;
+    lastActionAt = a.occurred_at || a.created_at;
   }
 
-  if (isTerminalStatus(currentStatus)) {
-    nextFollowUp = null;
-    if (currentStatus !== "Démo") demoAtIso = null;
-  }
   if (currentStatus !== "Fermé") {
     closedReason = null;
     closedNote = null;
   }
+
+  const nextFollowUp = isClosedProspectStatus(currentStatus)
+    ? null
+    : ((prospectRow.next_follow_up as string | null) ?? null);
 
   await supabase
     .from("prospects")
@@ -226,39 +181,24 @@ export async function recomputeProspectDerivatives(
       last_action: lastAction,
       last_action_at: lastActionAt,
       next_follow_up: nextFollowUp,
-      next_action: isTerminalStatus(currentStatus)
+      next_action: isClosedProspectStatus(currentStatus)
         ? null
         : (prospectRow.next_action as string | null) ?? defaultNextActionFor(currentStatus),
-      demo_at: demoAtIso,
+      demo_at: currentStatus === "Démo" ? demoAtIso : null,
       closed_reason: closedReason,
       closed_note: closedNote,
+      contact_channel: contactChannel,
     })
     .eq("id", prospectId)
     .eq("user_id", userId);
 
-  await supabase
-    .from("daily_tasks")
-    .delete()
-    .eq("user_id", userId)
-    .eq("prospect_id", prospectId)
-    .in("task_kind", ["follow_up", "first_contact", "demo"]);
-
-  const derived = taskFromStatus(clubName, currentStatus);
-  if (derived && nextFollowUp) {
-    const dueDate = nextFollowUp <= today ? today : nextFollowUp;
-    await supabase.from("daily_tasks").insert({
-      user_id: userId,
-      prospect_id: prospectId,
-      title: derived.title,
-      due_date: dueDate,
-      task_kind: derived.taskKind,
-      completed: false,
-    });
-  }
-
-  for (const u of titleUpdates) {
-    await supabase.from("prospect_activities").update({ title: u.title }).eq("id", u.id);
-  }
+  await syncProspectFollowUpTask(supabase, {
+    userId,
+    prospectId,
+    clubName: (prospectRow.club_name as string) ?? "",
+    status: currentStatus,
+    nextFollowUp,
+  });
 
   const { data: updatedProspect } = await supabase
     .from("prospects")
@@ -272,6 +212,7 @@ export async function recomputeProspectDerivatives(
     .select("*")
     .eq("user_id", userId)
     .eq("prospect_id", prospectId)
+    .order("occurred_at", { ascending: false })
     .order("created_at", { ascending: false });
 
   return {

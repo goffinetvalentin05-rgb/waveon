@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/crm/server";
-import { isProspectStatus, type ProspectStatus } from "@/lib/crm/types";
+import { isProspectStatus } from "@/lib/crm/types";
 import { isClosedProspectStatus, parseClosedReason } from "@/lib/crm/closed";
 import { defaultNextActionFor } from "@/lib/crm/next-action";
 import { encodeStatusChangeDescription, migrateProspectStatus } from "@/lib/crm/status";
 import { normalizeProspectFromDb } from "@/lib/crm/prospect-payload";
+import { syncProspectFollowUpTask } from "@/lib/crm/sync-follow-up-task";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -62,8 +63,6 @@ export async function POST(request: Request, { params }: Params) {
       status: nextStatus,
       next_action: nextAction,
       next_follow_up: nextFollowUp,
-      last_action: `Statut : ${nextStatus}`,
-      last_action_at: new Date().toISOString(),
       closed_reason: closedReason,
       closed_note: closedNote,
     })
@@ -92,6 +91,23 @@ export async function POST(request: Request, { params }: Params) {
       closed_reason: closedReason,
       closed_note: closedNote,
     }),
+  });
+
+  if (isClosedProspectStatus(nextStatus)) {
+    await supabase
+      .from("daily_tasks")
+      .update({ completed: true, completed_at: new Date().toISOString() })
+      .eq("prospect_id", id)
+      .eq("user_id", user.id)
+      .eq("completed", false);
+  }
+
+  await syncProspectFollowUpTask(supabase, {
+    userId: user.id,
+    prospectId: id,
+    clubName: prospect.club_name,
+    status: nextStatus,
+    nextFollowUp,
   });
 
   const { data: activities } = await supabase

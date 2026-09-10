@@ -28,6 +28,7 @@ export default async function CrmProspectDetailPage({ params }: Props) {
     .select("*")
     .eq("prospect_id", id)
     .eq("user_id", user.id)
+    .order("occurred_at", { ascending: false })
     .order("created_at", { ascending: false });
 
   return (

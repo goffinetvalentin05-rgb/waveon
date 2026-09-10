@@ -29,6 +29,7 @@ export default async function ProjectProspectDetailPage({ params }: Props) {
     .from("prospect_activities")
     .select("*")
     .eq("prospect_id", prospectId)
+    .order("occurred_at", { ascending: false })
     .order("created_at", { ascending: false });
 
   return (

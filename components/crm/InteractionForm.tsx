@@ -2,7 +2,16 @@
 
 import { useState } from "react";
 import { ui } from "@/lib/design/tokens";
-import { CONTACT_CHANNELS } from "@/lib/crm/types";
+import { crmToday } from "@/lib/crm/date-only";
+import {
+  INTERACTION_CHANNEL_LABELS,
+  INTERACTION_CHANNELS,
+  INTERACTION_KIND_LABELS,
+  INTERACTION_KINDS,
+  normalizeInteractionChannel,
+  type InteractionChannel,
+  type InteractionKind,
+} from "@/lib/crm/interactions";
 
 export function InteractionForm({
   prospectId,
@@ -13,25 +22,26 @@ export function InteractionForm({
   defaultChannel?: string | null;
   onAdded: () => void;
 }) {
-  const channelOptions =
-    defaultChannel && !(CONTACT_CHANNELS as readonly string[]).includes(defaultChannel)
-      ? [defaultChannel, ...CONTACT_CHANNELS]
-      : [...CONTACT_CHANNELS];
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(crmToday());
   const [description, setDescription] = useState("");
-  const [channel, setChannel] = useState(defaultChannel?.trim() || "Email");
+  const [channel, setChannel] = useState<InteractionChannel>(
+    () => normalizeInteractionChannel(defaultChannel) ?? "email"
+  );
+  const [kind, setKind] = useState<InteractionKind>("other");
   const [saving, setSaving] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
     setSaving(true);
-    await fetch(`/api/prospects/${prospectId}/activities`, {
+    await fetch(`/api/prospects/${prospectId}/interactions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         occurred_at: date,
         description,
         channel,
+        interaction_type: kind,
       }),
     });
     setSaving(false);
@@ -43,10 +53,28 @@ export function InteractionForm({
     <form onSubmit={submit} className="mt-4 grid gap-3 sm:grid-cols-2">
       <div>
         <label className={ui.label}>Canal</label>
-        <select className={ui.input} value={channel} onChange={(e) => setChannel(e.target.value)}>
-          {channelOptions.map((c) => (
+        <select
+          className={ui.input}
+          value={channel}
+          onChange={(e) => setChannel(e.target.value as InteractionChannel)}
+        >
+          {INTERACTION_CHANNELS.map((c) => (
             <option key={c} value={c}>
-              {c}
+              {INTERACTION_CHANNEL_LABELS[c]}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className={ui.label}>Type</label>
+        <select
+          className={ui.input}
+          value={kind}
+          onChange={(e) => setKind(e.target.value as InteractionKind)}
+        >
+          {INTERACTION_KINDS.map((k) => (
+            <option key={k} value={k}>
+              {INTERACTION_KIND_LABELS[k]}
             </option>
           ))}
         </select>
@@ -56,7 +84,7 @@ export function InteractionForm({
         <input type="date" className={ui.input} value={date} onChange={(e) => setDate(e.target.value)} />
       </div>
       <div className="sm:col-span-2">
-        <label className={ui.label}>Description</label>
+        <label className={ui.label}>Description facultative</label>
         <input
           className={ui.input}
           value={description}
@@ -66,7 +94,7 @@ export function InteractionForm({
       </div>
       <div className="sm:col-span-2 flex justify-end">
         <button type="submit" className={ui.btnSecondary} disabled={saving}>
-          {saving ? "…" : "Ajouter l'interaction"}
+          {saving ? "Enregistrement…" : "Ajouter l'interaction"}
         </button>
       </div>
     </form>

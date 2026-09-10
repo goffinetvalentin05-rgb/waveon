@@ -1,4 +1,4 @@
-import { addDays, formatISO } from "date-fns";
+import { formatISO } from "date-fns";
 import type { CrmSettings, ProspectStatus, QuickAction } from "./types";
 import { isClosedProspectStatus } from "./closed";
 
@@ -13,10 +13,6 @@ export type ActionResult = {
 
 function dateOnly(d: Date): string {
   return formatISO(d, { representation: "date" });
-}
-
-function followUpDateFrom(base: Date, days: number): string {
-  return dateOnly(addDays(base, days));
 }
 
 /** Applique une action rapide et calcule le prochain statut + relance. */
@@ -35,11 +31,11 @@ export function resolveQuickAction(
 export function resolveQuickActionAt(
   action: QuickAction,
   currentStatus: ProspectStatus,
-  settings: Pick<
+  _settings: Pick<
     CrmSettings,
     "delay_relance_1_days" | "delay_relance_2_days" | "delay_relance_3_days"
   >,
-  clubName: string,
+  _clubName: string,
   actionDate: Date,
   demoAt?: Date | null
 ): ActionResult {
@@ -79,22 +75,22 @@ export function resolveQuickActionAt(
       const nextStatus: ProspectStatus = currentStatus === "À contacter" ? "Relance 1" : currentStatus;
       return {
         status: nextStatus,
-        lastAction: "Mail envoyé",
-        nextFollowUp: followUpDateFrom(actionDate, settings.delay_relance_1_days),
-        activityTitle: currentStatus === "À contacter" ? "Premier mail envoyé" : "Mail envoyé",
-        taskTitle: currentStatus === "Relais" ? `Suivi réseau ${clubName}` : `Relancer ${clubName}`,
-        taskKind: "follow_up",
+        lastAction: currentStatus === "À contacter" ? "Premier contact envoyé" : "Email envoyé",
+        nextFollowUp: null,
+        activityTitle: currentStatus === "À contacter" ? "Premier contact envoyé" : "Email envoyé",
+        taskTitle: null,
+        taskKind: null,
       };
     }
     case "call_made": {
       const nextStatus: ProspectStatus = currentStatus === "À contacter" ? "Relance 1" : currentStatus;
       return {
         status: nextStatus,
-        lastAction: "Appel effectué",
-        nextFollowUp: followUpDateFrom(actionDate, settings.delay_relance_1_days),
-        activityTitle: "Appel effectué",
-        taskTitle: currentStatus === "Relais" ? `Suivi réseau ${clubName}` : `Relancer ${clubName}`,
-        taskKind: "follow_up",
+        lastAction: currentStatus === "À contacter" ? "Premier appel effectué" : "Appel effectué",
+        nextFollowUp: null,
+        activityTitle: currentStatus === "À contacter" ? "Premier appel effectué" : "Appel effectué",
+        taskTitle: null,
+        taskKind: null,
       };
     }
     case "demo_scheduled":
@@ -103,7 +99,7 @@ export function resolveQuickActionAt(
         lastAction: "Démo planifiée",
         nextFollowUp: dateOnly(demoAt ?? actionDate),
         activityTitle: "Démonstration planifiée",
-        taskTitle: `Démonstration ${clubName}`,
+        taskTitle: `Démonstration ${_clubName}`,
         taskKind: "demo",
       };
     case "client":

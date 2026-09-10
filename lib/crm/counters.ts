@@ -1,4 +1,5 @@
 import { isClosedProspectStatus, isDemoStatus, isLostProspectStatus } from "@/lib/crm/closed";
+import { getFollowUpState } from "@/lib/crm/follow-up-state";
 import { migrateProspectStatus } from "@/lib/crm/status";
 
 export type ProspectCounterRow = {
@@ -76,8 +77,9 @@ export function countProspectWork(
       counts.lost += 1;
       counts.closed += 1;
     }
-    if (open && row.next_follow_up === today) counts.followToday += 1;
-    if (open && row.next_follow_up && row.next_follow_up < today) counts.overdue += 1;
+    const followUp = getFollowUpState({ status, next_follow_up: row.next_follow_up }, today);
+    if (open && followUp.kind === "today") counts.followToday += 1;
+    if (open && followUp.kind === "overdue") counts.overdue += 1;
     if (open && (status === "Relance 1" || status === "Relance 2")) counts.inRelance += 1;
   }
 

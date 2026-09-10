@@ -7,6 +7,7 @@ import {
   formatLastContact,
   getNextActionDisplay,
 } from "@/lib/crm/follow-up-display";
+import { getFollowUpState } from "@/lib/crm/follow-up-state";
 import { formatRelayFollowUp } from "@/lib/crm/format";
 import { prospectDetailHref } from "@/lib/crm/paths";
 import { formatClosedReason } from "@/lib/crm/closed";
@@ -75,18 +76,19 @@ export function ProspectListRow({
           <span className="text-wo-text">{formatRelayFollowUp(prospect.next_follow_up)}</span>
         ) : (
           (() => {
-            const { temporal, datedLabel } = getNextActionDisplay(prospect);
-            if (!datedLabel && temporal.kind === "none") {
-              return <span className="text-wo-dim">Pas de prochaine action</span>;
+            const { followUp } = getNextActionDisplay(prospect);
+            if (followUp.kind === "none") {
+              return <span className="text-wo-dim">Aucune relance prévue</span>;
             }
-            return (
-              <>
-                {datedLabel ? <span className="text-wo-text">{datedLabel}</span> : null}
-                {temporal.kind !== "none" ? (
-                  <span className={TEMPORAL_STYLES[temporal.kind]}>{temporal.primary}</span>
-                ) : null}
-              </>
-            );
+            if (followUp.kind === "future" && followUp.dateLabel) {
+              return (
+                <>
+                  <span className="text-wo-text">Prochaine relance : {followUp.dateLabel}</span>
+                  <span className={TEMPORAL_STYLES.future}>{followUp.alert}</span>
+                </>
+              );
+            }
+            return <span className={TEMPORAL_STYLES[followUp.kind]}>{followUp.alert}</span>;
           })()
         )}
         {prospect.assignee?.name ? <span className="text-wo-dim">{prospect.assignee.name}</span> : null}
@@ -104,9 +106,12 @@ export function ProspectWorkSections({
   listReturnUrl: string;
   onStatusChange: (id: string, status: ProspectStatus) => void;
 }) {
-  const today = new Date().toISOString().slice(0, 10);
-  const todayList = prospects.filter((p) => p.next_follow_up === today);
-  const overdue = prospects.filter((p) => p.next_follow_up && p.next_follow_up < today);
+  const todayList = prospects.filter(
+    (p) => getFollowUpState({ status: p.status, next_follow_up: p.next_follow_up }).kind === "today"
+  );
+  const overdue = prospects.filter(
+    (p) => getFollowUpState({ status: p.status, next_follow_up: p.next_follow_up }).kind === "overdue"
+  );
 
   return (
     <div className="space-y-7">

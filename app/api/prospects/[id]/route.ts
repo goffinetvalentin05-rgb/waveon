@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/crm/server";
 import { nullIfEmpty, normalizeProspectFromDb } from "@/lib/crm/prospect-payload";
 import { upsertPrimaryContactFromProspectFields } from "@/lib/crm/sync-primary-contact";
+import { syncProspectFollowUpTask } from "@/lib/crm/sync-follow-up-task";
+import { migrateProspectStatus } from "@/lib/crm/status";
+import { isClosedProspectStatus } from "@/lib/crm/closed";
 import type { Prospect } from "@/lib/crm/types";
 
 type Params = { params: Promise<{ id: string }> };
@@ -132,6 +135,25 @@ export async function PATCH(request: Request, { params }: Params) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
+
+  if ("next_follow_up" in patch) {
+    const status = migrateProspectStatus(String(data.status ?? "À contacter"));
+    const nextFollowUp = isClosedProspectStatus(status)
+      ? null
+      : data.next_follow_up
+        ? String(data.next_follow_up).slice(0, 10)
+        : null;
+    if (isClosedProspectStatus(status) && data.next_follow_up) {
+      await supabase.from("prospects").update({ next_follow_up: null }).eq("id", id);
+    }
+    await syncProspectFollowUpTask(supabase, {
+      userId: user.id,
+      prospectId: id,
+      clubName: String(data.club_name ?? ""),
+      status,
+      nextFollowUp,
+    });
+  }
 
   const contactKeys = ["contact_name", "contact_function", "email", "phone"] as const;
   if (contactKeys.some((k) => k in patch)) {

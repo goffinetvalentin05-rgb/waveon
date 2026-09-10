@@ -1,4 +1,15 @@
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 import { formatClosedReason } from "./closed";
+import { dateOnly, parseDateOnly } from "./date-only";
+import { formatRelativeDay } from "./format";
+import {
+  INTERACTION_CHANNEL_LABELS,
+  INTERACTION_KIND_LABELS,
+  isCommercialActivityType,
+  isInteractionKind,
+  normalizeInteractionChannel,
+} from "./interactions";
 import { INTERACTION_TYPES, type ProspectActivity } from "./types";
 import { parseStatusChangePayload } from "./status";
 
@@ -75,19 +86,26 @@ export function formatTimelineActivity(activity: ProspectActivity): TimelineActi
   }
 
   if (isManual) {
-    const channel = activity.channel?.trim() || null;
+    const normalized = normalizeInteractionChannel(activity.channel) ?? normalizeInteractionChannel(activity.action_type);
+    const channel =
+      activity.channel?.trim() ||
+      (normalized ? INTERACTION_CHANNEL_LABELS[normalized] : null);
     const typeLabel =
-      activity.action_type === "email"
+      activity.action_type === "email" || activity.action_type === "mail_sent"
         ? "Email"
-        : activity.action_type === "whatsapp"
-          ? "WhatsApp"
-          : activity.action_type === "call"
-            ? "Téléphone"
-            : activity.action_type === "linkedin"
-              ? "LinkedIn"
-              : activity.action_type === "meeting"
-                ? "Rencontre"
-                : null;
+        : activity.action_type === "message"
+          ? "Message"
+          : activity.action_type === "whatsapp"
+            ? "WhatsApp"
+            : activity.action_type === "call" || activity.action_type === "call_made"
+              ? "Appel"
+              : activity.action_type === "linkedin"
+                ? "LinkedIn"
+                : activity.action_type === "meeting"
+                  ? "Rencontre"
+                  : activity.interaction_type && isInteractionKind(activity.interaction_type)
+                    ? INTERACTION_KIND_LABELS[activity.interaction_type]
+                    : null;
     const redundantTitle =
       !activity.title ||
       activity.title === channel ||
@@ -109,4 +127,32 @@ export function formatTimelineActivity(activity: ProspectActivity): TimelineActi
 
   const title = activity.title && !looksLikeJson(activity.title) ? activity.title : null;
   return { showChannel: false, title, body };
+}
+
+export function commercialActivities(activities: ProspectActivity[]): ProspectActivity[] {
+  return activities.filter((a) => isCommercialActivityType(a.action_type));
+}
+
+export function lastCommercialActivity(activities: ProspectActivity[]): ProspectActivity | null {
+  return commercialActivities(activities)[0] ?? null;
+}
+
+export function formatLastInteractionLine(activity: ProspectActivity | null): string {
+  if (!activity) return "Aucune interaction";
+  const when = formatRelativeDay(activity.occurred_at || activity.created_at);
+  const channelKey = normalizeInteractionChannel(activity.channel) ?? normalizeInteractionChannel(activity.action_type);
+  const channel = channelKey ? INTERACTION_CHANNEL_LABELS[channelKey] : activity.channel?.trim() || null;
+  const kind =
+    activity.interaction_type && isInteractionKind(activity.interaction_type)
+      ? INTERACTION_KIND_LABELS[activity.interaction_type]
+      : null;
+  return [when, channel, kind].filter(Boolean).join(" · ");
+}
+
+export function formatTimelineDate(iso: string): string {
+  try {
+    return format(parseDateOnly(iso), "d MMMM yyyy", { locale: fr }).toUpperCase();
+  } catch {
+    return dateOnly(iso);
+  }
 }

@@ -6,6 +6,7 @@ import { defaultNextActionFor } from "@/lib/crm/next-action";
 import { parseClosedReason } from "@/lib/crm/closed";
 import { migrateProspectStatus } from "@/lib/crm/status";
 import { normalizeProspectFromDb } from "@/lib/crm/prospect-payload";
+import { syncProspectFollowUpTask } from "@/lib/crm/sync-follow-up-task";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -106,17 +107,6 @@ export async function POST(request: Request, { params }: Params) {
           : body.note?.trim() || null,
   });
 
-  if (result.taskTitle && result.taskKind && result.nextFollowUp) {
-    await supabase.from("daily_tasks").insert({
-      user_id: user.id,
-      prospect_id: id,
-      title: result.taskTitle,
-      due_date: result.nextFollowUp,
-      task_kind: result.taskKind,
-      completed: false,
-    });
-  }
-
   if (action === "client" || action === "refus") {
     await supabase
       .from("daily_tasks")
@@ -125,6 +115,14 @@ export async function POST(request: Request, { params }: Params) {
       .eq("user_id", user.id)
       .eq("completed", false);
   }
+
+  await syncProspectFollowUpTask(supabase, {
+    userId: user.id,
+    prospectId: id,
+    clubName: prospect.club_name,
+    status: result.status,
+    nextFollowUp: result.nextFollowUp,
+  });
 
   return NextResponse.json({
     prospect: updated ? normalizeProspectFromDb(updated as Record<string, unknown>) : updated,

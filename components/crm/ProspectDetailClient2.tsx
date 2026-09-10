@@ -3,15 +3,13 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
 import {
   IconArchive,
   IconArrowLeft,
   IconCalendarEvent,
-  IconDots,
   IconEdit,
   IconMail,
+  IconMessage,
   IconPhone,
   IconPresentation,
   IconTrash,
@@ -21,11 +19,13 @@ import {
 import { isClosedProspectStatus, isDemoScheduledStatus } from "@/lib/crm/closed";
 import { StatusBadge } from "@/components/crm/StatusBadge";
 import { StatusSelect } from "@/components/crm/StatusSelect";
-import { InteractionForm } from "@/components/crm/InteractionForm";
 import { ProspectContactsPanel } from "@/components/crm/ProspectContactsPanel";
 import { ProspectBusinessFields } from "@/components/crm/ProspectBusinessFields";
 import { ProspectLinkedTasks } from "@/components/crm/ProspectLinkedTasks";
 import { ClosedReasonModal } from "@/components/crm/ClosedReasonModal";
+import { InteractionModal } from "@/components/crm/InteractionModal";
+import { ProspectFollowUpCard } from "@/components/crm/ProspectFollowUpCard";
+import { ProspectTimeline } from "@/components/crm/ProspectTimeline";
 import { QUICK_ACTION_LABELS } from "@/lib/crm/actions";
 import {
   businessFormToApiPayload,
@@ -37,19 +37,12 @@ import type {
   ProspectActivity,
   QuickAction,
   ProspectStatus,
-  ActionType,
 } from "@/lib/crm/types";
-import { INTERACTION_LABELS, isProspectStatus, type InteractionType } from "@/lib/crm/types";
 import { formatClosedReason, type ClosedReason } from "@/lib/crm/closed";
 import { parseStatusChangePayload } from "@/lib/crm/status";
 import { ui } from "@/lib/design/tokens";
-import { formatRelativeDay } from "@/lib/crm/format";
-import { isContactActivity, followUpDateLabel } from "@/lib/crm/next-action";
-import { formatTimelineActivity } from "@/lib/crm/activity-display";
-
-function fmtDay(iso: string) {
-  return format(new Date(iso), "d MMMM yyyy", { locale: fr });
-}
+import { lastCommercialActivity } from "@/lib/crm/activity-display";
+import { defaultInteractionKindForStage, type InteractionChannel } from "@/lib/crm/interactions";
 
 function toDateInputValue(iso: string | null | undefined) {
   if (!iso) return "";
@@ -58,39 +51,6 @@ function toDateInputValue(iso: string | null | undefined) {
   } catch {
     return String(iso).slice(0, 10);
   }
-}
-
-function lastContactAt(prospect: Prospect, activities: ProspectActivity[]): string | null {
-  const last = activities.find((a) => isContactActivity(a.action_type));
-  return last?.occurred_at || last?.created_at || prospect.last_action_at;
-}
-
-function lastContactCaption(prospect: Prospect, activities: ProspectActivity[]): string {
-  const last = activities.find((a) => isContactActivity(a.action_type));
-  let kind: string | null = null;
-  let channel: string | null = null;
-  if (last) {
-    kind =
-      last.action_type in QUICK_ACTION_LABELS
-        ? QUICK_ACTION_LABELS[last.action_type as QuickAction]
-        : INTERACTION_LABELS[last.action_type as InteractionType] ?? last.title.split(" — ")[0];
-    channel = last.channel || null;
-  }
-
-  const rawOutcome = prospect.last_action?.replace(/^Statut\s*:\s*/i, "").trim() || null;
-  const outcome =
-    rawOutcome &&
-    !rawOutcome.startsWith("{") &&
-    !isProspectStatus(rawOutcome) &&
-    rawOutcome !== kind
-      ? rawOutcome
-      : null;
-  const extra = channel || outcome;
-
-  if (kind && extra && extra !== kind) return `${kind} · ${extra}`;
-  if (kind) return kind;
-  if (rawOutcome && !rawOutcome.startsWith("{") && !isProspectStatus(rawOutcome)) return rawOutcome;
-  return "—";
 }
 
 type ConfirmTone = "default" | "danger";
@@ -529,6 +489,12 @@ export function ProspectDetailClient2({
   const [notes, setNotes] = useState(initial.notes ?? "");
   const [msg, setMsg] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!msg) return;
+    const timer = window.setTimeout(() => setMsg(null), 4000);
+    return () => window.clearTimeout(timer);
+  }, [msg]);
+
   const [editMode, setEditMode] = useState(false);
   const [draft, setDraft] = useState(() => ({
     ...prospectToBusinessForm(initial),
@@ -556,11 +522,6 @@ export function ProspectDetailClient2({
   } | null>(null);
   const [closePrompt, setClosePrompt] = useState<"status" | "refus" | "draft" | null>(null);
 
-  const editableActions = useMemo(() => {
-    return new Set<ActionType>(["mail_sent", "call_made", "demo_scheduled", "client", "refus", "status_change"]);
-  }, []);
-
-  const [activityMenuId, setActivityMenuId] = useState<string | null>(null);
   const [activityToEdit, setActivityToEdit] = useState<ProspectActivity | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -568,6 +529,8 @@ export function ProspectDetailClient2({
   const [archiveLoading, setArchiveLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [calendarLoading, setCalendarLoading] = useState(false);
+  const [interactionChannel, setInteractionChannel] = useState<InteractionChannel | null>(null);
+  const [interactionSaving, setInteractionSaving] = useState(false);
 
   const refreshAll = async () => {
     const refreshed = await fetch(`/api/prospects/${prospect.id}`);
@@ -605,6 +568,44 @@ export function ProspectDetailClient2({
       setMsg(`${QUICK_ACTION_LABELS[action]} — enregistré.`);
       await refreshAll();
     });
+  };
+
+  const saveInteraction = async (payload: {
+    channel: InteractionChannel;
+    kind: string;
+    description: string;
+    occurredAt: string;
+  }) => {
+    if (interactionSaving) return;
+    setInteractionSaving(true);
+    setMsg(null);
+    setErrorMsg(null);
+    try {
+      const res = await fetch(`/api/prospects/${prospect.id}/interactions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          channel: payload.channel,
+          interaction_type: payload.kind,
+          description: payload.description,
+          occurred_at: payload.occurredAt,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMsg(data.error ?? "Impossible d'enregistrer l'interaction.");
+        return;
+      }
+      if (data.prospect) setProspect(data.prospect as Prospect);
+      if (data.activities) setActivities(data.activities as ProspectActivity[]);
+      setInteractionChannel(null);
+      setMsg("Interaction enregistrée.");
+      await refreshAll();
+    } catch {
+      setErrorMsg("Impossible d'enregistrer l'interaction.");
+    } finally {
+      setInteractionSaving(false);
+    }
   };
 
   const applyStatus = (next: ProspectStatus, extra?: { closed_reason?: string; closed_note?: string }) => {
@@ -699,7 +700,8 @@ export function ProspectDetailClient2({
     const nextStatus = draft.status as ProspectStatus;
 
     const doSave = async () => {
-      const { notes, status: _status, ...business } = draft;
+      const { notes, status, ...business } = draft;
+      void status;
       const patchBody = {
         ...businessFormToApiPayload(business as ProspectBusinessFormValues),
         notes,
@@ -778,7 +780,6 @@ export function ProspectDetailClient2({
             return;
           }
           setMsg("Dernière action annulée.");
-          setActivityMenuId(null);
           await refreshAll();
         });
       },
@@ -877,6 +878,7 @@ export function ProspectDetailClient2({
     <StatusSelect
       value={prospect.status}
       className={ui.input + " w-64"}
+      disabled={pending || interactionSaving}
       onChange={(next) => {
         if (next === prospect.status) return;
 
@@ -904,44 +906,6 @@ export function ProspectDetailClient2({
       }}
     />
   );
-
-  const quickActions = [
-    {
-      key: "mail_sent" as const,
-      label: "Mail envoyé",
-      icon: <IconMail className="h-4 w-4" />,
-      className: ui.btnSecondary,
-    },
-    {
-      key: "call_made" as const,
-      label: "Appel effectué",
-      icon: <IconPhone className="h-4 w-4" />,
-      className: ui.btnSecondary,
-    },
-    {
-      key: "demo_scheduled" as const,
-      label: "Démonstration planifiée",
-      icon: <IconPresentation className="h-4 w-4" />,
-      className: ui.btnSecondary,
-    },
-    ...(prospect.status === "Client"
-      ? []
-      : [
-          {
-            key: "client" as const,
-            label: "Passer en client",
-            icon: <IconUserCheck className="h-4 w-4" />,
-            className:
-              "inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100",
-          },
-        ]),
-          {
-            key: "refus" as const,
-            label: "Fermer",
-            icon: <IconUserX className="h-4 w-4" />,
-            className: ui.btnDanger,
-          },
-  ];
 
   const addDemoToCalendar = async () => {
     setCalendarLoading(true);
@@ -989,15 +953,8 @@ export function ProspectDetailClient2({
     !isArchived &&
     (Boolean(prospect.demo_at) || isDemoScheduledStatus(prospect.status));
 
-  const followUpLabel = followUpDateLabel(prospect.status);
-  const showFollowUpDate =
-    Boolean(followUpLabel) && !(prospect.status === "Démo" && prospect.demo_at);
-
-  const canUndo = activities.some(
-    (a) => a.action_type !== "created" && a.action_type !== "imported"
-  );
-
-  const activityMenuOpen = activityMenuId;
+  const canUndo = lastCommercialActivity(activities) != null;
+  const busy = pending || interactionSaving;
 
   return (
     <div className={`space-y-6 crm-animate-in ${editMode ? "pb-24 sm:pb-0" : ""}`}>
@@ -1076,80 +1033,109 @@ export function ProspectDetailClient2({
         </p>
       ) : null}
 
-      <section className={`${ui.card} p-5 sm:p-6`}>
-        <h2 className={ui.h2}>Suivi</h2>
-        <div
-          className={`mt-4 grid gap-4 ${
-            showFollowUpDate ? "md:grid-cols-3" : "md:grid-cols-2"
-          }`}
-        >
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.08em] text-wo-dim">Dernier contact</p>
-            <p className="mt-1 text-sm text-wo-text">{formatRelativeDay(lastContactAt(prospect, activities))}</p>
-            <p className="text-xs text-wo-muted">{lastContactCaption(prospect, activities)}</p>
-          </div>
-          {showFollowUpDate ? (
-            <div>
-              <label className="text-[11px] uppercase tracking-[0.08em] text-wo-dim">
-                {followUpLabel}
-              </label>
-              <input
-                type="date"
-                className={`${ui.input} mt-1`}
-                value={prospect.next_follow_up ?? ""}
-                disabled={isArchived}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setProspect((p) => ({ ...p, next_follow_up: value || null }));
-                  saveInlineField("next_follow_up", value);
-                }}
-              />
-            </div>
-          ) : null}
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.08em] text-wo-dim">Responsable</p>
-            <p className="mt-1 text-sm text-wo-text">{prospect.assignee?.name ?? "—"}</p>
-          </div>
-        </div>
-      </section>
+      <ProspectFollowUpCard
+        prospect={prospect}
+        lastActivity={lastCommercialActivity(activities)}
+        disabled={isArchived || busy}
+        onFollowUpChange={(value) => {
+          setProspect((p) => ({ ...p, next_follow_up: value }));
+          saveInlineField("next_follow_up", value ?? "");
+        }}
+      />
 
       <section className={`${ui.card} p-5 sm:p-6`}>
-        <h2 className={ui.h2}>Actions rapides</h2>
+        <h2 className={ui.h2}>Actions</h2>
         {isArchived ? (
           <p className="mt-3 text-sm text-wo-muted">
             Ce prospect est archivé. Restaurez-le pour enregistrer de nouvelles actions.
           </p>
         ) : (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {quickActions.map((a) => (
-              <button
-                key={a.key}
-                type="button"
-                disabled={pending}
-                className={a.className}
-                onClick={() => runAction(a.key)}
-              >
-                {a.icon}
-                {a.label}
-              </button>
-            ))}
-            {showAddToCalendar ? (
-              <button
-                type="button"
-                disabled={pending || calendarLoading}
-                className={ui.btnSecondary}
-                onClick={() => void addDemoToCalendar()}
-              >
-                <IconCalendarEvent className="h-4 w-4" />
-                {calendarLoading ? "Ajout…" : "Ajouter au calendrier"}
-              </button>
-            ) : null}
+          <div className="mt-5 space-y-5">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.08em] text-wo-dim">Interactions</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button type="button" disabled={busy} className={ui.btnSecondary} onClick={() => setInteractionChannel("email")}>
+                  <IconMail className="h-4 w-4" />
+                  Email
+                </button>
+                <button type="button" disabled={busy} className={ui.btnSecondary} onClick={() => setInteractionChannel("message")}>
+                  <IconMessage className="h-4 w-4" />
+                  Message
+                </button>
+                <button type="button" disabled={busy} className={ui.btnSecondary} onClick={() => setInteractionChannel("call")}>
+                  <IconPhone className="h-4 w-4" />
+                  Appel
+                </button>
+              </div>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.08em] text-wo-dim">Avancement</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button type="button" disabled={busy} className={ui.btnSecondary} onClick={() => runAction("demo_scheduled")}>
+                  <IconPresentation className="h-4 w-4" />
+                  Démo planifiée
+                </button>
+                {prospect.status !== "Client" ? (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"
+                    onClick={() => runAction("client")}
+                  >
+                    <IconUserCheck className="h-4 w-4" />
+                    Passer en client
+                  </button>
+                ) : null}
+                <button type="button" disabled={busy} className={ui.btnDanger} onClick={() => runAction("refus")}>
+                  <IconUserX className="h-4 w-4" />
+                  Fermer
+                </button>
+                {showAddToCalendar ? (
+                  <button type="button" disabled={busy || calendarLoading} className={ui.btnSecondary} onClick={() => void addDemoToCalendar()}>
+                    <IconCalendarEvent className="h-4 w-4" />
+                    {calendarLoading ? "Ajout…" : "Ajouter au calendrier"}
+                  </button>
+                ) : null}
+              </div>
+            </div>
           </div>
         )}
       </section>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <section className={`${ui.card} p-5 sm:p-6`}>
+      <ProspectTimeline
+        activities={activities}
+        canUndo={!editMode && canUndo}
+        pending={busy}
+        onUndoLast={undoLastAction}
+        onDelete={(a) => {
+          setConfirm({
+            tone: "danger",
+            title: "Supprimer cette action de l’historique ?",
+            description: "Cela supprimera l’entrée correspondante.",
+            confirmLabel: "Supprimer",
+            cancelLabel: "Annuler",
+            onConfirm: () => {
+              setConfirm(null);
+              startTransition(async () => {
+                const res = await fetch(`/api/prospects/${prospect.id}/activities/${a.id}`, { method: "DELETE" });
+                const data = await res.json();
+                if (!res.ok) {
+                  setMsg(data.error ?? "Erreur.");
+                  return;
+                }
+                if (data.prospect) setProspect(data.prospect as Prospect);
+                if (data.activities) setActivities(data.activities as ProspectActivity[]);
+                setMsg("Action supprimée.");
+                await refreshAll();
+              });
+            },
+          });
+        }}
+      />
+
+      <ProspectContactsPanel prospectId={prospect.id} onChanged={() => void refreshAll()} />
+
+      <section className={`${ui.card} p-5 sm:p-6`}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className={ui.h2}>Informations générales</h2>
             {!editMode ? (
@@ -1229,6 +1215,7 @@ export function ProspectDetailClient2({
                   : "—"}
               </InfoRow>
               <InfoRow label="Canal">{displayOrDash(prospect.contact_channel)}</InfoRow>
+              <InfoRow label="Responsable">{displayOrDash(prospect.assignee?.name)}</InfoRow>
               <InfoRow label="Tags">
                 {(prospect.tags ?? []).length ? prospect.tags.join(", ") : "—"}
               </InfoRow>
@@ -1251,9 +1238,6 @@ export function ProspectDetailClient2({
             </div>
           )}
         </section>
-
-        <ProspectContactsPanel prospectId={prospect.id} onChanged={() => void refreshAll()} />
-      </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
         <section className={`${ui.card} p-5 sm:p-6`}>
@@ -1279,124 +1263,6 @@ export function ProspectDetailClient2({
         <ProspectLinkedTasks prospectId={prospect.id} projectId={prospect.project_id} />
       </div>
 
-      <section className={`${ui.card} p-5 sm:p-6`}>
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className={ui.h2}>Historique</h2>
-          {!editMode && canUndo ? (
-            <button type="button" className={ui.btnDanger} onClick={undoLastAction}>
-              <IconTrash className="h-4 w-4" />
-              Annuler la dernière action
-            </button>
-          ) : null}
-        </div>
-
-        <InteractionForm
-          prospectId={prospect.id}
-          defaultChannel={prospect.contact_channel}
-          onAdded={() => void refreshAll()}
-        />
-
-        {activities.length === 0 ? (
-          <p className="mt-4 text-sm text-wo-dim">Aucune action pour le moment.</p>
-        ) : (
-          <ol className="mt-5 space-y-0">
-            {activities.map((a, idx) => {
-              const canEditActivity = editableActions.has(a.action_type);
-              const view = formatTimelineActivity(a);
-              return (
-                <li
-                  key={a.id}
-                  className="relative flex gap-4 pb-6 last:pb-0"
-                  onMouseLeave={() => setActivityMenuId((v) => (v === a.id ? null : v))}
-                >
-                  {idx < activities.length - 1 ? (
-                    <span className="absolute left-[7px] top-3 h-full w-px bg-wo-hover" />
-                  ) : null}
-                  <span className="relative mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full border-2 border-indigo-500 bg-white" />
-
-                  <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium uppercase tracking-wide text-wo-dim">
-                          {fmtDay(a.occurred_at || a.created_at)}
-                          {view.showChannel && a.channel ? ` · ${a.channel}` : ""}
-                        </p>
-                        {view.title ? (
-                          <p className="mt-0.5 text-sm font-medium text-wo-text">{view.title}</p>
-                        ) : null}
-                      </div>
-
-                      <div className="relative">
-                        <button
-                          type="button"
-                          className="rounded-xl p-2 text-wo-dim hover:bg-wo-hover hover:text-wo-secondary"
-                          onClick={() => setActivityMenuId((v) => (v === a.id ? null : a.id))}
-                          aria-label="Menu actions"
-                        >
-                          <IconDots className="h-4 w-4" />
-                        </button>
-
-                        {activityMenuOpen === a.id ? (
-                          <div className="absolute right-0 top-9 z-20 w-44 rounded-[12px] border border-wo-border bg-white p-2 shadow-lg">
-                            {canEditActivity ? (
-                              <button
-                                type="button"
-                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-wo-secondary hover:bg-wo-hover"
-                                onClick={() => {
-                                  setActivityMenuId(null);
-                                  setActivityToEdit(a);
-                                }}
-                              >
-                                <IconEdit className="h-4 w-4" />
-                                Modifier
-                              </button>
-                            ) : null}
-                            <button
-                              type="button"
-                              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-rose-700 hover:bg-rose-50"
-                              onClick={() => {
-                                setActivityMenuId(null);
-                                setConfirm({
-                                  tone: "danger",
-                                  title: "Supprimer cette action de l’historique ?",
-                                  description: "Cela supprimera l’entrée correspondante.",
-                                  confirmLabel: "Supprimer",
-                                  cancelLabel: "Annuler",
-                                  onConfirm: () => {
-                                    setConfirm(null);
-                                    startTransition(async () => {
-                                      const res = await fetch(
-                                        `/api/prospects/${prospect.id}/activities/${a.id}`,
-                                        { method: "DELETE" }
-                                      );
-                                      const data = await res.json();
-                                      if (!res.ok) {
-                                        setMsg(data.error ?? "Erreur.");
-                                        return;
-                                      }
-                                      setMsg("Action supprimée.");
-                                      await refreshAll();
-                                    });
-                                  },
-                                });
-                              }}
-                            >
-                              <IconTrash className="h-4 w-4" />
-                              Supprimer
-                            </button>
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    {view.body ? <p className="text-sm text-wo-muted whitespace-pre-wrap">{view.body}</p> : null}
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-        )}
-      </section>
 
       <section className="rounded-2xl border border-rose-100 bg-rose-50/40 p-5 sm:p-6">
         <h2 className="text-lg font-semibold tracking-tight text-rose-900">Zone dangereuse</h2>
@@ -1444,6 +1310,19 @@ export function ProspectDetailClient2({
           </button>
         </div>
       </section>
+
+      <InteractionModal
+        open={Boolean(interactionChannel)}
+        channel={interactionChannel}
+        defaultKind={defaultInteractionKindForStage(prospect.status)}
+        saving={interactionSaving}
+        onClose={() => {
+          if (!interactionSaving) setInteractionChannel(null);
+        }}
+        onSave={(payload) => {
+          void saveInteraction(payload);
+        }}
+      />
 
       <ConfirmModal
         open={Boolean(confirm)}

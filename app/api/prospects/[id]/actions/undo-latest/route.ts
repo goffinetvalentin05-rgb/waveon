@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/crm/server";
 import { recomputeProspectDerivatives } from "@/lib/crm/recompute-prospect";
+import { isInternalActivityType } from "@/lib/crm/interactions";
 
 type Params = { params: Promise<{ id: string }> };
-
-const PROTECTED_ACTION_TYPES = new Set(["created", "imported"]);
 
 export async function POST(_request: Request, { params }: Params) {
   const auth = await requireUser();
@@ -17,20 +16,21 @@ export async function POST(_request: Request, { params }: Params) {
     .select("id, action_type")
     .eq("user_id", user.id)
     .eq("prospect_id", id)
+    .order("occurred_at", { ascending: false })
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
-    .limit(1);
+    .limit(20);
 
-  if (!latest?.length || PROTECTED_ACTION_TYPES.has(String(latest[0].action_type))) {
+  const target = (latest ?? []).find((row) => !isInternalActivityType(String(row.action_type)));
+
+  if (!target) {
     return NextResponse.json({ error: "Aucune action à annuler" }, { status: 400 });
   }
-
-  const activityId = latest[0].id as string;
 
   await supabase
     .from("prospect_activities")
     .delete()
-    .eq("id", activityId)
+    .eq("id", target.id)
     .eq("prospect_id", id)
     .eq("user_id", user.id);
 
