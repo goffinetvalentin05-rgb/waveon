@@ -12,7 +12,7 @@ export const PROSPECT_STATUS_PHASES = [
   {
     id: "discussion" as const,
     label: "Avancement",
-    statuses: ["En discussion", "Démo"],
+    statuses: ["En discussion", "Démo", "Décision en attente"],
   },
   {
     id: "result" as const,
@@ -33,6 +33,7 @@ export const ACTION_TYPES = [
   "mail_sent",
   "call_made",
   "demo_scheduled",
+  "demo_done",
   "client",
   "refus",
   "note",
@@ -216,5 +217,5 @@ export type CrmSettings = {
   updated_at: string;
 };
 
-export type QuickAction = "mail_sent" | "call_made" | "demo_scheduled" | "client" | "refus";
-export type AdvancementAction = "demo_scheduled" | "client" | "refus";
+export type QuickAction = "mail_sent" | "call_made" | "demo_scheduled" | "demo_done" | "client" | "refus";
+export type AdvancementAction = "demo_scheduled" | "demo_done" | "client" | "refus";

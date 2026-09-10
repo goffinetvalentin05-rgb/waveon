@@ -10,9 +10,10 @@ export const STATUS_STYLES: Record<ProspectStatus, BadgeStyle> = {
   "Relance 2": { bg: "bg-orange-50", text: "text-orange-800", dot: "bg-orange-500", label: "Relance 2" },
   Relais: { bg: "bg-indigo-50", text: "text-indigo-700", dot: "bg-indigo-300", label: "Relais" },
   "En discussion": { bg: "bg-violet-50", text: "text-violet-800", dot: "bg-violet-500", label: "En discussion" },
-  Démo: { bg: "bg-cyan-50", text: "text-cyan-800", dot: "bg-cyan-500", label: "Démo" },
+  Démo: { bg: "bg-cyan-50", text: "text-cyan-800", dot: "bg-cyan-500", label: "Démo planifiée" },
+  "Décision en attente": { bg: "bg-teal-50", text: "text-teal-800", dot: "bg-teal-500", label: "Décision en attente" },
   Client: { bg: "bg-emerald-50", text: "text-emerald-800", dot: "bg-emerald-500", label: "Client" },
-  Fermé: { bg: "bg-rose-50", text: "text-rose-800", dot: "bg-rose-500", label: "Fermé" },
+  Fermé: { bg: "bg-rose-50", text: "text-rose-800", dot: "bg-rose-500", label: "Perdu" },
 };
 
 /**
@@ -38,10 +39,10 @@ const LEGACY_TO_CURRENT: Record<string, ProspectStatus> = {
   "Démo à planifier": "Démo",
   "Démo prévue": "Démo",
   Démonstration: "Démo",
-  "Démo effectuée": "Démo",
-  "Démo faite": "Démo",
-  "À relancer après démo": "Démo",
   "Appel booké": "Démo",
+  "Démo effectuée": "Décision en attente",
+  "Démo faite": "Décision en attente",
+  "À relancer après démo": "Décision en attente",
   Closé: "Client",
   "Pas maintenant": "Fermé",
   "Pas intéressé": "Fermé",
@@ -75,6 +76,10 @@ export function statusStyle(status: string) {
   );
 }
 
+export function statusDisplayLabel(status: string): string {
+  return statusStyle(status).label;
+}
+
 export function statusesMatching(status: ProspectStatus): string[] {
   const aliases: Partial<Record<ProspectStatus, string[]>> = {
     "À contacter": ["Nouveau"],
@@ -93,11 +98,9 @@ export function statusesMatching(status: ProspectStatus): string[] {
       "Démo à planifier",
       "Démo prévue",
       "Démonstration",
-      "Démo effectuée",
-      "Démo faite",
-      "À relancer après démo",
       "Appel booké",
     ],
+    "Décision en attente": ["Démo effectuée", "Démo faite", "À relancer après démo"],
     Client: ["Closé"],
     Fermé: ["Pas maintenant", "Pas intéressé", "Perdu", "Refusé", "Refus"],
   };

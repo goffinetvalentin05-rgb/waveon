@@ -44,7 +44,7 @@ export function ProspectListRow({
           <h3 className="truncate text-[15px] font-medium text-wo-text">{prospect.club_name}</h3>
           <p className="mt-0.5 truncate text-xs text-wo-dim">
             {prospect.status === "Fermé"
-              ? formatClosedReason(prospect.closed_reason, prospect.closed_note) || "Fermé"
+              ? formatClosedReason(prospect.closed_reason, prospect.closed_note) || "Perdu"
               : [prospect.contact_name, prospect.ville || prospect.canton].filter(Boolean).join(" · ") || "—"}
           </p>
         </div>

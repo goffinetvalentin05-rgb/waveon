@@ -74,15 +74,15 @@ function InteractionModalInner({
       onClose={saving ? () => undefined : onClose}
       title={title}
       subtitle="Qu’avez-vous fait ?"
-      maxWidthClass="max-w-md"
+      maxWidthClass="w-full sm:max-w-md"
       footer={
-        <div className="flex justify-end gap-2">
-          <button type="button" className={ui.btnSecondary} onClick={onClose} disabled={saving}>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button type="button" className={`${ui.btnSecondary} min-h-11 sm:min-h-0`} onClick={onClose} disabled={saving}>
             Annuler
           </button>
           <button
             type="button"
-            className={ui.btnPrimary}
+            className={`${ui.btnPrimary} min-h-11 sm:min-h-0`}
             disabled={saving}
             onClick={() => {
               if (saving) return;
@@ -99,7 +99,7 @@ function InteractionModalInner({
         {INTERACTION_KINDS.map((value) => (
           <label
             key={value}
-            className="flex cursor-pointer items-center gap-3 rounded-xl border border-wo-border px-3.5 py-2.5 text-sm text-wo-text hover:bg-wo-hover"
+            className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-wo-border px-3.5 py-3 text-[15px] text-wo-text hover:bg-wo-hover sm:min-h-0 sm:py-2.5 sm:text-sm"
           >
             <input
               type="radio"
@@ -117,7 +117,7 @@ function InteractionModalInner({
         <label className={ui.label}>Date</label>
         <input
           type="date"
-          className={`${ui.input} mt-1`}
+          className={`${ui.input} mt-1 min-h-11 sm:min-h-0`}
           value={occurredAt}
           disabled={saving}
           onChange={(e) => setOccurredAt(e.target.value)}

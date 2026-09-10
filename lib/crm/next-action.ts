@@ -7,6 +7,7 @@ export const DEFAULT_NEXT_ACTION: Record<ProspectStatus, string | null> = {
   Relais: "Suivi réseau",
   "En discussion": "Relancer",
   Démo: "Préparer / confirmer la démo",
+  "Décision en attente": "Relancer après démo",
   Client: null,
   Fermé: null,
 };
@@ -29,6 +30,8 @@ export function followUpDateLabel(status: ProspectStatus): string | null {
       return "Suivi réseau";
     case "Démo":
       return "Date de démo";
+    case "Décision en attente":
+      return "Prochaine relance";
     case "Client":
     case "Fermé":
       return null;
@@ -48,6 +51,7 @@ export const CONTACT_ACTIVITY_TYPES = [
   "meeting",
   "demo",
   "demo_scheduled",
+  "demo_done",
   "reply",
   "offer",
   "note",

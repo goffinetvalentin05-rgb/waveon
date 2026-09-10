@@ -74,6 +74,19 @@ export function formatLastContact(prospect: Pick<Prospect, "last_action_at" | "l
   return `Dernier contact : ${relative}`;
 }
 
+/** Ligne compacte pour le Kanban : « Hier · Démo effectuée ». */
+export function formatLastInteractionSummary(
+  prospect: Pick<Prospect, "last_action_at" | "last_action">
+): string | null {
+  if (!prospect.last_action_at) return null;
+  const when = formatRelativeDay(prospect.last_action_at);
+  const action = prospect.last_action?.trim();
+  if (action && !/^Statut/i.test(action)) {
+    return `${when} · ${action}`;
+  }
+  return when;
+}
+
 /** Ligne contact · fonction pour les cartes pipeline. */
 export function formatContactLine(prospect: Pick<Prospect, "contact_name" | "contact_function">): string | null {
   const parts = [prospect.contact_name, prospect.contact_function].filter(Boolean);

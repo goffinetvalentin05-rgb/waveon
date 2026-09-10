@@ -3,6 +3,7 @@
 import { ui } from "@/lib/design/tokens";
 import type { ProspectListFilters, PresenceFilter } from "@/lib/crm/prospect-list-params";
 import { CLOSED_REASONS } from "@/lib/crm/closed";
+import { statusDisplayLabel } from "@/lib/crm/status";
 import { ScrollableModal } from "@/components/ui/ScrollableModal";
 
 type FilterOptions = {
@@ -28,11 +29,13 @@ function MultiCheckboxGroup({
   values,
   selected,
   onToggle,
+  formatLabel,
 }: {
   label: string;
   values: string[];
   selected: string[];
   onToggle: (value: string) => void;
+  formatLabel?: (value: string) => string;
 }) {
   if (values.length === 0) return null;
 
@@ -53,7 +56,7 @@ function MultiCheckboxGroup({
                 onChange={() => onToggle(value)}
                 className="rounded border-white/20 text-indigo-600 focus:ring-indigo-500/30"
               />
-              <span className="truncate">{value}</span>
+              <span className="truncate">{formatLabel ? formatLabel(value) : value}</span>
             </label>
           );
         })}
@@ -117,7 +120,7 @@ export function ProspectsFilterPanel({
       onClose={onClose}
       title="Filtrer les prospects"
       subtitle="Options basées sur les prospects de ce projet."
-      maxWidthClass="max-w-2xl"
+      maxWidthClass="w-full max-w-2xl"
       footer={
         <div className="flex flex-wrap justify-end gap-2">
           <button type="button" className={ui.btnSecondary} onClick={onReset}>
@@ -139,6 +142,7 @@ export function ProspectsFilterPanel({
             values={options.statuses}
             selected={draft.statuses}
             onToggle={(v) => toggle("statuses", v)}
+            formatLabel={statusDisplayLabel}
           />
         ) : null}
         <MultiCheckboxGroup

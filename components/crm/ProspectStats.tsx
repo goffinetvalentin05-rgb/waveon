@@ -43,7 +43,7 @@ export function ProspectStats({ projectId }: { projectId?: string }) {
     { label: "En discussion", value: String(stats.replies ?? 0) },
     { label: "Démos", value: String(stats.demos) },
     { label: "Clients", value: String(stats.clients) },
-    { label: "Fermés", value: String(stats.refus) },
+    { label: "Perdus", value: String(stats.refus) },
     { label: "Taux en discussion", value: `${stats.replyRate ?? 0}%` },
     { label: "Contact → démo", value: `${stats.contactToDemoRate ?? 0}%` },
     { label: "Démo → client", value: `${stats.demoToClientRate ?? 0}%` },

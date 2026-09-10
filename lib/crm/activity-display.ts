@@ -140,6 +140,15 @@ export function lastCommercialActivity(activities: ProspectActivity[]): Prospect
 export function formatLastInteractionLine(activity: ProspectActivity | null): string {
   if (!activity) return "Aucune interaction";
   const when = formatRelativeDay(activity.occurred_at || activity.created_at);
+  if (
+    activity.action_type === "demo_done" ||
+    activity.action_type === "demo_scheduled" ||
+    activity.action_type === "demo"
+  ) {
+    return [when, activity.title || (activity.action_type === "demo_done" ? "Démo effectuée" : "Démo planifiée")]
+      .filter(Boolean)
+      .join(" · ");
+  }
   const channelKey = normalizeInteractionChannel(activity.channel) ?? normalizeInteractionChannel(activity.action_type);
   const channel = channelKey ? INTERACTION_CHANNEL_LABELS[channelKey] : activity.channel?.trim() || null;
   const kind =

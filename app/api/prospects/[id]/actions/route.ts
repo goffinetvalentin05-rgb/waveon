@@ -14,6 +14,7 @@ const VALID_ACTIONS = new Set<QuickAction>([
   "mail_sent",
   "call_made",
   "demo_scheduled",
+  "demo_done",
   "client",
   "refus",
 ]);
@@ -74,6 +75,9 @@ export async function POST(request: Request, { params }: Params) {
   if (action === "demo_scheduled") {
     updatePayload.demo_at = body.demo_at || new Date().toISOString();
   }
+  if (action === "demo_done") {
+    updatePayload.demo_at = new Date().toISOString();
+  }
 
   const { data: updated, error: updateError } = await supabase
     .from("prospects")
@@ -98,6 +102,11 @@ export async function POST(request: Request, { params }: Params) {
             demoAt: body.demo_at || updatePayload.demo_at,
             note: body.note?.trim() || null,
           })
+        : action === "demo_done"
+          ? JSON.stringify({
+              demoAt: updatePayload.demo_at,
+              note: body.note?.trim() || null,
+            })
         : action === "refus"
           ? JSON.stringify({
               closed_reason: closedReason,

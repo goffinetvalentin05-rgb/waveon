@@ -12,6 +12,7 @@ import {
   IconMessage,
   IconPhone,
   IconPresentation,
+  IconCircleCheck,
   IconTrash,
   IconUserCheck,
   IconUserX,
@@ -222,7 +223,7 @@ function displayOrDash(value: string | null | undefined) {
 }
 
 type ActivityEditState = {
-  action_type: "mail_sent" | "call_made" | "demo_scheduled" | "client" | "refus" | "status_change";
+  action_type: "mail_sent" | "call_made" | "demo_scheduled" | "demo_done" | "client" | "refus" | "status_change";
   action_date: string; // YYYY-MM-DD
   note: string;
   to_status: ProspectStatus;
@@ -269,10 +270,10 @@ function ProspectActivityEditorModal({
         demo_at: "",
       };
     }
-    if (activity.action_type === "demo_scheduled") {
+    if (activity.action_type === "demo_scheduled" || activity.action_type === "demo_done") {
       const parsed = parseDemoEditDescription(activity.description);
       return {
-        action_type: "demo_scheduled",
+        action_type: activity.action_type,
         action_date,
         note: parsed.note,
         to_status: "À contacter",
@@ -325,7 +326,7 @@ function ProspectActivityEditorModal({
         action_type: state.action_type,
         action_date: state.action_date,
       };
-      if (state.action_type === "demo_scheduled") {
+      if (state.action_type === "demo_scheduled" || state.action_type === "demo_done") {
         body.demo_at = state.demo_at;
         body.note = state.note || null;
       } else if (state.action_type === "status_change") {
@@ -390,6 +391,7 @@ function ProspectActivityEditorModal({
               <option value="mail_sent">Mail envoyé</option>
               <option value="call_made">Appel effectué</option>
               <option value="demo_scheduled">Démonstration planifiée</option>
+              <option value="demo_done">Démo effectuée</option>
               <option value="client">Client</option>
               <option value="refus">Refus</option>
               <option value="status_change">Changement de statut</option>
@@ -406,9 +408,11 @@ function ProspectActivityEditorModal({
             />
           </div>
 
-          {state.action_type === "demo_scheduled" ? (
+          {state.action_type === "demo_scheduled" || state.action_type === "demo_done" ? (
             <div>
-              <label className={ui.label}>Date prévue démo</label>
+              <label className={ui.label}>
+                {state.action_type === "demo_done" ? "Date de la démo" : "Date prévue démo"}
+              </label>
               <input
                 type="date"
                 className={ui.input}
@@ -1075,6 +1079,10 @@ export function ProspectDetailClient2({
                   <IconPresentation className="h-4 w-4" />
                   Démo planifiée
                 </button>
+                <button type="button" disabled={busy} className={ui.btnSecondary} onClick={() => runAction("demo_done")}>
+                  <IconCircleCheck className="h-4 w-4" />
+                  Démo effectuée
+                </button>
                 {prospect.status !== "Client" ? (
                   <button
                     type="button"
@@ -1088,7 +1096,7 @@ export function ProspectDetailClient2({
                 ) : null}
                 <button type="button" disabled={busy} className={ui.btnDanger} onClick={() => runAction("refus")}>
                   <IconUserX className="h-4 w-4" />
-                  Fermer
+                  Perdu
                 </button>
                 {showAddToCalendar ? (
                   <button type="button" disabled={busy || calendarLoading} className={ui.btnSecondary} onClick={() => void addDemoToCalendar()}>

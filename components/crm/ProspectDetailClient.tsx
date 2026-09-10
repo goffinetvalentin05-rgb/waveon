@@ -10,6 +10,7 @@ import {
   IconMail,
   IconPhone,
   IconPresentation,
+  IconCircleCheck,
   IconUserCheck,
   IconUserX,
 } from "@tabler/icons-react";
@@ -96,6 +97,12 @@ export function ProspectDetailClient({
       className: ui.btnSecondary,
     },
     {
+      key: "demo_done",
+      label: "Démo effectuée",
+      icon: <IconCircleCheck className="h-4 w-4" />,
+      className: ui.btnSecondary,
+    },
+    {
       key: "client",
       label: "Client",
       icon: <IconUserCheck className="h-4 w-4" />,
@@ -103,7 +110,7 @@ export function ProspectDetailClient({
     },
     {
       key: "refus",
-      label: "Refus",
+      label: "Perdu",
       icon: <IconUserX className="h-4 w-4" />,
       className: ui.btnDanger,
     },

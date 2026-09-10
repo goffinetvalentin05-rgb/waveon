@@ -41,6 +41,7 @@ export const COMMERCIAL_ACTIVITY_TYPES = [
   "meeting",
   "demo",
   "demo_scheduled",
+  "demo_done",
   "first_contact",
   "follow_up",
   "reply",
@@ -115,7 +116,7 @@ export function defaultInteractionKindForStage(status: ProspectStatus): Interact
 
 /**
  * Avance l'étape commerciale après une interaction, sans jamais reculer
- * et sans toucher Relais / En discussion / Démo / Client / Fermé.
+ * et sans toucher Relais / En discussion / Démo / Décision en attente / Client / Fermé.
  */
 export function nextStageAfterInteraction(
   currentStatus: string,

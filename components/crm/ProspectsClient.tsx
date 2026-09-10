@@ -601,7 +601,7 @@ function CreateProspectModal({
       open
       onClose={onClose}
       title="Nouveau prospect"
-      maxWidthClass="max-w-2xl"
+      maxWidthClass="w-full max-w-2xl"
       asForm
       onSubmit={submit}
       footer={

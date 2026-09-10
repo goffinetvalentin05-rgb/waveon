@@ -44,9 +44,7 @@ export async function GET(request: Request) {
   const acts = activities ?? [];
   const mails = acts.filter((a) => a.action_type === "mail_sent" || a.action_type === "email").length;
   const calls = acts.filter((a) => a.action_type === "call_made" || a.action_type === "call").length;
-  const demosDone = acts.filter(
-    (a) => a.action_type === "demo_scheduled" || a.action_type === "demo"
-  ).length;
+  const demosDone = acts.filter((a) => a.action_type === "demo_done").length;
 
   const byStatus: Record<string, number> = {};
   for (const p of list) {

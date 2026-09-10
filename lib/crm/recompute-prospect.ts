@@ -1,4 +1,4 @@
-import { isClosedProspectStatus, isDemoStatus, parseClosedReason } from "@/lib/crm/closed";
+import { isClosedProspectStatus, parseClosedReason } from "@/lib/crm/closed";
 import { inferLegacyInteraction, nextStageAfterInteraction } from "@/lib/crm/interactions";
 import { defaultNextActionFor } from "@/lib/crm/next-action";
 import { parseStatusChangePayload } from "@/lib/crm/status";
@@ -31,6 +31,12 @@ function activityWhen(activity: ProspectActivity): Date {
   return new Date(activity.occurred_at || activity.created_at);
 }
 
+function looksLikeDemoDone(activity: ProspectActivity): boolean {
+  if (activity.action_type === "demo_scheduled") return false;
+  const title = (activity.title || "").toLowerCase();
+  return title.includes("démo effectuée") || title.includes("demo effectuée") || title.includes("démo faite");
+}
+
 function isHumanContact(actionType: string): boolean {
   return [
     "mail_sent",
@@ -43,8 +49,6 @@ function isHumanContact(actionType: string): boolean {
     "first_contact",
     "follow_up",
     "meeting",
-    "demo",
-    "demo_scheduled",
     "reply",
     "offer",
     "note",
@@ -101,7 +105,7 @@ export async function recomputeProspectDerivatives(
       const parsed = parseStatusChangePayload(a.description);
       if (!parsed.to) continue;
       currentStatus = parsed.to;
-      demoAtIso = isDemoStatus(parsed.to) ? when.toISOString() : demoAtIso;
+      demoAtIso = parsed.to === "Démo" || parsed.to === "Décision en attente" ? when.toISOString() : demoAtIso;
       if (parsed.to === "Fermé") {
         closedReason = parseClosedReason(parsed.closed_reason) ?? closedReason ?? "Autre";
         closedNote = parsed.closed_note;
@@ -129,6 +133,16 @@ export async function recomputeProspectDerivatives(
       const obj = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
       closedReason = parseClosedReason(obj?.closed_reason) ?? parseClosedReason(a.description) ?? "Pas intéressé";
       closedNote = typeof obj?.closed_note === "string" ? obj.closed_note : null;
+      continue;
+    }
+
+    if (a.action_type === "demo_done" || looksLikeDemoDone(a)) {
+      if (!isClosedProspectStatus(currentStatus)) {
+        currentStatus = "Décision en attente";
+      }
+      lastAction = a.title || "Démo effectuée";
+      lastActionAt = a.occurred_at || a.created_at;
+      demoAtIso = (parseDemoAt(a.description) ?? when).toISOString();
       continue;
     }
 
@@ -184,7 +198,7 @@ export async function recomputeProspectDerivatives(
       next_action: isClosedProspectStatus(currentStatus)
         ? null
         : (prospectRow.next_action as string | null) ?? defaultNextActionFor(currentStatus),
-      demo_at: currentStatus === "Démo" ? demoAtIso : null,
+      demo_at: currentStatus === "Démo" || currentStatus === "Décision en attente" ? demoAtIso : null,
       closed_reason: closedReason,
       closed_note: closedNote,
       contact_channel: contactChannel,

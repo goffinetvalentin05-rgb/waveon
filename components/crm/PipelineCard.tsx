@@ -1,6 +1,6 @@
 "use client";
 
-import { formatLastContact, formatSectorLocationLine, getNextActionDisplay } from "@/lib/crm/follow-up-display";
+import { formatLastContact, formatLastInteractionSummary, formatSectorLocationLine, getNextActionDisplay } from "@/lib/crm/follow-up-display";
 import { formatClosedReason } from "@/lib/crm/closed";
 import { formatRelayFollowUp } from "@/lib/crm/format";
 import { prospectAvatarTone } from "@/lib/crm/pipeline";
@@ -25,6 +25,7 @@ export function PipelineCard({ prospect, columnId }: { prospect: Prospect; colum
   }
 
   const sectorLocation = formatSectorLocationLine(prospect);
+  const lastInteraction = formatLastInteractionSummary(prospect);
   const lastContact = formatLastContact(prospect);
   const { followUp } = getNextActionDisplay(prospect);
 
@@ -39,11 +40,17 @@ export function PipelineCard({ prospect, columnId }: { prospect: Prospect; colum
     );
   }
 
+  const showRichLastInteraction = columnId === "awaiting_decision" || columnId === "demo" || columnId === "discussion";
+
   return (
     <div className="min-w-0 flex-1">
       <p className="truncate text-[13px] font-medium leading-snug text-wo-text">{prospect.club_name}</p>
       {sectorLocation ? <p className="mt-1 truncate text-[11px] text-wo-dim">{sectorLocation}</p> : null}
-      {lastContact ? <p className="mt-1.5 truncate text-[11px] text-wo-muted">{lastContact}</p> : null}
+      {showRichLastInteraction && lastInteraction ? (
+        <p className="mt-1.5 truncate text-[11px] text-wo-muted">Dernière interaction : {lastInteraction}</p>
+      ) : lastContact ? (
+        <p className="mt-1.5 truncate text-[11px] text-wo-muted">{lastContact}</p>
+      ) : null}
       {followUp.kind === "today" || followUp.kind === "overdue" ? (
         <p className={`mt-1 truncate text-[11px] ${TEMPORAL_STYLES[followUp.kind]}`}>{followUp.alert}</p>
       ) : followUp.kind === "future" && followUp.dateLabel ? (

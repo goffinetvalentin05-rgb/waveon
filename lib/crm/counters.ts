@@ -1,4 +1,4 @@
-import { isClosedProspectStatus, isDemoStatus, isLostProspectStatus } from "@/lib/crm/closed";
+import { isAwaitingDecisionStatus, isClosedProspectStatus, isDemoStatus, isLostProspectStatus } from "@/lib/crm/closed";
 import { getFollowUpState } from "@/lib/crm/follow-up-state";
 import { migrateProspectStatus } from "@/lib/crm/status";
 
@@ -71,6 +71,9 @@ export function countProspectWork(
     }
     if (isDemoStatus(status)) {
       counts.demoScheduled += 1;
+    }
+    if (isAwaitingDecisionStatus(status)) {
+      counts.afterDemo += 1;
     }
     if (status === "Client") counts.clients += 1;
     if (isLostProspectStatus(status)) {

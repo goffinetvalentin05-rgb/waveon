@@ -1,6 +1,7 @@
 "use client";
 
 import { PROSPECT_STATUS_PHASES, PROSPECT_STATUSES, type ProspectStatus } from "@/lib/crm/types";
+import { statusDisplayLabel } from "@/lib/crm/status";
 import { ui } from "@/lib/design/tokens";
 
 export function StatusSelect({
@@ -25,7 +26,7 @@ export function StatusSelect({
         <optgroup key={phase.id} label={phase.label}>
           {phase.statuses.map((status) => (
             <option key={status} value={status}>
-              {status}
+              {statusDisplayLabel(status)}
             </option>
           ))}
         </optgroup>

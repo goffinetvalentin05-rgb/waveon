@@ -1,5 +1,5 @@
 import type { Prospect, ProspectStatus } from "@/lib/crm/types";
-import { isClosedProspectStatus, isDemoStatus, isLostProspectStatus } from "@/lib/crm/closed";
+import { isClosedProspectStatus, isDemoDoneStatus, isDemoStatus, isLostProspectStatus } from "@/lib/crm/closed";
 import { migrateProspectStatus } from "@/lib/crm/status";
 
 export type PipelineColumnId =
@@ -9,6 +9,7 @@ export type PipelineColumnId =
   | "relay"
   | "discussion"
   | "demo"
+  | "awaiting_decision"
   | "client"
   | "closed";
 
@@ -25,15 +26,17 @@ export const PIPELINE_COLUMNS: PipelineColumn[] = [
   { id: "follow_up_2", label: "Relance 2", accent: "bg-orange-400", status: "Relance 2" },
   { id: "relay", label: "Relais", accent: "bg-indigo-300", status: "Relais" },
   { id: "discussion", label: "En discussion", accent: "bg-violet-400", status: "En discussion" },
-  { id: "demo", label: "Démo", accent: "bg-cyan-400", status: "Démo" },
+  { id: "demo", label: "Démo planifiée", accent: "bg-cyan-400", status: "Démo" },
+  { id: "awaiting_decision", label: "Décision en attente", accent: "bg-teal-400", status: "Décision en attente" },
   { id: "client", label: "Client", accent: "bg-emerald-400", status: "Client" },
-  { id: "closed", label: "Fermé", accent: "bg-rose-400", status: "Fermé" },
+  { id: "closed", label: "Perdu", accent: "bg-rose-400", status: "Fermé" },
 ];
 
 export function pipelineColumnId(prospect: Prospect): PipelineColumnId {
   const status = migrateProspectStatus(prospect.status);
   const col = PIPELINE_COLUMNS.find((c) => c.status === status);
   if (col) return col.id;
+  if (isDemoDoneStatus(status)) return "awaiting_decision";
   if (isDemoStatus(status)) return "demo";
   if (status === "Client") return "client";
   if (isLostProspectStatus(status) || isClosedProspectStatus(status)) return "closed";

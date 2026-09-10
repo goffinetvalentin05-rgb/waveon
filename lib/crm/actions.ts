@@ -102,6 +102,19 @@ export function resolveQuickActionAt(
         taskTitle: `Démonstration ${_clubName}`,
         taskKind: "demo",
       };
+    case "demo_done": {
+      const nextStatus: ProspectStatus = isClosedProspectStatus(currentStatus)
+        ? currentStatus
+        : "Décision en attente";
+      return {
+        status: nextStatus,
+        lastAction: "Démo effectuée",
+        nextFollowUp: null,
+        activityTitle: "Démo effectuée",
+        taskTitle: null,
+        taskKind: null,
+      };
+    }
     case "client":
       return {
         status: "Client",
@@ -127,6 +140,7 @@ export const QUICK_ACTION_LABELS: Record<QuickAction, string> = {
   mail_sent: "Mail envoyé",
   call_made: "Appel effectué",
   demo_scheduled: "Démonstration planifiée",
+  demo_done: "Démo effectuée",
   client: "Passer en client",
-  refus: "Fermer",
+  refus: "Perdu",
 };

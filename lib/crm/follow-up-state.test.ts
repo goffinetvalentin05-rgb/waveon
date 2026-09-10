@@ -5,6 +5,7 @@
 import assert from "node:assert/strict";
 import { getFollowUpState } from "./follow-up-state";
 import { applyInteraction, nextStageAfterInteraction } from "./interactions";
+import { resolveQuickActionAt } from "./actions";
 
 let passed = 0;
 let failed = 0;
@@ -151,7 +152,64 @@ test("étape : Premier contact → Relance 1, Relance 1 → Relance 2, sans recu
   assert.equal(nextStageAfterInteraction("Relance 2", "follow_up_2"), "Relance 2");
   assert.equal(nextStageAfterInteraction("En discussion", "follow_up_1"), "En discussion");
   assert.equal(nextStageAfterInteraction("Relais", "first_contact"), "Relais");
+  assert.equal(nextStageAfterInteraction("Décision en attente", "follow_up_1"), "Décision en attente");
   assert.equal(nextStageAfterInteraction("Client", "first_contact"), "Client");
+});
+
+const SETTINGS = {
+  delay_relance_1_days: 7,
+  delay_relance_2_days: 7,
+  delay_relance_3_days: 7,
+};
+
+test("CAS — Démo planifiée + Démo effectuée → Décision en attente", () => {
+  const result = resolveQuickActionAt(
+    "demo_done",
+    "Démo",
+    SETTINGS,
+    "FC Exemple",
+    new Date(`${TODAY}T12:00:00.000Z`)
+  );
+  assert.equal(result.status, "Décision en attente");
+  assert.equal(result.lastAction, "Démo effectuée");
+  assert.equal(result.activityTitle, "Démo effectuée");
+  assert.equal(result.nextFollowUp, null);
+
+  const fromDiscussion = resolveQuickActionAt(
+    "demo_done",
+    "En discussion",
+    SETTINGS,
+    "FC Exemple",
+    new Date(`${TODAY}T12:00:00.000Z`)
+  );
+  assert.equal(fromDiscussion.status, "Décision en attente");
+});
+
+test("CAS — Décision en attente + relance dans 5 jours → pas d'alerte de retard", () => {
+  const state = getFollowUpState(
+    { status: "Décision en attente", next_follow_up: "2026-09-15" },
+    TODAY
+  );
+  assert.equal(state.kind, "future");
+  assert.equal(state.days, 5);
+  assert.notEqual(state.kind, "overdue");
+  assert.notEqual(state.kind, "today");
+});
+
+test("CAS — Décision en attente + relance aujourd'hui → À relancer aujourd'hui", () => {
+  const state = getFollowUpState(
+    { status: "Décision en attente", next_follow_up: TODAY },
+    TODAY
+  );
+  assert.equal(state.kind, "today");
+  assert.equal(state.alert, "À relancer aujourd'hui");
+});
+
+test("CAS — Décision en attente accepté → Client, refusé → Fermé", () => {
+  const won = resolveQuickActionAt("client", "Décision en attente", SETTINGS, "FC Exemple", new Date());
+  assert.equal(won.status, "Client");
+  const lost = resolveQuickActionAt("refus", "Décision en attente", SETTINGS, "FC Exemple", new Date());
+  assert.equal(lost.status, "Fermé");
 });
 
 console.log(`\n${passed} ok, ${failed} ko`);

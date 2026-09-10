@@ -35,7 +35,7 @@ export function ClosedReasonModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button type="button" className={ui.overlay} onClick={onCancel} aria-label="Fermer" />
       <div className={`${ui.modal} w-full max-w-sm p-5`}>
-        <h3 className="font-display text-base font-semibold text-wo-text">Pourquoi ce prospect est-il fermé ?</h3>
+        <h3 className="font-display text-base font-semibold text-wo-text">Pourquoi ce prospect est-il perdu ?</h3>
         {clubName ? <p className="mt-1 text-sm text-wo-muted">{clubName}</p> : null}
         <div className="mt-4 grid gap-1.5">
           {CLOSED_REASONS.map((option) => {

@@ -2,6 +2,7 @@
 
 import { getFollowUpState } from "@/lib/crm/follow-up-state";
 import { formatLastInteractionLine } from "@/lib/crm/activity-display";
+import { statusDisplayLabel } from "@/lib/crm/status";
 import type { Prospect, ProspectActivity } from "@/lib/crm/types";
 import { ui } from "@/lib/design/tokens";
 
@@ -35,7 +36,7 @@ export function ProspectFollowUpCard({
       <div className="mt-5 grid gap-5 sm:grid-cols-3">
         <div>
           <p className="text-[11px] uppercase tracking-[0.08em] text-wo-dim">Étape actuelle</p>
-          <p className="mt-1.5 text-sm font-medium text-wo-text">{prospect.status}</p>
+          <p className="mt-1.5 text-sm font-medium text-wo-text">{statusDisplayLabel(prospect.status)}</p>
         </div>
         <div>
           <p className="text-[11px] uppercase tracking-[0.08em] text-wo-dim">Dernière interaction</p>

@@ -21,27 +21,40 @@ export function isLostProspectStatus(status: string): boolean {
 export const CLOSED_STATUS_POSTGREST =
   '("Client","Fermé","Pas maintenant","Pas intéressé","Perdu","Refusé","Refus")';
 
-export const DEMO_SCHEDULED_STATUSES = ["Démo", "Démo prévue", "Démonstration"] as const;
-export const DEMO_DONE_STATUSES = ["Démo effectuée", "Démo faite"] as const;
+export const DEMO_SCHEDULED_STATUSES = ["Démo", "Démo prévue", "Démonstration", "Démo à planifier"] as const;
+export const DEMO_DONE_STATUSES = [
+  "Décision en attente",
+  "Démo effectuée",
+  "Démo faite",
+  "À relancer après démo",
+] as const;
 
+/** Démo future prévue — distinct de « Décision en attente ». */
 export function isDemoStatus(status: string): boolean {
   return (
     status === "Démo" ||
     status === "Démo prévue" ||
     status === "Démonstration" ||
     status === "Démo à planifier" ||
+    status === "Appel booké"
+  );
+}
+
+export function isDemoScheduledStatus(status: string): boolean {
+  return isDemoStatus(status);
+}
+
+export function isDemoDoneStatus(status: string): boolean {
+  return (
+    status === "Décision en attente" ||
     status === "Démo effectuée" ||
     status === "Démo faite" ||
     status === "À relancer après démo"
   );
 }
 
-export function isDemoScheduledStatus(status: string): boolean {
-  return status === "Démo" || status === "Démo prévue" || status === "Démonstration";
-}
-
-export function isDemoDoneStatus(status: string): boolean {
-  return status === "Démo effectuée" || status === "Démo faite";
+export function isAwaitingDecisionStatus(status: string): boolean {
+  return isDemoDoneStatus(status);
 }
 
 export const CLOSED_REASONS = [

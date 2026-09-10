@@ -9,6 +9,7 @@ const EDITABLE_ACTION_TYPES = new Set([
   "mail_sent",
   "call_made",
   "demo_scheduled",
+  "demo_done",
   "client",
   "refus",
   "status_change",
@@ -56,7 +57,7 @@ export async function PATCH(request: Request, { params }: Params) {
   const createdAtIso = new Date(`${actionDate}T12:00:00.000Z`).toISOString();
 
   let description: string | null = null;
-  if (nextActionType === "demo_scheduled") {
+  if (nextActionType === "demo_scheduled" || nextActionType === "demo_done") {
     const demoDate = String(body.demo_at ?? "");
     const demoAtIso = demoDate
       ? new Date(`${demoDate}T12:00:00.000Z`).toISOString()
