@@ -8,6 +8,7 @@ const KIND_LABEL: Record<string, string> = {
   follow_up: "Relance",
   first_contact: "Contact",
   demo: "Démo",
+  demo_reminder: "Rappel démo",
   custom: "Perso",
 };
 
@@ -52,6 +53,8 @@ export function TodayTaskList({
         const kindClass =
           task.task_kind === "demo"
             ? "bg-indigo-400"
+            : task.task_kind === "demo_reminder"
+              ? "bg-violet-400"
             : task.task_kind === "first_contact"
               ? "bg-amber-400"
               : task.task_kind === "follow_up"

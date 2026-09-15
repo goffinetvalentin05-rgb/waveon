@@ -41,7 +41,11 @@ export async function ensureTodayTasks(
     .not("prospect_id", "is", null);
 
   const have = new Set((existing ?? []).map((t) => t.prospect_id));
-  const missing = candidates.filter((p) => !have.has(p.id));
+  const missing = candidates.filter((p) => {
+    if (have.has(p.id)) return false;
+    if (isDemoScheduledStatus(p.status)) return false;
+    return true;
+  });
   if (!missing.length) return;
 
   await supabase.from("daily_tasks").insert(

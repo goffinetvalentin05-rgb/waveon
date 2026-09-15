@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { format } from "date-fns";
 import {
@@ -339,6 +340,19 @@ function EventModalInner({
               placeholder="Notes, détails…"
             />
           </div>
+
+          {event?.source === "crm" && event.source_id ? (
+            <Link
+              href={
+                event.project_id
+                  ? `/projects/${event.project_id}/prospects/${event.source_id}`
+                  : `/crm/prospects/${event.source_id}`
+              }
+              className={ui.link}
+            >
+              Voir la fiche prospect
+            </Link>
+          ) : null}
 
           {error ? (
             <p className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm text-rose-700">

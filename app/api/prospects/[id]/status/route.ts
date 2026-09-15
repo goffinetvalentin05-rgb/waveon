@@ -6,6 +6,7 @@ import { defaultNextActionFor } from "@/lib/crm/next-action";
 import { encodeStatusChangeDescription, migrateProspectStatus } from "@/lib/crm/status";
 import { normalizeProspectFromDb } from "@/lib/crm/prospect-payload";
 import { syncProspectFollowUpTask } from "@/lib/crm/sync-follow-up-task";
+import { syncDemoArtifactsForStatus } from "@/lib/crm/sync-demo-schedule";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -101,6 +102,8 @@ export async function POST(request: Request, { params }: Params) {
       .eq("user_id", user.id)
       .eq("completed", false);
   }
+
+  await syncDemoArtifactsForStatus(supabase, user.id, id, nextStatus);
 
   await syncProspectFollowUpTask(supabase, {
     userId: user.id,

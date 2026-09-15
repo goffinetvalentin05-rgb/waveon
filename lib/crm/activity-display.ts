@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { formatClosedReason } from "./closed";
 import { dateOnly, parseDateOnly } from "./date-only";
+import { formatDemoHistoryBody, parseDemoScheduleDescription } from "./demo-schedule";
 import { formatRelativeDay } from "./format";
 import {
   INTERACTION_CHANNEL_LABELS,
@@ -60,6 +61,18 @@ function humanBody(activity: ProspectActivity): string | null {
       typeof obj?.closed_note === "string" ? obj.closed_note : null
     );
     return jsonNote(description) || reason;
+  }
+
+  if (activity.action_type === "demo_scheduled" || activity.action_type === "demo") {
+    const parsed = parseDemoScheduleDescription(description);
+    if (parsed.demoAt) {
+      const formatted = formatDemoHistoryBody({
+        demoAt: parsed.demoAt,
+        durationMin: parsed.durationMin,
+        note: parsed.note,
+      });
+      return formatted;
+    }
   }
 
   return jsonNote(description);

@@ -3,6 +3,8 @@ import { requireUser } from "@/lib/crm/server";
 import { logWorkspaceEvent } from "@/lib/workspace/events";
 import { TASK_PRIORITIES, TASK_STATUSES, type TaskPriority, type TaskStatus } from "@/lib/tasks/types";
 import { parseScopeInput } from "@/lib/workspace/scope";
+import { isDemoScheduledStatus } from "@/lib/crm/closed";
+import { DEMO_REMINDER_TASK_KIND, nextActionAfterReminderDone } from "@/lib/crm/demo-schedule";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -89,6 +91,24 @@ export async function PATCH(request: Request, { params }: Params) {
     return NextResponse.json({ task: fallback.data });
   }
   if (!data) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
+
+  const completedNow = Boolean(data.completed) && Boolean(patch.completed);
+  if (completedNow && data.task_kind === DEMO_REMINDER_TASK_KIND && data.prospect_id) {
+    const { data: linkedProspect } = await supabase
+      .from("prospects")
+      .select("id, demo_at, status")
+      .eq("id", data.prospect_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (linkedProspect?.demo_at && isDemoScheduledStatus(String(linkedProspect.status ?? ""))) {
+      const next = nextActionAfterReminderDone(linkedProspect.demo_at);
+      await supabase
+        .from("prospects")
+        .update({ next_follow_up: next.nextFollowUp, next_action: next.nextAction })
+        .eq("id", linkedProspect.id)
+        .eq("user_id", user.id);
+    }
+  }
 
   if (Array.isArray(body.subtasks)) {
     await supabase.from("task_subtasks").delete().eq("task_id", id).eq("user_id", user.id);

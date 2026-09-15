@@ -7,6 +7,7 @@ import { parseClosedReason } from "@/lib/crm/closed";
 import { migrateProspectStatus } from "@/lib/crm/status";
 import { normalizeProspectFromDb } from "@/lib/crm/prospect-payload";
 import { syncProspectFollowUpTask } from "@/lib/crm/sync-follow-up-task";
+import { completeDemoReminderTasks, syncDemoArtifactsForStatus } from "@/lib/crm/sync-demo-schedule";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -116,6 +117,10 @@ export async function POST(request: Request, { params }: Params) {
           : body.note?.trim() || null,
   });
 
+  if (action === "demo_done") {
+    await completeDemoReminderTasks(supabase, user.id, id);
+  }
+
   if (action === "client" || action === "refus") {
     await supabase
       .from("daily_tasks")
@@ -124,6 +129,8 @@ export async function POST(request: Request, { params }: Params) {
       .eq("user_id", user.id)
       .eq("completed", false);
   }
+
+  await syncDemoArtifactsForStatus(supabase, user.id, id, result.status);
 
   await syncProspectFollowUpTask(supabase, {
     userId: user.id,

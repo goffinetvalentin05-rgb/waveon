@@ -129,7 +129,7 @@ export function actionTypeFromChannel(channel: string | null | undefined): Inter
   }
 }
 
-export const TASK_KINDS = ["follow_up", "first_contact", "demo", "custom"] as const;
+export const TASK_KINDS = ["follow_up", "first_contact", "demo", "demo_reminder", "custom"] as const;
 export type TaskKind = (typeof TASK_KINDS)[number];
 
 export type Prospect = {

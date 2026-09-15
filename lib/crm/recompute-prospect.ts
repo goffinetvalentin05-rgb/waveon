@@ -3,6 +3,7 @@ import { inferLegacyInteraction, nextStageAfterInteraction } from "@/lib/crm/int
 import { defaultNextActionFor } from "@/lib/crm/next-action";
 import { parseStatusChangePayload } from "@/lib/crm/status";
 import { syncProspectFollowUpTask } from "@/lib/crm/sync-follow-up-task";
+import { syncDemoArtifactsForStatus } from "@/lib/crm/sync-demo-schedule";
 import type { Prospect, ProspectActivity, ProspectStatus } from "@/lib/crm/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -213,6 +214,8 @@ export async function recomputeProspectDerivatives(
     status: currentStatus,
     nextFollowUp,
   });
+
+  await syncDemoArtifactsForStatus(supabase, userId, prospectId, currentStatus);
 
   const { data: updatedProspect } = await supabase
     .from("prospects")

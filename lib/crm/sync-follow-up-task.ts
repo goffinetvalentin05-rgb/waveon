@@ -26,6 +26,8 @@ export async function syncProspectFollowUpTask(
 
   if (isClosedProspectStatus(status) || !input.nextFollowUp) return;
 
+  if (isDemoScheduledStatus(status)) return;
+
   const today = crmToday();
   const dueDate = input.nextFollowUp <= today ? today : input.nextFollowUp;
   const title =

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/crm/server";
 import { validateEventInput } from "@/lib/calendar/helpers";
 import { CALENDAR_CATEGORY_COLORS } from "@/lib/calendar/types";
+import { completeDemoReminderTasks, syncProspectFromCalendarDemoEvent } from "@/lib/crm/sync-demo-schedule";
+import { DEMO_CALENDAR_SOURCE } from "@/lib/crm/demo-schedule";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -43,6 +45,7 @@ export async function PATCH(request: Request, ctx: Ctx) {
       .select("*")
       .single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    await syncProspectFromCalendarDemoEvent(supabase, user.id, data);
     return NextResponse.json({ event: data });
   }
 
@@ -76,6 +79,7 @@ export async function PATCH(request: Request, ctx: Ctx) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (data) await syncProspectFromCalendarDemoEvent(supabase, user.id, data);
   return NextResponse.json({ event: data });
 }
 
@@ -85,6 +89,13 @@ export async function DELETE(_request: Request, ctx: Ctx) {
   const { supabase, user } = auth;
   const { id } = await ctx.params;
 
+  const { data: existing } = await supabase
+    .from("calendar_events")
+    .select("id, source, source_id")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
   const { error } = await supabase
     .from("calendar_events")
     .delete()
@@ -92,5 +103,8 @@ export async function DELETE(_request: Request, ctx: Ctx) {
     .eq("user_id", user.id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (existing?.source === DEMO_CALENDAR_SOURCE && existing.source_id) {
+    await completeDemoReminderTasks(supabase, user.id, existing.source_id);
+  }
   return NextResponse.json({ ok: true });
 }

@@ -6,7 +6,6 @@ import { useEffect, useMemo, useState, useTransition, type ReactNode } from "rea
 import {
   IconArchive,
   IconArrowLeft,
-  IconCalendarEvent,
   IconEdit,
   IconMail,
   IconMessage,
@@ -25,6 +24,7 @@ import { ProspectBusinessFields } from "@/components/crm/ProspectBusinessFields"
 import { ProspectLinkedTasks } from "@/components/crm/ProspectLinkedTasks";
 import { ClosedReasonModal } from "@/components/crm/ClosedReasonModal";
 import { InteractionModal } from "@/components/crm/InteractionModal";
+import { ScheduleDemoModal } from "@/components/crm/ScheduleDemoModal";
 import { ProspectFollowUpCard } from "@/components/crm/ProspectFollowUpCard";
 import { ProspectTimeline } from "@/components/crm/ProspectTimeline";
 import { QUICK_ACTION_LABELS } from "@/lib/crm/actions";
@@ -532,9 +532,10 @@ export function ProspectDetailClient2({
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [archiveLoading, setArchiveLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [calendarLoading, setCalendarLoading] = useState(false);
   const [interactionChannel, setInteractionChannel] = useState<InteractionChannel | null>(null);
   const [interactionSaving, setInteractionSaving] = useState(false);
+  const [scheduleDemoOpen, setScheduleDemoOpen] = useState(false);
+  const [scheduleDemoSaving, setScheduleDemoSaving] = useState(false);
 
   const refreshAll = async () => {
     const refreshed = await fetch(`/api/prospects/${prospect.id}`);
@@ -659,6 +660,10 @@ export function ProspectDetailClient2({
     }
     if (action === "refus") {
       setClosePrompt("refus");
+      return;
+    }
+    if (action === "demo_scheduled") {
+      setScheduleDemoOpen(true);
       return;
     }
     executeQuickAction(action);
@@ -911,54 +916,67 @@ export function ProspectDetailClient2({
     />
   );
 
-  const addDemoToCalendar = async () => {
-    setCalendarLoading(true);
+  const saveScheduleDemo = async (payload: {
+    demo_date: string;
+    demo_time: string;
+    duration_min: number;
+    reminder_preset: string;
+    reminder_date: string | null;
+    note: string;
+  }) => {
+    if (scheduleDemoSaving) return;
+    setScheduleDemoSaving(true);
     setMsg(null);
     setErrorMsg(null);
     try {
-      const day = prospect.demo_at
-        ? new Date(prospect.demo_at).toISOString().slice(0, 10)
-        : new Date().toISOString().slice(0, 10);
-      const start_at = `${day}T10:00:00`;
-      const end_at = `${day}T11:00:00`;
-      const res = await fetch("/api/calendar/events", {
+      const res = await fetch(`/api/prospects/${prospect.id}/demo-schedule`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: `Démo — ${prospect.club_name}`,
-          category: "demo",
-          start_at,
-          end_at,
-          all_day: false,
-          description: prospect.notes ?? undefined,
-          location: prospect.ville ?? undefined,
-          source: "crm",
-          source_id: prospect.id,
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) {
-        setErrorMsg(data.error ?? "Impossible d'ajouter au calendrier");
+        setErrorMsg(data.error ?? "Impossible de planifier la démo.");
         return;
       }
-      setMsg(
-        data.deduped
-          ? "Cette démonstration est déjà dans le calendrier."
-          : "Démonstration ajoutée au calendrier."
-      );
+      if (data.prospect) setProspect(data.prospect as Prospect);
+      if (data.activities) setActivities(data.activities as ProspectActivity[]);
+      setScheduleDemoOpen(false);
+      setMsg("Démonstration planifiée.");
+      await refreshAll();
     } catch {
-      setErrorMsg("Impossible d'ajouter au calendrier");
+      setErrorMsg("Impossible de planifier la démo.");
     } finally {
-      setCalendarLoading(false);
+      setScheduleDemoSaving(false);
     }
   };
 
-  const showAddToCalendar =
-    !isArchived &&
-    (Boolean(prospect.demo_at) || isDemoScheduledStatus(prospect.status));
+  const cancelScheduledDemo = async () => {
+    if (scheduleDemoSaving) return;
+    setScheduleDemoSaving(true);
+    setMsg(null);
+    setErrorMsg(null);
+    try {
+      const res = await fetch(`/api/prospects/${prospect.id}/demo-schedule`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMsg(data.error ?? "Impossible d’annuler la démo.");
+        return;
+      }
+      if (data.prospect) setProspect(data.prospect as Prospect);
+      if (data.activities) setActivities(data.activities as ProspectActivity[]);
+      setScheduleDemoOpen(false);
+      setMsg("Démonstration annulée.");
+      await refreshAll();
+    } catch {
+      setErrorMsg("Impossible d’annuler la démo.");
+    } finally {
+      setScheduleDemoSaving(false);
+    }
+  };
 
   const canUndo = lastCommercialActivity(activities) != null;
-  const busy = pending || interactionSaving;
+  const busy = pending || interactionSaving || scheduleDemoSaving;
 
   return (
     <div className={`space-y-6 crm-animate-in ${editMode ? "pb-24 sm:pb-0" : ""}`}>
@@ -1045,6 +1063,7 @@ export function ProspectDetailClient2({
           setProspect((p) => ({ ...p, next_follow_up: value }));
           saveInlineField("next_follow_up", value ?? "");
         }}
+        onEditDemo={() => setScheduleDemoOpen(true)}
       />
 
       <section className={`${ui.card} p-5 sm:p-6`}>
@@ -1075,9 +1094,9 @@ export function ProspectDetailClient2({
             <div>
               <p className="text-[11px] uppercase tracking-[0.08em] text-wo-dim">Avancement</p>
               <div className="mt-2 flex flex-wrap gap-2">
-                <button type="button" disabled={busy} className={ui.btnSecondary} onClick={() => runAction("demo_scheduled")}>
+                <button type="button" disabled={busy} className={ui.btnSecondary} onClick={() => setScheduleDemoOpen(true)}>
                   <IconPresentation className="h-4 w-4" />
-                  Démo planifiée
+                  {isDemoScheduledStatus(prospect.status) ? "Modifier la démo" : "Démo planifiée"}
                 </button>
                 <button type="button" disabled={busy} className={ui.btnSecondary} onClick={() => runAction("demo_done")}>
                   <IconCircleCheck className="h-4 w-4" />
@@ -1098,12 +1117,6 @@ export function ProspectDetailClient2({
                   <IconUserX className="h-4 w-4" />
                   Perdu
                 </button>
-                {showAddToCalendar ? (
-                  <button type="button" disabled={busy || calendarLoading} className={ui.btnSecondary} onClick={() => void addDemoToCalendar()}>
-                    <IconCalendarEvent className="h-4 w-4" />
-                    {calendarLoading ? "Ajout…" : "Ajouter au calendrier"}
-                  </button>
-                ) : null}
               </div>
             </div>
           </div>
@@ -1318,6 +1331,20 @@ export function ProspectDetailClient2({
           </button>
         </div>
       </section>
+
+      <ScheduleDemoModal
+        open={scheduleDemoOpen}
+        prospect={prospect}
+        lastDemoActivity={activities.find((a) => a.action_type === "demo_scheduled") ?? null}
+        saving={scheduleDemoSaving}
+        onClose={() => {
+          if (!scheduleDemoSaving) setScheduleDemoOpen(false);
+        }}
+        onSave={(payload) => {
+          void saveScheduleDemo(payload);
+        }}
+        onCancelDemo={isDemoScheduledStatus(prospect.status) ? () => void cancelScheduledDemo() : undefined}
+      />
 
       <InteractionModal
         open={Boolean(interactionChannel)}
