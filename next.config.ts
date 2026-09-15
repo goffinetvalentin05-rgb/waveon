@@ -26,6 +26,10 @@ const nextConfig: NextConfig = {
       : undefined;
   })(),
 
+  async rewrites() {
+    return [{ source: "/api/calendar/feed/:token.ics", destination: "/api/calendar/feed/:token" }];
+  },
+
   async redirects() {
     return [
       { source: "/dashboard", destination: "/home", permanent: false },

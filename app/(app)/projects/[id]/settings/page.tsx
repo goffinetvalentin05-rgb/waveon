@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createServerComponentSupabase } from "@/lib/supabase/server-component";
 import { fetchProjects } from "@/lib/projects/server";
 import { ProjectActions, ProjectDangerZone } from "@/components/projects/ProjectActions";
+import { ProjectCalendarSyncCard } from "@/components/projects/ProjectCalendarSyncCard";
 import { ui } from "@/lib/design/tokens";
 import { can } from "@/lib/access/permissions";
 import { PROJECT_ROLE_LABELS } from "@/lib/access/roles";
@@ -42,6 +43,7 @@ export default async function ProjectSettingsPage({ params }: Props) {
           </p>
         )}
       </div>
+      <ProjectCalendarSyncCard projectId={project.id} role={role} />
       <ProjectDangerZone project={project} role={role} currentUserId={user.id} />
     </div>
   );
