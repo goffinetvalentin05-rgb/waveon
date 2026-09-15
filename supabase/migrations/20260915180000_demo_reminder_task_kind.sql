@@ -1,5 +1,7 @@
--- Permet une tâche interne de rappel avant une démo planifiée,
--- distincte de la tâche générique "demo" et de l'événement calendrier.
+-- Optionnel : le code n'en a plus besoin.
+-- Les rappels de démo sont stockés en task_kind = 'custom'
+-- et identifiés par le titre "Envoyer le rappel de démo%".
+-- Conservé si on veut un type SQL dédié plus tard.
 
 alter table public.daily_tasks
   drop constraint if exists daily_tasks_task_kind_check;

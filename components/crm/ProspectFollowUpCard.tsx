@@ -6,7 +6,12 @@ import { getFollowUpState } from "@/lib/crm/follow-up-state";
 import { formatLastInteractionLine } from "@/lib/crm/activity-display";
 import { isDemoScheduledStatus } from "@/lib/crm/closed";
 import { parseDateOnly } from "@/lib/crm/date-only";
-import { isoToLocalTime } from "@/lib/crm/demo-schedule";
+import {
+  DEMO_REMINDER_NEXT_ACTION,
+  isDemoReminderNextAction,
+  isoToLocalDate,
+  isoToLocalTime,
+} from "@/lib/crm/demo-schedule";
 import { statusDisplayLabel } from "@/lib/crm/status";
 import type { Prospect, ProspectActivity } from "@/lib/crm/types";
 import { ui } from "@/lib/design/tokens";
@@ -47,8 +52,16 @@ export function ProspectFollowUpCard({
   const closed = prospect.status === "Client" || prospect.status === "Fermé";
   const demoScheduled = isDemoScheduledStatus(prospect.status);
   const demoTime = prospect.demo_at ? isoToLocalTime(prospect.demo_at) : null;
-  const nextLabel = prospect.next_action
-    || (demoScheduled && demoTime ? `Démo planifiée · ${demoTime}` : null);
+  const demoDate = prospect.demo_at ? isoToLocalDate(prospect.demo_at) : null;
+  const nextLabel = (() => {
+    if (isDemoReminderNextAction(prospect.next_action)) return prospect.next_action;
+    if (prospect.next_action?.startsWith("Démo planifiée")) return prospect.next_action;
+    if (demoDate && prospect.next_follow_up && prospect.next_follow_up < demoDate) {
+      return DEMO_REMINDER_NEXT_ACTION;
+    }
+    if (demoScheduled && demoTime) return `Démo planifiée · ${demoTime}`;
+    return prospect.next_action;
+  })();
 
   return (
     <section className={`${ui.card} p-5 sm:p-6`}>

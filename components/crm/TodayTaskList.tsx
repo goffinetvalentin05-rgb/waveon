@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
+import { isDemoReminderTask } from "@/lib/crm/demo-schedule";
 import type { DailyTask } from "@/lib/crm/types";
 
 const KIND_LABEL: Record<string, string> = {
@@ -50,10 +51,11 @@ export function TodayTaskList({
   return (
     <ul className="space-y-1">
       {local.map((task) => {
+        const reminder = isDemoReminderTask(task);
         const kindClass =
           task.task_kind === "demo"
             ? "bg-indigo-400"
-            : task.task_kind === "demo_reminder"
+            : reminder
               ? "bg-violet-400"
             : task.task_kind === "first_contact"
               ? "bg-amber-400"
@@ -105,7 +107,7 @@ export function TodayTaskList({
                   </button>
                 ) : (
                   <span className="text-[11px] text-wo-dim">
-                    {KIND_LABEL[task.task_kind] ?? "Tâche"}
+                    {reminder ? "Rappel démo" : KIND_LABEL[task.task_kind] ?? "Tâche"}
                   </span>
                 )}
               </div>

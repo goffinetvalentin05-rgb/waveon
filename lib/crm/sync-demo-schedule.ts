@@ -3,6 +3,7 @@ import { isDemoScheduledStatus } from "@/lib/crm/closed";
 import {
   DEMO_CALENDAR_SOURCE,
   DEMO_REMINDER_TASK_KIND,
+  DEMO_REMINDER_TITLE_PREFIX,
   demoEventTitle,
   demoReminderTitle,
   formatDemoEventDescription,
@@ -123,8 +124,8 @@ async function findOpenDemoReminder(
     .select("*")
     .eq("user_id", userId)
     .eq("prospect_id", prospectId)
-    .eq("task_kind", DEMO_REMINDER_TASK_KIND)
     .eq("completed", false)
+    .ilike("title", `${DEMO_REMINDER_TITLE_PREFIX}%`)
     .order("due_date", { ascending: true })
     .limit(1)
     .maybeSingle();
@@ -143,8 +144,8 @@ export async function upsertDemoReminderTask(
       .delete()
       .eq("user_id", userId)
       .eq("prospect_id", prospect.id)
-      .eq("task_kind", DEMO_REMINDER_TASK_KIND)
-      .eq("completed", false);
+      .eq("completed", false)
+      .ilike("title", `${DEMO_REMINDER_TITLE_PREFIX}%`);
     return null;
   }
 
@@ -195,8 +196,8 @@ export async function completeDemoReminderTasks(
     .update({ completed: true, completed_at: new Date().toISOString(), status: "Terminé" })
     .eq("user_id", userId)
     .eq("prospect_id", prospectId)
-    .eq("task_kind", DEMO_REMINDER_TASK_KIND)
-    .eq("completed", false);
+    .eq("completed", false)
+    .ilike("title", `${DEMO_REMINDER_TITLE_PREFIX}%`);
 }
 
 /** Après un changement de statut : ne laisse pas d’événement / rappel orphelins. */

@@ -3,7 +3,9 @@ import { fr } from "date-fns/locale";
 import { dateOnly, parseDateOnly } from "@/lib/crm/date-only";
 
 export const DEMO_CALENDAR_SOURCE = "crm";
-export const DEMO_REMINDER_TASK_KIND = "demo_reminder";
+/** Type déjà autorisé par `daily_tasks_task_kind_check` (pas besoin de migration). */
+export const DEMO_REMINDER_TASK_KIND = "custom";
+export const DEMO_REMINDER_TITLE_PREFIX = "Envoyer le rappel de démo";
 export const DEMO_REMINDER_NEXT_ACTION = "Envoyer le rappel de démo";
 
 export const DEMO_DURATION_OPTIONS = [15, 30, 45, 60] as const;
@@ -145,11 +147,16 @@ export function demoEventTitle(clubName: string): string {
 }
 
 export function demoReminderTitle(clubName: string): string {
-  return `Envoyer le rappel de démo — ${clubName}`;
+  return `${DEMO_REMINDER_TITLE_PREFIX} — ${clubName}`;
+}
+
+export function isDemoReminderTask(task: { task_kind?: string | null; title?: string | null }): boolean {
+  if (task.task_kind === "demo_reminder") return true;
+  return (task.title ?? "").startsWith(DEMO_REMINDER_TITLE_PREFIX);
 }
 
 export function isDemoReminderNextAction(value: string | null | undefined): boolean {
-  return (value ?? "").startsWith("Envoyer le rappel de démo");
+  return (value ?? "").startsWith(DEMO_REMINDER_TITLE_PREFIX);
 }
 
 export function nextActionAfterReminderDone(demoAt: string): { nextFollowUp: string; nextAction: string } {

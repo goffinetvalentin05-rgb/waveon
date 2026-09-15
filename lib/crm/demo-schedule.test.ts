@@ -5,6 +5,7 @@
 import assert from "node:assert/strict";
 import {
   inferReminderPreset,
+  isDemoReminderTask,
   nextActionAfterReminderDone,
   resolveDemoSchedule,
   resolveReminderDate,
@@ -93,6 +94,14 @@ test("infère le preset J-2", () => {
   assert.equal(inferReminderPreset("2026-09-24", "2026-09-22"), "2d");
   assert.equal(inferReminderPreset("2026-09-24", null), "none");
   assert.equal(inferReminderPreset("2026-09-24", "2026-09-20"), "custom");
+});
+
+test("rappel identifié par le titre, pas par un type SQL dédié", () => {
+  assert.equal(
+    isDemoReminderTask({ task_kind: "custom", title: "Envoyer le rappel de démo — Club" }),
+    true
+  );
+  assert.equal(isDemoReminderTask({ task_kind: "follow_up", title: "Relancer Club" }), false);
 });
 
 console.log(`\n${passed} ok, ${failed} ko`);

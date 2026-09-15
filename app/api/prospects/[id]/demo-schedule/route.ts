@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/crm/server";
 import { isClosedProspectStatus } from "@/lib/crm/closed";
 import {
+  DEMO_REMINDER_TITLE_PREFIX,
   inferReminderPreset,
   isDemoReminderPreset,
   isoToLocalDate,
@@ -58,7 +59,7 @@ export async function GET(_request: Request, { params }: Params) {
     .select("id, due_date, completed, title")
     .eq("user_id", user.id)
     .eq("prospect_id", id)
-    .eq("task_kind", "demo_reminder")
+    .ilike("title", `${DEMO_REMINDER_TITLE_PREFIX}%`)
     .eq("completed", false)
     .order("due_date", { ascending: true })
     .limit(1)
@@ -220,7 +221,7 @@ export async function DELETE(_request: Request, { params }: Params) {
     .delete()
     .eq("user_id", user.id)
     .eq("prospect_id", id)
-    .eq("task_kind", "demo_reminder")
+    .ilike("title", `${DEMO_REMINDER_TITLE_PREFIX}%`)
     .eq("completed", false);
 
   const fromStatus = migrateProspectStatus(String(prospect.status ?? "À contacter"));

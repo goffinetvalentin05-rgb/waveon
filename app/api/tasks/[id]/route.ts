@@ -4,7 +4,7 @@ import { logWorkspaceEvent } from "@/lib/workspace/events";
 import { TASK_PRIORITIES, TASK_STATUSES, type TaskPriority, type TaskStatus } from "@/lib/tasks/types";
 import { parseScopeInput } from "@/lib/workspace/scope";
 import { isDemoScheduledStatus } from "@/lib/crm/closed";
-import { DEMO_REMINDER_TASK_KIND, nextActionAfterReminderDone } from "@/lib/crm/demo-schedule";
+import { isDemoReminderTask, nextActionAfterReminderDone } from "@/lib/crm/demo-schedule";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -93,7 +93,7 @@ export async function PATCH(request: Request, { params }: Params) {
   if (!data) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
 
   const completedNow = Boolean(data.completed) && Boolean(patch.completed);
-  if (completedNow && data.task_kind === DEMO_REMINDER_TASK_KIND && data.prospect_id) {
+  if (completedNow && isDemoReminderTask(data) && data.prospect_id) {
     const { data: linkedProspect } = await supabase
       .from("prospects")
       .select("id, demo_at, status")
