@@ -47,7 +47,7 @@ export function ContentClient({ projectId }: { projectId: string }) {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex rounded-lg border border-wo-border bg-[color:var(--wo-surface)] p-0.5">
+        <div className="wo-segment">
           {(["all", ...CONTENT_STATUSES] as const).map((s) => (
             <button
               key={s}
@@ -215,7 +215,7 @@ function NewContent({
             <textarea name="body" className={`${ui.input} min-h-[88px] resize-y`} />
           </div>
         </div>
-        {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
+        {error ? <p className="mt-3 text-sm text-rose-300">{error}</p> : null}
         <div className="mt-6 flex justify-end gap-2">
           <button type="button" className={ui.btnSecondary} onClick={onClose}>
             Annuler

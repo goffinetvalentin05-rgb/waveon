@@ -150,7 +150,7 @@ function NewDocument({
             <textarea name="notes" className={`${ui.input} min-h-[80px] resize-y`} />
           </div>
         </div>
-        {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
+        {error ? <p className="mt-3 text-sm text-rose-300">{error}</p> : null}
         <div className="mt-6 flex justify-end gap-2">
           <button type="button" className={ui.btnSecondary} onClick={onClose}>
             Annuler

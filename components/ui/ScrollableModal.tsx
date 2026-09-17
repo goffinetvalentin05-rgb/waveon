@@ -80,7 +80,7 @@ export function ScrollableModal({
   const inner = (
     <>
       <div className="shrink-0 border-b border-wo-border px-5 pb-3 pt-[max(0.85rem,env(safe-area-inset-top))] sm:px-6 sm:pt-5">
-        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-slate-200 sm:hidden" aria-hidden />
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-white/15 sm:hidden" aria-hidden />
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 className="text-lg font-semibold text-wo-text">{title}</h2>

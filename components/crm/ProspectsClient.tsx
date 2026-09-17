@@ -376,13 +376,11 @@ export function ProspectsClient({
         </div>
         <div className="flex flex-wrap gap-2">
           {!clientsOnly ? (
-            <div className="inline-flex rounded-full bg-[#f4f4f1] p-1">
+            <div className="wo-segment">
               {tableHref ? (
                 <Link
                   href={tableHref}
-                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
-                    view === "list" ? "wo-subnav-active" : "text-wo-muted hover:text-wo-text"
-                  }`}
+                  className={view === "list" ? ui.segmentItemActive : ui.segmentItem}
                 >
                   Table
                 </Link>
@@ -390,9 +388,7 @@ export function ProspectsClient({
                 <button
                   type="button"
                   onClick={() => setView("list")}
-                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
-                    view === "list" ? "wo-subnav-active" : "text-wo-muted hover:text-wo-text"
-                  }`}
+                  className={view === "list" ? ui.segmentItemActive : ui.segmentItem}
                 >
                   Table
                 </button>
@@ -400,9 +396,7 @@ export function ProspectsClient({
               {pipelineHref ? (
                 <Link
                   href={pipelineHref}
-                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
-                    view === "pipeline" ? "wo-subnav-active" : "text-wo-muted hover:text-wo-text"
-                  }`}
+                  className={view === "pipeline" ? ui.segmentItemActive : ui.segmentItem}
                 >
                   Pipeline
                 </Link>
@@ -413,9 +407,7 @@ export function ProspectsClient({
                     setView("pipeline");
                     if (params.pageSize < 200) applyParams({ ...params, pageSize: 200, page: 1 });
                   }}
-                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
-                    view === "pipeline" ? "wo-subnav-active" : "text-wo-muted hover:text-wo-text"
-                  }`}
+                  className={view === "pipeline" ? ui.segmentItemActive : ui.segmentItem}
                 >
                   Pipeline
                 </button>
@@ -455,25 +447,23 @@ export function ProspectsClient({
         <PipelineStats prospects={prospects} />
       ) : null}
 
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="flex flex-col gap-2 rounded-2xl border border-wo-border bg-white/[0.025] p-2 sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-wo-dim" />
+          <IconSearch className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-wo-dim" />
           <input
-            className={`${ui.input} pl-9`}
+            className="w-full rounded-xl border border-transparent bg-transparent py-2 pl-10 pr-3 text-sm text-wo-text outline-none transition placeholder:text-wo-dim focus:border-white/10 focus:bg-white/[0.04]"
             placeholder="Rechercher un prospect, une entreprise, un contact…"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
           />
         </div>
-        <button
-          type="button"
-          className={`${ui.btnSecondary} relative`}
-          onClick={openFilters}
-        >
+        <button type="button" className={`${ui.btnSecondary} shrink-0`} onClick={openFilters}>
           <IconFilter className="h-4 w-4" stroke={1.75} />
           Filtrer
           {activeFilterCount > 0 ? (
-            <span className="text-wo-muted"> · {activeFilterCount}</span>
+            <span className="rounded-full bg-wo-accent-soft px-1.5 text-[11px] font-semibold text-wo-accent">
+              {activeFilterCount}
+            </span>
           ) : null}
         </button>
       </div>
@@ -641,7 +631,7 @@ function CreateProspectModal({
       }
     >
       <ProspectBusinessFields mode="create" />
-      {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
+      {error ? <p className="mt-3 text-sm text-rose-300">{error}</p> : null}
     </ScrollableModal>
   );
 }

@@ -17,8 +17,8 @@ import type { Prospect, ProspectActivity } from "@/lib/crm/types";
 import { ui } from "@/lib/design/tokens";
 
 const TEMPORAL = {
-  today: "font-medium text-amber-700",
-  overdue: "font-medium text-rose-600",
+  today: "font-medium text-amber-300",
+  overdue: "font-medium text-rose-300",
   future: "text-wo-text",
   none: "text-wo-muted",
 } as const;

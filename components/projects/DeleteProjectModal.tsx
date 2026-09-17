@@ -40,7 +40,7 @@ export function DeleteProjectModal({
             autoFocus
           />
         </div>
-        {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
+        {error ? <p className="mt-3 text-sm text-rose-300">{error}</p> : null}
         <div className="mt-6 flex justify-end gap-2">
           <button type="button" className={ui.btnSecondary} onClick={onCancel} disabled={loading}>
             Annuler

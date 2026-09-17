@@ -40,8 +40,8 @@ export type WorkspaceTask = {
 };
 
 export const PRIORITY_STYLES: Record<TaskPriority, { text: string; bg: string; dot: string }> = {
-  Faible: { text: "text-wo-muted", bg: "bg-zinc-100", dot: "bg-zinc-400" },
-  Normale: { text: "text-emerald-800", bg: "bg-emerald-50", dot: "bg-emerald-500" },
-  Haute: { text: "text-amber-800", bg: "bg-amber-50", dot: "bg-amber-500" },
-  Urgente: { text: "text-rose-800", bg: "bg-rose-50", dot: "bg-rose-500" },
+  Faible: { text: "text-wo-muted", bg: "bg-white/[0.06]", dot: "bg-zinc-400" },
+  Normale: { text: "text-emerald-300", bg: "bg-emerald-500/10", dot: "bg-emerald-400" },
+  Haute: { text: "text-amber-300", bg: "bg-amber-500/10", dot: "bg-amber-400" },
+  Urgente: { text: "text-rose-300", bg: "bg-rose-500/10", dot: "bg-rose-400" },
 };

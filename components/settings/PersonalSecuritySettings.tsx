@@ -102,7 +102,7 @@ export function PersonalSecuritySettings() {
         />
       </div>
 
-      {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
       {msg ? <p className={ui.alertInfo}>{msg}</p> : null}
 
       <div className="flex flex-wrap gap-2">

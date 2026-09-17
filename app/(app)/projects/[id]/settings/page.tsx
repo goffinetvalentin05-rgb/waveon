@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { IconChevronRight, IconUsersGroup } from "@tabler/icons-react";
 import { createServerComponentSupabase } from "@/lib/supabase/server-component";
 import { fetchProjects } from "@/lib/projects/server";
 import { ProjectActions, ProjectDangerZone } from "@/components/projects/ProjectActions";
@@ -24,7 +26,7 @@ export default async function ProjectSettingsPage({ params }: Props) {
   const role = project.myRole ?? (project.user_id === user.id ? "owner" : "viewer");
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className={`${ui.card} p-6`}>
         <p className={ui.kicker}>Projet</p>
         <h2 className={`${ui.h2} mt-2 text-lg`}>{project.name}</h2>
@@ -43,6 +45,22 @@ export default async function ProjectSettingsPage({ params }: Props) {
           </p>
         )}
       </div>
+
+      {can(role, "members.view") ? (
+        <Link href={`/projects/${project.id}/members`} className={`${ui.cardInteractive} flex items-center gap-4 p-6`}>
+          <span className={ui.tile}>
+            <IconUsersGroup className="h-[18px] w-[18px]" stroke={1.7} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className={`${ui.h2} block`}>Membres</span>
+            <span className="mt-1 block text-sm text-wo-muted">
+              Inviter des collaborateurs, gérer les rôles et le code de partage.
+            </span>
+          </span>
+          <IconChevronRight className="h-4 w-4 shrink-0 text-wo-dim" />
+        </Link>
+      ) : null}
+
       <ProjectCalendarSyncCard projectId={project.id} role={role} />
       <ProjectDangerZone project={project} role={role} currentUserId={user.id} />
     </div>

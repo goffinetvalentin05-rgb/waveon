@@ -144,7 +144,7 @@ export function ProspectsPipeline({
       {/* Scrollbar horizontale sticky — desktop / laptop uniquement */}
       <div
         ref={topScrollRef}
-        className="wo-pipeline-hscroll sticky top-14 z-20 -mx-4 hidden overflow-x-auto bg-[color:var(--wo-bg)]/95 px-4 py-1.5 backdrop-blur-sm sm:-mx-6 sm:px-6 md:block lg:top-0 lg:-mx-8 lg:px-8"
+        className="wo-pipeline-hscroll sticky top-14 z-20 -mx-4 hidden overflow-x-auto bg-[#0a0b0b]/90 px-4 py-1.5 backdrop-blur-sm sm:-mx-6 sm:px-6 md:block lg:top-[72px] lg:-mx-8 lg:px-8"
         onScroll={() => syncScroll("top")}
         aria-hidden="true"
       >
@@ -167,7 +167,7 @@ export function ProspectsPipeline({
           return (
             <div
               key={col.id}
-              className="flex w-[270px] shrink-0 flex-col rounded-[22px] border border-[rgba(20,20,20,0.05)] bg-white shadow-[0_1px_2px_rgba(20,20,20,0.03),0_10px_28px_-22px_rgba(20,20,20,0.18)]"
+              className="flex w-[272px] shrink-0 flex-col rounded-[20px] border border-white/[0.06] bg-[linear-gradient(158deg,rgba(255,255,255,0.05),rgba(255,255,255,0.012))] shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_20px_44px_-30px_rgba(0,0,0,0.95)]"
               onDragOver={(e) => {
                 if (onStatusChange) e.preventDefault();
               }}
@@ -181,12 +181,12 @@ export function ProspectsPipeline({
                 onStatusChange(id, col.status);
               }}
             >
-              <div className="flex items-center justify-between gap-2 px-3.5 py-3">
+              <div className="flex items-center justify-between gap-2 border-b border-white/[0.05] px-4 py-3">
                 <div className="flex items-center gap-2">
-                  <span className={`h-1.5 w-1.5 rounded-full ${col.accent}`} />
-                  <h3 className="text-[13px] font-medium text-wo-text">{col.label}</h3>
+                  <span className={`h-2 w-2 rounded-full ${col.accent} shadow-[0_0_8px_currentColor]`} />
+                  <h3 className="text-[13px] font-semibold text-wo-text">{col.label}</h3>
                 </div>
-                <span className="rounded-full bg-wo-hover px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-wo-muted">
+                <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[11px] font-semibold tabular-nums text-wo-muted">
                   {items.length}
                 </span>
               </div>
@@ -211,7 +211,7 @@ export function ProspectsPipeline({
                         }
                         router.push(prospectDetailHref(p.id, listReturnUrl));
                       }}
-                      className="flex cursor-pointer items-start gap-2.5 rounded-2xl border border-[rgba(20,20,20,0.05)] bg-[#fafaf8] px-2.5 py-2.5 text-left transition hover:bg-white hover:shadow-sm"
+                      className="flex cursor-pointer items-start gap-2.5 rounded-[14px] border border-white/[0.06] bg-white/[0.035] px-3 py-2.5 text-left transition hover:border-emerald-400/25 hover:bg-white/[0.06]"
                     >
                       <PipelineCard prospect={p} columnId={col.id} />
                       <PipelineCardAvatar name={p.club_name} />
@@ -242,11 +242,13 @@ export function PipelineStats({ prospects, conversionRate }: { prospects: Prospe
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       {cards.map((c) => (
-        <div key={c.label} className="wo-stat">
-          <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-wo-muted">{c.label}</p>
-          <p className="mt-1 text-xl font-semibold tabular-nums tracking-tight text-wo-text">{c.value}</p>
+        <div key={c.label} className="wo-stat !py-4">
+          <p className="text-[11.5px] text-wo-muted">{c.label}</p>
+          <p className="mt-1.5 font-display text-[1.6rem] font-semibold tabular-nums tracking-tight text-wo-text">
+            {c.value}
+          </p>
         </div>
       ))}
     </div>

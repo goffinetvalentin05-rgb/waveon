@@ -54,7 +54,7 @@ export function TodayTaskList({
         const reminder = isDemoReminderTask(task);
         const kindClass =
           task.task_kind === "demo"
-            ? "bg-indigo-400"
+            ? "bg-emerald-400"
             : reminder
               ? "bg-violet-400"
             : task.task_kind === "first_contact"
@@ -77,7 +77,7 @@ export function TodayTaskList({
               className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[5px] border transition ${
                 task.completed
                   ? "border-emerald-500 bg-emerald-500 text-white"
-                  : "border-white/20 hover:border-indigo-400"
+                  : "border-white/20 hover:border-emerald-400"
               }`}
               aria-label={task.completed ? "Décocher" : "Cocher"}
             >

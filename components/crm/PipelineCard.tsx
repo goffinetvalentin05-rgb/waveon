@@ -8,8 +8,8 @@ import type { Prospect } from "@/lib/crm/types";
 
 const TEMPORAL_STYLES = {
   future: "text-wo-muted",
-  today: "font-medium text-amber-700",
-  overdue: "font-medium text-rose-600",
+  today: "font-medium text-amber-300",
+  overdue: "font-medium text-rose-300",
   none: "text-wo-dim",
 } as const;
 

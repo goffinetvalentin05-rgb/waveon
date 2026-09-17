@@ -285,7 +285,7 @@ function EventModalInner({
               type="checkbox"
               checked={allDay}
               onChange={(e) => setAllDay(e.target.checked)}
-              className="h-4 w-4 rounded border-wo-border text-indigo-600 focus:ring-indigo-500/30"
+              className="h-4 w-4 rounded border-wo-border text-emerald-500 focus:ring-emerald-500/30"
             />
             Toute la journée
           </label>
@@ -363,7 +363,7 @@ function EventModalInner({
           {confirmDelete ? (
             <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
               <p className="text-sm font-medium text-rose-800">Supprimer cet événement ?</p>
-              <p className="mt-1 text-xs text-rose-600">Cette action est irréversible.</p>
+              <p className="mt-1 text-xs text-rose-300">Cette action est irréversible.</p>
               <div className="mt-3 flex justify-end gap-2">
                 <button
                   type="button"
@@ -375,7 +375,7 @@ function EventModalInner({
                 </button>
                 <button
                   type="button"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-700 disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-rose-500/90 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-500 disabled:opacity-50"
                   disabled={deleting}
                   onClick={() => void handleDelete()}
                 >

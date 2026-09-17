@@ -1,32 +1,35 @@
 /**
- * Design system Raven — SaaS premium clair.
- * Canvas ivoire, cartes blanches, accent emerald discret.
+ * Design system Raven — dark premium.
+ * Noir profond, halos emerald/amber, surfaces en relief.
  */
 
 export const colors = {
-  bg: "#F6F6F3",
-  sidebar: "#161616",
-  surface: "#FFFFFF",
-  elevated: "#FBFBFA",
-  border: "rgba(20, 20, 20, 0.08)",
-  borderStrong: "rgba(20, 20, 20, 0.14)",
-  text: "#141414",
-  textMuted: "#6B6B6B",
-  textDim: "#9A9A9A",
-  accent: "#0F9F70",
-  accentSoft: "rgba(15, 159, 112, 0.1)",
-  danger: "#E11D48",
-  warning: "#D97706",
-  success: "#0F9F70",
+  bg: "#0A0B0B",
+  sidebar: "#0D0E0E",
+  surface: "#131415",
+  elevated: "#191B1C",
+  border: "rgba(255, 255, 255, 0.07)",
+  borderStrong: "rgba(255, 255, 255, 0.14)",
+  text: "#F2F4F3",
+  textMuted: "#969D9A",
+  textDim: "#6E7674",
+  accent: "#34D399",
+  accentSoft: "rgba(52, 211, 153, 0.13)",
+  amber: "#F0A868",
+  danger: "#FB7185",
+  warning: "#FBBF24",
+  success: "#34D399",
 } as const;
 
 export const ui = {
-  container: "mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8",
+  container: "mx-auto w-full max-w-[1480px] px-4 sm:px-6 lg:px-8",
 
   card: "wo-card",
   cardInteractive: "wo-card wo-card-interactive",
+  cardAccent: "wo-card wo-card-accent",
   cardFeatured: "wo-card-featured",
   cardCta: "wo-card-cta",
+  hero: "wo-hero",
 
   btnPrimary: "wo-btn wo-btn-primary",
   btnSecondary: "wo-btn wo-btn-secondary",
@@ -41,6 +44,12 @@ export const ui = {
   h2: "text-[15px] font-semibold tracking-tight text-wo-text",
   muted: "text-wo-muted",
   kicker: "wo-kicker",
+
+  row: "wo-row",
+  tile: "wo-tile",
+  segment: "wo-segment",
+  segmentItem: "wo-segment-item",
+  segmentItemActive: "wo-segment-item wo-segment-item-active",
 
   overlay: "wo-overlay",
   modal: "wo-modal",

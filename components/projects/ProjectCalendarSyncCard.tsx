@@ -106,8 +106,8 @@ export function ProjectCalendarSyncCard({
         <span
           className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${
             feed?.enabled
-              ? "bg-emerald-50 text-emerald-800"
-              : "bg-slate-100 text-wo-muted"
+              ? "bg-emerald-500/12 text-emerald-300"
+              : "bg-white/[0.06] text-wo-muted"
           }`}
         >
           {loading ? "…" : feed?.enabled ? "Calendrier actif" : "Non activé"}

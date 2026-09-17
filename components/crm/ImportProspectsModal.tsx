@@ -230,7 +230,7 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
               </p>
 
               <label
-                className={`flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-wo-border bg-wo-hover/50 px-6 py-10 transition hover:border-indigo-300 hover:bg-indigo-50 ${loading ? "pointer-events-none opacity-60" : ""}`}
+                className={`flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-wo-border bg-white/[0.02] px-6 py-10 transition hover:border-emerald-400/40 hover:bg-emerald-400/[0.06] ${loading ? "pointer-events-none opacity-60" : ""}`}
               >
                 {loading ? (
                   <IconLoader2 className="h-8 w-8 animate-spin text-wo-accent" />
@@ -268,7 +268,7 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
                 <StatCard
                   label="Lignes valides"
                   value={mappedRows.length}
-                  accent={hasClubMapping ? undefined : "text-rose-600"}
+                  accent={hasClubMapping ? undefined : "text-rose-300"}
                 />
               </div>
 
@@ -304,7 +304,7 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
                   ))}
                 </div>
                 {!hasClubMapping ? (
-                  <p className="mt-2 flex items-center gap-1.5 text-xs text-rose-600">
+                  <p className="mt-2 flex items-center gap-1.5 text-xs text-rose-300">
                     <IconAlertCircle className="h-3.5 w-3.5" />
                     Associez au moins une colonne au champ « Nom / entreprise ».
                   </p>
@@ -329,7 +329,7 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
                       key={value}
                       className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 transition ${
                         duplicateStrategy === value
-                          ? "border-indigo-200 bg-indigo-50"
+                          ? "border-emerald-400/35 bg-emerald-400/10"
                           : "border-wo-border hover:bg-wo-hover"
                       }`}
                     >
@@ -381,8 +381,8 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
 
               {/* Compteur avant import */}
               {hasClubMapping && previewCounts ? (
-                <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3">
-                  <p className="text-sm font-medium text-indigo-700">
+                <div className="rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-4 py-3">
+                  <p className="text-sm font-medium text-emerald-300">
                     {previewCounts.willImport} prospect{previewCounts.willImport > 1 ? "s" : ""}{" "}
                     {previewCounts.willImport > 1 ? "seront importés" : "sera importé"}
                     {previewCounts.willUpdate > 0
@@ -406,8 +406,8 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
           {/* Étape 3 : succès */}
           {step === "success" && result ? (
             <div className="space-y-4 text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
-                <IconCheck className="h-7 w-7 text-emerald-600" stroke={2} />
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-400/12">
+                <IconCheck className="h-7 w-7 text-emerald-300" stroke={2} />
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-wo-text">Import terminé</h3>
@@ -427,7 +427,7 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
                 ) : null}
               </div>
               {result.errors.length > 0 ? (
-                <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-left text-xs text-amber-800">
+                <div className="rounded-xl border border-amber-400/22 bg-amber-400/10 px-4 py-3 text-left text-xs text-amber-200">
                   {result.errors.slice(0, 5).map((e, i) => (
                     <p key={i}>{e}</p>
                   ))}
@@ -520,7 +520,7 @@ function StatCard({
 
 function ErrorBox({ message }: { message: string }) {
   return (
-    <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+    <div className="flex items-start gap-2 rounded-xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
       <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
       <span className="whitespace-pre-line">{message}</span>
     </div>

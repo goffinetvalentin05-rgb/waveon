@@ -100,7 +100,7 @@ function ConfirmModal({
             type="button"
             className={
               isDanger
-                ? "inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-medium text-rose-700 transition hover:bg-rose-100"
+                ? "inline-flex items-center justify-center rounded-full border border-rose-400/25 bg-rose-500/10 px-4 py-2.5 text-sm font-medium text-rose-300 transition hover:bg-rose-500/20"
                 : ui.btnPrimary
             }
             onClick={onConfirm}
@@ -185,7 +185,7 @@ function DeleteProspectModalInner({
             autoFocus
           />
         </div>
-        {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
+        {error ? <p className="mt-3 text-sm text-rose-300">{error}</p> : null}
         <div className="mt-6 flex justify-end gap-2">
           <button type="button" className={ui.btnSecondary} onClick={onCancel} disabled={loading}>
             Annuler
@@ -1128,7 +1128,7 @@ export function ProspectDetailClient2({
                   <button
                     type="button"
                     disabled={busy}
-                    className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 transition hover:bg-emerald-100 disabled:opacity-50"
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3.5 py-2 text-sm font-medium text-emerald-300 transition hover:bg-emerald-400/20 disabled:opacity-50"
                     onClick={() => runAction("client")}
                   >
                     <IconUserCheck className="h-4 w-4" />
@@ -1307,9 +1307,9 @@ export function ProspectDetailClient2({
       </div>
 
 
-      <section className="rounded-[22px] border border-rose-100 bg-rose-50/50 p-5">
-        <h2 className="text-sm font-semibold tracking-tight text-rose-900">Zone dangereuse</h2>
-        <p className="mt-1 text-sm text-rose-800/70">
+      <section className="rounded-[20px] border border-rose-400/18 bg-rose-500/[0.06] p-5">
+        <h2 className="text-sm font-semibold tracking-tight text-rose-200">Zone dangereuse</h2>
+        <p className="mt-1 text-sm text-rose-200/60">
           {isArchived
             ? "Ce prospect est archivé. Vous pouvez le restaurer ou le supprimer définitivement."
             : hasHistoryOrNotes
@@ -1341,7 +1341,7 @@ export function ProspectDetailClient2({
           )}
           <button
             type="button"
-            className="inline-flex items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-medium text-rose-300 transition hover:bg-rose-500/10 disabled:opacity-50"
             disabled={pending || archiveLoading || deleteLoading}
             onClick={() => {
               setDeleteError(null);

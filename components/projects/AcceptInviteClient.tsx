@@ -149,11 +149,11 @@ export function AcceptInviteClient({
                 </div>
 
                 <dl className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="rounded-xl bg-slate-50 px-3 py-2.5">
+                  <div className="rounded-xl bg-white/[0.04] px-3 py-2.5">
                     <dt className="text-[11px] font-medium uppercase tracking-wide text-wo-dim">Rôle</dt>
                     <dd className="mt-0.5 font-medium text-wo-text">{PROJECT_ROLE_LABELS[role] ?? role}</dd>
                   </div>
-                  <div className="rounded-xl bg-slate-50 px-3 py-2.5">
+                  <div className="rounded-xl bg-white/[0.04] px-3 py-2.5">
                     <dt className="text-[11px] font-medium uppercase tracking-wide text-wo-dim">Expiration</dt>
                     <dd className="mt-0.5 font-medium text-wo-text">
                       {invite?.expires_at
@@ -178,12 +178,12 @@ export function AcceptInviteClient({
                 ) : null}
 
                 {emailMismatch ? (
-                  <p className="text-sm text-rose-600">
+                  <p className="text-sm text-rose-300">
                     Connecté en tant que {userEmail}. Cette invitation est destinée à {invite?.email}.
                   </p>
                 ) : null}
 
-                {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+                {error ? <p className="text-sm text-rose-300">{error}</p> : null}
 
                 {inactive ? (
                   <Link href={signedIn ? "/home" : "/login"} className={`${ui.btnSecondary} w-full justify-center`}>

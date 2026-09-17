@@ -135,7 +135,7 @@ export function BirthdayClient({ initial }: { initial: Birthday[] }) {
       </div>
 
       {error ? (
-        <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">
+        <p className="rounded-xl border border-rose-400/25 bg-rose-500/10 px-4 py-2.5 text-sm text-rose-300">
           {error}
         </p>
       ) : null}
@@ -162,7 +162,7 @@ export function BirthdayClient({ initial }: { initial: Birthday[] }) {
               className={`${ui.card} flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between`}
             >
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-500/12 text-rose-300">
                   <IconCake className="h-5 w-5" stroke={1.75} />
                 </span>
                 <div>
@@ -289,7 +289,7 @@ function ReminderToggle({
       onClick={onClick}
       className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
         active
-          ? "border-indigo-200 bg-indigo-50 text-indigo-700"
+          ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
           : "border-wo-border bg-transparent text-wo-dim hover:bg-wo-hover"
       }`}
       title={active ? `Rappel ${label} activé` : `Rappel ${label} désactivé`}
@@ -417,7 +417,7 @@ function BirthdayModal({
                 type="checkbox"
                 checked={remindDayBefore}
                 onChange={(e) => setRemindDayBefore(e.target.checked)}
-                className="h-4 w-4 rounded border-white/20 text-indigo-600 focus:ring-indigo-500/30"
+                className="h-4 w-4 rounded border-white/20 text-emerald-500 focus:ring-emerald-500/30"
               />
               Rappel la veille
             </label>
@@ -426,12 +426,12 @@ function BirthdayModal({
                 type="checkbox"
                 checked={remindSameDay}
                 onChange={(e) => setRemindSameDay(e.target.checked)}
-                className="h-4 w-4 rounded border-white/20 text-indigo-600 focus:ring-indigo-500/30"
+                className="h-4 w-4 rounded border-white/20 text-emerald-500 focus:ring-emerald-500/30"
               />
               Rappel le jour J
             </label>
           </div>
-          {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+          {error ? <p className="text-sm text-rose-300">{error}</p> : null}
         </div>
 
         <div className="mt-6 flex justify-end gap-2">

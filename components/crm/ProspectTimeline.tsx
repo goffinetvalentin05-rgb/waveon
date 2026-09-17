@@ -59,7 +59,7 @@ export function ProspectTimeline({
                 {idx < visible.length - 1 ? (
                   <span className="absolute left-[7px] top-3 h-full w-px bg-wo-hover" />
                 ) : null}
-                <span className="relative mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full border-2 border-[#0f9f70] bg-white" />
+                <span className="relative mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full border-2 border-emerald-400/70 bg-[#121314]" />
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -87,7 +87,7 @@ export function ProspectTimeline({
                         <div className="absolute right-0 top-9 z-20 w-44 rounded-[12px] border border-wo-border bg-[color:var(--wo-modal)] p-2 shadow-lg">
                           <button
                             type="button"
-                            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-rose-700 hover:bg-rose-50"
+                            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-rose-300 hover:bg-rose-500/10"
                             onClick={() => {
                               setMenuId(null);
                               onDelete(a);

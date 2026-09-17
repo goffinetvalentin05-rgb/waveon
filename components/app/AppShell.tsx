@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   IconBell,
-  IconChevronDown,
   IconChevronRight,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
@@ -13,6 +12,7 @@ import {
   IconMenu2,
   IconPlus,
   IconSearch,
+  IconSelector,
   IconX,
 } from "@tabler/icons-react";
 import { brand } from "@/lib/brand/config";
@@ -110,7 +110,7 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
     : null;
   const inPersonal = Boolean(pathname?.startsWith("/personal"));
   const meta = pageMetaFromPath(pathname, currentProject?.name ?? null);
-  const sidebarWidth = collapsed ? 72 : 240;
+  const sidebarWidth = collapsed ? 76 : 244;
 
   useEffect(() => {
     void fetch("/api/notifications")
@@ -134,8 +134,6 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
     await supabase.auth.signOut();
     router.replace("/login");
   };
-
-  const toggleCollapsed = () => setCollapsed(!collapsed);
 
   const openSearch = () => window.dispatchEvent(new Event("waveone:search"));
 
@@ -168,10 +166,9 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
       }
       return false;
     });
-    const nextSuffix = allowed ? suffix : "";
     writeStoredId(ACTIVE_PROJECT_STORAGE_KEY, project.id);
     setSwitcherOpen(false);
-    router.push(`/projects/${project.id}${nextSuffix}`);
+    router.push(`/projects/${project.id}${allowed ? suffix : ""}`);
   };
 
   const sidebarProps = {
@@ -186,7 +183,7 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
     inPersonal,
     onTogglePersonal: () => setPersonalOpen(!personalOpen),
     onToggleMore: () => setMoreOpen(!moreOpen),
-    onCollapse: toggleCollapsed,
+    onCollapse: () => setCollapsed(!collapsed),
     onCreateProject: () => setCreateProject(true),
     onNavigate: () => {
       setMobileOpen(false);
@@ -209,20 +206,16 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
         <SidebarBody {...sidebarProps} />
       </aside>
 
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-wo-border bg-[#f6f6f3]/90 px-4 backdrop-blur-xl lg:hidden">
-        <Link href={currentProject ? `/projects/${currentProject.id}` : "/home"} className="flex items-center gap-2">
-          <span className="wo-brand-mark !h-7 !w-7">R</span>
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-wo-border bg-[#0a0b0b]/85 px-4 backdrop-blur-xl lg:hidden">
+        <Link href={currentProject ? `/projects/${currentProject.id}` : "/home"} className="flex items-center gap-2.5">
+          <span className="wo-brand-mark !h-8 !w-8">R</span>
           <span className="text-sm font-semibold text-wo-text">{currentProject?.name ?? brand.shortName}</span>
         </Link>
         <div className="flex items-center gap-0.5">
           <button type="button" className="wo-icon-btn h-10 w-10" onClick={openSearch} aria-label="Recherche">
             <IconSearch className="h-5 w-5" stroke={1.6} />
           </button>
-          <Link
-            href="/notifications"
-            className="relative flex h-10 w-10 items-center justify-center rounded-xl text-wo-muted hover:bg-wo-hover hover:text-wo-text"
-            aria-label="Notifications"
-          >
+          <Link href="/notifications" className="relative wo-icon-btn h-10 w-10" aria-label="Notifications">
             <IconBell className="h-5 w-5" stroke={1.6} />
             {notifCount > 0 ? <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-wo-accent" /> : null}
           </Link>
@@ -236,14 +229,14 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
             aria-label="Fermer"
           />
           <aside className="wo-sidebar absolute inset-y-0 left-0 flex w-[min(20rem,86vw)] flex-col overflow-hidden">
-            <div className="flex h-12 items-center justify-between px-4">
-              <span className="flex items-center gap-2 text-sm font-semibold text-wo-text">
-                <span className="wo-brand-mark !h-7 !w-7">R</span>
+            <div className="flex h-16 items-center justify-between px-4">
+              <span className="flex items-center gap-2.5 text-sm font-semibold text-wo-text">
+                <span className="wo-brand-mark !h-8 !w-8">R</span>
                 {brand.name}
               </span>
               <button type="button" className="wo-icon-btn" onClick={() => setMobileOpen(false)}>
@@ -255,26 +248,26 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
         </div>
       ) : null}
 
-      <main className={`min-h-screen flex-1 pb-[4.5rem] lg:pb-0 ${collapsed ? "lg:ml-[72px]" : "lg:ml-[240px]"}`}>
-        <div className="hidden h-[72px] items-center justify-between gap-4 px-8 lg:flex">
+      <main className={`min-h-screen flex-1 pb-[4.5rem] lg:pb-0 ${collapsed ? "lg:ml-[76px]" : "lg:ml-[244px]"}`}>
+        <div className="sticky top-0 z-30 hidden h-[72px] items-center justify-between gap-6 border-b border-wo-border bg-[#0a0b0b]/70 px-8 backdrop-blur-xl lg:flex">
           <div className="min-w-0">
-            <h1 className="truncate font-display text-[1.65rem] font-semibold tracking-tight text-wo-text">{meta.title}</h1>
-            {meta.subtitle && pathname?.includes("/prospects/") ? (
-              <p className="truncate text-[13px] text-wo-muted">{meta.subtitle}</p>
-            ) : null}
+            <h1 className="truncate font-display text-[1.35rem] font-semibold tracking-tight text-wo-text">
+              {meta.title}
+            </h1>
+            {meta.subtitle ? <p className="truncate text-[12.5px] text-wo-dim">{meta.subtitle}</p> : null}
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <button type="button" className="wo-topbar-search" onClick={openSearch}>
               <IconSearch className="h-4 w-4 shrink-0" stroke={1.7} />
-              <span className="flex-1 truncate text-left text-[13px]">Rechercher…</span>
-              <kbd className="hidden rounded-full border border-wo-border bg-transparent px-1.5 py-0.5 text-[10px] font-medium text-wo-dim sm:inline">
+              <span className="flex-1 truncate text-left text-[13px]">Rechercher un prospect…</span>
+              <kbd className="hidden rounded-full border border-wo-border bg-white/[0.04] px-2 py-0.5 text-[10px] font-medium text-wo-dim sm:inline">
                 ⌘K
               </kbd>
             </button>
             <Link href="/notifications" className="relative wo-icon-btn" aria-label="Notifications">
               <IconBell className="h-[18px] w-[18px]" stroke={1.6} />
               {notifCount > 0 ? (
-                <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-wo-accent" />
+                <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-wo-accent shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
               ) : null}
             </Link>
             <Link href="/settings" className="wo-profile">
@@ -286,9 +279,10 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
           </div>
         </div>
 
-        <div className="mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:pb-10">
+        <div className="mx-auto w-full max-w-[1480px] px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
           <div className="mb-5 lg:hidden">
             <h1 className="wo-h1">{meta.title}</h1>
+            {meta.subtitle ? <p className="mt-1 text-[13px] text-wo-dim">{meta.subtitle}</p> : null}
           </div>
           {children}
         </div>
@@ -296,7 +290,7 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
 
       <nav
         aria-label="Navigation principale"
-        className="fixed inset-x-0 bottom-0 z-30 flex border-t border-wo-border bg-white/95 backdrop-blur-xl lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 flex border-t border-wo-border bg-[#0d0e0e]/95 backdrop-blur-xl lg:hidden"
       >
         {MOBILE_TABS.map((item) => {
           const Icon = item.icon;
@@ -390,10 +384,17 @@ function SidebarBody({
   return (
     <>
       <div className={`flex h-[72px] items-center ${compact ? "justify-center px-2" : "justify-between px-4"}`}>
-        <Link href={base ?? "/home"} className="flex items-center gap-2.5" onClick={onNavigate}>
+        <Link href={base ?? "/home"} className="flex min-w-0 items-center gap-2.5" onClick={onNavigate}>
           <span className="wo-brand-mark">R</span>
           {compact ? null : (
-            <span className="font-display text-[17px] font-semibold tracking-tight text-white">{brand.shortName}</span>
+            <span className="min-w-0">
+              <span className="block font-display text-[16px] font-semibold leading-tight tracking-tight text-white">
+                {brand.shortName}
+              </span>
+              <span className="block text-[10.5px] font-medium uppercase tracking-[0.14em] text-wo-dim">
+                {brand.tagline}
+              </span>
+            </span>
           )}
         </Link>
         {!compact && !hideCollapse && onCollapse ? (
@@ -402,46 +403,50 @@ function SidebarBody({
           </button>
         ) : null}
       </div>
+
       {compact && onCollapse ? (
-        <div className="flex justify-center pb-1">
+        <div className="flex justify-center pb-2">
           <button type="button" className="wo-icon-btn" onClick={onCollapse} aria-label="Déplier">
             <IconLayoutSidebarLeftExpand className="h-4 w-4" stroke={1.6} />
           </button>
         </div>
       ) : null}
 
-      <div className={`px-3 pb-3 ${compact ? "px-2" : ""}`} ref={switcherRef}>
+      <div className={compact ? "px-2 pb-3" : "px-3 pb-4"} ref={switcherRef}>
         {currentProject ? (
           <div className="relative">
             <button
               type="button"
               onClick={() => setSwitcherOpen((v) => !v)}
               title={currentProject.name}
-              className={`flex w-full items-center gap-2 rounded-2xl bg-white/10 px-2.5 py-2 text-left transition hover:bg-white/15 ${
-                compact ? "justify-center px-0" : ""
-              }`}
+              className={`wo-project-switch ${compact ? "justify-center !px-0" : ""}`}
             >
-              <ProjectAvatar project={currentProject} size="xs" />
+              <ProjectAvatar project={currentProject} size="sm" />
               {compact ? null : (
                 <>
-                  <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-wo-text">
-                    {currentProject.name}
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[10px] font-medium uppercase tracking-[0.14em] text-wo-dim">
+                      Projet
+                    </span>
+                    <span className="block truncate text-[13.5px] font-semibold text-white">
+                      {currentProject.name}
+                    </span>
                   </span>
-                  <IconChevronDown className="h-3.5 w-3.5 shrink-0 text-wo-dim" />
+                  <IconSelector className="h-4 w-4 shrink-0 text-wo-dim" stroke={1.7} />
                 </>
               )}
             </button>
             {switcherOpen ? (
-              <div className="wo-modal absolute left-0 z-40 mt-1.5 w-[min(16rem,calc(100%-0px))] overflow-hidden p-1">
+              <div className="wo-modal absolute left-0 right-0 z-40 mt-2 overflow-hidden p-1.5">
                 {activeProjects.map((p) => (
                   <button
                     key={p.id}
                     type="button"
                     onClick={() => onSwitchProject(p)}
-                    className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] ${
+                    className={`flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[13px] transition ${
                       p.id === currentProject.id
                         ? "bg-wo-accent-soft text-wo-accent"
-                        : "text-wo-secondary hover:bg-wo-hover"
+                        : "text-wo-secondary hover:bg-white/[0.05]"
                     }`}
                   >
                     <ProjectAvatar project={p} size="xs" />
@@ -454,7 +459,7 @@ function SidebarBody({
                     setSwitcherOpen(false);
                     onCreateProject();
                   }}
-                  className="mt-1 flex w-full items-center gap-2 rounded-lg border-t border-wo-border px-2.5 py-2 text-[13px] text-wo-muted hover:bg-wo-hover hover:text-wo-text"
+                  className="mt-1.5 flex w-full items-center gap-2.5 rounded-xl border-t border-wo-border px-2.5 py-2 pt-3 text-[13px] text-wo-muted transition hover:text-wo-text"
                 >
                   <IconPlus className="h-4 w-4" />
                   Nouveau projet
@@ -474,58 +479,51 @@ function SidebarBody({
         )}
       </div>
 
-      <nav className="flex flex-1 flex-col gap-4 overflow-y-auto px-2 pb-2">
-        <div>
-          {compact ? null : <SectionLabel>Prospection</SectionLabel>}
-          <div className="flex flex-col gap-px">
-            {currentProject
-              ? visiblePrimary.map((item) => {
-                  const href = `${base}${item.suffix}`;
-                  const active = isProjectNavActive(pathname, href, item.exact);
-                  return (
-                    <SideLink
-                      key={item.key}
-                      href={href}
-                      label={item.label}
-                      icon={item.icon}
-                      active={active}
-                      compact={compact}
-                      onClick={onNavigate}
-                    />
-                  );
-                })
-              : null}
-            {currentProject && visibleMore.length > 0 ? (
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2.5 pb-2">
+        {currentProject ? (
+          <>
+            {compact ? null : <SectionLabel>Prospection</SectionLabel>}
+            <div className="flex flex-col gap-0.5">
+              {visiblePrimary.map((item) => {
+                const href = `${base}${item.suffix}`;
+                return (
+                  <SideLink
+                    key={item.key}
+                    href={href}
+                    label={item.label}
+                    icon={item.icon}
+                    active={isProjectNavActive(pathname, href, item.exact)}
+                    compact={compact}
+                    onClick={onNavigate}
+                  />
+                );
+              })}
+            </div>
+
+            {visibleMore.length > 0 ? (
               compact ? (
-                visibleMore.map((item) => {
-                  const href = `${base}${item.suffix}`;
-                  return (
-                    <SideLink
-                      key={item.key}
-                      href={href}
-                      label={item.label}
-                      icon={item.icon}
-                      active={isProjectNavActive(pathname, href, item.exact)}
-                      compact
-                      onClick={onNavigate}
-                    />
-                  );
-                })
+                <div className="mt-2 flex flex-col gap-0.5 border-t border-wo-border pt-2">
+                  {visibleMore.map((item) => {
+                    const href = `${base}${item.suffix}`;
+                    return (
+                      <SideLink
+                        key={item.key}
+                        href={href}
+                        label={item.label}
+                        icon={item.icon}
+                        active={isProjectNavActive(pathname, href, item.exact)}
+                        compact
+                        onClick={onNavigate}
+                      />
+                    );
+                  })}
+                </div>
               ) : (
-                <div>
-                  <button
-                    type="button"
-                    onClick={onToggleMore}
-                    className="wo-nav-link w-full text-wo-dim"
-                  >
-                    <IconChevronRight
-                      className={`h-3.5 w-3.5 transition ${moreOpen ? "rotate-90" : ""}`}
-                      stroke={1.8}
-                    />
-                    <span className="flex-1 truncate text-left">Plus</span>
-                  </button>
-                  {moreOpen
-                    ? visibleMore.map((item) => {
+                <div className="mt-3">
+                  <CollapsibleLabel label="Plus" open={moreOpen} onToggle={onToggleMore} />
+                  {moreOpen ? (
+                    <div className="flex flex-col gap-0.5">
+                      {visibleMore.map((item) => {
                         const href = `${base}${item.suffix}`;
                         return (
                           <SideLink
@@ -538,16 +536,17 @@ function SidebarBody({
                             onClick={onNavigate}
                           />
                         );
-                      })
-                    : null}
+                      })}
+                    </div>
+                  ) : null}
                 </div>
               )
             ) : null}
-          </div>
-        </div>
+          </>
+        ) : null}
       </nav>
 
-      <div className="mt-auto space-y-1 border-t border-wo-border p-2 pb-3">
+      <div className="mt-auto space-y-1 border-t border-wo-border px-2.5 py-3">
         {compact ? (
           PERSONAL_NAV.map((item) => (
             <SideLink
@@ -561,20 +560,12 @@ function SidebarBody({
             />
           ))
         ) : (
-          <div>
-            <button
-              type="button"
-              onClick={onTogglePersonal}
-              className={`wo-nav-link w-full ${inPersonal ? "text-wo-text" : ""}`}
-            >
-              <IconChevronRight
-                className={`h-3.5 w-3.5 transition ${personalOpen || inPersonal ? "rotate-90" : ""}`}
-                stroke={1.8}
-              />
-              <span className="flex-1 truncate text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-wo-dim">
-                Personnel
-              </span>
-            </button>
+          <div className="mb-1">
+            <CollapsibleLabel
+              label="Personnel"
+              open={personalOpen || inPersonal}
+              onToggle={onTogglePersonal}
+            />
             {personalOpen || inPersonal
               ? PERSONAL_NAV.map((item) => (
                   <SideLink
@@ -608,8 +599,8 @@ function SidebarBody({
           className={`wo-nav-link w-full ${compact ? "justify-center px-0" : ""}`}
           aria-label="Se déconnecter"
         >
-          <IconLogout className="h-4 w-4" stroke={1.6} />
-          {compact ? null : "Déconnexion"}
+          <IconLogout className="wo-nav-icon h-[17px] w-[17px]" stroke={1.6} />
+          {compact ? null : <span className="flex-1 truncate text-left">Déconnexion</span>}
         </button>
       </div>
     </>
@@ -618,9 +609,28 @@ function SidebarBody({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mb-1 flex items-center justify-between px-2.5">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-wo-dim">{children}</p>
-    </div>
+    <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-wo-dim">{children}</p>
+  );
+}
+
+function CollapsibleLabel({
+  label,
+  open,
+  onToggle,
+}: {
+  label: string;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="mb-1 flex w-full items-center gap-1.5 rounded-xl px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-wo-dim transition hover:text-wo-muted"
+    >
+      <IconChevronRight className={`h-3 w-3 transition ${open ? "rotate-90" : ""}`} stroke={2.2} />
+      <span className="flex-1 text-left">{label}</span>
+    </button>
   );
 }
 
@@ -646,7 +656,7 @@ function SideLink({
       title={label}
       className={`wo-nav-link ${active ? "wo-nav-link-active" : ""} ${compact ? "justify-center px-0" : ""}`}
     >
-      <Icon className="wo-nav-icon h-[17px] w-[17px]" stroke={1.6} />
+      <Icon className="wo-nav-icon h-[17px] w-[17px] shrink-0" stroke={1.7} />
       {compact ? null : <span className="flex-1 truncate">{label}</span>}
     </Link>
   );

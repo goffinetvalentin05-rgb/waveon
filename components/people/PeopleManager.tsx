@@ -48,7 +48,7 @@ export function PeopleManager() {
         {people.map((p) => (
           <li key={p.id} className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-50 text-[11px] font-semibold text-indigo-700">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/12 text-[11px] font-semibold text-emerald-300">
                 {personInitials(p.name)}
               </span>
               <div>

@@ -41,7 +41,7 @@ export function PersonalLockScreen() {
 
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-sm flex-col items-center justify-center px-4">
-      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-50 text-indigo-700 shadow-[0_0_32px_rgba(99,102,241,0.22)]">
+      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-400/12 text-emerald-300 shadow-[0_0_32px_rgba(52,211,153,0.25)]">
         <IconLock className="h-6 w-6" />
       </span>
       <h1 className="mt-5 font-display text-2xl font-semibold text-wo-text">Espace Personnel</h1>
@@ -53,7 +53,7 @@ export function PersonalLockScreen() {
         {Array.from({ length: Math.max(4, pin.length) }).map((_, i) => (
           <span
             key={i}
-            className={`h-3 w-3 rounded-full ${i < pin.length ? "bg-indigo-500" : "bg-slate-200"}`}
+            className={`h-3 w-3 rounded-full ${i < pin.length ? "bg-emerald-400" : "bg-white/15"}`}
           />
         ))}
       </div>
@@ -82,7 +82,7 @@ export function PersonalLockScreen() {
             <button
               key={key}
               type="button"
-              className="rounded-2xl border border-wo-border bg-wo-hover py-3 text-lg font-medium text-wo-text transition hover:border-indigo-200 hover:bg-white/[0.07]"
+              className="rounded-2xl border border-wo-border bg-wo-hover py-3 text-lg font-medium text-wo-text transition hover:border-emerald-400/30 hover:bg-white/[0.07]"
               onClick={() => {
                 if (key === "⌫") setPin((v) => v.slice(0, -1));
                 else append(key);

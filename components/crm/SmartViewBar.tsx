@@ -39,15 +39,15 @@ export function SmartViewBar({
             key={view.id}
             type="button"
             onClick={() => onSelect(view.id)}
-            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
               selected
-                ? "bg-[#141414] text-white"
-                : "bg-[#f4f4f1] text-wo-muted hover:bg-[#ecece8] hover:text-wo-text"
+                ? "border-emerald-400/30 bg-emerald-400/12 text-emerald-300"
+                : "border-white/[0.06] bg-white/[0.03] text-wo-muted hover:border-white/15 hover:text-wo-text"
             }`}
           >
             {view.label}
             {n != null ? (
-              <span className={`tabular-nums ${selected ? "text-white/70" : "text-wo-dim"}`}>{n}</span>
+              <span className={`tabular-nums ${selected ? "text-emerald-400/70" : "text-wo-dim"}`}>{n}</span>
             ) : null}
           </button>
         );

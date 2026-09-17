@@ -1,5 +1,17 @@
 import Link from "next/link";
+import { IconArrowRight } from "@tabler/icons-react";
 import type { PipelineStageCount } from "@/lib/crm/dashboard";
+
+const STAGE_TONES: Record<string, string> = {
+  to_contact: "from-zinc-400/70 to-zinc-500/20",
+  follow_up_1: "from-amber-300/80 to-amber-500/20",
+  follow_up_2: "from-orange-300/80 to-orange-500/20",
+  relay: "from-sky-300/80 to-sky-500/20",
+  discussion: "from-violet-300/80 to-violet-500/20",
+  demo: "from-cyan-300/80 to-cyan-500/20",
+  awaiting_decision: "from-teal-300/80 to-teal-500/20",
+  client: "from-emerald-300/90 to-emerald-500/25",
+};
 
 export function PipelineFunnel({
   stages,
@@ -10,38 +22,54 @@ export function PipelineFunnel({
 }) {
   const max = Math.max(1, ...stages.map((s) => s.count));
   const total = stages.reduce((s, x) => s + x.count, 0);
+  const clients = stages.find((s) => s.id === "client")?.count ?? 0;
+  const conversion = total > 0 ? Math.round((clients / total) * 100) : 0;
 
   return (
-    <section className="wo-widget p-5">
-      <div className="mb-5 flex items-center justify-between gap-3">
-        <h2 className="text-[15px] font-semibold tracking-tight text-wo-text">Pipeline</h2>
-        <Link href={`/projects/${projectId}/pipeline`} className="text-[13px] font-medium text-wo-muted hover:text-wo-text">
-          Voir le kanban
+    <section className="wo-widget wo-card-accent h-full p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-[15px] font-semibold tracking-tight text-wo-text">Pipeline</h2>
+          <p className="mt-1 text-[12.5px] text-wo-muted">
+            {total} prospects actifs · {conversion}% convertis
+          </p>
+        </div>
+        <Link
+          href={`/projects/${projectId}/pipeline`}
+          className="inline-flex items-center gap-1 text-[12.5px] font-medium text-wo-accent transition hover:text-wo-text"
+        >
+          Kanban
+          <IconArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
-      <div className="flex flex-col gap-1.5">
-        {stages.map((stage) => (
+
+      <div className="mt-5 flex flex-col gap-2.5">
+        {stages.map((stage) => {
+          const pct = Math.round((stage.count / max) * 100);
+          return (
             <Link
               key={stage.id}
               href={`/projects/${projectId}/prospects?status=${encodeURIComponent(stage.status)}`}
-              className="group flex items-center gap-3 py-1"
+              className="group"
             >
-              <span className="w-[7.5rem] shrink-0 truncate text-[12px] text-wo-muted group-hover:text-wo-text">
-                {stage.label}
-              </span>
-              <div className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-[#f1f1ee]">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="truncate text-[12.5px] text-wo-muted transition group-hover:text-wo-text">
+                  {stage.label}
+                </span>
+                <span className="shrink-0 text-[13px] font-semibold tabular-nums text-wo-text">{stage.count}</span>
+              </div>
+              <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/[0.05]">
                 <div
-                  className="absolute inset-y-0 left-0 rounded-full bg-[#0f9f70]/70"
-                  style={{ width: `${Math.max(stage.count ? 6 : 0, (stage.count / max) * 100)}%` }}
+                  className={`h-full rounded-full bg-gradient-to-r transition-all duration-300 ${
+                    STAGE_TONES[stage.id] ?? "from-white/40 to-white/10"
+                  }`}
+                  style={{ width: `${stage.count === 0 ? 0 : Math.max(6, pct)}%` }}
                 />
               </div>
-              <span className="w-8 text-right text-[13px] font-semibold tabular-nums text-wo-text">
-                {stage.count}
-              </span>
             </Link>
-        ))}
+          );
+        })}
       </div>
-      <p className="mt-3 text-[11px] text-wo-dim">{total} prospects dans le pipeline actif</p>
     </section>
   );
 }

@@ -1,7 +1,6 @@
 import type { ProjectModuleKey } from "@/lib/projects/modules";
 import type { ModuleIcon } from "@/modules/types";
 import {
-  IconBolt,
   IconCalendarEvent,
   IconCash,
   IconChartBar,
@@ -11,14 +10,12 @@ import {
   IconLanguage,
   IconLayoutDashboard,
   IconNote,
-  IconSearch,
   IconSettings,
   IconSparkles,
   IconActivity,
   IconUsers,
   IconUserCheck,
   IconUserCircle,
-  IconUserPlus,
   IconColumns3,
 } from "@tabler/icons-react";
 
@@ -46,23 +43,24 @@ export type ProjectNavItem = {
   group?: "primary" | "more";
 };
 
+/**
+ * `primary` = navigation principale de la sidebar.
+ * `more` = sections secondaires, repliées. Les routes restent toutes actives.
+ */
 export const PROJECT_NAV: ProjectNavItem[] = [
   { key: "overview", label: "Dashboard", suffix: "", icon: IconLayoutDashboard, module: "overview", exact: true, always: true, group: "primary" },
   { key: "prospects", label: "Prospects", suffix: "/prospects", icon: IconUsers, module: "prospects", group: "primary" },
   { key: "pipeline", label: "Pipeline", suffix: "/pipeline", icon: IconColumns3, module: "prospects", group: "primary" },
   { key: "calendar", label: "Calendrier", suffix: "/calendar", icon: IconCalendarEvent, module: "calendar", group: "primary" },
   { key: "tasks", label: "To-do list", suffix: "/tasks", icon: IconChecklist, module: "tasks", group: "primary" },
-  { key: "search", label: "Recherche", suffix: "/search", icon: IconSearch, module: "prospects", group: "more" },
   { key: "clients", label: "Clients", suffix: "/clients", icon: IconUserCheck, module: "prospects", group: "more" },
-  { key: "automations", label: "Automatisations", suffix: "/automations", icon: IconBolt, module: "prospects", group: "more" },
   { key: "content", label: "Contenu", suffix: "/content", icon: IconSparkles, module: "content", group: "more" },
   { key: "notes", label: "Notes", suffix: "/notes", icon: IconNote, module: "notes", group: "more" },
   { key: "activity", label: "Activité", suffix: "/activity", icon: IconActivity, module: "activity", group: "more" },
   { key: "finances", label: "Finances", suffix: "/finances", icon: IconCash, module: "finances", group: "more" },
   { key: "stats", label: "Statistiques", suffix: "/stats", icon: IconChartBar, module: "stats", group: "more" },
   { key: "documents", label: "Documents", suffix: "/documents", icon: IconFileText, module: "documents", group: "more" },
-  { key: "members", label: "Membres", suffix: "/members", icon: IconUserPlus, always: true, group: "more" },
-  { key: "settings", label: "Paramètres", suffix: "/settings", icon: IconSettings, always: true, group: "more" },
+  { key: "settings", label: "Paramètres du projet", suffix: "/settings", icon: IconSettings, always: true, group: "more" },
 ];
 
 export const PROJECT_PRIMARY_NAV = PROJECT_NAV.filter((item) => item.group !== "more");
@@ -83,6 +81,14 @@ export type PageMeta = {
   subtitle?: string;
 };
 
+const PAGE_SUBTITLES: Record<string, string> = {
+  Dashboard: "Vue d’ensemble de votre prospection",
+  Prospects: "Tous les prospects du projet",
+  Pipeline: "Avancement par étape",
+  Calendrier: "Rendez-vous et échéances du projet",
+  "To-do list": "Vos tâches sur ce projet",
+};
+
 export function pageMetaFromPath(pathname: string | null, projectName?: string | null): PageMeta {
   if (!pathname) return { title: "Raven" };
 
@@ -93,7 +99,7 @@ export function pageMetaFromPath(pathname: string | null, projectName?: string |
   if (pathname.startsWith("/personal/notes")) return { title: "Notes" };
   if (pathname.startsWith("/personal/english")) return { title: "Anglais" };
   if (pathname === "/projects") return { title: "Projets" };
-  if (pathname === "/settings") return { title: "Paramètres" };
+  if (pathname === "/settings") return { title: "Paramètres", subtitle: "Compte, sécurité et préférences" };
   if (pathname.startsWith("/notifications")) return { title: "Notifications" };
 
   const projectMatch = pathname.match(/^\/projects\/([^/]+)(?:\/(.*))?$/);
@@ -102,12 +108,16 @@ export function pageMetaFromPath(pathname: string | null, projectName?: string |
     if (rest.startsWith("prospects/") && rest !== "prospects") {
       return { title: "Prospect", subtitle: projectName ?? undefined };
     }
+    if (rest === "members") {
+      return { title: "Membres", subtitle: projectName ?? undefined };
+    }
     const item = PROJECT_NAV.find((nav) =>
       nav.exact ? rest === "" : rest === nav.suffix.slice(1) || rest.startsWith(`${nav.suffix.slice(1)}/`)
     );
+    const title = item?.label ?? "Dashboard";
     return {
-      title: item?.label ?? "Dashboard",
-      subtitle: projectName ?? undefined,
+      title,
+      subtitle: PAGE_SUBTITLES[title] ?? projectName ?? undefined,
     };
   }
 
@@ -129,6 +139,9 @@ export function isProjectNavActive(pathname: string | null, href: string, exact?
   if (exact) return pathname === href;
   if (href.endsWith("/prospects")) {
     return pathname === href || (pathname.startsWith(`${href}/`) && !pathname.includes("/pipeline"));
+  }
+  if (href.endsWith("/settings")) {
+    return pathname === href || pathname === href.replace("/settings", "/members");
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }

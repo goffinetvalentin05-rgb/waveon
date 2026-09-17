@@ -175,7 +175,7 @@ function CalendarWidget({ events }: { events: CalendarEvent[] }) {
           <ol className="relative space-y-0 border-l border-wo-border pl-4">
             {events.map((event) => (
               <li key={event.id} className="relative pb-3 last:pb-0">
-                <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-indigo-500" />
+                <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-emerald-400" />
                 <p className="text-[11px] font-medium tabular-nums text-wo-accent">{eventTime(event)}</p>
                 <p className="text-sm font-medium text-wo-text">{event.title}</p>
                 {event.location ? (
@@ -217,7 +217,7 @@ function EnglishWidget({
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-wo-hover">
               <div
-                className="h-full rounded-full bg-indigo-500 transition-all"
+                className="h-full rounded-full bg-emerald-400 transition-all"
                 style={{ width: `${english.progress}%` }}
               />
             </div>

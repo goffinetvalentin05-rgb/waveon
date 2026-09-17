@@ -43,15 +43,15 @@ const DEFAULT_FILTERS: Filters = {
 };
 
 const TYPE_STYLES: Record<EnglishType, { bg: string; text: string }> = {
-  word: { bg: "bg-indigo-50", text: "text-indigo-700" },
+  word: { bg: "bg-emerald-500/12", text: "text-emerald-300" },
   expression: { bg: "bg-sky-500/15", text: "text-sky-200" },
   sentence: { bg: "bg-wo-hover", text: "text-wo-secondary" },
 };
 
 const STATUS_STYLES: Record<EnglishStatus, { bg: string; text: string; dot: string }> = {
   new: { bg: "bg-wo-hover", text: "text-wo-secondary", dot: "bg-[#8a9e96]" },
-  learning: { bg: "bg-indigo-50", text: "text-indigo-700", dot: "bg-indigo-400" },
-  known: { bg: "bg-indigo-50", text: "text-indigo-700", dot: "bg-emerald-400" },
+  learning: { bg: "bg-sky-500/12", text: "text-sky-300", dot: "bg-sky-400" },
+  known: { bg: "bg-emerald-500/12", text: "text-emerald-300", dot: "bg-emerald-400" },
   review: { bg: "bg-amber-500/15", text: "text-amber-200", dot: "bg-amber-400" },
   archived: { bg: "bg-wo-hover", text: "text-wo-dim", dot: "bg-[#6b7d76]" },
 };

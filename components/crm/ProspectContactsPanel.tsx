@@ -70,7 +70,7 @@ export function ProspectContactsPanel({
                 <p className="text-sm font-medium text-wo-text">
                   {contactDisplayName(c)}
                   {c.is_primary ? (
-                    <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-700">
+                    <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
                       <IconStar className="h-3 w-3" /> Principal
                     </span>
                   ) : null}
@@ -122,7 +122,7 @@ export function ProspectContactsPanel({
           onError={setError}
         />
       ) : null}
-      {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
+      {error ? <p className="mt-3 text-sm text-rose-300">{error}</p> : null}
     </section>
   );
 }
@@ -167,7 +167,7 @@ function ContactForm({
   };
 
   return (
-    <form onSubmit={submit} className="mt-5 grid gap-3 rounded-2xl border border-wo-border bg-slate-50/60 p-4 sm:grid-cols-2">
+    <form onSubmit={submit} className="mt-5 grid gap-3 rounded-2xl border border-wo-border bg-white/[0.025] p-4 sm:grid-cols-2">
       {(
         [
           { name: "first_name", label: "Prénom *", required: true },

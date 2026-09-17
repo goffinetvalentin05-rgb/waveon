@@ -94,7 +94,7 @@ export function HomeDashboard({
               value: overdue,
               icon: IconClockHour4,
               href: "/personal/tasks",
-              tone: "bg-rose-50 text-rose-600",
+              tone: "bg-rose-50 text-rose-300",
             },
             {
               label: "Relances",

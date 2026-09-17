@@ -59,12 +59,12 @@ export function isFollowedProspect(prospect: Prospect): boolean {
 }
 
 const AVATAR_TONES = [
-  "bg-emerald-50 text-emerald-700",
-  "bg-teal-50 text-teal-700",
-  "bg-cyan-50 text-cyan-700",
-  "bg-amber-50 text-amber-800",
-  "bg-sky-50 text-sky-700",
-  "bg-zinc-100 text-zinc-700",
+  "bg-emerald-500/15 text-emerald-300",
+  "bg-teal-500/15 text-teal-300",
+  "bg-cyan-500/15 text-cyan-300",
+  "bg-amber-500/15 text-amber-300",
+  "bg-sky-500/15 text-sky-300",
+  "bg-white/[0.07] text-zinc-300",
 ];
 
 export function prospectAvatarTone(name: string): string {

@@ -272,7 +272,7 @@ export function CalendarClient({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex rounded-full bg-[#f4f4f1] p-1">
+        <div className="wo-segment">
           {(["month", "week", "day"] as const).map((v) => (
             <button
               key={v}
@@ -428,7 +428,7 @@ function BirthdayChip({ occurrence }: { occurrence: BirthdayOccurrence }) {
     <Link
       href="/personal/calendar/birthdays"
       onClick={(e) => e.stopPropagation()}
-      className="flex items-center gap-1 truncate rounded-md border border-rose-200 bg-rose-50 px-1.5 py-0.5 text-[11px] font-medium text-rose-700 transition hover:bg-rose-100"
+      className="flex items-center gap-1 truncate rounded-md border border-rose-400/25 bg-rose-500/10 px-1.5 py-0.5 text-[11px] font-medium text-rose-300 transition hover:bg-rose-500/20"
       title={occurrence.person_name}
     >
       <IconCake className="h-3 w-3 shrink-0" stroke={1.75} />
@@ -504,8 +504,8 @@ function MonthGrid({
   setDraggingId: (id: string | null) => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-[22px] border border-[rgba(20,20,20,0.05)] bg-white">
-      <div className="grid grid-cols-7 border-b border-wo-border bg-[#fafafa]">
+    <div className="wo-card overflow-hidden">
+      <div className="grid grid-cols-7 border-b border-wo-border bg-white/[0.025]">
         {WEEKDAY_LABELS.map((d) => (
           <div key={d} className="px-2 py-2 text-center text-xs font-medium text-wo-muted">
             {d}
@@ -542,7 +542,7 @@ function MonthGrid({
                 if (id) onDropEvent(day, id);
               }}
               className={`flex min-h-[92px] cursor-pointer flex-col gap-1 border-b border-r border-wo-border p-1.5 transition hover:bg-wo-hover [&:nth-of-type(7n)]:border-r-0 sm:min-h-[120px] ${
-                inMonth ? "bg-white" : "bg-[#f7f7f5]"
+                inMonth ? "bg-transparent" : "bg-white/[0.02]"
               }`}
             >
               <span
@@ -607,7 +607,7 @@ function TimeGrid({
   const gridCols = `56px repeat(${days.length}, 1fr)`;
 
   return (
-    <div className="overflow-hidden rounded-[22px] border border-[rgba(20,20,20,0.05)] bg-white">
+    <div className="wo-card overflow-hidden">
       <div className="grid border-b border-wo-border" style={{ gridTemplateColumns: gridCols }}>
         <div />
         {days.map((d) => (
@@ -626,7 +626,7 @@ function TimeGrid({
         ))}
       </div>
 
-      <div className="grid border-b border-wo-border bg-[#fafafa]" style={{ gridTemplateColumns: gridCols }}>
+      <div className="grid border-b border-wo-border bg-white/[0.025]" style={{ gridTemplateColumns: gridCols }}>
         <div className="px-2 py-1.5 text-[10px] text-wo-dim">Journée</div>
         {days.map((d) => {
           const dStr = format(d, "yyyy-MM-dd");

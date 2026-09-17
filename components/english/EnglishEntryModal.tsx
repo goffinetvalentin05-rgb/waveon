@@ -146,7 +146,7 @@ export function EnglishEntryModal({
                   onClick={() => setField("type", t)}
                   className={`rounded-xl border px-3.5 py-2 text-sm font-medium transition ${
                     values.type === t
-                      ? "border-indigo-300 bg-indigo-50 text-indigo-700"
+                      ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300"
                       : "border-wo-border bg-transparent text-wo-muted hover:bg-wo-hover"
                   }`}
                 >
@@ -235,7 +235,7 @@ export function EnglishEntryModal({
           </div>
         </div>
 
-        {error ? <p className="mt-4 text-sm text-rose-600">{error}</p> : null}
+        {error ? <p className="mt-4 text-sm text-rose-300">{error}</p> : null}
 
         <div className="mt-6 flex justify-end gap-2">
           <button type="button" className={ui.btnSecondary} onClick={onClose} disabled={loading}>

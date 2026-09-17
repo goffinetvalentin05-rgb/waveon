@@ -3,17 +3,17 @@ import { closedReasonFromLegacyStatus, type ClosedReason } from "./closed";
 
 type BadgeStyle = { bg: string; text: string; dot: string; label: string };
 
-/** Couleurs des badges — teintes douces, groupées par phase. */
+/** Couleurs des badges — teintes sombres translucides, groupées par phase. */
 export const STATUS_STYLES: Record<ProspectStatus, BadgeStyle> = {
-  "À contacter": { bg: "bg-zinc-100", text: "text-zinc-700", dot: "bg-zinc-400", label: "À contacter" },
-  "Relance 1": { bg: "bg-amber-50", text: "text-amber-800", dot: "bg-amber-500", label: "Relance 1" },
-  "Relance 2": { bg: "bg-orange-50", text: "text-orange-800", dot: "bg-orange-500", label: "Relance 2" },
-  Relais: { bg: "bg-sky-50", text: "text-sky-800", dot: "bg-sky-500", label: "Relais" },
-  "En discussion": { bg: "bg-violet-50", text: "text-violet-800", dot: "bg-violet-500", label: "En discussion" },
-  Démo: { bg: "bg-cyan-50", text: "text-cyan-800", dot: "bg-cyan-500", label: "Démo planifiée" },
-  "Décision en attente": { bg: "bg-teal-50", text: "text-teal-800", dot: "bg-teal-500", label: "Décision en attente" },
-  Client: { bg: "bg-emerald-50", text: "text-emerald-800", dot: "bg-emerald-500", label: "Client" },
-  Fermé: { bg: "bg-rose-50", text: "text-rose-800", dot: "bg-rose-500", label: "Perdu" },
+  "À contacter": { bg: "bg-white/[0.06]", text: "text-zinc-300", dot: "bg-zinc-400", label: "À contacter" },
+  "Relance 1": { bg: "bg-amber-500/10", text: "text-amber-300", dot: "bg-amber-400", label: "Relance 1" },
+  "Relance 2": { bg: "bg-orange-500/10", text: "text-orange-300", dot: "bg-orange-400", label: "Relance 2" },
+  Relais: { bg: "bg-sky-500/10", text: "text-sky-300", dot: "bg-sky-400", label: "Relais" },
+  "En discussion": { bg: "bg-violet-500/10", text: "text-violet-300", dot: "bg-violet-400", label: "En discussion" },
+  Démo: { bg: "bg-cyan-500/10", text: "text-cyan-300", dot: "bg-cyan-400", label: "Démo planifiée" },
+  "Décision en attente": { bg: "bg-teal-500/10", text: "text-teal-300", dot: "bg-teal-400", label: "Décision en attente" },
+  Client: { bg: "bg-emerald-500/12", text: "text-emerald-300", dot: "bg-emerald-400", label: "Client" },
+  Fermé: { bg: "bg-rose-500/10", text: "text-rose-300", dot: "bg-rose-400", label: "Perdu" },
 };
 
 /**

@@ -114,7 +114,7 @@ export function FlashcardSession() {
             </div>
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-wo-hover">
               <div
-                className="h-full rounded-full bg-indigo-500 transition-all"
+                className="h-full rounded-full bg-emerald-400 transition-all"
                 style={{ width: `${(index / total) * 100}%` }}
               />
             </div>
@@ -157,7 +157,7 @@ export function FlashcardSession() {
                   </p>
                 ) : null}
                 {current.personal_note ? (
-                  <p className="max-w-sm rounded-[12px] bg-indigo-50 px-3 py-2 text-sm text-indigo-700">
+                  <p className="max-w-sm rounded-[12px] bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
                     {current.personal_note}
                   </p>
                 ) : null}
@@ -188,7 +188,7 @@ export function FlashcardSession() {
               type="button"
               disabled={submitting}
               onClick={() => void rate("know")}
-              className="inline-flex items-center justify-center gap-2 rounded-[12px] border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-medium text-wo-accent transition hover:bg-indigo-50 disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 rounded-[12px] border border-emerald-400/25 bg-emerald-400/10 px-4 py-3 text-sm font-medium text-emerald-300 transition hover:bg-emerald-400/20 disabled:opacity-50"
             >
               <IconCheck className="h-4 w-4" stroke={1.75} />
               Je connais

@@ -151,7 +151,7 @@ export function ProjectFormModal({
                       onClick={() => applyTemplate(t.id)}
                       className={`rounded-[12px] border px-3 py-2 text-left ${
                         template === t.id
-                          ? "border-indigo-300 bg-indigo-50"
+                          ? "border-emerald-400/40 bg-emerald-400/10"
                           : "border-wo-border hover:bg-wo-hover"
                       }`}
                     >
@@ -183,10 +183,10 @@ export function ProjectFormModal({
               </div>
             </div>
           </div>
-          {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
+          {error ? <p className="mt-3 text-sm text-rose-300">{error}</p> : null}
         </div>
 
-        <div className="flex shrink-0 justify-end gap-2 border-t border-wo-border bg-[color:var(--wo-modal)] px-6 py-4">
+        <div className="flex shrink-0 justify-end gap-2 border-t border-wo-border px-6 py-4">
           <button type="button" className={ui.btnSecondary} onClick={onClose}>
             Annuler
           </button>

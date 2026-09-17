@@ -173,7 +173,7 @@ export function MembersClient({
           Ce code ne donne accès qu&apos;à {projectName}. Pas à votre espace Personnel, ni aux autres projets.
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <code className="rounded-xl border border-wo-border bg-[color:var(--wo-elevated)] px-3 py-2 font-mono text-sm tracking-wide text-wo-text">
+          <code className="rounded-xl border border-wo-border bg-white/[0.04] px-3 py-2 font-mono text-sm tracking-wide text-wo-text">
             {code || "—"}
           </code>
           <button
@@ -309,7 +309,7 @@ export function MembersClient({
           <form onSubmit={submit} className={`${ui.modal} max-w-md p-6`}>
             <h2 className="text-lg font-semibold text-wo-text">Inviter dans {projectName}</h2>
             <p className="mt-1 text-sm text-wo-muted">L&apos;invitation ne donne accès qu&apos;à ce projet.</p>
-            <div className="mt-5 grid grid-cols-3 gap-1 rounded-xl bg-slate-50 p-1">
+            <div className="mt-5 grid grid-cols-3 gap-1 rounded-xl bg-white/[0.04] p-1">
               {(["email", "link", "code"] as const).map((item) => (
                 <button
                   key={item}
@@ -320,7 +320,7 @@ export function MembersClient({
                     setEmailSent(null);
                   }}
                   className={`rounded-lg px-2 py-1.5 text-sm font-medium ${
-                    mode === item ? "bg-white text-wo-text shadow-sm" : "text-wo-muted"
+                    mode === item ? "bg-white/[0.12] text-wo-text" : "text-wo-muted"
                   }`}
                 >
                   {item === "link" ? "Lien" : item === "email" ? "Email" : "Code"}
@@ -343,7 +343,7 @@ export function MembersClient({
             {mode === "code" ? (
               <div className="mt-4 space-y-3">
                 <p className="text-sm text-wo-muted">Partagez ce code. La personne rejoint uniquement {projectName}.</p>
-                <code className="block rounded-xl border border-wo-border bg-slate-50 px-3 py-2 font-mono text-sm">
+                <code className="block rounded-xl border border-wo-border bg-white/[0.04] px-3 py-2 font-mono text-sm">
                   {code || "—"}
                 </code>
                 <button
@@ -393,7 +393,7 @@ export function MembersClient({
                 ) : null}
               </div>
             ) : null}
-            {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
+            {error ? <p className="mt-3 text-sm text-rose-300">{error}</p> : null}
             <div className="mt-6 flex justify-end gap-2">
               <button type="button" className={ui.btnSecondary} onClick={() => setOpen(false)}>
                 Fermer

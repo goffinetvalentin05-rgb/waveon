@@ -55,9 +55,9 @@ export function ProjectDangerZone({
   if (!canArchive && !canDelete && !canLeave) return null;
 
   return (
-    <section className="mt-8 rounded-2xl border border-rose-200 bg-rose-50/50 p-5 sm:p-6">
-      <h3 className="text-sm font-semibold text-rose-800">Zone dangereuse</h3>
-      <p className="mt-1 text-sm text-rose-700/80">
+    <section className="mt-8 rounded-[20px] border border-rose-400/18 bg-rose-500/[0.06] p-5 sm:p-6">
+      <h3 className="text-sm font-semibold text-rose-200">Zone dangereuse</h3>
+      <p className="mt-1 text-sm text-rose-200/60">
         L&apos;archivage conserve les données. La suppression est irréversible et ne touche pas les espaces
         Personnel.
       </p>

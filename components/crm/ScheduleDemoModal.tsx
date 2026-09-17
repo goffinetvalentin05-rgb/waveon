@@ -153,7 +153,7 @@ function ScheduleDemoModalInner({
           {editing && onCancelDemo ? (
             <button
               type="button"
-              className={`${ui.btnGhost} min-h-11 text-rose-600 sm:min-h-0`}
+              className={`${ui.btnGhost} min-h-11 text-rose-300 sm:min-h-0`}
               disabled={saving}
               onClick={onCancelDemo}
             >
@@ -289,7 +289,7 @@ function ScheduleDemoModalInner({
         />
       </div>
 
-      {error ? <p className="mt-4 text-sm text-rose-600">{error}</p> : null}
+      {error ? <p className="mt-4 text-sm text-rose-300">{error}</p> : null}
     </ScrollableModal>
   );
 }
