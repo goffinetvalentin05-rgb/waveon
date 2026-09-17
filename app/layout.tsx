@@ -31,11 +31,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#F7F8FB",
+  themeColor: "#08110F",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  colorScheme: "light",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({
@@ -44,7 +44,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className="scroll-smooth" style={{ colorScheme: "light" }}>
+    <html lang="fr" className="scroll-smooth" style={{ colorScheme: "dark" }}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased`}
       >

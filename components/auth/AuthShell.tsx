@@ -13,7 +13,7 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
       <div className="crm-auth-grid absolute inset-0" />
       <header className="relative z-10 px-5 py-6 sm:px-8">
         <div className="flex items-center gap-2.5">
-          <span className="wo-brand-mark h-8 w-8 text-sm">W</span>
+          <span className="wo-brand-mark h-8 w-8 text-sm">R</span>
           <span className="font-display text-[15px] font-semibold tracking-tight text-wo-text">
             {brand.name}
           </span>

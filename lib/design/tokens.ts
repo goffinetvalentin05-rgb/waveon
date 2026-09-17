@@ -1,27 +1,27 @@
 /**
- * Design system WaveOne — SaaS premium clair.
- * Accent indigo, surfaces blanches, ombres très légères.
+ * Design system Raven — SaaS B2B dark premium.
+ * Accent emerald, surfaces vert-noir, densité élevée.
  */
 
 export const colors = {
-  bg: "#F7F8FB",
-  sidebar: "#FFFFFF",
-  surface: "#FFFFFF",
-  elevated: "#FFFFFF",
-  border: "rgba(15, 23, 42, 0.08)",
-  borderStrong: "rgba(15, 23, 42, 0.14)",
-  text: "#0F172A",
-  textMuted: "#64748B",
-  textDim: "#94A3B8",
-  accent: "#6366F1",
-  accentSoft: "rgba(99, 102, 241, 0.12)",
-  danger: "#E11D48",
-  warning: "#D97706",
-  success: "#059669",
+  bg: "#08110F",
+  sidebar: "#0A1512",
+  surface: "#0D1916",
+  elevated: "#12211D",
+  border: "rgba(180, 220, 205, 0.08)",
+  borderStrong: "rgba(180, 220, 205, 0.16)",
+  text: "#F4F7F6",
+  textMuted: "#8FA39C",
+  textDim: "#6B8078",
+  accent: "#3DD9A4",
+  accentSoft: "rgba(61, 217, 164, 0.14)",
+  danger: "#F87171",
+  warning: "#FBBF24",
+  success: "#3DD9A4",
 } as const;
 
 export const ui = {
-  container: "mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8",
+  container: "mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8",
 
   card: "wo-card",
   cardInteractive: "wo-card wo-card-interactive",
@@ -38,7 +38,7 @@ export const ui = {
   label: "wo-label",
 
   h1: "wo-h1",
-  h2: "text-base font-semibold tracking-tight text-wo-text",
+  h2: "text-[13px] font-semibold tracking-tight text-wo-text",
   muted: "text-wo-muted",
   kicker: "wo-kicker",
 
@@ -46,7 +46,7 @@ export const ui = {
   modal: "wo-modal",
   modalHeader: "wo-modal-header",
 
-  subNav: "wo-subnav mb-6",
+  subNav: "wo-subnav mb-5",
   subNavActive: "wo-subnav-active",
   subNavIdle: "wo-subnav-idle",
 

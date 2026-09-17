@@ -22,7 +22,7 @@ export default async function ProjectLayout({
   if (!project) notFound();
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className="lg:hidden">
         <ProjectSubNav projectId={id} enabledModules={project.enabledModules} />
       </div>

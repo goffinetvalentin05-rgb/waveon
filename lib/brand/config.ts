@@ -1,18 +1,18 @@
 /**
- * Identité de marque — Waveone, cockpit personnel.
+ * Identité de marque — Raven, prospection B2B.
  */
 
 export const brand = {
-  name: "Waveone",
-  shortName: "Waveone",
-  tagline: "Votre command center.",
-  promise: "Personnel et projets, clairement séparés.",
-  legalEntityHint: "Waveone",
+  name: "Raven",
+  shortName: "Raven",
+  tagline: "Prospection B2B",
+  promise: "Trouver, contacter, convertir.",
+  legalEntityHint: "Raven",
   contactEmail: "contact@obillz.com",
   supportEmail: "support@obillz.com",
   domain: "localhost",
   description:
-    "Command center personnel et professionnel : projets, prospection et organisation.",
+    "Outil professionnel de prospection B2B : rechercher des prospects, les organiser, les contacter et suivre leur avancement jusqu’à la conversion.",
 } as const;
 
 export type Brand = typeof brand;

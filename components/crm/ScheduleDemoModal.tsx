@@ -211,8 +211,8 @@ function ScheduleDemoModalInner({
                 onClick={() => setDurationMin(value)}
                 className={`min-h-11 rounded-xl border px-3.5 text-sm transition sm:min-h-0 sm:py-2 ${
                   selected
-                    ? "border-indigo-200 bg-indigo-50 font-medium text-wo-text"
-                    : "border-wo-border bg-white text-wo-secondary hover:bg-wo-hover"
+                    ? "border-wo-accent/40 bg-wo-accent-soft font-medium text-wo-text"
+                    : "border-wo-border bg-transparent text-wo-secondary hover:bg-wo-hover"
                 }`}
               >
                 {formatDurationLabel(value)}
@@ -234,7 +234,7 @@ function ScheduleDemoModalInner({
               <label
                 key={option.id}
                 className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border px-3.5 py-2.5 text-[15px] sm:min-h-0 sm:text-sm ${
-                  selected ? "border-indigo-200 bg-indigo-50 text-wo-text" : "border-wo-border text-wo-text hover:bg-wo-hover"
+                  selected ? "border-wo-accent/40 bg-wo-accent-soft text-wo-text" : "border-wo-border text-wo-text hover:bg-wo-hover"
                 }`}
               >
                 <input

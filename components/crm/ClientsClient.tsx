@@ -76,7 +76,7 @@ export function ClientsClient({
           {filtered.map((p) => (
             <article
               key={p.id}
-              className="cursor-pointer rounded-[1.15rem] border border-wo-border bg-white px-4 py-3.5 transition hover:border-indigo-200 hover:bg-slate-50/70"
+              className="cursor-pointer rounded-xl border border-wo-border bg-[color:var(--wo-surface)] px-4 py-3.5 transition hover:border-wo-accent/30"
               onClick={() => router.push(prospectDetailHref(p.id, listReturnUrl))}
             >
               <div className="flex items-start justify-between gap-3">

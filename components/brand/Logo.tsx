@@ -35,7 +35,7 @@ export function Logo({ size = "md", href = "/", className = "", markOnly = false
         />
       </span>
       {markOnly ? null : (
-        <span className={`${s.font} font-display font-semibold tracking-tight text-white`}>
+        <span className={`${s.font} font-display font-semibold tracking-tight text-wo-text`}>
           {brand.name}
         </span>
       )}

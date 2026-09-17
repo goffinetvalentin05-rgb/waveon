@@ -47,7 +47,7 @@ export function ContentClient({ projectId }: { projectId: string }) {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex rounded-full border border-wo-border bg-white p-1">
+        <div className="inline-flex rounded-lg border border-wo-border bg-[color:var(--wo-surface)] p-0.5">
           {(["all", ...CONTENT_STATUSES] as const).map((s) => (
             <button
               key={s}

@@ -272,7 +272,7 @@ export function CalendarClient({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex rounded-full border border-wo-border bg-white p-1">
+        <div className="inline-flex rounded-lg border border-wo-border bg-[color:var(--wo-surface)] p-0.5">
           {(["month", "week", "day"] as const).map((v) => (
             <button
               key={v}
@@ -504,8 +504,8 @@ function MonthGrid({
   setDraggingId: (id: string | null) => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-[1.35rem] border border-wo-border bg-white">
-      <div className="grid grid-cols-7 border-b border-wo-border bg-slate-50">
+    <div className="overflow-hidden rounded-xl border border-wo-border bg-[color:var(--wo-surface)]">
+      <div className="grid grid-cols-7 border-b border-wo-border bg-[color:var(--wo-elevated)]">
         {WEEKDAY_LABELS.map((d) => (
           <div key={d} className="px-2 py-2 text-center text-xs font-medium text-wo-muted">
             {d}
@@ -541,13 +541,13 @@ function MonthGrid({
                 const id = e.dataTransfer.getData("text/plain");
                 if (id) onDropEvent(day, id);
               }}
-              className={`flex min-h-[92px] cursor-pointer flex-col gap-1 border-b border-r border-wo-border p-1.5 transition hover:bg-indigo-50/60 [&:nth-of-type(7n)]:border-r-0 sm:min-h-[120px] ${
-                inMonth ? "bg-white" : "bg-slate-50/80"
+              className={`flex min-h-[92px] cursor-pointer flex-col gap-1 border-b border-r border-wo-border p-1.5 transition hover:bg-wo-hover [&:nth-of-type(7n)]:border-r-0 sm:min-h-[120px] ${
+                inMonth ? "bg-[color:var(--wo-surface)]" : "bg-[color:var(--wo-elevated)]/60"
               }`}
             >
               <span
                 className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
-                  isToday(day) ? "bg-indigo-500 text-white" : inMonth ? "text-wo-text" : "text-wo-dim"
+                  isToday(day) ? "bg-wo-accent text-[#08110f]" : inMonth ? "text-wo-text" : "text-wo-dim"
                 }`}
               >
                 {format(day, "d")}
@@ -607,7 +607,7 @@ function TimeGrid({
   const gridCols = `56px repeat(${days.length}, 1fr)`;
 
   return (
-    <div className="overflow-hidden rounded-[1.35rem] border border-wo-border bg-white">
+    <div className="overflow-hidden rounded-xl border border-wo-border bg-[color:var(--wo-surface)]">
       <div className="grid border-b border-wo-border" style={{ gridTemplateColumns: gridCols }}>
         <div />
         {days.map((d) => (
@@ -617,7 +617,7 @@ function TimeGrid({
             </div>
             <div
               className={`mx-auto mt-0.5 flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold ${
-                isToday(d) ? "bg-indigo-500 text-white" : "text-wo-text"
+                isToday(d) ? "bg-wo-accent text-[#08110f]" : "text-wo-text"
               }`}
             >
               {format(d, "d")}
@@ -626,7 +626,7 @@ function TimeGrid({
         ))}
       </div>
 
-      <div className="grid border-b border-wo-border bg-slate-50" style={{ gridTemplateColumns: gridCols }}>
+      <div className="grid border-b border-wo-border bg-[color:var(--wo-elevated)]" style={{ gridTemplateColumns: gridCols }}>
         <div className="px-2 py-1.5 text-[10px] text-wo-dim">Journée</div>
         {days.map((d) => {
           const dStr = format(d, "yyyy-MM-dd");
@@ -666,7 +666,7 @@ function TimeGrid({
                   <div
                     key={h}
                     style={{ height: ROW_HEIGHT }}
-                    className="cursor-pointer border-b border-wo-border transition hover:bg-indigo-50"
+                    className="cursor-pointer border-b border-wo-border transition hover:bg-wo-hover"
                     onClick={() => onSlotClick(d, h)}
                   />
                 ))}
@@ -736,7 +736,7 @@ function AgendaList({
               <button
                 type="button"
                 onClick={() => onDayClick(d)}
-                className={`text-sm font-semibold capitalize ${isToday(d) ? "text-indigo-600" : "text-wo-text"}`}
+                className={`text-sm font-semibold capitalize ${isToday(d) ? "text-wo-accent" : "text-wo-text"}`}
               >
                 {format(d, "EEEE d MMMM", { locale: fr })}
               </button>

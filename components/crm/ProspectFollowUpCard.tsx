@@ -17,8 +17,8 @@ import type { Prospect, ProspectActivity } from "@/lib/crm/types";
 import { ui } from "@/lib/design/tokens";
 
 const TEMPORAL = {
-  today: "font-medium text-amber-700",
-  overdue: "font-medium text-rose-600",
+  today: "font-medium text-amber-300",
+  overdue: "font-medium text-rose-300",
   future: "text-wo-text",
   none: "text-wo-muted",
 } as const;
@@ -64,9 +64,9 @@ export function ProspectFollowUpCard({
   })();
 
   return (
-    <section className={`${ui.card} p-5 sm:p-6`}>
+    <section className={`${ui.card} p-4`}>
       <h2 className={ui.h2}>Suivi du prospect</h2>
-      <div className="mt-5 grid gap-5 sm:grid-cols-3">
+      <div className="mt-4 grid gap-4 sm:grid-cols-3">
         <div>
           <p className="text-[11px] uppercase tracking-[0.08em] text-wo-dim">Étape actuelle</p>
           <p className="mt-1.5 text-sm font-medium text-wo-text">{statusDisplayLabel(prospect.status)}</p>

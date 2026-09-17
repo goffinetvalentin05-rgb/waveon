@@ -186,7 +186,7 @@ export function ProjectFormModal({
           {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
         </div>
 
-        <div className="flex shrink-0 justify-end gap-2 border-t border-wo-border bg-white px-6 py-4">
+        <div className="flex shrink-0 justify-end gap-2 border-t border-wo-border bg-[color:var(--wo-modal)] px-6 py-4">
           <button type="button" className={ui.btnSecondary} onClick={onClose}>
             Annuler
           </button>

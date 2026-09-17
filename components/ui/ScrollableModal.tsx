@@ -104,7 +104,7 @@ export function ScrollableModal({
         {children}
       </div>
 
-      <div className="shrink-0 border-t border-wo-border bg-white px-5 py-3 pb-[max(0.85rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-4">
+      <div className="shrink-0 border-t border-wo-border bg-[color:var(--wo-modal)] px-5 py-3 pb-[max(0.85rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-4">
         {footer}
       </div>
     </>

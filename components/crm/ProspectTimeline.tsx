@@ -32,7 +32,7 @@ export function ProspectTimeline({
   const hiddenCount = Math.max(0, commercial.length - PREVIEW);
 
   return (
-    <section className={`${ui.card} p-5 sm:p-6`}>
+    <section className={`${ui.card} p-4 sm:p-5`}>
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className={ui.h2}>Historique</h2>
         {canUndo ? (
@@ -59,7 +59,7 @@ export function ProspectTimeline({
                 {idx < visible.length - 1 ? (
                   <span className="absolute left-[7px] top-3 h-full w-px bg-wo-hover" />
                 ) : null}
-                <span className="relative mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full border-2 border-indigo-500 bg-white" />
+                <span className="relative mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full border-2 border-wo-accent bg-[color:var(--wo-surface)]" />
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -84,7 +84,7 @@ export function ProspectTimeline({
                         <IconDots className="h-4 w-4" />
                       </button>
                       {menuId === a.id ? (
-                        <div className="absolute right-0 top-9 z-20 w-44 rounded-[12px] border border-wo-border bg-white p-2 shadow-lg">
+                        <div className="absolute right-0 top-9 z-20 w-44 rounded-[12px] border border-wo-border bg-[color:var(--wo-modal)] p-2 shadow-lg">
                           <button
                             type="button"
                             className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-rose-700 hover:bg-rose-50"

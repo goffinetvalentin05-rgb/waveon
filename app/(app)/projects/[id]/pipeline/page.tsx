@@ -1,0 +1,61 @@
+import { createServerComponentSupabase } from "@/lib/supabase/server-component";
+import { ProspectsClient } from "@/components/crm/ProspectsClient";
+import { enrichProspects } from "@/lib/crm/enrich-prospects";
+import { parseProspectListParams } from "@/lib/crm/prospect-list-params";
+import { fetchProspectList } from "@/lib/crm/prospect-query";
+import { requireProjectModule } from "@/lib/projects/guard";
+
+type Props = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function toUrlSearchParams(raw: Record<string, string | string[] | undefined>) {
+  const sp = new URLSearchParams();
+  for (const [key, value] of Object.entries(raw)) {
+    if (typeof value === "string") sp.set(key, value);
+    else if (Array.isArray(value)) sp.set(key, value.join(","));
+  }
+  return sp;
+}
+
+export default async function ProjectPipelinePage({ params, searchParams }: Props) {
+  const { id } = await params;
+  await requireProjectModule(id, "prospects");
+  const supabase = await createServerComponentSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const sp = toUrlSearchParams(await searchParams);
+  if (!sp.get("project")) sp.set("project", id);
+  const parsed = parseProspectListParams(sp);
+  const listParams = {
+    ...parsed,
+    projectId: id,
+    clientsOnly: false,
+    pageSize: 400,
+    page: 1,
+  };
+
+  const [{ data, count }, { count: totalAll }] = await Promise.all([
+    fetchProspectList(supabase, user.id, listParams),
+    supabase
+      .from("prospects")
+      .select("*", { count: "exact", head: true })
+      .eq("project_id", id)
+      .is("archived_at", null),
+  ]);
+
+  return (
+    <ProspectsClient
+      initial={await enrichProspects(supabase, user.id, (data ?? []) as Record<string, unknown>[])}
+      total={count ?? 0}
+      totalAll={totalAll ?? 0}
+      initialParams={listParams}
+      projectId={id}
+      forcedView="pipeline"
+    />
+  );
+}

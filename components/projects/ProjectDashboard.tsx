@@ -1,245 +1,234 @@
 "use client";
 
 import Link from "next/link";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
 import {
   IconChecklist,
   IconPlus,
-  IconSparkles,
-  IconUsers,
 } from "@tabler/icons-react";
 import { ui } from "@/lib/design/tokens";
 import { hasModule, type ProjectModuleKey } from "@/lib/projects/modules";
+import { ActivityChart } from "@/components/crm/ActivityChart";
+import { PipelineFunnel } from "@/components/crm/PipelineFunnel";
+import { StatusBadge } from "@/components/crm/StatusBadge";
+import {
+  formatChf,
+  type ActivityPoint,
+  type PipelineStageCount,
+} from "@/lib/crm/dashboard";
 
-type PipelineStat = { label: string; value: number; href: string };
+type TodayItem = {
+  id: string;
+  href: string;
+  title: string;
+  meta: string;
+  tone?: "overdue" | "today" | "neutral";
+};
+
+type FollowUpItem = {
+  id: string;
+  href: string;
+  name: string;
+  status: string;
+  when: string;
+};
+
+type RecentItem = {
+  id: string;
+  href: string;
+  title: string;
+  when: string;
+};
 
 export function ProjectDashboard({
   projectId,
-  projectName,
-  projectColor,
   enabledModules,
-  stats,
-  tasks,
-  calendarEvents,
-  notes,
-  activity,
-  membersCount,
+  kpis,
+  stages,
+  series7,
+  series30,
+  series90,
+  todayItems,
+  followUps,
+  recent,
 }: {
   projectId: string;
-  projectName: string;
-  projectColor?: string | null;
   enabledModules?: ProjectModuleKey[];
-  stats: {
+  kpis: {
     prospects: number;
-    contacted: number;
-    replies: number;
-    meetings: number;
-    followUps: number;
-    actionsDue: number;
     toContact: number;
-    overdue: number;
-    demos: number;
-    considering: number;
+    followUps: number;
+    meetings: number;
     clients: number;
-    openTasks: number;
-    monthSpend: number;
-    monthlySubs: number;
+    potentialValue: number;
   };
-  tasks: { id: string; title: string; due_date: string; status: string; priority: string }[];
-  calendarEvents: { id: string; title: string; start_at: string }[];
-  notes: { id: string; title: string; updated_at: string }[];
-  activity: { id: string; title: string; created_at: string }[];
-  membersCount: number;
+  stages: PipelineStageCount[];
+  series7: ActivityPoint[];
+  series30: ActivityPoint[];
+  series90: ActivityPoint[];
+  todayItems: TodayItem[];
+  followUps: FollowUpItem[];
+  recent: RecentItem[];
 }) {
   const base = `/projects/${projectId}`;
-  const pipeline: PipelineStat[] = hasModule(enabledModules, "prospects")
-    ? [
-        { label: "À contacter", value: stats.toContact, href: `${base}/prospects?view=to_contact` },
-        { label: "Relances", value: stats.followUps, href: `${base}/prospects` },
-        { label: "En retard", value: stats.overdue, href: `${base}/prospects?view=overdue` },
-        { label: "Démo", value: stats.meetings || stats.demos, href: `${base}/prospects?view=demo_scheduled` },
-        { label: "En discussion", value: stats.replies || stats.considering, href: `${base}/prospects?view=considering` },
-        { label: "Clients", value: stats.clients, href: `${base}/prospects?view=clients` },
-      ]
-    : [];
+  const prospecting = hasModule(enabledModules, "prospects");
+
+  const kpiCards = [
+    { label: "Prospects", value: String(kpis.prospects), href: `${base}/prospects` },
+    { label: "À contacter", value: String(kpis.toContact), href: `${base}/prospects?status=${encodeURIComponent("À contacter")}` },
+    { label: "Relances", value: String(kpis.followUps), href: `${base}/prospects` },
+    { label: "Rendez-vous", value: String(kpis.meetings), href: `${base}/prospects?status=${encodeURIComponent("Démo")}` },
+    { label: "Clients", value: String(kpis.clients), href: `${base}/clients` },
+    ...(kpis.potentialValue > 0
+      ? [{ label: "Valeur potentielle", value: formatChf(kpis.potentialValue), href: `${base}/stats` }]
+      : []),
+  ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-end gap-2">
-        {hasModule(enabledModules, "prospects") ? (
-          <Link href={`${base}/prospects`} className={ui.btnSecondary}>
-            <IconUsers className="h-4 w-4" />
+        {prospecting ? (
+          <Link href={`${base}/prospects`} className={ui.btnPrimary}>
+            <IconPlus className="h-4 w-4" />
             Ajouter un prospect
           </Link>
         ) : null}
         {hasModule(enabledModules, "tasks") ? (
           <Link href={`${base}/tasks`} className={ui.btnSecondary}>
             <IconChecklist className="h-4 w-4" />
-            Ajouter une tâche
+            Tâche
           </Link>
         ) : null}
-        {hasModule(enabledModules, "content") ? (
-          <Link href={`${base}/content`} className={ui.btnPrimary}>
-            <IconSparkles className="h-4 w-4" />
-            Ajouter une idée
-          </Link>
-        ) : (
-          <Link href={`${base}/members`} className={ui.btnPrimary}>
-            <IconPlus className="h-4 w-4" />
-            Inviter un membre
-          </Link>
-        )}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-12">
-        <section
-          className="wo-card-featured flex min-h-[210px] flex-col justify-between p-6 lg:col-span-5"
-          style={projectColor ? { background: `linear-gradient(135deg, ${projectColor} 0%, color-mix(in srgb, ${projectColor} 72%, #1e1b4b) 100%)` } : undefined}
-        >
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">{projectName}</p>
-            <p className="mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-              {stats.prospects}
-            </p>
-            <p className="mt-1 text-sm text-white/80">prospects dans {projectName}</p>
-            <span className="mt-3 inline-flex rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-medium text-white">
-              {stats.actionsDue > 0
-                ? `${stats.actionsDue} action${stats.actionsDue > 1 ? "s" : ""} à faire`
-                : "Aucune action due"}
-            </span>
-          </div>
-          <Link href={`${base}/prospects`} className="inline-flex items-center gap-1 text-sm font-medium text-white/90">
-            Voir les prospects →
-          </Link>
-        </section>
-
-        <div className="grid grid-cols-2 gap-3 lg:col-span-7">
-          {[
-            { label: "Contactés", value: stats.contacted, tone: "bg-indigo-50 text-indigo-600", icon: IconUsers },
-            { label: "En discussion", value: stats.replies || stats.considering, tone: "bg-sky-50 text-sky-600", icon: IconUsers },
-            { label: "Rendez-vous", value: stats.meetings || stats.demos, tone: "bg-indigo-50 text-indigo-600", icon: IconUsers },
-            { label: "Tâches restantes", value: stats.openTasks, tone: "bg-amber-50 text-amber-600", icon: IconChecklist },
-          ].map((card) => {
-            const Icon = card.icon;
-            return (
-              <div key={card.label} className={ui.statCard}>
-                <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${card.tone}`}>
-                  <Icon className="h-4 w-4" stroke={1.7} />
-                </span>
-                <p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-wo-dim">{card.label}</p>
-                <p className="mt-1 font-display text-2xl font-semibold tabular-nums text-wo-text">{card.value}</p>
-              </div>
-            );
-          })}
+      {prospecting ? (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+          {kpiCards.map((card) => (
+            <Link key={card.label} href={card.href} className="wo-stat">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-wo-dim">{card.label}</p>
+              <p className="mt-1.5 font-display text-xl font-semibold tabular-nums tracking-tight text-wo-text">
+                {card.value}
+              </p>
+            </Link>
+          ))}
         </div>
-      </div>
-
-      {pipeline.length ? (
-        <section className={`${ui.widget} p-5`}>
-          <h2 className={ui.h2}>Progression du pipeline</h2>
-          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-            {pipeline.map((item) => (
-              <Link key={item.label} href={item.href} className="rounded-2xl border border-wo-border bg-slate-50/70 px-3 py-3 transition hover:bg-white">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-wo-dim">{item.label}</p>
-                <p className="mt-1.5 text-xl font-semibold tabular-nums text-wo-text">{item.value}</p>
-              </Link>
-            ))}
-          </div>
+      ) : (
+        <section className="wo-widget p-6">
+          <p className="text-sm text-wo-muted">
+            Activez le module Prospects dans les paramètres du projet pour suivre la prospection ici.
+          </p>
         </section>
+      )}
+
+      {prospecting ? (
+        <div className="grid gap-4 xl:grid-cols-5">
+          <div className="xl:col-span-3">
+            <ActivityChart series7={series7} series30={series30} series90={series90} />
+          </div>
+          <div className="xl:col-span-2">
+            <PipelineFunnel stages={stages} projectId={projectId} />
+          </div>
+        </div>
       ) : null}
 
-      <div className={`grid gap-4 ${membersCount >= 2 ? "lg:grid-cols-2" : "lg:grid-cols-1"}`}>
-        {hasModule(enabledModules, "tasks") ? (
-          <section className={`${ui.widget} p-5`}>
-            <div className="flex items-center justify-between">
-              <h2 className={ui.h2}>Tâches</h2>
-              <Link href={`${base}/tasks`} className="text-sm font-medium text-wo-accent">
-                Toutes les tâches
+      <div className="grid gap-4 lg:grid-cols-3">
+        <section className="wo-widget p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-[13px] font-semibold text-wo-text">Aujourd&apos;hui</h2>
+            {hasModule(enabledModules, "calendar") ? (
+              <Link href={`${base}/calendar`} className="text-[12px] font-medium text-wo-accent">
+                Calendrier
               </Link>
-            </div>
-            {tasks.length === 0 ? (
-              <p className="mt-4 text-sm text-wo-muted">Aucune tâche ouverte.</p>
-            ) : (
-              <ul className="mt-4 space-y-2">
-                {tasks.map((t) => (
-                  <li key={t.id} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="truncate text-wo-text">{t.title}</span>
-                    <span className="shrink-0 text-xs text-wo-dim">
-                      {format(new Date(`${t.due_date}T12:00:00`), "d MMM", { locale: fr })}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        ) : null}
-
-        <section className={`${ui.widget} p-5`}>
-          <div className="flex items-center justify-between">
-            <h2 className={ui.h2}>Activité récente</h2>
-            <Link href={`${base}/activity`} className="text-sm font-medium text-wo-accent">
-              Historique
-            </Link>
+            ) : null}
           </div>
-          {activity.length === 0 ? (
-            <p className="mt-4 text-sm text-wo-muted">Les actions du projet apparaîtront ici.</p>
+          {todayItems.length === 0 ? (
+            <p className="py-6 text-sm text-wo-dim">Rien d&apos;urgent pour aujourd&apos;hui.</p>
           ) : (
-            <ul className="mt-4 space-y-3">
-              {activity.map((item) => (
-                <li key={item.id} className="text-sm">
-                  <p className="text-wo-text">{item.title}</p>
-                  <p className="text-[11px] text-wo-dim">
-                    {format(new Date(item.created_at), "d MMM · HH:mm", { locale: fr })}
-                  </p>
+            <ul className="space-y-1">
+              {todayItems.map((item) => (
+                <li key={item.id}>
+                  <Link
+                    href={item.href}
+                    className="flex items-start justify-between gap-3 rounded-lg px-2 py-2 hover:bg-wo-hover"
+                  >
+                    <span>
+                      <span className="block text-[13px] font-medium text-wo-text">{item.title}</span>
+                      <span
+                        className={`mt-0.5 block text-[11px] ${
+                          item.tone === "overdue"
+                            ? "text-rose-300"
+                            : item.tone === "today"
+                              ? "text-amber-300"
+                              : "text-wo-dim"
+                        }`}
+                      >
+                        {item.meta}
+                      </span>
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>
           )}
         </section>
 
-        {hasModule(enabledModules, "calendar") ? (
-          <section className={`${ui.widget} p-5`}>
-            <h2 className={ui.h2}>Prochains rendez-vous</h2>
-            {calendarEvents.length === 0 ? (
-              <p className="mt-4 text-sm text-wo-muted">Rien de prévu.</p>
-            ) : (
-              <ul className="mt-4 space-y-2">
-                {calendarEvents.map((e) => (
-                  <li key={e.id} className="text-sm">
-                    <p className="text-wo-text">{e.title}</p>
-                    <p className="text-[11px] text-wo-dim">
-                      {format(new Date(e.start_at), "d MMM HH:mm", { locale: fr })}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        ) : null}
+        <section className="wo-widget p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-[13px] font-semibold text-wo-text">Prochaines relances</h2>
+            <Link href={`${base}/prospects`} className="text-[12px] font-medium text-wo-accent">
+              Prospects
+            </Link>
+          </div>
+          {followUps.length === 0 ? (
+            <p className="py-6 text-sm text-wo-dim">Aucune relance programmée.</p>
+          ) : (
+            <ul className="space-y-1">
+              {followUps.map((item) => (
+                <li key={item.id}>
+                  <Link
+                    href={item.href}
+                    className="flex items-center justify-between gap-3 rounded-lg px-2 py-2 hover:bg-wo-hover"
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate text-[13px] font-medium text-wo-text">{item.name}</span>
+                      <span className="mt-1 block">
+                        <StatusBadge status={item.status} />
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-[11px] text-wo-muted">{item.when}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
-        {membersCount >= 2 ? (
-          <section className={`${ui.widget} p-5`}>
-            <div className="flex items-center justify-between">
-              <h2 className={ui.h2}>Équipe</h2>
-              <Link href={`${base}/members`} className="text-sm font-medium text-wo-accent">
-                Membres
+        <section className="wo-widget p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-[13px] font-semibold text-wo-text">Activité récente</h2>
+            {hasModule(enabledModules, "activity") ? (
+              <Link href={`${base}/activity`} className="text-[12px] font-medium text-wo-accent">
+                Historique
               </Link>
-            </div>
-            <p className="mt-4 text-sm text-wo-secondary">
-              {membersCount} membres actifs
-            </p>
-            {notes.length > 0 && hasModule(enabledModules, "notes") ? (
-              <ul className="mt-4 space-y-2 border-t border-wo-border pt-4">
-                {notes.slice(0, 3).map((n) => (
-                  <li key={n.id} className="truncate text-sm text-wo-text">
-                    {n.title || "Sans titre"}
-                  </li>
-                ))}
-              </ul>
             ) : null}
-          </section>
-        ) : null}
+          </div>
+          {recent.length === 0 ? (
+            <p className="py-6 text-sm text-wo-dim">Les actions apparaîtront ici.</p>
+          ) : (
+            <ul className="space-y-1">
+              {recent.map((item) => (
+                <li key={item.id}>
+                  <Link
+                    href={item.href}
+                    className="flex items-start justify-between gap-3 rounded-lg px-2 py-2 hover:bg-wo-hover"
+                  >
+                    <span className="text-[13px] text-wo-text">{item.title}</span>
+                    <span className="shrink-0 text-[11px] text-wo-dim">{item.when}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
     </div>
   );

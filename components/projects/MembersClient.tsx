@@ -173,7 +173,7 @@ export function MembersClient({
           Ce code ne donne accès qu&apos;à {projectName}. Pas à votre espace Personnel, ni aux autres projets.
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <code className="rounded-xl border border-wo-border bg-slate-50 px-3 py-2 font-mono text-sm tracking-wide text-wo-text">
+          <code className="rounded-xl border border-wo-border bg-[color:var(--wo-elevated)] px-3 py-2 font-mono text-sm tracking-wide text-wo-text">
             {code || "—"}
           </code>
           <button
@@ -205,7 +205,7 @@ export function MembersClient({
             return (
               <li key={member.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
                 <div className="flex min-w-0 items-center gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-xs font-semibold text-indigo-700">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-wo-accent-soft text-xs font-semibold text-wo-accent">
                     {initials(name)}
                   </span>
                   <div className="min-w-0">
@@ -233,7 +233,7 @@ export function MembersClient({
                       ))}
                     </select>
                   ) : (
-                    <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[11px] font-medium text-indigo-700">
+                    <span className="rounded-full bg-wo-accent-soft px-2.5 py-1 text-[11px] font-medium text-wo-accent">
                       {PROJECT_ROLE_LABELS[member.role]}
                     </span>
                   )}

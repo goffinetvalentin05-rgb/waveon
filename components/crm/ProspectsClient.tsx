@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
@@ -14,7 +15,8 @@ import { ImportProspectsModal } from "@/components/crm/ImportProspectsModal";
 import { ProspectsFilterPanel } from "@/components/crm/ProspectsFilterPanel";
 import { PipelineStats, ProspectsPipeline } from "@/components/crm/ProspectsPipeline";
 import { SmartViewBar } from "@/components/crm/SmartViewBar";
-import { ProspectListRow, ProspectWorkSections } from "@/components/crm/ProspectWorkList";
+import { ProspectWorkSections } from "@/components/crm/ProspectWorkList";
+import { ProspectsTable } from "@/components/crm/ProspectsTable";
 import { ClosedReasonModal } from "@/components/crm/ClosedReasonModal";
 import { ScrollableModal } from "@/components/ui/ScrollableModal";
 import { ProspectBusinessFields } from "@/components/crm/ProspectBusinessFields";
@@ -52,6 +54,7 @@ export function ProspectsClient({
   totalAll,
   clientsOnly = false,
   projectId,
+  forcedView,
 }: {
   initial: Prospect[];
   total: number;
@@ -59,6 +62,7 @@ export function ProspectsClient({
   initialParams?: ProspectListParams;
   clientsOnly?: boolean;
   projectId?: string;
+  forcedView?: "pipeline" | "list";
 }) {
   const router = useRouter();
   const urlSearchParams = useSearchParams();
@@ -86,7 +90,7 @@ export function ProspectsClient({
   });
   const [importMsg, setImportMsg] = useState<string | null>(null);
   const [view, setView] = useState<"pipeline" | "list">(
-    clientsOnly || params.smartView !== "all" ? "list" : "pipeline"
+    forcedView ?? (clientsOnly ? "list" : "list")
   );
   const [smartCounts, setSmartCounts] = useState<ProspectWorkCounts | null>(null);
   const [closePrompt, setClosePrompt] = useState<{ id: string } | null>(null);
@@ -97,10 +101,15 @@ export function ProspectsClient({
   const urlChangeFromSelf = useRef(false);
   const listPath =
     projectId && projectId !== "unassigned"
-      ? `/projects/${projectId}/${clientsOnly ? "clients" : "prospects"}`
+      ? `/projects/${projectId}/${clientsOnly ? "clients" : forcedView === "pipeline" ? "pipeline" : "prospects"}`
       : clientsOnly
         ? "/crm/clients"
         : "/crm/prospects";
+
+  const pipelineHref =
+    projectId && projectId !== "unassigned" ? `/projects/${projectId}/pipeline` : null;
+  const tableHref =
+    projectId && projectId !== "unassigned" ? `/projects/${projectId}/prospects` : null;
 
   const activeFilterCount = countActiveFilters(params);
   const isFiltered = hasActiveSearchOrFilters(params);
@@ -367,31 +376,50 @@ export function ProspectsClient({
         </div>
         <div className="flex flex-wrap gap-2">
           {!clientsOnly ? (
-            <div className="inline-flex rounded-full border border-wo-border bg-white p-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setView("pipeline");
-                  if (params.pageSize < 200) applyParams({ ...params, pageSize: 200, page: 1 });
-                }}
-                className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
-                  view === "pipeline" ? "wo-subnav-active" : "text-wo-muted hover:text-wo-text"
-                }`}
-              >
-                Pipeline
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setView("list");
-                  if (params.pageSize !== 25) applyParams({ ...params, pageSize: 25, page: 1 });
-                }}
-                className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
-                  view === "list" ? "wo-subnav-active" : "text-wo-muted hover:text-wo-text"
-                }`}
-              >
-                Liste
-              </button>
+            <div className="inline-flex rounded-lg border border-wo-border p-0.5">
+              {tableHref ? (
+                <Link
+                  href={tableHref}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                    view === "list" ? "wo-subnav-active" : "text-wo-muted hover:text-wo-text"
+                  }`}
+                >
+                  Table
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setView("list")}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                    view === "list" ? "wo-subnav-active" : "text-wo-muted hover:text-wo-text"
+                  }`}
+                >
+                  Table
+                </button>
+              )}
+              {pipelineHref ? (
+                <Link
+                  href={pipelineHref}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                    view === "pipeline" ? "wo-subnav-active" : "text-wo-muted hover:text-wo-text"
+                  }`}
+                >
+                  Pipeline
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setView("pipeline");
+                    if (params.pageSize < 200) applyParams({ ...params, pageSize: 200, page: 1 });
+                  }}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                    view === "pipeline" ? "wo-subnav-active" : "text-wo-muted hover:text-wo-text"
+                  }`}
+                >
+                  Pipeline
+                </button>
+              )}
             </div>
           ) : null}
           {!clientsOnly ? (
@@ -409,7 +437,7 @@ export function ProspectsClient({
               </button>
               <button type="button" className={ui.btnPrimary} onClick={() => setShowCreate(true)}>
                 <IconPlus className="h-4 w-4" stroke={2} />
-                Nouveau
+                Ajouter un prospect
               </button>
             </>
           ) : null}
@@ -418,7 +446,7 @@ export function ProspectsClient({
 
       {importMsg ? <p className={ui.alertSuccess}>{importMsg}</p> : null}
       {statusError ? (
-        <p className="rounded-xl border border-rose-100 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">
+        <p className="rounded-xl border border-rose-400/20 bg-rose-400/10 px-4 py-2.5 text-sm text-rose-200">
           {statusError}
         </p>
       ) : null}
@@ -482,14 +510,11 @@ export function ProspectsClient({
             )}
           </div>
         ) : (
-          prospects.map((p) => (
-            <ProspectListRow
-              key={p.id}
-              prospect={p}
-              listReturnUrl={listReturnUrl}
-              onStatusChange={changeStatus}
-            />
-          ))
+          <ProspectsTable
+            prospects={prospects}
+            listReturnUrl={listReturnUrl}
+            onStatusChange={changeStatus}
+          />
         )}
       </div>
       )}

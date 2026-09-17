@@ -15,8 +15,8 @@ import type { Prospect, ProspectStatus } from "@/lib/crm/types";
 
 const TEMPORAL_STYLES = {
   future: "text-wo-muted",
-  today: "font-medium text-amber-700",
-  overdue: "font-medium text-rose-600",
+  today: "font-medium text-amber-300",
+  overdue: "font-medium text-rose-300",
   none: "text-wo-dim",
 } as const;
 
@@ -34,7 +34,7 @@ export function ProspectListRow({
 
   return (
     <article
-      className="cursor-pointer rounded-[1.15rem] border border-wo-border bg-white px-4 py-3.5 transition hover:border-indigo-200 hover:bg-slate-50/70"
+      className="cursor-pointer rounded-xl border border-wo-border bg-[color:var(--wo-surface)] px-4 py-3.5 transition hover:border-wo-accent/30"
       onClick={() => {
         router.push(prospectDetailHref(prospect.id, listReturnUrl));
       }}
@@ -51,7 +51,7 @@ export function ProspectListRow({
         <div onClick={(e) => e.stopPropagation()}>
           <StatusSelect
             value={prospect.status}
-            className="h-8 min-w-[10.5rem] rounded-full border-wo-border bg-white px-2.5 py-0 text-xs"
+            className="h-8 min-w-[10.5rem] rounded-full border-wo-border bg-transparent px-2.5 py-0 text-xs"
             onChange={(status) => onStatusChange(prospect.id, status)}
           />
         </div>

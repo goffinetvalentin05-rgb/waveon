@@ -88,7 +88,7 @@ export function CommandPalette() {
                 key={item.id}
                 type="button"
                 onClick={() => go(item.href)}
-                className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-indigo-50"
+                className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-wo-hover"
               >
                 <span className="min-w-0">
                   <span className="block truncate text-sm text-wo-text">{item.label}</span>

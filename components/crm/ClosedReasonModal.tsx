@@ -47,8 +47,8 @@ export function ClosedReasonModal({
                 onClick={() => setReason(option)}
                 className={`rounded-xl border px-3 py-2 text-left text-sm transition ${
                   selected
-                    ? "border-indigo-200 bg-indigo-50 text-wo-text"
-                    : "border-wo-border bg-white text-wo-secondary hover:border-indigo-200 hover:bg-slate-50"
+                    ? "border-wo-accent/40 bg-wo-accent-soft text-wo-text"
+                    : "border-wo-border bg-transparent text-wo-secondary hover:border-wo-accent/30 hover:bg-wo-hover"
                 }`}
               >
                 {option}

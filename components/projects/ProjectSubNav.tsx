@@ -1,6 +1,6 @@
 "use client";
 
-import { PROJECT_NAV } from "@/lib/app/navigation";
+import { PROJECT_PRIMARY_NAV } from "@/lib/app/navigation";
 import { SubNav } from "@/components/ui/SubNav";
 import { hasModule, type ProjectModuleKey } from "@/lib/projects/modules";
 
@@ -15,7 +15,7 @@ export function ProjectSubNav({
   return (
     <SubNav
       ariaLabel="Navigation projet"
-      items={PROJECT_NAV.filter((item) => {
+      items={PROJECT_PRIMARY_NAV.filter((item) => {
         if (item.always) return true;
         if (!item.module) return true;
         return hasModule(enabledModules, item.module);

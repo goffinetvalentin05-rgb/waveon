@@ -15,6 +15,8 @@ import {
   IconTrash,
   IconUserCheck,
   IconUserX,
+  IconCalendarEvent,
+  IconChecklist,
 } from "@tabler/icons-react";
 import { isClosedProspectStatus, isDemoScheduledStatus } from "@/lib/crm/closed";
 import { StatusBadge } from "@/components/crm/StatusBadge";
@@ -979,18 +981,23 @@ export function ProspectDetailClient2({
   const busy = pending || interactionSaving || scheduleDemoSaving;
 
   return (
-    <div className={`space-y-6 crm-animate-in ${editMode ? "pb-24 sm:pb-0" : ""}`}>
+    <div className={`space-y-4 crm-animate-in ${editMode ? "pb-24 sm:pb-0" : ""}`}>
       <div>
         <Link
           href={backHref}
-          className="inline-flex items-center gap-1.5 text-sm text-wo-muted hover:text-wo-text"
+          className="inline-flex items-center gap-1.5 text-[13px] text-wo-muted hover:text-wo-text"
         >
           <IconArrowLeft className="h-4 w-4" />
           {backLabel}
         </Link>
-        <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
+        <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className={ui.h1}>{prospect.club_name}</h1>
+            <p className="mt-1 text-sm text-wo-muted">
+              {[prospect.sport, prospect.contact_function, prospect.ville || prospect.canton]
+                .filter(Boolean)
+                .join(" · ") || "Prospect"}
+            </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <StatusBadge status={prospect.status} />
               {prospect.status === "Fermé" && formatClosedReason(prospect.closed_reason, prospect.closed_note) ? (
@@ -1000,7 +1007,7 @@ export function ProspectDetailClient2({
               ) : null}
               {isArchived ? (
                 <span className="crm-badge bg-wo-hover text-wo-muted">
-                  <span className="crm-badge-dot bg-slate-400" />
+                  <span className="crm-badge-dot bg-zinc-400" />
                   Archivé
                 </span>
               ) : null}
@@ -1026,7 +1033,7 @@ export function ProspectDetailClient2({
                   disabled={pending || !draft.club_name.trim()}
                   onClick={() => handleSaveDraft()}
                 >
-                  Enregistrer les modifications
+                  Enregistrer
                 </button>
               </>
             ) : (
@@ -1036,7 +1043,7 @@ export function ProspectDetailClient2({
                 onClick={enterEditMode}
               >
                 <IconEdit className="h-4 w-4" stroke={1.75} />
-                Modifier les informations
+                Modifier
               </button>
             )}
           </div>
@@ -1050,7 +1057,7 @@ export function ProspectDetailClient2({
       ) : null}
 
       {errorMsg ? (
-        <p className="rounded-xl border border-rose-100 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">
+        <p className="rounded-xl border border-rose-400/20 bg-rose-400/10 px-4 py-2.5 text-sm text-rose-200">
           {errorMsg}
         </p>
       ) : null}
@@ -1066,16 +1073,16 @@ export function ProspectDetailClient2({
         onEditDemo={() => setScheduleDemoOpen(true)}
       />
 
-      <section className={`${ui.card} p-5 sm:p-6`}>
-        <h2 className={ui.h2}>Actions</h2>
+      <section className={`${ui.card} p-4`}>
+        <h2 className={ui.h2}>Actions rapides</h2>
         {isArchived ? (
           <p className="mt-3 text-sm text-wo-muted">
             Ce prospect est archivé. Restaurez-le pour enregistrer de nouvelles actions.
           </p>
         ) : (
-          <div className="mt-5 space-y-5">
+          <div className="mt-3 space-y-4">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.08em] text-wo-dim">Interactions</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-wo-dim">Interactions</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <button type="button" disabled={busy} className={ui.btnSecondary} onClick={() => setInteractionChannel("email")}>
                   <IconMail className="h-4 w-4" />
@@ -1089,10 +1096,25 @@ export function ProspectDetailClient2({
                   <IconPhone className="h-4 w-4" />
                   Appel
                 </button>
+                <button type="button" disabled={busy} className={ui.btnSecondary} onClick={() => setScheduleDemoOpen(true)}>
+                  <IconCalendarEvent className="h-4 w-4" />
+                  Planifier RDV
+                </button>
+                {prospect.project_id ? (
+                  <Link href={`/projects/${prospect.project_id}/tasks`} className={ui.btnSecondary}>
+                    <IconChecklist className="h-4 w-4" />
+                    Ajouter une tâche
+                  </Link>
+                ) : (
+                  <Link href="/personal/tasks" className={ui.btnSecondary}>
+                    <IconChecklist className="h-4 w-4" />
+                    Ajouter une tâche
+                  </Link>
+                )}
               </div>
             </div>
             <div>
-              <p className="text-[11px] uppercase tracking-[0.08em] text-wo-dim">Avancement</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-wo-dim">Avancement</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <button type="button" disabled={busy} className={ui.btnSecondary} onClick={() => setScheduleDemoOpen(true)}>
                   <IconPresentation className="h-4 w-4" />
@@ -1106,7 +1128,7 @@ export function ProspectDetailClient2({
                   <button
                     type="button"
                     disabled={busy}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"
+                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-sm font-medium text-emerald-200 transition hover:bg-emerald-400/15 disabled:opacity-50"
                     onClick={() => runAction("client")}
                   >
                     <IconUserCheck className="h-4 w-4" />
@@ -1285,9 +1307,9 @@ export function ProspectDetailClient2({
       </div>
 
 
-      <section className="rounded-2xl border border-rose-100 bg-rose-50/40 p-5 sm:p-6">
-        <h2 className="text-lg font-semibold tracking-tight text-rose-900">Zone dangereuse</h2>
-        <p className="mt-1 text-sm text-rose-800/80">
+      <section className="rounded-xl border border-rose-400/20 bg-rose-400/8 p-4 sm:p-5">
+        <h2 className="text-sm font-semibold tracking-tight text-rose-200">Zone dangereuse</h2>
+        <p className="mt-1 text-sm text-rose-200/70">
           {isArchived
             ? "Ce prospect est archivé. Vous pouvez le restaurer ou le supprimer définitivement."
             : hasHistoryOrNotes
@@ -1319,7 +1341,7 @@ export function ProspectDetailClient2({
           )}
           <button
             type="button"
-            className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-rose-300 transition hover:bg-rose-400/10 disabled:opacity-50"
             disabled={pending || archiveLoading || deleteLoading}
             onClick={() => {
               setDeleteError(null);
@@ -1411,7 +1433,7 @@ export function ProspectDetailClient2({
       ) : null}
 
       {editMode ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-wo-border bg-white/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-wo-border bg-[color:var(--wo-bg)]/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:hidden">
           <div className="mx-auto flex max-w-lg gap-2">
             <button
               type="button"

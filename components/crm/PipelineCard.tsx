@@ -1,6 +1,6 @@
 "use client";
 
-import { formatLastContact, formatLastInteractionSummary, formatSectorLocationLine, getNextActionDisplay } from "@/lib/crm/follow-up-display";
+import { formatLastContact, formatLastInteractionSummary, formatSectorLocationLine, formatContactLine, getNextActionDisplay } from "@/lib/crm/follow-up-display";
 import { formatClosedReason } from "@/lib/crm/closed";
 import { formatRelayFollowUp } from "@/lib/crm/format";
 import { prospectAvatarTone } from "@/lib/crm/pipeline";
@@ -8,8 +8,8 @@ import type { Prospect } from "@/lib/crm/types";
 
 const TEMPORAL_STYLES = {
   future: "text-wo-muted",
-  today: "font-medium text-amber-700",
-  overdue: "font-medium text-rose-600",
+  today: "font-medium text-amber-300",
+  overdue: "font-medium text-rose-300",
   none: "text-wo-dim",
 } as const;
 
@@ -45,6 +45,9 @@ export function PipelineCard({ prospect, columnId }: { prospect: Prospect; colum
   return (
     <div className="min-w-0 flex-1">
       <p className="truncate text-[13px] font-medium leading-snug text-wo-text">{prospect.club_name}</p>
+      {formatContactLine(prospect) ? (
+        <p className="mt-0.5 truncate text-[11px] text-wo-muted">{formatContactLine(prospect)}</p>
+      ) : null}
       {sectorLocation ? <p className="mt-1 truncate text-[11px] text-wo-dim">{sectorLocation}</p> : null}
       {showRichLastInteraction && lastInteraction ? (
         <p className="mt-1.5 truncate text-[11px] text-wo-muted">Dernière interaction : {lastInteraction}</p>
