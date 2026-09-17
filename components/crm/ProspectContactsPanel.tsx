@@ -1,28 +1,42 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { IconPlus, IconStar, IconTrash } from "@tabler/icons-react";
+import { IconMail, IconPhone, IconPlus, IconStar, IconTrash, IconUserPlus } from "@tabler/icons-react";
 import { ui } from "@/lib/design/tokens";
 import { contactDisplayName, type ProspectContact } from "@/lib/crm/contacts";
 
 export function ProspectContactsPanel({
   prospectId,
   onChanged,
+  onCountChange,
+  openAddKey = 0,
 }: {
   prospectId: string;
   onChanged?: () => void;
+  onCountChange?: (count: number) => void;
+  openAddKey?: number;
 }) {
   const [contacts, setContacts] = useState<ProspectContact[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [seenAddKey, setSeenAddKey] = useState(openAddKey);
   const [error, setError] = useState<string | null>(null);
+
+  if (openAddKey !== seenAddKey) {
+    setSeenAddKey(openAddKey);
+    if (openAddKey > 0) setShowForm(true);
+  }
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/prospects/${prospectId}/contacts`);
     const data = await res.json();
-    if (res.ok) setContacts(data.contacts ?? []);
+    if (res.ok) {
+      const list = (data.contacts ?? []) as ProspectContact[];
+      setContacts(list);
+      onCountChange?.(list.length);
+    }
     setLoading(false);
-  }, [prospectId]);
+  }, [prospectId, onCountChange]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -46,11 +60,11 @@ export function ProspectContactsPanel({
   };
 
   return (
-    <section className={`${ui.card} p-5 sm:p-6`}>
+    <section className={`${ui.card} p-5`}>
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className={ui.h2}>Contacts</h2>
-          <p className="mt-0.5 text-sm text-wo-muted">Personnes rattachées à ce prospect.</p>
+          <p className="mt-0.5 text-[12.5px] text-wo-muted">Interlocuteurs de ce prospect.</p>
         </div>
         <button type="button" className={ui.btnSecondary} onClick={() => setShowForm(true)}>
           <IconPlus className="h-4 w-4" />
@@ -59,50 +73,73 @@ export function ProspectContactsPanel({
       </div>
 
       {loading ? (
-        <p className="mt-4 text-sm text-wo-dim">Chargement…</p>
-      ) : contacts.length === 0 ? (
-        <p className="mt-4 text-sm text-wo-muted">Aucun contact. Ajoutez un interlocuteur.</p>
+        <p className="mt-5 text-sm text-wo-dim">Chargement…</p>
+      ) : contacts.length === 0 && !showForm ? (
+        <div className="mt-6 rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.02] px-4 py-8 text-center">
+          <p className="text-sm text-wo-muted">Aucun contact pour le moment.</p>
+          <button type="button" className={`${ui.btnPrimary} mt-4`} onClick={() => setShowForm(true)}>
+            <IconUserPlus className="h-4 w-4" />
+            Ajouter un contact
+          </button>
+        </div>
       ) : (
-        <ul className="mt-4 divide-y divide-wo-border">
+        <ul className="mt-4 space-y-2.5">
           {contacts.map((c) => (
-            <li key={c.id} className="flex flex-wrap items-start justify-between gap-3 py-3">
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-wo-text">
-                  {contactDisplayName(c)}
-                  {c.is_primary ? (
-                    <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
-                      <IconStar className="h-3 w-3" /> Principal
-                    </span>
+            <li
+              key={c.id}
+              className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3.5 py-3.5"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="flex flex-wrap items-center gap-2 text-[13.5px] font-medium text-wo-text">
+                    {contactDisplayName(c)}
+                    {c.is_primary ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-wo-accent-soft px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#f3a35c]">
+                        <IconStar className="h-3 w-3" /> Principal
+                      </span>
+                    ) : null}
+                  </p>
+                  {c.job_title ? <p className="mt-0.5 text-[12px] text-wo-muted">{c.job_title}</p> : null}
+                  <div className="mt-2 space-y-1 text-[12.5px] text-wo-secondary">
+                    {c.email ? (
+                      <a href={`mailto:${c.email}`} className="flex items-center gap-1.5 hover:text-wo-accent">
+                        <IconMail className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{c.email}</span>
+                      </a>
+                    ) : null}
+                    {c.phone ? (
+                      <a href={`tel:${c.phone}`} className="flex items-center gap-1.5 hover:text-wo-accent">
+                        <IconPhone className="h-3.5 w-3.5 shrink-0" />
+                        {c.phone}
+                      </a>
+                    ) : null}
+                    {c.linkedin_url ? (
+                      <a
+                        href={c.linkedin_url.startsWith("http") ? c.linkedin_url : `https://${c.linkedin_url}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-wo-accent hover:underline"
+                      >
+                        LinkedIn
+                      </a>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="flex shrink-0 gap-0.5">
+                  {!c.is_primary ? (
+                    <button type="button" className={ui.btnGhost} onClick={() => void setPrimary(c.id)}>
+                      Principal
+                    </button>
                   ) : null}
-                </p>
-                <p className="mt-0.5 text-xs text-wo-muted">
-                  {[c.job_title, c.email, c.phone].filter(Boolean).join(" · ") || "Coordonnées à compléter"}
-                </p>
-                {c.linkedin_url ? (
-                  <a
-                    href={c.linkedin_url.startsWith("http") ? c.linkedin_url : `https://${c.linkedin_url}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-1 inline-block text-xs text-wo-accent hover:underline"
+                  <button
+                    type="button"
+                    className={ui.iconBtn}
+                    onClick={() => void remove(c.id)}
+                    aria-label="Supprimer"
                   >
-                    LinkedIn
-                  </a>
-                ) : null}
-              </div>
-              <div className="flex gap-1">
-                {!c.is_primary ? (
-                  <button type="button" className={ui.btnGhost} onClick={() => void setPrimary(c.id)}>
-                    Principal
+                    <IconTrash className="h-4 w-4" />
                   </button>
-                ) : null}
-                <button
-                  type="button"
-                  className={ui.iconBtn}
-                  onClick={() => void remove(c.id)}
-                  aria-label="Supprimer"
-                >
-                  <IconTrash className="h-4 w-4" />
-                </button>
+                </div>
               </div>
             </li>
           ))}
@@ -167,7 +204,7 @@ function ContactForm({
   };
 
   return (
-    <form onSubmit={submit} className="mt-5 grid gap-3 rounded-2xl border border-wo-border bg-white/[0.025] p-4 sm:grid-cols-2">
+    <form onSubmit={submit} className="mt-4 grid gap-3 rounded-2xl border border-wo-border bg-white/[0.025] p-4 sm:grid-cols-2">
       {(
         [
           { name: "first_name", label: "Prénom *", required: true },
@@ -184,7 +221,7 @@ function ContactForm({
         </div>
       ))}
       <label className="flex items-center gap-2 text-sm text-wo-secondary sm:col-span-2">
-        <input type="checkbox" name="is_primary" value="true" className="h-4 w-4 rounded border-wo-border text-indigo-600" />
+        <input type="checkbox" name="is_primary" value="true" className="h-4 w-4 rounded border-wo-border" />
         Contact principal
       </label>
       <div className="flex justify-end gap-2 sm:col-span-2">

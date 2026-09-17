@@ -110,7 +110,7 @@ export function pageMetaFromPath(pathname: string | null, projectName?: string |
   if (projectMatch && projectMatch[1] !== "unassigned") {
     const rest = projectMatch[2] ?? "";
     if (rest.startsWith("prospects/") && rest !== "prospects") {
-      return { title: "Prospect", subtitle: projectName ?? undefined };
+      return { title: "Prospect", subtitle: projectName ?? undefined, hideTitle: true };
     }
     if (rest === "members") {
       return { title: "Membres", subtitle: projectName ?? undefined };

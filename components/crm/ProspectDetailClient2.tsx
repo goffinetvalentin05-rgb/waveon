@@ -2,21 +2,28 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import {
   IconArchive,
   IconArrowLeft,
+  IconBrandLinkedin,
+  IconChevronDown,
+  IconDots,
   IconEdit,
   IconMail,
   IconMessage,
+  IconNote,
   IconPhone,
+  IconPlus,
   IconPresentation,
   IconCircleCheck,
   IconTrash,
   IconUserCheck,
+  IconUserPlus,
   IconUserX,
   IconCalendarEvent,
   IconChecklist,
+  IconWorld,
 } from "@tabler/icons-react";
 import { isClosedProspectStatus, isDemoScheduledStatus } from "@/lib/crm/closed";
 import { StatusBadge } from "@/components/crm/StatusBadge";
@@ -204,7 +211,11 @@ function DeleteProspectModalInner({
   );
 }
 
-function InfoRow({
+function asHref(url: string) {
+  return url.startsWith("http") ? url : `https://${url}`;
+}
+
+function InfoField({
   label,
   children,
 }: {
@@ -212,16 +223,11 @@ function InfoRow({
   children: ReactNode;
 }) {
   return (
-    <div className="flex justify-between gap-4 border-b border-slate-50 pb-2 last:border-0">
-      <dt className="text-wo-dim">{label}</dt>
-      <dd className="text-right font-medium text-wo-text">{children}</dd>
+    <div className="wo-detail-field">
+      <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-wo-dim">{label}</p>
+      <div className="mt-1.5 text-[13.5px] font-medium text-wo-text break-words">{children}</div>
     </div>
   );
-}
-
-function displayOrDash(value: string | null | undefined) {
-  const s = value?.trim();
-  return s ? s : "—";
 }
 
 type ActivityEditState = {
@@ -538,6 +544,22 @@ export function ProspectDetailClient2({
   const [interactionSaving, setInteractionSaving] = useState(false);
   const [scheduleDemoOpen, setScheduleDemoOpen] = useState(false);
   const [scheduleDemoSaving, setScheduleDemoSaving] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [addContactKey, setAddContactKey] = useState(0);
+  const [taskCreateKey, setTaskCreateKey] = useState(0);
+  const [contactCount, setContactCount] = useState(initial.contact_count ?? 0);
+  const [notesEditing, setNotesEditing] = useState(false);
+  const [showMoreInfo, setShowMoreInfo] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false);
+    };
+    window.addEventListener("mousedown", onClick);
+    return () => window.removeEventListener("mousedown", onClick);
+  }, [moreOpen]);
 
   const refreshAll = async () => {
     const refreshed = await fetch(`/api/prospects/${prospect.id}`);
@@ -888,7 +910,7 @@ export function ProspectDetailClient2({
   const statusSelector = (
     <StatusSelect
       value={prospect.status}
-      className={ui.input + " w-64"}
+      className={ui.input + " w-[min(16rem,100%)]"}
       disabled={pending || interactionSaving}
       onChange={(next) => {
         if (next === prospect.status) return;
@@ -979,331 +1001,468 @@ export function ProspectDetailClient2({
 
   const canUndo = lastCommercialActivity(activities) != null;
   const busy = pending || interactionSaving || scheduleDemoSaving;
+  const notesValue = editMode ? draft.notes : notes;
+  const hasNotes = Boolean(notesValue.trim());
+  const contextLine = [prospect.project?.name, prospect.sport, prospect.ville || prospect.canton]
+    .filter(Boolean)
+    .join(" · ");
+
+  const primaryInfo = [
+    prospect.sport ? { label: "Secteur", node: prospect.sport } : null,
+    prospect.canton ? { label: "Canton / région", node: prospect.canton } : null,
+    prospect.ville ? { label: "Ville", node: prospect.ville } : null,
+    prospect.country ? { label: "Pays", node: prospect.country } : null,
+    prospect.address ? { label: "Adresse", node: prospect.address } : null,
+    prospect.website
+      ? {
+          label: "Site web",
+          node: (
+            <a href={asHref(prospect.website)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-wo-accent hover:underline">
+              <IconWorld className="h-3.5 w-3.5" />
+              {prospect.website}
+            </a>
+          ),
+        }
+      : null,
+    prospect.linkedin_url
+      ? {
+          label: "LinkedIn",
+          node: (
+            <a href={asHref(prospect.linkedin_url)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-wo-accent hover:underline">
+              <IconBrandLinkedin className="h-3.5 w-3.5" />
+              Profil
+            </a>
+          ),
+        }
+      : null,
+    prospect.phone
+      ? {
+          label: "Téléphone",
+          node: (
+            <a href={`tel:${prospect.phone}`} className="text-wo-accent hover:underline">
+              {prospect.phone}
+            </a>
+          ),
+        }
+      : null,
+    prospect.email
+      ? {
+          label: "Email",
+          node: (
+            <a href={`mailto:${prospect.email}`} className="text-wo-accent hover:underline">
+              {prospect.email}
+            </a>
+          ),
+        }
+      : null,
+  ].filter(Boolean) as { label: string; node: ReactNode }[];
+
+  const secondaryInfo = [
+    prospect.contact_name ? { label: "Nom du contact", node: prospect.contact_name } : null,
+    prospect.contact_function ? { label: "Fonction", node: prospect.contact_function } : null,
+    prospect.source ? { label: "Source", node: prospect.source } : null,
+    (prospect.tags ?? []).length ? { label: "Tags", node: prospect.tags.join(", ") } : null,
+  ].filter(Boolean) as { label: string; node: ReactNode }[];
 
   return (
-    <div className={`space-y-4 crm-animate-in ${editMode ? "pb-24 sm:pb-0" : ""}`}>
-      <div>
-        <Link
-          href={backHref}
-          className="inline-flex items-center gap-1.5 text-[13px] text-wo-muted hover:text-wo-text"
-        >
-          <IconArrowLeft className="h-4 w-4" />
-          {backLabel}
-        </Link>
-        <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className={ui.h1}>{prospect.club_name}</h1>
-            <p className="mt-1 text-sm text-wo-muted">
-              {[prospect.sport, prospect.contact_function, prospect.ville || prospect.canton]
-                .filter(Boolean)
-                .join(" · ") || "Prospect"}
-            </p>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <StatusBadge status={prospect.status} />
-              {prospect.status === "Fermé" && formatClosedReason(prospect.closed_reason, prospect.closed_note) ? (
-                <span className="text-sm text-wo-muted">
-                  {formatClosedReason(prospect.closed_reason, prospect.closed_note)}
-                </span>
-              ) : null}
-              {isArchived ? (
-                <span className="crm-badge bg-wo-hover text-wo-muted">
-                  <span className="crm-badge-dot bg-zinc-400" />
-                  Archivé
-                </span>
-              ) : null}
-            </div>
+    <div className={`space-y-5 crm-animate-in ${editMode ? "pb-24 sm:pb-0" : ""}`}>
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <Link
+            href={backHref}
+            className="inline-flex items-center gap-1.5 text-[12.5px] text-wo-dim transition hover:text-wo-text"
+          >
+            <IconArrowLeft className="h-3.5 w-3.5" />
+            {backLabel}
+            {prospect.project?.name ? ` · ${prospect.project.name}` : ""}
+          </Link>
+          <h1 className="mt-2 font-display text-[1.85rem] font-semibold tracking-tight text-wo-text sm:text-[2.1rem]">
+            {prospect.club_name}
+          </h1>
+          {contextLine ? <p className="mt-1.5 text-[13.5px] text-wo-muted">{contextLine}</p> : null}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <StatusBadge status={prospect.status} />
+            {prospect.status === "Fermé" && formatClosedReason(prospect.closed_reason, prospect.closed_note) ? (
+              <span className="text-sm text-wo-muted">
+                {formatClosedReason(prospect.closed_reason, prospect.closed_note)}
+              </span>
+            ) : null}
+            {isArchived ? (
+              <span className="crm-badge bg-wo-hover text-wo-muted">
+                <span className="crm-badge-dot bg-zinc-400" />
+                Archivé
+              </span>
+            ) : null}
           </div>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {!editMode ? statusSelector : null}
-
-            {editMode ? (
-              <>
-                <button
-                  type="button"
-                  className={ui.btnSecondary}
-                  onClick={() => setEditMode(false)}
-                  disabled={pending}
-                >
-                  Annuler
-                </button>
-                <button
-                  type="button"
-                  className={ui.btnPrimary}
-                  disabled={pending || !draft.club_name.trim()}
-                  onClick={() => handleSaveDraft()}
-                >
-                  Enregistrer
-                </button>
-              </>
-            ) : (
+        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+          {!editMode ? statusSelector : null}
+          {editMode ? (
+            <>
+              <button type="button" className={ui.btnSecondary} onClick={() => setEditMode(false)} disabled={pending}>
+                Annuler
+              </button>
               <button
                 type="button"
-                className={ui.btnSecondary}
-                onClick={enterEditMode}
+                className={ui.btnPrimary}
+                disabled={pending || !draft.club_name.trim()}
+                onClick={() => handleSaveDraft()}
               >
+                Enregistrer
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" className={ui.btnSecondary} onClick={enterEditMode}>
                 <IconEdit className="h-4 w-4" stroke={1.75} />
                 Modifier
               </button>
-            )}
-          </div>
+              <button
+                type="button"
+                className={ui.btnSecondary}
+                onClick={() => setAddContactKey((n) => n + 1)}
+              >
+                <IconUserPlus className="h-4 w-4" />
+                Ajouter un contact
+              </button>
+              <button
+                type="button"
+                className={ui.btnPrimary}
+                disabled={busy || isArchived}
+                onClick={() => setInteractionChannel("email")}
+              >
+                <IconMail className="h-4 w-4" />
+                Contacter
+              </button>
+              <div className="relative" ref={moreRef}>
+                <button
+                  type="button"
+                  className={ui.btnSecondary}
+                  onClick={() => setMoreOpen((v) => !v)}
+                >
+                  <IconDots className="h-4 w-4" />
+                  Plus
+                  <IconChevronDown className="h-3.5 w-3.5" />
+                </button>
+                {moreOpen ? (
+                  <div className="wo-modal absolute right-0 z-30 mt-2 w-56 overflow-hidden p-1.5">
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] text-wo-secondary hover:bg-white/[0.05]"
+                      onClick={() => {
+                        setMoreOpen(false);
+                        setScheduleDemoOpen(true);
+                      }}
+                    >
+                      <IconPresentation className="h-4 w-4" />
+                      {isDemoScheduledStatus(prospect.status) ? "Modifier la démo" : "Planifier une démo"}
+                    </button>
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] text-wo-secondary hover:bg-white/[0.05]"
+                      onClick={() => {
+                        setMoreOpen(false);
+                        runAction("demo_done");
+                      }}
+                    >
+                      <IconCircleCheck className="h-4 w-4" />
+                      Démo effectuée
+                    </button>
+                    {prospect.status !== "Client" ? (
+                      <button
+                        type="button"
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] text-wo-secondary hover:bg-white/[0.05]"
+                        onClick={() => {
+                          setMoreOpen(false);
+                          runAction("client");
+                        }}
+                      >
+                        <IconUserCheck className="h-4 w-4" />
+                        Passer en client
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] text-rose-300 hover:bg-rose-500/10"
+                      onClick={() => {
+                        setMoreOpen(false);
+                        runAction("refus");
+                      }}
+                    >
+                      <IconUserX className="h-4 w-4" />
+                      Perdu
+                    </button>
+                    <div className="my-1 border-t border-wo-border" />
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] text-wo-secondary hover:bg-white/[0.05]"
+                      onClick={() => {
+                        setMoreOpen(false);
+                        if (isArchived) restoreProspect();
+                        else archiveProspect();
+                      }}
+                    >
+                      <IconArchive className="h-4 w-4" />
+                      {isArchived ? "Restaurer" : "Archiver"}
+                    </button>
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] text-rose-300 hover:bg-rose-500/10"
+                      onClick={() => {
+                        setMoreOpen(false);
+                        setDeleteError(null);
+                        setShowDeleteModal(true);
+                      }}
+                    >
+                      <IconTrash className="h-4 w-4" />
+                      Supprimer
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            </>
+          )}
         </div>
-      </div>
+      </header>
 
-      {msg ? (
-        <p className={ui.alertInfo}>
-          {msg}
-        </p>
-      ) : null}
+      {msg ? <p className={ui.alertInfo}>{msg}</p> : null}
+      {errorMsg ? <p className={ui.alertError}>{errorMsg}</p> : null}
 
-      {errorMsg ? (
-        <p className={ui.alertError}>
-          {errorMsg}
-        </p>
-      ) : null}
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,0.9fr)]">
+        <div className="space-y-5">
+          <ProspectFollowUpCard
+            prospect={prospect}
+            lastActivity={lastCommercialActivity(activities)}
+            contactCount={contactCount}
+            disabled={isArchived || busy}
+            onFollowUpChange={(value) => {
+              setProspect((p) => ({ ...p, next_follow_up: value }));
+              saveInlineField("next_follow_up", value ?? "");
+            }}
+            onEditDemo={() => setScheduleDemoOpen(true)}
+          />
 
-      <ProspectFollowUpCard
-        prospect={prospect}
-        lastActivity={lastCommercialActivity(activities)}
-        disabled={isArchived || busy}
-        onFollowUpChange={(value) => {
-          setProspect((p) => ({ ...p, next_follow_up: value }));
-          saveInlineField("next_follow_up", value ?? "");
-        }}
-        onEditDemo={() => setScheduleDemoOpen(true)}
-      />
+          <section className={`${ui.card} p-5 sm:p-6`}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className={ui.h2}>Informations générales</h2>
+                <p className="mt-0.5 text-[12.5px] text-wo-muted">Les données utiles, sans le bruit.</p>
+              </div>
+              {!editMode ? (
+                <button type="button" className={ui.btnGhost} onClick={enterEditMode}>
+                  <IconEdit className="h-4 w-4" />
+                  Modifier
+                </button>
+              ) : null}
+            </div>
 
-      <section className={`${ui.card} p-4`}>
-        <h2 className={ui.h2}>Actions rapides</h2>
-        {isArchived ? (
-          <p className="mt-3 text-sm text-wo-muted">
-            Ce prospect est archivé. Restaurez-le pour enregistrer de nouvelles actions.
-          </p>
-        ) : (
-          <div className="mt-3 space-y-4">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-wo-dim">Interactions</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <button type="button" disabled={busy} className={ui.btnSecondary} onClick={() => setInteractionChannel("email")}>
-                  <IconMail className="h-4 w-4" />
+            {!editMode ? (
+              primaryInfo.length === 0 && secondaryInfo.length === 0 ? (
+                <div className="mt-6 rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.02] px-4 py-8 text-center">
+                  <p className="text-sm text-wo-muted">Peu d’informations renseignées pour l’instant.</p>
+                  <button type="button" className={`${ui.btnSecondary} mt-4`} onClick={enterEditMode}>
+                    Compléter la fiche
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="mt-5 grid gap-2.5 sm:grid-cols-2">
+                    {primaryInfo.map((item) => (
+                      <InfoField key={item.label} label={item.label}>
+                        {item.node}
+                      </InfoField>
+                    ))}
+                    {showMoreInfo
+                      ? secondaryInfo.map((item) => (
+                          <InfoField key={item.label} label={item.label}>
+                            {item.node}
+                          </InfoField>
+                        ))
+                      : null}
+                  </div>
+                  {secondaryInfo.length > 0 ? (
+                    <button
+                      type="button"
+                      className={`${ui.btnGhost} mt-3 px-0`}
+                      onClick={() => setShowMoreInfo((v) => !v)}
+                    >
+                      {showMoreInfo ? "Réduire" : "Voir plus"}
+                    </button>
+                  ) : null}
+                </>
+              )
+            ) : (
+              <div className="mt-4 space-y-4">
+                <ProspectBusinessFields
+                  mode="edit"
+                  showLogo
+                  values={draft}
+                  onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))}
+                />
+                <div>
+                  <label className={ui.label}>Statut</label>
+                  <StatusSelect
+                    value={draft.status}
+                    onChange={(status) => setDraft((d) => ({ ...d, status }))}
+                  />
+                </div>
+              </div>
+            )}
+          </section>
+
+          <ProspectTimeline
+            activities={activities}
+            canUndo={!editMode && canUndo}
+            pending={busy}
+            onUndoLast={undoLastAction}
+            onDelete={(a) => {
+              setConfirm({
+                tone: "danger",
+                title: "Supprimer cette action de l’historique ?",
+                description: "Cela supprimera l’entrée correspondante.",
+                confirmLabel: "Supprimer",
+                cancelLabel: "Annuler",
+                onConfirm: () => {
+                  setConfirm(null);
+                  startTransition(async () => {
+                    const res = await fetch(`/api/prospects/${prospect.id}/activities/${a.id}`, { method: "DELETE" });
+                    const data = await res.json();
+                    if (!res.ok) {
+                      setMsg(data.error ?? "Erreur.");
+                      return;
+                    }
+                    if (data.prospect) setProspect(data.prospect as Prospect);
+                    if (data.activities) setActivities(data.activities as ProspectActivity[]);
+                    setMsg("Action supprimée.");
+                    await refreshAll();
+                  });
+                },
+              });
+            }}
+          />
+        </div>
+
+        <div className="space-y-5">
+          <section className={`${ui.card} p-5`}>
+            <h2 className={ui.h2}>Actions rapides</h2>
+            {isArchived ? (
+              <p className="mt-3 text-sm text-wo-muted">
+                Ce prospect est archivé. Restaurez-le pour enregistrer de nouvelles actions.
+              </p>
+            ) : (
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <button type="button" disabled={busy} className="wo-action-tile wo-action-tile-primary" onClick={() => setInteractionChannel("email")}>
+                  <IconMail className="h-[18px] w-[18px]" stroke={1.7} />
                   Email
                 </button>
-                <button type="button" disabled={busy} className={ui.btnSecondary} onClick={() => setInteractionChannel("message")}>
-                  <IconMessage className="h-4 w-4" />
-                  Message
-                </button>
-                <button type="button" disabled={busy} className={ui.btnSecondary} onClick={() => setInteractionChannel("call")}>
-                  <IconPhone className="h-4 w-4" />
+                <button type="button" disabled={busy} className="wo-action-tile" onClick={() => setInteractionChannel("call")}>
+                  <IconPhone className="h-[18px] w-[18px]" stroke={1.7} />
                   Appel
                 </button>
-                <button type="button" disabled={busy} className={ui.btnSecondary} onClick={() => setScheduleDemoOpen(true)}>
-                  <IconCalendarEvent className="h-4 w-4" />
-                  Planifier RDV
+                <button type="button" disabled={busy} className="wo-action-tile" onClick={() => setInteractionChannel("message")}>
+                  <IconMessage className="h-[18px] w-[18px]" stroke={1.7} />
+                  Message
                 </button>
-                {prospect.project_id ? (
-                  <Link href={`/projects/${prospect.project_id}/tasks`} className={ui.btnSecondary}>
-                    <IconChecklist className="h-4 w-4" />
-                    Ajouter une tâche
-                  </Link>
-                ) : (
-                  <Link href="/personal/tasks" className={ui.btnSecondary}>
-                    <IconChecklist className="h-4 w-4" />
-                    Ajouter une tâche
-                  </Link>
-                )}
-              </div>
-            </div>
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-wo-dim">Avancement</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <button type="button" disabled={busy} className={ui.btnSecondary} onClick={() => setScheduleDemoOpen(true)}>
-                  <IconPresentation className="h-4 w-4" />
-                  {isDemoScheduledStatus(prospect.status) ? "Modifier la démo" : "Démo planifiée"}
+                <button
+                  type="button"
+                  disabled={busy}
+                  className="wo-action-tile"
+                  onClick={() => document.getElementById("prospect-followup-date")?.focus()}
+                >
+                  <IconCalendarEvent className="h-[18px] w-[18px]" stroke={1.7} />
+                  Relance
                 </button>
-                <button type="button" disabled={busy} className={ui.btnSecondary} onClick={() => runAction("demo_done")}>
-                  <IconCircleCheck className="h-4 w-4" />
-                  Démo effectuée
+                <button
+                  type="button"
+                  disabled={busy}
+                  className="wo-action-tile"
+                  onClick={() => setNotesEditing(true)}
+                >
+                  <IconNote className="h-[18px] w-[18px]" stroke={1.7} />
+                  Note
                 </button>
-                {prospect.status !== "Client" ? (
-                  <button
-                    type="button"
-                    disabled={busy}
-                    className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3.5 py-2 text-sm font-medium text-emerald-300 transition hover:bg-emerald-400/20 disabled:opacity-50"
-                    onClick={() => runAction("client")}
-                  >
-                    <IconUserCheck className="h-4 w-4" />
-                    Passer en client
-                  </button>
-                ) : null}
-                <button type="button" disabled={busy} className={ui.btnDanger} onClick={() => runAction("refus")}>
-                  <IconUserX className="h-4 w-4" />
-                  Perdu
+                <button
+                  type="button"
+                  disabled={busy}
+                  className="wo-action-tile"
+                  onClick={() => setTaskCreateKey((n) => n + 1)}
+                >
+                  <IconChecklist className="h-[18px] w-[18px]" stroke={1.7} />
+                  Tâche
                 </button>
               </div>
-            </div>
-          </div>
-        )}
-      </section>
+            )}
+          </section>
 
-      <ProspectTimeline
-        activities={activities}
-        canUndo={!editMode && canUndo}
-        pending={busy}
-        onUndoLast={undoLastAction}
-        onDelete={(a) => {
-          setConfirm({
-            tone: "danger",
-            title: "Supprimer cette action de l’historique ?",
-            description: "Cela supprimera l’entrée correspondante.",
-            confirmLabel: "Supprimer",
-            cancelLabel: "Annuler",
-            onConfirm: () => {
-              setConfirm(null);
-              startTransition(async () => {
-                const res = await fetch(`/api/prospects/${prospect.id}/activities/${a.id}`, { method: "DELETE" });
-                const data = await res.json();
-                if (!res.ok) {
-                  setMsg(data.error ?? "Erreur.");
-                  return;
-                }
-                if (data.prospect) setProspect(data.prospect as Prospect);
-                if (data.activities) setActivities(data.activities as ProspectActivity[]);
-                setMsg("Action supprimée.");
-                await refreshAll();
-              });
-            },
-          });
-        }}
-      />
-
-      <ProspectContactsPanel prospectId={prospect.id} onChanged={() => void refreshAll()} />
-
-      <section className={`${ui.card} p-5 sm:p-6`}>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className={ui.h2}>Informations générales</h2>
-            {!editMode ? (
-              <button type="button" className={ui.btnGhost} onClick={enterEditMode}>
-                <IconEdit className="h-4 w-4" />
-                Modifier
-              </button>
-            ) : null}
-          </div>
-
-          {!editMode ? (
-            <dl className="mt-4 space-y-0 text-sm">
-              <InfoRow label="Secteur">{displayOrDash(prospect.sport)}</InfoRow>
-              <InfoRow label="Canton / région">{displayOrDash(prospect.canton)}</InfoRow>
-              <InfoRow label="Ville">{displayOrDash(prospect.ville)}</InfoRow>
-              <InfoRow label="Pays">{displayOrDash(prospect.country)}</InfoRow>
-              <InfoRow label="Adresse">{displayOrDash(prospect.address)}</InfoRow>
-              <InfoRow label="Fonction du contact">{displayOrDash(prospect.contact_function)}</InfoRow>
-              <InfoRow label="Nom du contact">{displayOrDash(prospect.contact_name)}</InfoRow>
-              <InfoRow label="Téléphone">
-                {prospect.phone ? (
-                  <a href={`tel:${prospect.phone}`} className="text-wo-accent hover:underline">
-                    {prospect.phone}
-                  </a>
-                ) : (
-                  "—"
-                )}
-              </InfoRow>
-              <InfoRow label="Email">
-                {prospect.email ? (
-                  <a href={`mailto:${prospect.email}`} className="text-wo-accent hover:underline">
-                    {prospect.email}
-                  </a>
-                ) : (
-                  "—"
-                )}
-              </InfoRow>
-              <InfoRow label="Site web">
-                {prospect.website ? (
-                  <a
-                    href={prospect.website.startsWith("http") ? prospect.website : `https://${prospect.website}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-wo-accent hover:underline"
-                  >
-                    {prospect.website}
-                  </a>
-                ) : (
-                  "—"
-                )}
-              </InfoRow>
-              <InfoRow label="LinkedIn">
-                {prospect.linkedin_url ? (
-                  <a
-                    href={
-                      prospect.linkedin_url.startsWith("http")
-                        ? prospect.linkedin_url
-                        : `https://${prospect.linkedin_url}`
-                    }
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-wo-accent hover:underline"
-                  >
-                    {prospect.linkedin_url}
-                  </a>
-                ) : (
-                  "—"
-                )}
-              </InfoRow>
-              <InfoRow label="Source">{displayOrDash(prospect.source)}</InfoRow>
-              <InfoRow label="Priorité">{prospect.priority ?? "Normale"}</InfoRow>
-              <InfoRow label="Valeur potentielle">
-                {prospect.potential_value != null
-                  ? new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(
-                      Number(prospect.potential_value)
-                    )
-                  : "—"}
-              </InfoRow>
-              <InfoRow label="Canal">{displayOrDash(prospect.contact_channel)}</InfoRow>
-              <InfoRow label="Responsable">{displayOrDash(prospect.assignee?.name)}</InfoRow>
-              <InfoRow label="Tags">
-                {(prospect.tags ?? []).length ? prospect.tags.join(", ") : "—"}
-              </InfoRow>
-            </dl>
-          ) : (
-            <div className="mt-4 space-y-4">
-              <ProspectBusinessFields
-                mode="edit"
-                showLogo
-                values={draft}
-                onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))}
-              />
-              <div>
-                <label className={ui.label}>Statut</label>
-                <StatusSelect
-                  value={draft.status}
-                  onChange={(status) => setDraft((d) => ({ ...d, status }))}
-                />
-              </div>
-            </div>
-          )}
-        </section>
-
-      <div className="grid gap-5 lg:grid-cols-2">
-        <section className={`${ui.card} p-5 sm:p-6`}>
-          <h2 className={ui.h2}>Notes</h2>
-          <textarea
-            className={`${ui.input} mt-4 min-h-[140px] resize-y`}
-            value={editMode ? draft.notes : notes}
-            onChange={(e) => {
-              const v = e.target.value;
-              if (editMode) setDraft((d) => ({ ...d, notes: v }));
-              else setNotes(v);
-            }}
-            placeholder="Notes libres sur ce prospect…"
+          <ProspectContactsPanel
+            prospectId={prospect.id}
+            openAddKey={addContactKey}
+            onCountChange={setContactCount}
+            onChanged={() => void refreshAll()}
           />
-          <div className="mt-3 flex justify-end gap-2">
-            {!editMode ? (
-              <button type="button" className={ui.btnPrimary} disabled={pending} onClick={saveNotes}>
-                Enregistrer
-              </button>
-            ) : null}
-          </div>
-        </section>
-        <ProspectLinkedTasks prospectId={prospect.id} projectId={prospect.project_id} />
+
+          <section className={`${ui.card} p-5`}>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className={ui.h2}>Notes</h2>
+              {!editMode && hasNotes && !notesEditing ? (
+                <button type="button" className={ui.btnGhost} onClick={() => setNotesEditing(true)}>
+                  Modifier
+                </button>
+              ) : null}
+            </div>
+            {editMode || notesEditing || (!hasNotes && notesEditing) ? (
+              <>
+                <textarea
+                  className={`${ui.input} mt-4 min-h-[140px] resize-y`}
+                  value={notesValue}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (editMode) setDraft((d) => ({ ...d, notes: v }));
+                    else setNotes(v);
+                  }}
+                  placeholder="Notes libres sur ce prospect…"
+                />
+                {!editMode ? (
+                  <div className="mt-3 flex justify-end gap-2">
+                    <button type="button" className={ui.btnGhost} onClick={() => setNotesEditing(false)}>
+                      Annuler
+                    </button>
+                    <button
+                      type="button"
+                      className={ui.btnPrimary}
+                      disabled={pending}
+                      onClick={() => {
+                        saveNotes();
+                        setNotesEditing(false);
+                      }}
+                    >
+                      Enregistrer
+                    </button>
+                  </div>
+                ) : null}
+              </>
+            ) : hasNotes ? (
+              <p className="mt-4 whitespace-pre-wrap rounded-2xl bg-white/[0.03] px-4 py-3.5 text-[13.5px] leading-relaxed text-wo-secondary">
+                {notesValue}
+              </p>
+            ) : (
+              <div className="mt-5 rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.02] px-4 py-8 text-center">
+                <p className="text-sm text-wo-muted">Aucune note pour le moment.</p>
+                <button type="button" className={`${ui.btnSecondary} mt-4`} onClick={() => setNotesEditing(true)}>
+                  <IconPlus className="h-4 w-4" />
+                  Ajouter une note
+                </button>
+              </div>
+            )}
+          </section>
+
+          <ProspectLinkedTasks
+            prospectId={prospect.id}
+            projectId={prospect.project_id}
+            openCreateKey={taskCreateKey}
+          />
+        </div>
       </div>
 
 

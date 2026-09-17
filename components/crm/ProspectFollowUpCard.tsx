@@ -2,6 +2,7 @@
 
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import type { ReactNode } from "react";
 import { getFollowUpState } from "@/lib/crm/follow-up-state";
 import { formatLastInteractionLine } from "@/lib/crm/activity-display";
 import { isDemoScheduledStatus } from "@/lib/crm/closed";
@@ -13,12 +14,13 @@ import {
   isoToLocalTime,
 } from "@/lib/crm/demo-schedule";
 import { statusDisplayLabel } from "@/lib/crm/status";
+import { formatChf } from "@/lib/crm/dashboard";
 import type { Prospect, ProspectActivity } from "@/lib/crm/types";
 import { ui } from "@/lib/design/tokens";
 
 const TEMPORAL = {
-  today: "font-medium text-amber-300",
-  overdue: "font-medium text-rose-300",
+  today: "text-amber-300",
+  overdue: "text-rose-300",
   future: "text-wo-text",
   none: "text-wo-muted",
 } as const;
@@ -26,21 +28,47 @@ const TEMPORAL = {
 function formatActionDate(value: string | null | undefined): string | null {
   if (!value) return null;
   try {
-    return format(parseDateOnly(value), "dd.MM.yyyy", { locale: fr });
+    return format(parseDateOnly(value), "d MMM yyyy", { locale: fr });
   } catch {
     return value;
   }
 }
 
+function Stat({
+  label,
+  value,
+  hint,
+  hintClass,
+  children,
+}: {
+  label: string;
+  value?: string;
+  hint?: string | null;
+  hintClass?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="wo-detail-stat">
+      <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-wo-dim">{label}</p>
+      {children ?? (
+        <p className="mt-2 truncate text-[14.5px] font-medium tracking-tight text-wo-text">{value}</p>
+      )}
+      {hint ? <p className={`mt-1 text-[11.5px] ${hintClass ?? "text-wo-dim"}`}>{hint}</p> : null}
+    </div>
+  );
+}
+
 export function ProspectFollowUpCard({
   prospect,
   lastActivity,
+  contactCount,
   disabled,
   onFollowUpChange,
   onEditDemo,
 }: {
   prospect: Prospect;
   lastActivity: ProspectActivity | null;
+  contactCount?: number;
   disabled?: boolean;
   onFollowUpChange: (value: string | null) => void;
   onEditDemo?: () => void;
@@ -63,54 +91,62 @@ export function ProspectFollowUpCard({
     return prospect.next_action;
   })();
 
+  const nextValue = closed
+    ? "Aucune relance"
+    : formatActionDate(prospect.next_follow_up) ?? (nextLabel || "À planifier");
+
   return (
-    <section className={`${ui.card} p-4`}>
-      <h2 className={ui.h2}>Suivi du prospect</h2>
-      <div className="mt-4 grid gap-4 sm:grid-cols-3">
+    <section className="wo-hero p-5 sm:p-6">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.08em] text-wo-dim">Étape actuelle</p>
-          <p className="mt-1.5 text-sm font-medium text-wo-text">{statusDisplayLabel(prospect.status)}</p>
+          <p className="wo-kicker">Synthèse</p>
+          <h2 className={`${ui.h2} mt-1.5 text-[17px]`}>Où en est ce prospect</h2>
         </div>
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.08em] text-wo-dim">Dernière interaction</p>
-          <p className="mt-1.5 text-sm text-wo-text">{formatLastInteractionLine(lastActivity)}</p>
-        </div>
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.08em] text-wo-dim">Prochaine action</p>
-          {closed ? (
-            <p className="mt-1.5 text-sm text-wo-muted">Aucune relance prévue</p>
-          ) : demoScheduled ? (
-            <>
-              <p className="mt-1.5 text-sm font-medium text-wo-text">
-                {formatActionDate(prospect.next_follow_up) ?? "—"}
-              </p>
-              {nextLabel ? <p className="mt-1 text-sm text-wo-text">{nextLabel}</p> : null}
-              {followUp.kind === "today" || followUp.kind === "overdue" ? (
-                <p className={`mt-1.5 text-xs ${TEMPORAL[followUp.kind]}`}>{followUp.alert}</p>
+        {demoScheduled && onEditDemo && !disabled ? (
+          <button type="button" className={ui.btnGhost} onClick={onEditDemo}>
+            Modifier la démo
+          </button>
+        ) : null}
+      </div>
+
+      <div className="mt-5 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+        <Stat label="Étape" value={statusDisplayLabel(prospect.status)} />
+        <Stat
+          label="Prochaine action"
+          value={nextValue}
+          hint={!closed ? followUp.alert : null}
+          hintClass={TEMPORAL[followUp.kind]}
+        >
+          {closed || demoScheduled ? (
+            <p className="mt-2 text-[14.5px] font-medium tracking-tight text-wo-text">
+              {nextValue}
+              {demoScheduled && nextLabel && nextLabel !== nextValue ? (
+                <span className="mt-1 block text-[12px] font-normal text-wo-muted">{nextLabel}</span>
               ) : null}
-              {onEditDemo && !disabled ? (
-                <button type="button" className={`${ui.btnGhost} mt-2 px-0 text-sm`} onClick={onEditDemo}>
-                  Modifier la démo
-                </button>
-              ) : null}
-            </>
+            </p>
           ) : (
-            <>
-              <input
-                type="date"
-                className={`${ui.input} mt-1.5`}
-                value={prospect.next_follow_up ?? ""}
-                disabled={disabled}
-                onChange={(e) => onFollowUpChange(e.target.value || null)}
-              />
-              {followUp.kind === "none" ? (
-                <p className="mt-1.5 text-xs text-wo-muted">Aucune relance prévue</p>
-              ) : (
-                <p className={`mt-1.5 text-xs ${TEMPORAL[followUp.kind]}`}>{followUp.alert}</p>
-              )}
-            </>
+            <input
+              id="prospect-followup-date"
+              type="date"
+              className={`${ui.input} mt-2`}
+              value={prospect.next_follow_up ?? ""}
+              disabled={disabled}
+              onChange={(e) => onFollowUpChange(e.target.value || null)}
+            />
           )}
-        </div>
+        </Stat>
+        <Stat label="Dernière interaction" value={formatLastInteractionLine(lastActivity)} />
+        <Stat label="Priorité" value={prospect.priority ?? "Normale"} />
+        {prospect.assignee?.name ? <Stat label="Responsable" value={prospect.assignee.name} /> : null}
+        {prospect.contact_channel ? <Stat label="Canal" value={prospect.contact_channel} /> : null}
+        <Stat
+          label="Contacts"
+          value={`${contactCount ?? prospect.contact_count ?? 0}`}
+          hint="personnes rattachées"
+        />
+        {prospect.potential_value ? (
+          <Stat label="Potentiel" value={formatChf(Number(prospect.potential_value))} />
+        ) : null}
       </div>
     </section>
   );

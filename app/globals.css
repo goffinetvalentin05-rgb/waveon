@@ -472,6 +472,51 @@ a.wo-stat:hover {
     #181310;
 }
 
+.wo-detail-stat {
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.035);
+  padding: 0.9rem 1rem;
+}
+
+.wo-detail-field {
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.85rem 1rem;
+}
+
+.wo-action-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015));
+  padding: 0.95rem 0.55rem;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--wo-secondary);
+  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease, transform 0.12s ease;
+}
+
+.wo-action-tile:hover:not(:disabled) {
+  border-color: rgba(217, 119, 50, 0.32);
+  color: var(--wo-text);
+  transform: translateY(-1px);
+}
+
+.wo-action-tile:disabled {
+  opacity: 0.45;
+}
+
+.wo-action-tile-primary {
+  background: linear-gradient(160deg, rgba(217, 119, 50, 0.22), rgba(217, 119, 50, 0.06));
+  border-color: rgba(217, 119, 50, 0.28);
+  color: #f3a35c;
+}
+
 /* Ligne de liste dans une carte */
 .wo-row {
   display: flex;
