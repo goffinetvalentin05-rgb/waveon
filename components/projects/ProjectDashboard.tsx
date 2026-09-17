@@ -15,8 +15,9 @@ import {
 import { ui } from "@/lib/design/tokens";
 import { hasModule, type ProjectModuleKey } from "@/lib/projects/modules";
 import { PipelineFunnel } from "@/components/crm/PipelineFunnel";
+import { ProspectingCadence } from "@/components/crm/ProspectingCadence";
 import { StatusBadge } from "@/components/crm/StatusBadge";
-import { formatChf, type PipelineStageCount } from "@/lib/crm/dashboard";
+import { formatChf, type ActivityPoint, type PipelineStageCount } from "@/lib/crm/dashboard";
 
 export type TodayItem = {
   id: string;
@@ -86,6 +87,9 @@ export function ProjectDashboard({
   enabledModules,
   kpis,
   stages,
+  series7,
+  series30,
+  series90,
   todayItems,
   followUps,
   recent,
@@ -106,6 +110,9 @@ export function ProjectDashboard({
     overdue: number;
   };
   stages: PipelineStageCount[];
+  series7: ActivityPoint[];
+  series30: ActivityPoint[];
+  series90: ActivityPoint[];
   todayItems: TodayItem[];
   followUps: FollowUpItem[];
   recent: RecentItem[];
@@ -238,7 +245,14 @@ export function ProjectDashboard({
         })}
       </div>
 
-      <PipelineFunnel stages={stages} projectId={projectId} />
+      <div className="grid gap-3 lg:gap-4 xl:grid-cols-5">
+        <div className="order-2 lg:order-1 xl:col-span-3">
+          <ProspectingCadence series7={series7} series30={series30} series90={series90} />
+        </div>
+        <div className="order-1 lg:order-2 xl:col-span-2">
+          <PipelineFunnel stages={stages} projectId={projectId} />
+        </div>
+      </div>
 
       {/* Aujourd'hui · Agenda · To-do */}
       <div className="grid gap-3 lg:grid-cols-3 lg:gap-4">

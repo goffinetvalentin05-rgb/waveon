@@ -4,7 +4,6 @@ import type { Prospect } from "@/lib/crm/types";
 
 export type ActivityPoint = {
   date: string;
-  prospects: number;
   emails: number;
   calls: number;
   messages: number;
@@ -19,6 +18,31 @@ export type DashboardActivityRow = {
   prospect_id?: string;
 };
 
+const EMAIL_TYPES = new Set(["mail_sent", "email"]);
+const CALL_TYPES = new Set(["call_made", "call"]);
+const MESSAGE_TYPES = new Set(["whatsapp", "message", "linkedin"]);
+const FOLLOW_TYPES = new Set([
+  "follow_up",
+  "follow_up_1",
+  "follow_up_2",
+  "follow_up_3",
+  "first_contact",
+  "reply",
+  "offer",
+]);
+const MEETING_TYPES = new Set(["meeting", "demo", "demo_scheduled", "demo_done"]);
+
+/** Classe une activité CRM : uniquement le travail commercial réel. */
+export function cadenceBucketForAction(
+  actionType: string
+): keyof Omit<ActivityPoint, "date"> | null {
+  if (EMAIL_TYPES.has(actionType)) return "emails";
+  if (CALL_TYPES.has(actionType)) return "calls";
+  if (MESSAGE_TYPES.has(actionType) || FOLLOW_TYPES.has(actionType)) return "messages";
+  if (MEETING_TYPES.has(actionType)) return "meetings";
+  return null;
+}
+
 export type PipelineStageCount = {
   id: string;
   label: string;
@@ -31,13 +55,12 @@ function dayKey(iso: string): string {
 }
 
 function emptyPoint(date: string): ActivityPoint {
-  return { date, prospects: 0, emails: 0, calls: 0, messages: 0, meetings: 0 };
+  return { date, emails: 0, calls: 0, messages: 0, meetings: 0 };
 }
 
 export function buildActivitySeries(
   days: number,
-  activities: DashboardActivityRow[],
-  createdProspects: { created_at: string }[]
+  activities: DashboardActivityRow[]
 ): ActivityPoint[] {
   const today = new Date();
   const points: ActivityPoint[] = [];
@@ -51,21 +74,11 @@ export function buildActivitySeries(
     map.set(key, point);
   }
 
-  for (const p of createdProspects) {
-    const bucket = map.get(dayKey(p.created_at));
-    if (bucket) bucket.prospects += 1;
-  }
-
   for (const a of activities) {
-    const key = dayKey(a.occurred_at || a.created_at);
-    const bucket = map.get(key);
+    const bucket = map.get(dayKey(a.occurred_at || a.created_at));
     if (!bucket) continue;
-    const t = a.action_type;
-    if (t === "created" || t === "imported") bucket.prospects += 1;
-    else if (t === "mail_sent" || t === "email") bucket.emails += 1;
-    else if (t === "call_made" || t === "call") bucket.calls += 1;
-    else if (t === "whatsapp" || t === "message" || t === "linkedin") bucket.messages += 1;
-    else if (t === "meeting" || t === "demo" || t === "demo_scheduled" || t === "demo_done") bucket.meetings += 1;
+    const field = cadenceBucketForAction(a.action_type);
+    if (field) bucket[field] += 1;
   }
 
   return points;
