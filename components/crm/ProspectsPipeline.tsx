@@ -167,7 +167,7 @@ export function ProspectsPipeline({
           return (
             <div
               key={col.id}
-              className="flex w-[260px] shrink-0 flex-col rounded-xl border border-wo-border bg-[color:var(--wo-surface)]"
+              className="flex w-[270px] shrink-0 flex-col rounded-[22px] border border-[rgba(20,20,20,0.05)] bg-white shadow-[0_1px_2px_rgba(20,20,20,0.03),0_10px_28px_-22px_rgba(20,20,20,0.18)]"
               onDragOver={(e) => {
                 if (onStatusChange) e.preventDefault();
               }}
@@ -211,7 +211,7 @@ export function ProspectsPipeline({
                         }
                         router.push(prospectDetailHref(p.id, listReturnUrl));
                       }}
-                      className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-wo-border bg-[color:var(--wo-elevated)] px-2.5 py-2.5 text-left transition hover:border-wo-accent/30"
+                      className="flex cursor-pointer items-start gap-2.5 rounded-2xl border border-[rgba(20,20,20,0.05)] bg-[#fafaf8] px-2.5 py-2.5 text-left transition hover:bg-white hover:shadow-sm"
                     >
                       <PipelineCard prospect={p} columnId={col.id} />
                       <PipelineCardAvatar name={p.club_name} />

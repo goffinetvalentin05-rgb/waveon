@@ -110,7 +110,7 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
     : null;
   const inPersonal = Boolean(pathname?.startsWith("/personal"));
   const meta = pageMetaFromPath(pathname, currentProject?.name ?? null);
-  const sidebarWidth = collapsed ? 72 : 232;
+  const sidebarWidth = collapsed ? 72 : 240;
 
   useEffect(() => {
     void fetch("/api/notifications")
@@ -209,7 +209,7 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
         <SidebarBody {...sidebarProps} />
       </aside>
 
-      <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b border-wo-border bg-[color:var(--wo-bg)]/90 px-4 backdrop-blur-xl lg:hidden">
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-wo-border bg-[#f6f6f3]/90 px-4 backdrop-blur-xl lg:hidden">
         <Link href={currentProject ? `/projects/${currentProject.id}` : "/home"} className="flex items-center gap-2">
           <span className="wo-brand-mark !h-7 !w-7">R</span>
           <span className="text-sm font-semibold text-wo-text">{currentProject?.name ?? brand.shortName}</span>
@@ -236,7 +236,7 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
             aria-label="Fermer"
           />
@@ -255,39 +255,39 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
         </div>
       ) : null}
 
-      <main className={`min-h-screen flex-1 pb-[4.5rem] lg:pb-0 ${collapsed ? "lg:ml-[72px]" : "lg:ml-[232px]"}`}>
-        <div className="hidden h-12 items-center justify-between gap-4 border-b border-wo-border px-6 lg:flex">
+      <main className={`min-h-screen flex-1 pb-[4.5rem] lg:pb-0 ${collapsed ? "lg:ml-[72px]" : "lg:ml-[240px]"}`}>
+        <div className="hidden h-[72px] items-center justify-between gap-4 px-8 lg:flex">
           <div className="min-w-0">
-            <h1 className="truncate text-[15px] font-semibold tracking-tight text-wo-text">{meta.title}</h1>
+            <h1 className="truncate font-display text-[1.65rem] font-semibold tracking-tight text-wo-text">{meta.title}</h1>
             {meta.subtitle && pathname?.includes("/prospects/") ? (
-              <p className="truncate text-[11px] text-wo-muted">{meta.subtitle}</p>
+              <p className="truncate text-[13px] text-wo-muted">{meta.subtitle}</p>
             ) : null}
           </div>
-          <div className="flex shrink-0 items-center gap-1.5">
+          <div className="flex shrink-0 items-center gap-2">
             <button type="button" className="wo-topbar-search" onClick={openSearch}>
               <IconSearch className="h-4 w-4 shrink-0" stroke={1.7} />
               <span className="flex-1 truncate text-left text-[13px]">Rechercher…</span>
-              <kbd className="hidden rounded-md border border-wo-border bg-transparent px-1.5 py-0.5 text-[10px] font-medium text-wo-dim sm:inline">
-                Ctrl K
+              <kbd className="hidden rounded-full border border-wo-border bg-transparent px-1.5 py-0.5 text-[10px] font-medium text-wo-dim sm:inline">
+                ⌘K
               </kbd>
             </button>
-            <Link href="/notifications" className="relative wo-icon-btn h-9 w-9" aria-label="Notifications">
+            <Link href="/notifications" className="relative wo-icon-btn" aria-label="Notifications">
               <IconBell className="h-[18px] w-[18px]" stroke={1.6} />
               {notifCount > 0 ? (
                 <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-wo-accent" />
               ) : null}
             </Link>
-            <Link href="/settings" className="wo-profile !gap-2 !py-1 !pl-1 !pr-2.5">
+            <Link href="/settings" className="wo-profile">
               <span className="wo-avatar">{initials(profile.displayName)}</span>
               <div className="min-w-0 text-left">
-                <p className="truncate text-[12px] font-medium text-wo-text">{profile.displayName}</p>
+                <p className="truncate text-[13px] font-medium text-wo-text">{profile.displayName}</p>
               </div>
             </Link>
           </div>
         </div>
 
-        <div className="mx-auto w-full max-w-[1600px] px-4 py-4 sm:px-6 lg:px-6 lg:py-5">
-          <div className="mb-4 lg:hidden">
+        <div className="mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:pb-10">
+          <div className="mb-5 lg:hidden">
             <h1 className="wo-h1">{meta.title}</h1>
           </div>
           {children}
@@ -296,7 +296,7 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
 
       <nav
         aria-label="Navigation principale"
-        className="fixed inset-x-0 bottom-0 z-30 flex border-t border-wo-border bg-[color:var(--wo-sidebar)]/95 backdrop-blur-xl lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 flex border-t border-wo-border bg-white/95 backdrop-blur-xl lg:hidden"
       >
         {MOBILE_TABS.map((item) => {
           const Icon = item.icon;
@@ -389,11 +389,11 @@ function SidebarBody({
 
   return (
     <>
-      <div className={`flex h-12 items-center ${compact ? "justify-center px-2" : "justify-between px-3"}`}>
-        <Link href={base ?? "/home"} className="flex items-center gap-2" onClick={onNavigate}>
+      <div className={`flex h-[72px] items-center ${compact ? "justify-center px-2" : "justify-between px-4"}`}>
+        <Link href={base ?? "/home"} className="flex items-center gap-2.5" onClick={onNavigate}>
           <span className="wo-brand-mark">R</span>
           {compact ? null : (
-            <span className="font-display text-[15px] font-semibold tracking-tight text-wo-text">{brand.shortName}</span>
+            <span className="font-display text-[17px] font-semibold tracking-tight text-white">{brand.shortName}</span>
           )}
         </Link>
         {!compact && !hideCollapse && onCollapse ? (
@@ -417,7 +417,7 @@ function SidebarBody({
               type="button"
               onClick={() => setSwitcherOpen((v) => !v)}
               title={currentProject.name}
-              className={`flex w-full items-center gap-2 rounded-lg border border-wo-border bg-[color:var(--wo-elevated)] px-2 py-1.5 text-left transition hover:border-[color:var(--wo-border-strong)] ${
+              className={`flex w-full items-center gap-2 rounded-2xl bg-white/10 px-2.5 py-2 text-left transition hover:bg-white/15 ${
                 compact ? "justify-center px-0" : ""
               }`}
             >

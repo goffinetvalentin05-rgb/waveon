@@ -376,7 +376,7 @@ export function ProspectsClient({
         </div>
         <div className="flex flex-wrap gap-2">
           {!clientsOnly ? (
-            <div className="inline-flex rounded-lg border border-wo-border p-0.5">
+            <div className="inline-flex rounded-full bg-[#f4f4f1] p-1">
               {tableHref ? (
                 <Link
                   href={tableHref}
@@ -446,7 +446,7 @@ export function ProspectsClient({
 
       {importMsg ? <p className={ui.alertSuccess}>{importMsg}</p> : null}
       {statusError ? (
-        <p className="rounded-xl border border-rose-400/20 bg-rose-400/10 px-4 py-2.5 text-sm text-rose-200">
+        <p className={ui.alertError}>
           {statusError}
         </p>
       ) : null}

@@ -272,7 +272,7 @@ export function CalendarClient({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex rounded-lg border border-wo-border bg-[color:var(--wo-surface)] p-0.5">
+        <div className="inline-flex rounded-full bg-[#f4f4f1] p-1">
           {(["month", "week", "day"] as const).map((v) => (
             <button
               key={v}
@@ -504,8 +504,8 @@ function MonthGrid({
   setDraggingId: (id: string | null) => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-wo-border bg-[color:var(--wo-surface)]">
-      <div className="grid grid-cols-7 border-b border-wo-border bg-[color:var(--wo-elevated)]">
+    <div className="overflow-hidden rounded-[22px] border border-[rgba(20,20,20,0.05)] bg-white">
+      <div className="grid grid-cols-7 border-b border-wo-border bg-[#fafafa]">
         {WEEKDAY_LABELS.map((d) => (
           <div key={d} className="px-2 py-2 text-center text-xs font-medium text-wo-muted">
             {d}
@@ -542,7 +542,7 @@ function MonthGrid({
                 if (id) onDropEvent(day, id);
               }}
               className={`flex min-h-[92px] cursor-pointer flex-col gap-1 border-b border-r border-wo-border p-1.5 transition hover:bg-wo-hover [&:nth-of-type(7n)]:border-r-0 sm:min-h-[120px] ${
-                inMonth ? "bg-[color:var(--wo-surface)]" : "bg-[color:var(--wo-elevated)]/60"
+                inMonth ? "bg-white" : "bg-[#f7f7f5]"
               }`}
             >
               <span
@@ -607,7 +607,7 @@ function TimeGrid({
   const gridCols = `56px repeat(${days.length}, 1fr)`;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-wo-border bg-[color:var(--wo-surface)]">
+    <div className="overflow-hidden rounded-[22px] border border-[rgba(20,20,20,0.05)] bg-white">
       <div className="grid border-b border-wo-border" style={{ gridTemplateColumns: gridCols }}>
         <div />
         {days.map((d) => (
@@ -626,7 +626,7 @@ function TimeGrid({
         ))}
       </div>
 
-      <div className="grid border-b border-wo-border bg-[color:var(--wo-elevated)]" style={{ gridTemplateColumns: gridCols }}>
+      <div className="grid border-b border-wo-border bg-[#fafafa]" style={{ gridTemplateColumns: gridCols }}>
         <div className="px-2 py-1.5 text-[10px] text-wo-dim">Journée</div>
         {days.map((d) => {
           const dStr = format(d, "yyyy-MM-dd");

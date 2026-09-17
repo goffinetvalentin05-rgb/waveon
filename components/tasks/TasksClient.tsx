@@ -223,7 +223,7 @@ function Kanban({
         return (
           <div
             key={status}
-            className="flex w-[260px] shrink-0 flex-col rounded-xl border border-wo-border bg-[color:var(--wo-surface)]"
+            className="flex w-[260px] shrink-0 flex-col rounded-[22px] border border-[rgba(20,20,20,0.05)] bg-white"
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               const id = e.dataTransfer.getData("text/plain");

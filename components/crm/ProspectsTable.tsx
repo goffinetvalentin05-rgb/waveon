@@ -8,8 +8,8 @@ import { prospectDetailHref } from "@/lib/crm/paths";
 import type { Prospect, ProspectStatus } from "@/lib/crm/types";
 
 const TEMPORAL: Record<string, string> = {
-  today: "text-amber-300",
-  overdue: "text-rose-300",
+  today: "text-amber-700",
+  overdue: "text-rose-600",
   future: "text-wo-muted",
   none: "text-wo-dim",
 };

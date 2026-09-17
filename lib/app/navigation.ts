@@ -31,7 +31,6 @@ export type NavLink = {
 
 export const PERSONAL_NAV: NavLink[] = [
   { href: "/personal/calendar", label: "Calendrier", icon: IconCalendarEvent, match: "prefix" },
-  { href: "/personal/tasks", label: "Tâches", icon: IconChecklist, match: "prefix" },
   { href: "/personal/notes", label: "Notes", icon: IconNote, match: "prefix" },
   { href: "/personal/english", label: "Anglais", icon: IconLanguage, match: "prefix" },
 ];
@@ -49,13 +48,13 @@ export type ProjectNavItem = {
 
 export const PROJECT_NAV: ProjectNavItem[] = [
   { key: "overview", label: "Dashboard", suffix: "", icon: IconLayoutDashboard, module: "overview", exact: true, always: true, group: "primary" },
-  { key: "search", label: "Recherche", suffix: "/search", icon: IconSearch, module: "prospects", group: "primary" },
   { key: "prospects", label: "Prospects", suffix: "/prospects", icon: IconUsers, module: "prospects", group: "primary" },
   { key: "pipeline", label: "Pipeline", suffix: "/pipeline", icon: IconColumns3, module: "prospects", group: "primary" },
   { key: "calendar", label: "Calendrier", suffix: "/calendar", icon: IconCalendarEvent, module: "calendar", group: "primary" },
-  { key: "tasks", label: "Tâches", suffix: "/tasks", icon: IconChecklist, module: "tasks", group: "primary" },
-  { key: "automations", label: "Automatisations", suffix: "/automations", icon: IconBolt, module: "prospects", group: "primary" },
+  { key: "tasks", label: "To-do list", suffix: "/tasks", icon: IconChecklist, module: "tasks", group: "primary" },
+  { key: "search", label: "Recherche", suffix: "/search", icon: IconSearch, module: "prospects", group: "more" },
   { key: "clients", label: "Clients", suffix: "/clients", icon: IconUserCheck, module: "prospects", group: "more" },
+  { key: "automations", label: "Automatisations", suffix: "/automations", icon: IconBolt, module: "prospects", group: "more" },
   { key: "content", label: "Contenu", suffix: "/content", icon: IconSparkles, module: "content", group: "more" },
   { key: "notes", label: "Notes", suffix: "/notes", icon: IconNote, module: "notes", group: "more" },
   { key: "activity", label: "Activité", suffix: "/activity", icon: IconActivity, module: "activity", group: "more" },
@@ -87,33 +86,15 @@ export type PageMeta = {
 export function pageMetaFromPath(pathname: string | null, projectName?: string | null): PageMeta {
   if (!pathname) return { title: "Raven" };
 
-  if (pathname === "/home") {
-    return { title: "Dashboard" };
-  }
-  if (pathname === "/personal") {
-    return { title: "Espace personnel" };
-  }
-  if (pathname.startsWith("/personal/calendar")) {
-    return { title: "Calendrier personnel" };
-  }
-  if (pathname.startsWith("/personal/tasks")) {
-    return { title: "Tâches personnelles" };
-  }
-  if (pathname.startsWith("/personal/notes")) {
-    return { title: "Notes" };
-  }
-  if (pathname.startsWith("/personal/english")) {
-    return { title: "Anglais" };
-  }
-  if (pathname === "/projects") {
-    return { title: "Projets" };
-  }
-  if (pathname === "/settings") {
-    return { title: "Paramètres" };
-  }
-  if (pathname.startsWith("/notifications")) {
-    return { title: "Notifications" };
-  }
+  if (pathname === "/home") return { title: "Dashboard" };
+  if (pathname === "/personal") return { title: "Espace personnel" };
+  if (pathname.startsWith("/personal/calendar")) return { title: "Calendrier personnel" };
+  if (pathname.startsWith("/personal/tasks")) return { title: "To-do list personnelle" };
+  if (pathname.startsWith("/personal/notes")) return { title: "Notes" };
+  if (pathname.startsWith("/personal/english")) return { title: "Anglais" };
+  if (pathname === "/projects") return { title: "Projets" };
+  if (pathname === "/settings") return { title: "Paramètres" };
+  if (pathname.startsWith("/notifications")) return { title: "Notifications" };
 
   const projectMatch = pathname.match(/^\/projects\/([^/]+)(?:\/(.*))?$/);
   if (projectMatch && projectMatch[1] !== "unassigned") {

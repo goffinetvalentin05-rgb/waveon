@@ -1057,7 +1057,7 @@ export function ProspectDetailClient2({
       ) : null}
 
       {errorMsg ? (
-        <p className="rounded-xl border border-rose-400/20 bg-rose-400/10 px-4 py-2.5 text-sm text-rose-200">
+        <p className={ui.alertError}>
           {errorMsg}
         </p>
       ) : null}
@@ -1128,7 +1128,7 @@ export function ProspectDetailClient2({
                   <button
                     type="button"
                     disabled={busy}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-sm font-medium text-emerald-200 transition hover:bg-emerald-400/15 disabled:opacity-50"
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 transition hover:bg-emerald-100 disabled:opacity-50"
                     onClick={() => runAction("client")}
                   >
                     <IconUserCheck className="h-4 w-4" />
@@ -1307,9 +1307,9 @@ export function ProspectDetailClient2({
       </div>
 
 
-      <section className="rounded-xl border border-rose-400/20 bg-rose-400/8 p-4 sm:p-5">
-        <h2 className="text-sm font-semibold tracking-tight text-rose-200">Zone dangereuse</h2>
-        <p className="mt-1 text-sm text-rose-200/70">
+      <section className="rounded-[22px] border border-rose-100 bg-rose-50/50 p-5">
+        <h2 className="text-sm font-semibold tracking-tight text-rose-900">Zone dangereuse</h2>
+        <p className="mt-1 text-sm text-rose-800/70">
           {isArchived
             ? "Ce prospect est archivé. Vous pouvez le restaurer ou le supprimer définitivement."
             : hasHistoryOrNotes
@@ -1341,7 +1341,7 @@ export function ProspectDetailClient2({
           )}
           <button
             type="button"
-            className="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-rose-300 transition hover:bg-rose-400/10 disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
             disabled={pending || archiveLoading || deleteLoading}
             onClick={() => {
               setDeleteError(null);
@@ -1433,7 +1433,7 @@ export function ProspectDetailClient2({
       ) : null}
 
       {editMode ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-wo-border bg-[color:var(--wo-bg)]/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-wo-border bg-white/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:hidden">
           <div className="mx-auto flex max-w-lg gap-2">
             <button
               type="button"

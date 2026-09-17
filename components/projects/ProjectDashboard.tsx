@@ -1,10 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  IconChecklist,
-  IconPlus,
-} from "@tabler/icons-react";
+import { IconArrowRight, IconPlus } from "@tabler/icons-react";
 import { ui } from "@/lib/design/tokens";
 import { hasModule, type ProjectModuleKey } from "@/lib/projects/modules";
 import { ActivityChart } from "@/components/crm/ActivityChart";
@@ -41,6 +38,7 @@ type RecentItem = {
 
 export function ProjectDashboard({
   projectId,
+  projectName,
   enabledModules,
   kpis,
   stages,
@@ -52,6 +50,7 @@ export function ProjectDashboard({
   recent,
 }: {
   projectId: string;
+  projectName: string;
   enabledModules?: ProjectModuleKey[];
   kpis: {
     prospects: number;
@@ -77,35 +76,35 @@ export function ProjectDashboard({
     { label: "À contacter", value: String(kpis.toContact), href: `${base}/prospects?status=${encodeURIComponent("À contacter")}` },
     { label: "Relances", value: String(kpis.followUps), href: `${base}/prospects` },
     { label: "Rendez-vous", value: String(kpis.meetings), href: `${base}/prospects?status=${encodeURIComponent("Démo")}` },
-    { label: "Clients", value: String(kpis.clients), href: `${base}/clients` },
-    ...(kpis.potentialValue > 0
-      ? [{ label: "Valeur potentielle", value: formatChf(kpis.potentialValue), href: `${base}/stats` }]
-      : []),
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-end gap-2">
+    <div className="space-y-6">
+      <section className="wo-hero flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
+        <div className="max-w-xl">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-wo-dim">Raven · {projectName}</p>
+          <h2 className="mt-2 font-display text-[1.85rem] font-semibold tracking-tight text-wo-text sm:text-[2.1rem]">
+            Votre prospection, clairement.
+          </h2>
+          <p className="mt-2 max-w-md text-sm leading-relaxed text-wo-muted">
+            {kpis.prospects} prospects · {kpis.toContact} à contacter · {kpis.followUps} relances en cours
+            {kpis.potentialValue > 0 ? ` · ${formatChf(kpis.potentialValue)} de potentiel` : ""}.
+          </p>
+        </div>
         {prospecting ? (
           <Link href={`${base}/prospects`} className={ui.btnPrimary}>
             <IconPlus className="h-4 w-4" />
             Ajouter un prospect
           </Link>
         ) : null}
-        {hasModule(enabledModules, "tasks") ? (
-          <Link href={`${base}/tasks`} className={ui.btnSecondary}>
-            <IconChecklist className="h-4 w-4" />
-            Tâche
-          </Link>
-        ) : null}
-      </div>
+      </section>
 
       {prospecting ? (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {kpiCards.map((card) => (
             <Link key={card.label} href={card.href} className="wo-stat">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-wo-dim">{card.label}</p>
-              <p className="mt-1.5 font-display text-xl font-semibold tabular-nums tracking-tight text-wo-text">
+              <p className="text-[12px] text-wo-muted">{card.label}</p>
+              <p className="mt-3 font-display text-[2rem] font-semibold tabular-nums tracking-tight text-wo-text">
                 {card.value}
               </p>
             </Link>
@@ -131,39 +130,40 @@ export function ProjectDashboard({
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <section className="wo-widget p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-[13px] font-semibold text-wo-text">Aujourd&apos;hui</h2>
+        <section className="wo-widget p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className={ui.h2}>Aujourd&apos;hui</h2>
             {hasModule(enabledModules, "calendar") ? (
-              <Link href={`${base}/calendar`} className="text-[12px] font-medium text-wo-accent">
+              <Link href={`${base}/calendar`} className="text-[13px] font-medium text-wo-muted hover:text-wo-text">
                 Calendrier
               </Link>
             ) : null}
           </div>
           {todayItems.length === 0 ? (
-            <p className="py-6 text-sm text-wo-dim">Rien d&apos;urgent pour aujourd&apos;hui.</p>
+            <p className="py-8 text-sm text-wo-dim">Rien d&apos;urgent pour aujourd&apos;hui.</p>
           ) : (
-            <ul className="space-y-1">
+            <ul className="space-y-0.5">
               {todayItems.map((item) => (
                 <li key={item.id}>
                   <Link
                     href={item.href}
-                    className="flex items-start justify-between gap-3 rounded-lg px-2 py-2 hover:bg-wo-hover"
+                    className="flex items-start justify-between gap-3 rounded-2xl px-2 py-2.5 hover:bg-[#f7f7f5]"
                   >
                     <span>
-                      <span className="block text-[13px] font-medium text-wo-text">{item.title}</span>
+                      <span className="block text-[14px] font-medium text-wo-text">{item.title}</span>
                       <span
-                        className={`mt-0.5 block text-[11px] ${
+                        className={`mt-0.5 block text-[12px] ${
                           item.tone === "overdue"
-                            ? "text-rose-300"
+                            ? "text-rose-600"
                             : item.tone === "today"
-                              ? "text-amber-300"
+                              ? "text-amber-700"
                               : "text-wo-dim"
                         }`}
                       >
                         {item.meta}
                       </span>
                     </span>
+                    <IconArrowRight className="mt-1 h-3.5 w-3.5 text-wo-dim" />
                   </Link>
                 </li>
               ))}
@@ -171,30 +171,30 @@ export function ProjectDashboard({
           )}
         </section>
 
-        <section className="wo-widget p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-[13px] font-semibold text-wo-text">Prochaines relances</h2>
-            <Link href={`${base}/prospects`} className="text-[12px] font-medium text-wo-accent">
+        <section className="wo-widget p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className={ui.h2}>Prochaines relances</h2>
+            <Link href={`${base}/prospects`} className="text-[13px] font-medium text-wo-muted hover:text-wo-text">
               Prospects
             </Link>
           </div>
           {followUps.length === 0 ? (
-            <p className="py-6 text-sm text-wo-dim">Aucune relance programmée.</p>
+            <p className="py-8 text-sm text-wo-dim">Aucune relance programmée.</p>
           ) : (
-            <ul className="space-y-1">
+            <ul className="space-y-0.5">
               {followUps.map((item) => (
                 <li key={item.id}>
                   <Link
                     href={item.href}
-                    className="flex items-center justify-between gap-3 rounded-lg px-2 py-2 hover:bg-wo-hover"
+                    className="flex items-center justify-between gap-3 rounded-2xl px-2 py-2.5 hover:bg-[#f7f7f5]"
                   >
                     <span className="min-w-0">
-                      <span className="block truncate text-[13px] font-medium text-wo-text">{item.name}</span>
+                      <span className="block truncate text-[14px] font-medium text-wo-text">{item.name}</span>
                       <span className="mt-1 block">
                         <StatusBadge status={item.status} />
                       </span>
                     </span>
-                    <span className="shrink-0 text-[11px] text-wo-muted">{item.when}</span>
+                    <span className="shrink-0 text-[12px] text-wo-muted">{item.when}</span>
                   </Link>
                 </li>
               ))}
@@ -202,27 +202,27 @@ export function ProjectDashboard({
           )}
         </section>
 
-        <section className="wo-widget p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-[13px] font-semibold text-wo-text">Activité récente</h2>
+        <section className="wo-widget p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className={ui.h2}>Activité récente</h2>
             {hasModule(enabledModules, "activity") ? (
-              <Link href={`${base}/activity`} className="text-[12px] font-medium text-wo-accent">
+              <Link href={`${base}/activity`} className="text-[13px] font-medium text-wo-muted hover:text-wo-text">
                 Historique
               </Link>
             ) : null}
           </div>
           {recent.length === 0 ? (
-            <p className="py-6 text-sm text-wo-dim">Les actions apparaîtront ici.</p>
+            <p className="py-8 text-sm text-wo-dim">Les actions apparaîtront ici.</p>
           ) : (
-            <ul className="space-y-1">
+            <ul className="space-y-0.5">
               {recent.map((item) => (
                 <li key={item.id}>
                   <Link
                     href={item.href}
-                    className="flex items-start justify-between gap-3 rounded-lg px-2 py-2 hover:bg-wo-hover"
+                    className="flex items-start justify-between gap-3 rounded-2xl px-2 py-2.5 hover:bg-[#f7f7f5]"
                   >
-                    <span className="text-[13px] text-wo-text">{item.title}</span>
-                    <span className="shrink-0 text-[11px] text-wo-dim">{item.when}</span>
+                    <span className="text-[14px] text-wo-text">{item.title}</span>
+                    <span className="shrink-0 text-[12px] text-wo-dim">{item.when}</span>
                   </Link>
                 </li>
               ))}

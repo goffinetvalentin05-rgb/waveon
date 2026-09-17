@@ -62,7 +62,7 @@ export function CommandPalette() {
 
   return (
     <div className="fixed inset-0 z-[80] flex items-start justify-center px-4 pt-[12vh]">
-      <button type="button" className="absolute inset-0 bg-black/65 backdrop-blur-sm" onClick={() => setOpen(false)} />
+      <button type="button" className="absolute inset-0 bg-[#141414]/35 backdrop-blur-sm" onClick={() => setOpen(false)} />
       <div className="wo-modal relative w-full max-w-xl overflow-hidden shadow-2xl">
         <div className="flex items-center gap-2 border-b border-wo-border px-4">
           <IconSearch className="h-4 w-4 text-wo-dim" stroke={1.7} />
@@ -73,7 +73,7 @@ export function CommandPalette() {
             placeholder="Rechercher dans tous les espaces…"
             className="h-12 w-full bg-transparent text-sm text-wo-text outline-none placeholder:text-wo-dim"
           />
-          <kbd className="hidden rounded-md border border-white/10 px-1.5 py-0.5 text-[10px] text-wo-dim sm:inline">
+          <kbd className="hidden rounded-full border border-wo-border px-1.5 py-0.5 text-[10px] text-wo-dim sm:inline">
             ESC
           </kbd>
         </div>

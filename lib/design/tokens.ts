@@ -1,27 +1,27 @@
 /**
- * Design system Raven — SaaS B2B dark premium.
- * Accent emerald, surfaces vert-noir, densité élevée.
+ * Design system Raven — SaaS premium clair.
+ * Canvas ivoire, cartes blanches, accent emerald discret.
  */
 
 export const colors = {
-  bg: "#08110F",
-  sidebar: "#0A1512",
-  surface: "#0D1916",
-  elevated: "#12211D",
-  border: "rgba(180, 220, 205, 0.08)",
-  borderStrong: "rgba(180, 220, 205, 0.16)",
-  text: "#F4F7F6",
-  textMuted: "#8FA39C",
-  textDim: "#6B8078",
-  accent: "#3DD9A4",
-  accentSoft: "rgba(61, 217, 164, 0.14)",
-  danger: "#F87171",
-  warning: "#FBBF24",
-  success: "#3DD9A4",
+  bg: "#F6F6F3",
+  sidebar: "#161616",
+  surface: "#FFFFFF",
+  elevated: "#FBFBFA",
+  border: "rgba(20, 20, 20, 0.08)",
+  borderStrong: "rgba(20, 20, 20, 0.14)",
+  text: "#141414",
+  textMuted: "#6B6B6B",
+  textDim: "#9A9A9A",
+  accent: "#0F9F70",
+  accentSoft: "rgba(15, 159, 112, 0.1)",
+  danger: "#E11D48",
+  warning: "#D97706",
+  success: "#0F9F70",
 } as const;
 
 export const ui = {
-  container: "mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8",
+  container: "mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8",
 
   card: "wo-card",
   cardInteractive: "wo-card wo-card-interactive",
@@ -38,7 +38,7 @@ export const ui = {
   label: "wo-label",
 
   h1: "wo-h1",
-  h2: "text-[13px] font-semibold tracking-tight text-wo-text",
+  h2: "text-[15px] font-semibold tracking-tight text-wo-text",
   muted: "text-wo-muted",
   kicker: "wo-kicker",
 

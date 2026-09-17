@@ -4,11 +4,11 @@ import { useMemo, useState } from "react";
 import type { ActivityPoint } from "@/lib/crm/dashboard";
 
 const SERIES: { key: keyof Omit<ActivityPoint, "date">; label: string; color: string }[] = [
-  { key: "prospects", label: "Prospects", color: "#3DD9A4" },
-  { key: "emails", label: "Emails", color: "#5EEAD4" },
-  { key: "calls", label: "Appels", color: "#FBBF24" },
-  { key: "messages", label: "Messages", color: "#67E8F9" },
-  { key: "meetings", label: "RDV", color: "#A78BFA" },
+  { key: "prospects", label: "Prospects", color: "#0F9F70" },
+  { key: "emails", label: "Emails", color: "#5B8DEF" },
+  { key: "calls", label: "Appels", color: "#E2A03F" },
+  { key: "messages", label: "Messages", color: "#7C6CF3" },
+  { key: "meetings", label: "RDV", color: "#2AA8A0" },
 ];
 
 export function ActivityChart({
@@ -52,17 +52,17 @@ export function ActivityChart({
   };
 
   return (
-    <section className="wo-widget p-4">
+    <section className="wo-widget p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-[13px] font-semibold text-wo-text">Activité de prospection</h2>
-        <div className="inline-flex rounded-lg border border-wo-border p-0.5">
+        <h2 className="text-[15px] font-semibold tracking-tight text-wo-text">Activité de prospection</h2>
+        <div className="inline-flex rounded-full bg-[#f4f4f1] p-1">
           {(["7", "30", "90"] as const).map((id) => (
             <button
               key={id}
               type="button"
               onClick={() => setRange(id)}
-              className={`rounded-md px-2.5 py-1 text-[11px] font-medium ${
-                range === id ? "bg-wo-accent-soft text-wo-accent" : "text-wo-muted hover:text-wo-text"
+              className={`rounded-full px-3 py-1 text-[12px] font-medium ${
+                range === id ? "bg-white text-wo-text shadow-sm" : "text-wo-muted hover:text-wo-text"
               }`}
             >
               {id === "7" ? "7 jours" : id === "30" ? "30 jours" : "3 mois"}
@@ -78,7 +78,7 @@ export function ActivityChart({
             x2={w - pad.r}
             y1={pad.t + innerH * (1 - t)}
             y2={pad.t + innerH * (1 - t)}
-            stroke="rgba(180,220,205,0.08)"
+            stroke="rgba(20,20,20,0.06)"
           />
         ))}
         {SERIES.map((s) =>

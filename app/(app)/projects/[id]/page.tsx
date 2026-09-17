@@ -175,6 +175,7 @@ export default async function ProjectPage({ params }: Props) {
   return (
     <ProjectDashboard
       projectId={id}
+      projectName={project.name}
       enabledModules={project.enabledModules}
       kpis={{
         prospects: prospects.length,
