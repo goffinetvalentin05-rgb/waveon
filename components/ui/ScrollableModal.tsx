@@ -44,6 +44,8 @@ type ScrollableModalProps = {
   maxWidthClass?: string;
   asForm?: boolean;
   onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
+  /** sheet = mobile bas (défaut). dialog = toujours centrée. */
+  variant?: "sheet" | "dialog";
 };
 
 /**
@@ -61,26 +63,41 @@ export function ScrollableModal({
   maxWidthClass = "max-w-lg",
   asForm = false,
   onSubmit,
+  variant = "sheet",
 }: ScrollableModalProps) {
   const mounted = useIsClient();
   useLockBodyScroll(Boolean(open && mounted));
+  const dialog = variant === "dialog";
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
 
   if (!open || !mounted) return null;
 
   const shellClass = [
     ui.modal,
     "relative z-10 flex w-full min-h-0 flex-col overflow-hidden",
-    "max-h-[calc(100dvh-env(safe-area-inset-top,0px)-0.5rem)]",
-    "sm:max-h-[calc(100dvh-2rem)]",
-    "rounded-none !rounded-t-[1.25rem] !rounded-b-none sm:!rounded-[18px]",
-    "max-w-[100vw]",
+    dialog
+      ? "max-h-[calc(100dvh-1.5rem)] rounded-[20px] sm:max-h-[calc(100dvh-3rem)] sm:rounded-[22px]"
+      : "max-h-[calc(100dvh-env(safe-area-inset-top,0px)-0.5rem)] rounded-none !rounded-t-[1.25rem] !rounded-b-none sm:max-h-[calc(100dvh-2rem)] sm:!rounded-[18px]",
+    dialog ? "w-[min(40rem,calc(100vw-1.5rem))]" : "max-w-[100vw]",
     maxWidthClass,
   ].join(" ");
 
   const inner = (
     <>
-      <div className="shrink-0 border-b border-wo-border px-5 pb-3 pt-[max(0.85rem,env(safe-area-inset-top))] sm:px-6 sm:pt-5">
-        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-white/15 sm:hidden" aria-hidden />
+      <div
+        className={`shrink-0 border-b border-wo-border px-5 pb-3 sm:px-6 ${
+          dialog ? "pt-4 sm:pt-5" : "pt-[max(0.85rem,env(safe-area-inset-top))] sm:pt-5"
+        }`}
+      >
+        {dialog ? null : <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-white/15 sm:hidden" aria-hidden />}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 className="text-lg font-semibold text-wo-text">{title}</h2>
@@ -104,7 +121,11 @@ export function ScrollableModal({
         {children}
       </div>
 
-      <div className="shrink-0 border-t border-wo-border bg-[color:var(--wo-modal)] px-5 py-3 pb-[max(0.85rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-4">
+      <div
+        className={`shrink-0 border-t border-wo-border bg-[color:var(--wo-modal)] px-5 py-3 sm:px-6 sm:py-4 ${
+          dialog ? "" : "pb-[max(0.85rem,env(safe-area-inset-bottom))]"
+        }`}
+      >
         {footer}
       </div>
     </>
@@ -112,7 +133,9 @@ export function ScrollableModal({
 
   const node = (
     <div
-      className="fixed inset-0 z-[80] flex items-end justify-center overflow-hidden overscroll-none p-0 sm:items-center sm:p-4"
+      className={`fixed inset-0 z-[80] flex justify-center overflow-hidden overscroll-none ${
+        dialog ? "items-center p-3 sm:p-6" : "items-end p-0 sm:items-center sm:p-4"
+      }`}
       role="presentation"
     >
       <button type="button" className={`${ui.overlay} !fixed`} onClick={onClose} aria-label="Fermer" />

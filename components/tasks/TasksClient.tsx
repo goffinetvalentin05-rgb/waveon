@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { IconPlus } from "@tabler/icons-react";
+import { IconArrowUpRight, IconBuilding, IconPlus } from "@tabler/icons-react";
 import { ui } from "@/lib/design/tokens";
 import { EmptyState } from "@/components/ui/ConfirmModal";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { ScrollableModal } from "@/components/ui/ScrollableModal";
 import {
   PRIORITY_STYLES,
   TASK_PRIORITIES,
@@ -157,6 +159,37 @@ export function TasksClient({ projectId, scope }: { projectId?: string; scope?: 
   );
 }
 
+function taskProspectHref(task: WorkspaceTask): string | null {
+  const prospectId = task.prospect_id ?? task.prospect?.id;
+  if (!prospectId) return null;
+  const projectId = task.project_id ?? task.project?.id;
+  if (projectId) return `/projects/${projectId}/prospects/${prospectId}`;
+  return `/crm/prospects/${prospectId}`;
+}
+
+function ProspectChip({
+  task,
+  className = "",
+}: {
+  task: WorkspaceTask;
+  className?: string;
+}) {
+  const href = taskProspectHref(task);
+  const name = task.prospect?.club_name;
+  if (!href || !name) return null;
+  return (
+    <Link
+      href={href}
+      onClick={(e) => e.stopPropagation()}
+      className={`mt-0.5 inline-flex max-w-full items-center gap-1 text-[12px] font-medium text-wo-accent transition hover:text-[#f3a35c] ${className}`}
+    >
+      <IconBuilding className="h-3.5 w-3.5 shrink-0" stroke={1.7} />
+      <span className="truncate">{name}</span>
+      <IconArrowUpRight className="h-3 w-3 shrink-0 opacity-80" stroke={1.8} />
+    </Link>
+  );
+}
+
 function TaskRow({
   task,
   onOpen,
@@ -186,17 +219,22 @@ function TaskRow({
           </svg>
         ) : null}
       </button>
-      <button type="button" onClick={onOpen} className="min-w-0 flex-1 text-left">
-        <p className={`truncate text-sm font-medium text-wo-text ${done ? "line-through opacity-50" : ""}`}>
-          {task.title}
-        </p>
-        <p className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-wo-dim">
-          <span>{formatDay(task.due_date)}</span>
-          {task.due_time ? <span>{String(task.due_time).slice(0, 5)}</span> : null}
-          {task.project?.name ? <span>{task.project.name}</span> : null}
-          {task.assignee?.name ? <span>{task.assignee.name}</span> : null}
-        </p>
-      </button>
+      <div className="min-w-0 flex-1">
+        <button type="button" onClick={onOpen} className="w-full text-left">
+          <p className={`truncate text-sm font-medium text-wo-text ${done ? "line-through opacity-50" : ""}`}>
+            {task.title}
+          </p>
+        </button>
+        <ProspectChip task={task} />
+        <button type="button" onClick={onOpen} className="mt-0.5 w-full text-left">
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-wo-dim">
+            <span>{formatDay(task.due_date)}</span>
+            {task.due_time ? <span>{String(task.due_time).slice(0, 5)}</span> : null}
+            {task.project?.name ? <span>{task.project.name}</span> : null}
+            {task.assignee?.name ? <span>{task.assignee.name}</span> : null}
+          </p>
+        </button>
+      </div>
       <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${prio.bg} ${prio.text}`}>
         {task.priority ?? "Normale"}
       </span>
@@ -236,17 +274,17 @@ function Kanban({
             </div>
             <div className="flex flex-1 flex-col gap-1.5 px-2 pb-2">
               {items.map((t) => (
-                <button
+                <div
                   key={t.id}
-                  type="button"
                   draggable
                   onDragStart={(e) => e.dataTransfer.setData("text/plain", t.id)}
                   onClick={() => onOpen(t)}
-                  className="rounded-lg border border-wo-border bg-[color:var(--wo-elevated)] px-3 py-2.5 text-left transition hover:border-wo-accent/30"
+                  className="cursor-pointer rounded-lg border border-wo-border bg-[color:var(--wo-elevated)] px-3 py-2.5 text-left transition hover:border-wo-accent/30"
                 >
                   <p className="text-[13px] font-medium text-wo-text">{t.title}</p>
+                  <ProspectChip task={t} className="mt-1" />
                   <p className="mt-1 text-[11px] text-wo-dim">{formatDay(t.due_date)}</p>
-                </button>
+                </div>
               ))}
             </div>
           </div>
@@ -290,11 +328,34 @@ function TaskEditor({
   const [status, setStatus] = useState<TaskStatus>((task?.status as TaskStatus) ?? "À faire");
   const [project, setProject] = useState(task?.project_id ?? projectId ?? "");
   const [assignee, setAssignee] = useState(task?.assigned_to ?? "");
+  const [prospectIdValue, setProspectIdValue] = useState(task?.prospect_id ?? task?.prospect?.id ?? "");
+  const [prospectOptions, setProspectOptions] = useState<{ id: string; club_name: string }[]>(
+    task?.prospect ? [{ id: task.prospect.id, club_name: task.prospect.club_name }] : []
+  );
   const [notes, setNotes] = useState(task?.notes ?? "");
   const [subtasks, setSubtasks] = useState<{ title: string; completed: boolean }[]>(
     (task?.subtasks ?? []).map((s) => ({ title: s.title, completed: s.completed }))
   );
   const [subInput, setSubInput] = useState("");
+
+  useEffect(() => {
+    const pid = project || projectId;
+    if (!pid || scope === "personal") return;
+    const sp = new URLSearchParams({ project: pid, pageSize: "200", sort: "club_name", order: "asc" });
+    void fetch(`/api/prospects?${sp}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const list = ((data.prospects ?? []) as { id: string; club_name: string }[]).map((p) => ({
+          id: p.id,
+          club_name: p.club_name,
+        }));
+        if (task?.prospect && !list.some((p) => p.id === task.prospect?.id)) {
+          list.unshift({ id: task.prospect.id, club_name: task.prospect.club_name });
+        }
+        setProspectOptions(list);
+      })
+      .catch(() => null);
+  }, [project, projectId, scope, task?.prospect]);
 
   const save = async () => {
     if (!title.trim()) return;
@@ -309,6 +370,7 @@ function TaskEditor({
       project_id: scope === "personal" ? null : project || null,
       scope: scope === "personal" ? "personal" : "project",
       assigned_to: assignee || null,
+      prospect_id: prospectIdValue || null,
       notes,
       subtasks,
     };
@@ -327,134 +389,183 @@ function TaskEditor({
     onSaved();
   };
 
+  const selectedProspect = prospectOptions.find((p) => p.id === prospectIdValue) ?? task?.prospect ?? null;
+  const selectedHref = selectedProspect
+    ? taskProspectHref({
+        ...(task ?? ({} as WorkspaceTask)),
+        prospect_id: selectedProspect.id,
+        prospect: { id: selectedProspect.id, club_name: selectedProspect.club_name, status: task?.prospect?.status ?? "" },
+        project_id: project || projectId || task?.project_id || null,
+      })
+    : null;
+
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <button type="button" className={ui.overlay} onClick={onClose} />
-      <div className="relative h-full w-full max-w-md overflow-y-auto border-l border-wo-border bg-[color:var(--wo-modal)] p-6">
-        <h2 className="text-lg font-semibold text-wo-text">{task ? "Modifier la tâche" : "Nouvelle tâche"}</h2>
-        <div className="mt-5 space-y-3">
-          <div>
-            <label className={ui.label}>Titre</label>
-            <input className={ui.input} value={title} onChange={(e) => setTitle(e.target.value)} />
-          </div>
-          <div>
-            <label className={ui.label}>Description</label>
-            <textarea
-              className={`${ui.input} min-h-[88px] resize-y`}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={ui.label}>Échéance</label>
-              <input type="date" className={ui.input} value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-            </div>
-            <div>
-              <label className={ui.label}>Heure</label>
-              <input type="time" className={ui.input} value={dueTime} onChange={(e) => setDueTime(e.target.value)} />
-            </div>
-            <div>
-              <label className={ui.label}>Priorité</label>
-              <select className={ui.input} value={priority} onChange={(e) => setPriority(e.target.value as TaskPriority)}>
-                {TASK_PRIORITIES.map((p) => (
-                  <option key={p}>{p}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={ui.label}>Statut</label>
-              <select className={ui.input} value={status} onChange={(e) => setStatus(e.target.value as TaskStatus)}>
-                {TASK_STATUSES.map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-            {scope === "personal" ? null : (
-            <div>
-              <label className={ui.label}>Projet</label>
-              <select className={ui.input} value={project} onChange={(e) => setProject(e.target.value)}>
-                <option value="">Aucun</option>
-                {projects.filter((p) => p.status === "active").map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            )}
-            <div>
-              <label className={ui.label}>Assigné à</label>
-              <select className={ui.input} value={assignee} onChange={(e) => setAssignee(e.target.value)}>
-                <option value="">Personne</option>
-                {people.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className={ui.label}>Sous-tâches</label>
-            <ul className="mt-2 space-y-1">
-              {subtasks.map((s, i) => (
-                <li key={i} className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={s.completed}
-                    onChange={(e) =>
-                      setSubtasks((prev) => prev.map((x, j) => (j === i ? { ...x, completed: e.target.checked } : x)))
-                    }
-                  />
-                  <span className={s.completed ? "text-wo-dim line-through" : "text-wo-text"}>{s.title}</span>
-                  <button
-                    type="button"
-                    className="ml-auto text-wo-dim"
-                    onClick={() => setSubtasks((prev) => prev.filter((_, j) => j !== i))}
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-2 flex gap-2">
-              <input
-                className={ui.input}
-                value={subInput}
-                onChange={(e) => setSubInput(e.target.value)}
-                placeholder="Ajouter une sous-tâche"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    if (subInput.trim()) {
-                      setSubtasks((prev) => [...prev, { title: subInput.trim(), completed: false }]);
-                      setSubInput("");
-                    }
-                  }
-                }}
-              />
-            </div>
-          </div>
-          <div>
-            <label className={ui.label}>Notes</label>
-            <textarea className={`${ui.input} min-h-[72px] resize-y`} value={notes} onChange={(e) => setNotes(e.target.value)} />
-          </div>
-        </div>
-        <div className="mt-6 flex flex-wrap justify-end gap-2">
+    <ScrollableModal
+      open
+      variant="dialog"
+      maxWidthClass="max-w-[40rem]"
+      onClose={saving ? () => undefined : onClose}
+      title={task ? "Modifier la tâche" : "Nouvelle tâche"}
+      footer={
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
           {task ? (
-            <button type="button" className={ui.btnGhost} onClick={duplicate}>
+            <button type="button" className={`${ui.btnGhost} justify-center sm:justify-start`} onClick={duplicate}>
               Dupliquer
             </button>
+          ) : (
+            <span />
+          )}
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button type="button" className={`${ui.btnSecondary} min-h-11 sm:min-h-0`} onClick={onClose} disabled={saving}>
+              Annuler
+            </button>
+            <button type="button" className={`${ui.btnPrimary} min-h-11 sm:min-h-0`} disabled={saving} onClick={() => void save()}>
+              {saving ? "Enregistrement…" : "Enregistrer"}
+            </button>
+          </div>
+        </div>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <label className={ui.label}>Titre</label>
+          <input className={`${ui.input} mt-1 min-h-11`} value={title} onChange={(e) => setTitle(e.target.value)} />
+        </div>
+        <div>
+          <label className={ui.label}>Description</label>
+          <textarea
+            className={`${ui.input} mt-1 min-h-[88px] resize-y`}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label className={ui.label}>Échéance</label>
+            <input type="date" className={`${ui.input} mt-1 min-h-11`} value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          </div>
+          <div>
+            <label className={ui.label}>Heure</label>
+            <input type="time" className={`${ui.input} mt-1 min-h-11`} value={dueTime} onChange={(e) => setDueTime(e.target.value)} />
+          </div>
+          <div>
+            <label className={ui.label}>Priorité</label>
+            <select className={`${ui.input} mt-1 min-h-11`} value={priority} onChange={(e) => setPriority(e.target.value as TaskPriority)}>
+              {TASK_PRIORITIES.map((p) => (
+                <option key={p}>{p}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={ui.label}>Statut</label>
+            <select className={`${ui.input} mt-1 min-h-11`} value={status} onChange={(e) => setStatus(e.target.value as TaskStatus)}>
+              {TASK_STATUSES.map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+          {scope === "personal" ? null : (
+            <div>
+              <label className={ui.label}>Projet</label>
+              <select className={`${ui.input} mt-1 min-h-11`} value={project} onChange={(e) => setProject(e.target.value)}>
+                <option value="">Aucun</option>
+                {projects
+                  .filter((p) => p.status === "active")
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          )}
+          <div>
+            <label className={ui.label}>Assigné à</label>
+            <select className={`${ui.input} mt-1 min-h-11`} value={assignee} onChange={(e) => setAssignee(e.target.value)}>
+              <option value="">Personne</option>
+              {people.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className={ui.label}>Prospect lié</label>
+          {scope === "personal" && !selectedProspect ? (
+            <p className="mt-2 text-[13px] text-wo-dim">Aucun prospect lié</p>
+          ) : (
+            <select
+              className={`${ui.input} mt-1 min-h-11`}
+              value={prospectIdValue}
+              onChange={(e) => setProspectIdValue(e.target.value)}
+            >
+              <option value="">Aucun prospect lié</option>
+              {prospectOptions.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.club_name}
+                </option>
+              ))}
+            </select>
+          )}
+          {selectedHref && selectedProspect ? (
+            <Link
+              href={selectedHref}
+              className="mt-2 inline-flex items-center gap-1 text-[12.5px] font-medium text-wo-accent transition hover:text-[#f3a35c]"
+            >
+              <IconBuilding className="h-3.5 w-3.5" stroke={1.7} />
+              Ouvrir {selectedProspect.club_name}
+              <IconArrowUpRight className="h-3.5 w-3.5" stroke={1.8} />
+            </Link>
           ) : null}
-          <button type="button" className={ui.btnSecondary} onClick={onClose}>
-            Annuler
-          </button>
-          <button type="button" className={ui.btnPrimary} disabled={saving} onClick={save}>
-            {saving ? "…" : "Enregistrer"}
-          </button>
+        </div>
+
+        <div>
+          <label className={ui.label}>Sous-tâches</label>
+          <ul className="mt-2 space-y-1">
+            {subtasks.map((s, i) => (
+              <li key={i} className="flex min-h-11 items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={s.completed}
+                  onChange={(e) =>
+                    setSubtasks((prev) => prev.map((x, j) => (j === i ? { ...x, completed: e.target.checked } : x)))
+                  }
+                />
+                <span className={s.completed ? "text-wo-dim line-through" : "text-wo-text"}>{s.title}</span>
+                <button
+                  type="button"
+                  className="ml-auto text-wo-dim"
+                  onClick={() => setSubtasks((prev) => prev.filter((_, j) => j !== i))}
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+          <input
+            className={`${ui.input} mt-2 min-h-11`}
+            value={subInput}
+            onChange={(e) => setSubInput(e.target.value)}
+            placeholder="Ajouter une sous-tâche"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                if (subInput.trim()) {
+                  setSubtasks((prev) => [...prev, { title: subInput.trim(), completed: false }]);
+                  setSubInput("");
+                }
+              }
+            }}
+          />
+        </div>
+        <div>
+          <label className={ui.label}>Notes</label>
+          <textarea className={`${ui.input} mt-1 min-h-[72px] resize-y`} value={notes} onChange={(e) => setNotes(e.target.value)} />
         </div>
       </div>
-    </div>
+    </ScrollableModal>
   );
 }
