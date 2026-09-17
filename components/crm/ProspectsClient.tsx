@@ -363,42 +363,7 @@ export function ProspectsClient({
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-4">
         <div className="min-w-0">
           {projectId ? null : <h1 className={ui.h1}>{clientsOnly ? "Clients" : "Ma pipeline"}</h1>}
-          <div className="flex items-center justify-between gap-3">
-            <p className={`${projectId ? "" : "mt-1"} text-sm text-wo-muted`}>{resultLabel}</p>
-            {!clientsOnly ? (
-              <div className="wo-segment lg:hidden">
-                {tableHref ? (
-                  <Link href={tableHref} className={view === "list" ? ui.segmentItemActive : ui.segmentItem}>
-                    Liste
-                  </Link>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setView("list")}
-                    className={view === "list" ? ui.segmentItemActive : ui.segmentItem}
-                  >
-                    Liste
-                  </button>
-                )}
-                {pipelineHref ? (
-                  <Link href={pipelineHref} className={view === "pipeline" ? ui.segmentItemActive : ui.segmentItem}>
-                    Pipeline
-                  </Link>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setView("pipeline");
-                      if (params.pageSize < 200) applyParams({ ...params, pageSize: 200, page: 1 });
-                    }}
-                    className={view === "pipeline" ? ui.segmentItemActive : ui.segmentItem}
-                  >
-                    Pipeline
-                  </button>
-                )}
-              </div>
-            ) : null}
-          </div>
+          <p className={`${projectId ? "" : "mt-1"} text-sm text-wo-muted`}>{resultLabel}</p>
           {!clientsOnly ? (
             <div className="mt-3 lg:mt-4">
               <SmartViewBar
@@ -411,7 +376,7 @@ export function ProspectsClient({
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           {!clientsOnly ? (
-            <div className="wo-segment hidden lg:inline-flex">
+            <div className="wo-segment inline-flex">
               {tableHref ? (
                 <Link
                   href={tableHref}

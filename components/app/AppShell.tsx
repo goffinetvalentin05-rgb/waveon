@@ -384,7 +384,7 @@ function SidebarBody({
         <RavenLogo
           href={ravenHref}
           size="md"
-          variant={compact ? "mark" : "lockup"}
+          variant="mark"
           priority
           onClick={onNavigate}
         />
