@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { brand } from "@/lib/brand/config";
+import { RavenLogo } from "@/components/brand/Logo";
 import { ui } from "@/lib/design/tokens";
 import { invitePath } from "@/lib/auth/invite";
 import { PROJECT_ROLE_LABELS, type ProjectRole } from "@/lib/access/roles";
@@ -97,12 +97,7 @@ export function AcceptInviteClient({
     <div className="crm-auth-bg relative flex min-h-screen flex-col overflow-hidden">
       <div className="crm-auth-grid absolute inset-0" />
       <header className="relative z-10 px-5 py-6 sm:px-8">
-        <div className="flex items-center gap-2.5">
-          <span className="wo-brand-mark h-8 w-8 text-sm">W</span>
-          <span className="font-display text-[15px] font-semibold tracking-tight text-wo-text">
-            {brand.name}
-          </span>
-        </div>
+        <RavenLogo size="md" variant="lockup" showTagline={false} />
       </header>
 
       <main className="relative z-10 flex flex-1 items-center justify-center px-5 pb-16 sm:px-8">

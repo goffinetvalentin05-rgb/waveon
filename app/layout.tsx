@@ -28,6 +28,10 @@ export const metadata: Metadata = {
   description: brand.description,
   applicationName: brand.name,
   robots: { index: false, follow: false },
+  icons: {
+    icon: [{ url: "/brand/raven-logo.png", type: "image/png" }],
+    apple: "/brand/raven-logo.png",
+  },
 };
 
 export const viewport: Viewport = {

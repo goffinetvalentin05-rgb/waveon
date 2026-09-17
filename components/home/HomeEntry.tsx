@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconPlus } from "@tabler/icons-react";
 import { brand } from "@/lib/brand/config";
+import { RavenLogo } from "@/components/brand/Logo";
 import { ui } from "@/lib/design/tokens";
 import { ProjectFormModal } from "@/components/projects/ProjectFormModal";
 import { ACTIVE_PROJECT_STORAGE_KEY, writeStoredId } from "@/lib/app/workspace";
@@ -39,7 +40,7 @@ export function HomeEntry({
   return (
     <div className="mx-auto max-w-lg py-10 text-center">
       <div className="flex flex-col items-center">
-        <span className="wo-brand-mark !h-12 !w-12 !text-lg">R</span>
+        <RavenLogo size="lg" />
         <p className="mt-4 text-[10.5px] font-medium uppercase tracking-[0.18em] text-wo-dim">{brand.tagline}</p>
         <h1 className="mt-4 font-display text-[2rem] font-semibold tracking-tight text-wo-text">
           Bienvenue sur Raven

@@ -20,6 +20,7 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import { brand } from "@/lib/brand/config";
+import { RavenLogo } from "@/components/brand/Logo";
 import { supabase } from "@/lib/supabase/client";
 import { CommandPalette } from "@/components/search/CommandPalette";
 import { ProjectFormModal } from "@/components/projects/ProjectFormModal";
@@ -194,7 +195,7 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
 
       <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-wo-border bg-[#0b0907]/90 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] backdrop-blur-xl lg:hidden">
         <Link href={ravenHref} className="flex min-w-0 items-center gap-2">
-          <span className="wo-brand-mark !h-7 !w-7 !rounded-[10px] !text-[11px]">R</span>
+          <RavenLogo size="sm" priority />
           <span className="truncate text-[14px] font-semibold tracking-tight text-wo-text">
             {currentProject?.name ?? brand.shortName}
           </span>
@@ -224,7 +225,7 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
           <aside className="wo-sidebar absolute inset-y-0 left-0 flex w-[min(20rem,88vw)] flex-col overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
             <div className="flex h-14 shrink-0 items-center justify-between px-4">
               <Link href={ravenHref} className="flex min-w-0 items-center gap-2.5 text-sm font-semibold text-wo-text" onClick={() => setMobileOpen(false)}>
-                <span className="wo-brand-mark !h-8 !w-8">R</span>
+                <RavenLogo size="sm" />
                 <span className="truncate">{currentProject?.name ?? brand.name}</span>
               </Link>
               <button type="button" className="wo-icon-btn" onClick={() => setMobileOpen(false)}>
@@ -380,19 +381,13 @@ function SidebarBody({
     <>
       {hideCollapse ? null : (
       <div className={`flex h-[72px] items-center ${compact ? "justify-center px-2" : "justify-between px-4"}`}>
-        <Link href={ravenHref} className="flex min-w-0 items-center gap-2.5" onClick={onNavigate}>
-          <span className="wo-brand-mark">R</span>
-          {compact ? null : (
-            <span className="min-w-0">
-              <span className="block font-display text-[16px] font-semibold leading-tight tracking-tight text-white">
-                {brand.shortName}
-              </span>
-              <span className="block text-[10.5px] font-medium uppercase tracking-[0.14em] text-wo-dim">
-                {brand.tagline}
-              </span>
-            </span>
-          )}
-        </Link>
+        <RavenLogo
+          href={ravenHref}
+          size="md"
+          variant={compact ? "mark" : "lockup"}
+          priority
+          onClick={onNavigate}
+        />
         {!compact && !hideCollapse && onCollapse ? (
           <button type="button" className="wo-icon-btn hidden lg:inline-flex" onClick={onCollapse} aria-label="Réduire">
             <IconLayoutSidebarLeftCollapse className="h-4 w-4" stroke={1.6} />

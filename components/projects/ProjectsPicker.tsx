@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { IconArrowRight, IconPlus } from "@tabler/icons-react";
-import { brand } from "@/lib/brand/config";
+import { RavenLogo } from "@/components/brand/Logo";
 import { ui } from "@/lib/design/tokens";
 import type { ProjectSummary } from "@/lib/projects/types";
 import { ProjectFormModal } from "@/components/projects/ProjectFormModal";
@@ -31,13 +31,7 @@ export function ProjectsPicker({
     <div className="mx-auto max-w-5xl">
       <header className="mb-10 flex flex-col items-start gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="flex items-center gap-3">
-            <span className="wo-brand-mark">R</span>
-            <div>
-              <p className="font-display text-[17px] font-semibold tracking-tight text-white">{brand.name}</p>
-              <p className="text-[10.5px] font-medium uppercase tracking-[0.16em] text-wo-dim">{brand.tagline}</p>
-            </div>
-          </div>
+          <RavenLogo size="md" variant="lockup" />
           <h1 className="mt-7 font-display text-[2.15rem] font-semibold tracking-tight text-wo-text sm:text-[2.5rem]">
             Vos projets
           </h1>
