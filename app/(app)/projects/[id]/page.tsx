@@ -8,7 +8,7 @@ import type { AgendaItem, SpotlightItem, TodoItem } from "@/components/projects/
 import { countProspectWork } from "@/lib/crm/counters";
 import { getFollowUpState } from "@/lib/crm/follow-up-state";
 import { prospectDetailHref } from "@/lib/crm/paths";
-import { activityLabel, buildActivitySeries, pipelineStageCounts } from "@/lib/crm/dashboard";
+import { activityLabel, pipelineStageCounts } from "@/lib/crm/dashboard";
 import { formatRelativeDay } from "@/lib/crm/format";
 import { migrateProspectStatus } from "@/lib/crm/status";
 import { isClosedProspectStatus, isDemoStatus } from "@/lib/crm/closed";
@@ -115,9 +115,6 @@ export default async function ProjectPage({ params }: Props) {
         };
 
   const acts = activities ?? [];
-  const series90 = buildActivitySeries(90, acts, prospects);
-  const series30 = series90.slice(-30);
-  const series7 = series90.slice(-7);
 
   const listReturn = `/projects/${id}/prospects`;
 
@@ -290,9 +287,6 @@ export default async function ProjectPage({ params }: Props) {
         overdue: work.overdue,
       }}
       stages={pipelineStageCounts(prospects)}
-      series7={series7}
-      series30={series30}
-      series90={series90}
       todayItems={todayItems}
       followUps={followUps}
       recent={recent}
