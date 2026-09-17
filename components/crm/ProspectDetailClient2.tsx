@@ -1262,18 +1262,7 @@ export function ProspectDetailClient2({
           />
           </div>
 
-          <div className="order-3">
-            <ProspectMeetingsPanel
-              meetings={meetings}
-              prospectId={prospect.id}
-              projectId={prospect.project_id}
-              onAdd={() => {
-                if (!isArchived) setMeetingOpen(true);
-              }}
-            />
-          </div>
-
-          <section className={`${ui.card} order-4 p-4 lg:p-6`}>
+          <section className={`${ui.card} order-3 p-4 lg:p-6`}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h2 className={ui.h2}>Informations générales</h2>
@@ -1341,7 +1330,18 @@ export function ProspectDetailClient2({
             )}
           </section>
 
-          <div className="order-8">
+          <div className="order-6">
+            <ProspectMeetingsPanel
+              meetings={meetings}
+              prospectId={prospect.id}
+              projectId={prospect.project_id}
+              onAdd={() => {
+                if (!isArchived) setMeetingOpen(true);
+              }}
+            />
+          </div>
+
+          <div className="order-7">
           <ProspectTimeline
             activities={activities}
             canUndo={!editMode && canUndo}
@@ -1422,7 +1422,7 @@ export function ProspectDetailClient2({
             )}
           </section>
 
-          <div className="order-5">
+          <div className="order-4">
           <ProspectContactsPanel
             prospectId={prospect.id}
             openAddKey={addContactKey}
@@ -1431,7 +1431,7 @@ export function ProspectDetailClient2({
           />
           </div>
 
-          <section className={`${ui.card} order-6 p-4 lg:p-5`}>
+          <section className={`${ui.card} order-5 p-4 lg:p-5`}>
             <div className="flex items-center justify-between gap-3">
               <h2 className={ui.h2}>Notes</h2>
               {!editMode && hasNotes && !notesEditing ? (
@@ -1486,7 +1486,7 @@ export function ProspectDetailClient2({
             )}
           </section>
 
-          <div className="order-7">
+          <div className="order-8">
           <ProspectLinkedTasks
             prospectId={prospect.id}
             projectId={prospect.project_id}
