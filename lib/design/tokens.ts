@@ -1,24 +1,25 @@
 /**
- * Design system Raven — dark premium.
- * Noir profond, halos emerald/amber, surfaces en relief.
+ * Design system Raven — dark warm premium.
+ * Noir chaud, surfaces brun-noir, accents cuivre.
  */
 
 export const colors = {
-  bg: "#0A0B0B",
-  sidebar: "#0D0E0E",
-  surface: "#131415",
-  elevated: "#191B1C",
+  bg: "#0B0907",
+  sidebar: "#0D0B09",
+  surface: "#15110E",
+  elevated: "#181310",
+  surface2: "#1D1713",
   border: "rgba(255, 255, 255, 0.07)",
   borderStrong: "rgba(255, 255, 255, 0.14)",
-  text: "#F2F4F3",
-  textMuted: "#969D9A",
-  textDim: "#6E7674",
-  accent: "#34D399",
-  accentSoft: "rgba(52, 211, 153, 0.13)",
-  amber: "#F0A868",
+  text: "#F7F3EE",
+  textMuted: "#8F8780",
+  textDim: "#6E6760",
+  accent: "#D97732",
+  accentSoft: "rgba(217, 119, 50, 0.14)",
+  amber: "#E5843A",
   danger: "#FB7185",
   warning: "#FBBF24",
-  success: "#34D399",
+  success: "#8FBF7A",
 } as const;
 
 export const ui = {

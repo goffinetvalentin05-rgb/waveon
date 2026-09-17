@@ -151,7 +151,7 @@ export function ProjectFormModal({
                       onClick={() => applyTemplate(t.id)}
                       className={`rounded-[12px] border px-3 py-2 text-left ${
                         template === t.id
-                          ? "border-emerald-400/40 bg-emerald-400/10"
+                          ? "border-wo-accent/40 bg-wo-accent-soft"
                           : "border-wo-border hover:bg-wo-hover"
                       }`}
                     >

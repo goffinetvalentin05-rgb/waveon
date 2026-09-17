@@ -5,7 +5,7 @@ import { DEFAULT_PROJECT_COLOR } from "@/lib/projects/logo";
 export const PROJECT_STATUSES = ["active", "archived"] as const;
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
-/** Conservé pour les projets existants. Les nouveaux projets utilisent indigo. */
+/** Conservé pour les projets existants. Les nouveaux projets utilisent le cuivre Raven. */
 export const PROJECT_COLORS = [DEFAULT_PROJECT_COLOR] as const;
 
 export type Project = {
@@ -26,6 +26,7 @@ export type Project = {
 
 export type ProjectSummary = Project & {
   prospectsCount: number;
+  toContactCount: number;
   followUpsToday: number;
   demosUpcoming: number;
   clientsCount: number;

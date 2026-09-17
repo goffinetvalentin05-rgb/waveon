@@ -1,4 +1,4 @@
-export const DEFAULT_PROJECT_COLOR = "#6366F1";
+export const DEFAULT_PROJECT_COLOR = "#D97732";
 
 export function looksLikeProjectLogo(value: string | null | undefined): boolean {
   if (!value) return false;

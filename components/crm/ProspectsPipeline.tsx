@@ -211,7 +211,7 @@ export function ProspectsPipeline({
                         }
                         router.push(prospectDetailHref(p.id, listReturnUrl));
                       }}
-                      className="flex cursor-pointer items-start gap-2.5 rounded-[14px] border border-white/[0.06] bg-white/[0.035] px-3 py-2.5 text-left transition hover:border-emerald-400/25 hover:bg-white/[0.06]"
+                      className="flex cursor-pointer items-start gap-2.5 rounded-[14px] border border-white/[0.06] bg-white/[0.035] px-3 py-2.5 text-left transition hover:border-wo-accent/25 hover:bg-white/[0.06]"
                     >
                       <PipelineCard prospect={p} columnId={col.id} />
                       <PipelineCardAvatar name={p.club_name} />

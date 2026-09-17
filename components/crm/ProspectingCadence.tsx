@@ -108,15 +108,15 @@ export function ProspectingCadence({
             <div key={b.key} className="group flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2">
               <div className="relative flex w-full flex-1 items-end justify-center">
                 {isPeak ? (
-                  <span className="absolute -top-1 rounded-full border border-emerald-400/30 bg-emerald-400/15 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-emerald-200">
+                  <span className="absolute -top-1 rounded-full border border-wo-accent/30 bg-wo-accent-soft px-2 py-0.5 text-[10px] font-semibold tabular-nums text-[#f3a35c]">
                     {b.total}
                   </span>
                 ) : null}
                 <div
                   className={`w-full rounded-t-[10px] rounded-b-[4px] transition-all duration-200 ${
                     isPeak
-                      ? "bg-[linear-gradient(180deg,#5eeab4_0%,#34d399_45%,rgba(16,185,129,0.25)_100%)] shadow-[0_0_24px_-4px_rgba(52,211,153,0.7)]"
-                      : "bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.08)_60%,rgba(255,255,255,0.03)_100%)] group-hover:bg-[linear-gradient(180deg,rgba(52,211,153,0.5)_0%,rgba(52,211,153,0.18)_100%)]"
+                      ? "bg-[linear-gradient(180deg,#f3a35c_0%,#d97732_45%,rgba(200,102,45,0.28)_100%)] shadow-[0_0_24px_-4px_rgba(217,119,50,0.55)]"
+                      : "bg-[linear-gradient(180deg,rgba(247,243,238,0.22)_0%,rgba(247,243,238,0.08)_60%,rgba(247,243,238,0.03)_100%)] group-hover:bg-[linear-gradient(180deg,rgba(217,119,50,0.55)_0%,rgba(217,119,50,0.16)_100%)]"
                   }`}
                   style={{ height: `${height}%` }}
                   title={`${b.total} action${b.total > 1 ? "s" : ""}`}
@@ -130,9 +130,9 @@ export function ProspectingCadence({
 
       <div className="mt-5 grid grid-cols-3 gap-2 border-t border-wo-border pt-4">
         {[
-          { label: "Nouveaux prospects", value: totals.prospects, dot: "bg-emerald-400" },
-          { label: "Contacts envoyés", value: totals.touches, dot: "bg-amber-300" },
-          { label: "Rendez-vous", value: totals.meetings, dot: "bg-sky-300" },
+          { label: "Nouveaux prospects", value: totals.prospects, dot: "bg-[#f3a35c]" },
+          { label: "Contacts envoyés", value: totals.touches, dot: "bg-[#d97732]" },
+          { label: "Rendez-vous", value: totals.meetings, dot: "bg-[#d4b48c]" },
         ].map((item) => (
           <div key={item.label}>
             <span className="flex items-center gap-1.5 text-[11px] text-wo-dim">

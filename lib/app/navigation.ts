@@ -15,8 +15,8 @@ import {
   IconActivity,
   IconUsers,
   IconUserCheck,
-  IconUserCircle,
   IconColumns3,
+  IconFolders,
 } from "@tabler/icons-react";
 
 export type NavLink = {
@@ -27,8 +27,6 @@ export type NavLink = {
 };
 
 export const PERSONAL_NAV: NavLink[] = [
-  { href: "/personal/calendar", label: "Calendrier", icon: IconCalendarEvent, match: "prefix" },
-  { href: "/personal/notes", label: "Notes", icon: IconNote, match: "prefix" },
   { href: "/personal/english", label: "Anglais", icon: IconLanguage, match: "prefix" },
 ];
 
@@ -45,7 +43,7 @@ export type ProjectNavItem = {
 
 /**
  * `primary` = navigation principale de la sidebar.
- * `more` = sections secondaires, repliées. Les routes restent toutes actives.
+ * `more` = routes conservées, hors sidebar.
  */
 export const PROJECT_NAV: ProjectNavItem[] = [
   { key: "overview", label: "Dashboard", suffix: "", icon: IconLayoutDashboard, module: "overview", exact: true, always: true, group: "primary" },
@@ -72,13 +70,13 @@ export const BOTTOM_NAV: NavLink[] = [
 
 export const MOBILE_TABS: NavLink[] = [
   { href: "/home", label: "Dashboard", icon: IconHome, match: "exact" },
-  { href: "/projects", label: "Prospection", icon: IconLayoutDashboard, match: "prefix" },
-  { href: "/personal", label: "Personnel", icon: IconUserCircle, match: "prefix" },
+  { href: "/projects", label: "Projets", icon: IconFolders, match: "exact" },
 ];
 
 export type PageMeta = {
   title: string;
   subtitle?: string;
+  hideTitle?: boolean;
 };
 
 const PAGE_SUBTITLES: Record<string, string> = {
@@ -92,14 +90,20 @@ const PAGE_SUBTITLES: Record<string, string> = {
 export function pageMetaFromPath(pathname: string | null, projectName?: string | null): PageMeta {
   if (!pathname) return { title: "Raven" };
 
-  if (pathname === "/home") return { title: "Dashboard" };
+  if (pathname === "/home") return { title: "Dashboard", hideTitle: true };
   if (pathname === "/personal") return { title: "Espace personnel" };
   if (pathname.startsWith("/personal/calendar")) return { title: "Calendrier personnel" };
   if (pathname.startsWith("/personal/tasks")) return { title: "To-do list personnelle" };
   if (pathname.startsWith("/personal/notes")) return { title: "Notes" };
   if (pathname.startsWith("/personal/english")) return { title: "Anglais" };
-  if (pathname === "/projects") return { title: "Projets" };
-  if (pathname === "/settings") return { title: "Paramètres", subtitle: "Compte, sécurité et préférences" };
+  if (pathname === "/projects") {
+    return {
+      title: "Vos projets",
+      subtitle: "Choisissez l’espace dans lequel vous souhaitez travailler.",
+      hideTitle: true,
+    };
+  }
+  if (pathname === "/settings") return { title: "Paramètres", subtitle: "Compte, projet, membres et préférences" };
   if (pathname.startsWith("/notifications")) return { title: "Notifications" };
 
   const projectMatch = pathname.match(/^\/projects\/([^/]+)(?:\/(.*))?$/);

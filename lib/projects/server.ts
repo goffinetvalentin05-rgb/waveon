@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { isProjectRole } from "@/lib/access/roles";
 import type { Project } from "@/lib/projects/types";
 import { isClosedProspectStatus, isDemoScheduledStatus } from "@/lib/crm/closed";
+import { migrateProspectStatus } from "@/lib/crm/status";
 import {
   DEFAULT_ENABLED_MODULES,
   SELECTABLE_MODULE_KEYS,
@@ -136,12 +137,14 @@ export async function fetchProjectSummaries(supabase: SupabaseClient, userId: st
         p.next_follow_up <= today &&
         !isClosedProspectStatus(p.status)
     ).length;
+    const toContactCount = rows.filter((p) => migrateProspectStatus(p.status) === "À contacter").length;
     const demosUpcoming = rows.filter((p) => isDemoScheduledStatus(p.status)).length;
     const clientsCount = rows.filter((p) => p.status === "Client").length;
     const potentialValue = rows.reduce((sum, p) => sum + (Number(p.potential_value) || 0), 0);
     return {
       ...project,
       prospectsCount: rows.length,
+      toContactCount,
       followUpsToday,
       demosUpcoming,
       clientsCount,
@@ -161,6 +164,7 @@ export async function fetchProjectSummaries(supabase: SupabaseClient, userId: st
       created_at: "",
       updated_at: "",
       prospectsCount: unassigned.length,
+      toContactCount: unassigned.filter((p) => migrateProspectStatus(p.status) === "À contacter").length,
       followUpsToday: unassigned.filter(
         (p) =>
           p.next_follow_up &&

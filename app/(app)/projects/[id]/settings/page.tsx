@@ -26,39 +26,46 @@ export default async function ProjectSettingsPage({ params }: Props) {
   const role = project.myRole ?? (project.user_id === user.id ? "owner" : "viewer");
 
   return (
-    <div className="space-y-4">
-      <div className={`${ui.card} p-6`}>
-        <p className={ui.kicker}>Projet</p>
-        <h2 className={`${ui.h2} mt-2 text-lg`}>{project.name}</h2>
-        {project.description ? <p className="mt-2 text-sm text-wo-muted">{project.description}</p> : null}
-        <p className="mt-3 text-sm text-wo-secondary">
-          Votre rôle :{" "}
-          <span className="font-medium text-wo-text">{PROJECT_ROLE_LABELS[role] ?? role}</span>
-        </p>
-        {can(role, "project.edit_settings") ? (
-          <div className="mt-5">
-            <ProjectActions project={project} />
-          </div>
-        ) : (
-          <p className="mt-4 text-sm text-wo-muted">
-            Seuls l&apos;owner et les admins peuvent modifier ces paramètres.
+    <div className="space-y-6">
+      <section className="space-y-3">
+        <div>
+          <p className={ui.kicker}>Projet</p>
+          <h2 className={`${ui.h2} mt-1`}>{project.name}</h2>
+        </div>
+        <div className={`${ui.card} p-6`}>
+          {project.description ? <p className="text-sm text-wo-muted">{project.description}</p> : null}
+          <p className={`${project.description ? "mt-3" : ""} text-sm text-wo-secondary`}>
+            Votre rôle :{" "}
+            <span className="font-medium text-wo-text">{PROJECT_ROLE_LABELS[role] ?? role}</span>
           </p>
-        )}
-      </div>
+          {can(role, "project.edit_settings") ? (
+            <div className="mt-5">
+              <ProjectActions project={project} />
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-wo-muted">
+              Seuls l&apos;owner et les admins peuvent modifier ces paramètres.
+            </p>
+          )}
+        </div>
+      </section>
 
       {can(role, "members.view") ? (
-        <Link href={`/projects/${project.id}/members`} className={`${ui.cardInteractive} flex items-center gap-4 p-6`}>
-          <span className={ui.tile}>
-            <IconUsersGroup className="h-[18px] w-[18px]" stroke={1.7} />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className={`${ui.h2} block`}>Membres</span>
-            <span className="mt-1 block text-sm text-wo-muted">
-              Inviter des collaborateurs, gérer les rôles et le code de partage.
+        <section className="space-y-3">
+          <p className={ui.kicker}>Membres</p>
+          <Link href={`/projects/${project.id}/members`} className={`${ui.cardInteractive} flex items-center gap-4 p-6`}>
+            <span className={ui.tile}>
+              <IconUsersGroup className="h-[18px] w-[18px]" stroke={1.7} />
             </span>
-          </span>
-          <IconChevronRight className="h-4 w-4 shrink-0 text-wo-dim" />
-        </Link>
+            <span className="min-w-0 flex-1">
+              <span className={`${ui.h2} block`}>Équipe du projet</span>
+              <span className="mt-1 block text-sm text-wo-muted">
+                Inviter des collaborateurs, gérer les rôles et le code de partage.
+              </span>
+            </span>
+            <IconChevronRight className="h-4 w-4 shrink-0 text-wo-dim" />
+          </Link>
+        </section>
       ) : null}
 
       <ProjectCalendarSyncCard projectId={project.id} role={role} />

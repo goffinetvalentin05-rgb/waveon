@@ -173,8 +173,8 @@ export function ProjectDashboard({
       {/* Hero */}
       <section className="wo-hero grid gap-6 p-6 sm:p-7 lg:grid-cols-[1.35fr_1fr] lg:items-center">
         <div>
-          <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-300">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
+          <span className="inline-flex items-center gap-2 rounded-full border border-wo-accent/25 bg-wo-accent-soft px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#f3a35c]">
+            <span className="h-1.5 w-1.5 rounded-full bg-wo-accent shadow-[0_0_8px_rgba(217,119,50,0.9)]" />
             {projectName}
           </span>
           <h2 className="mt-4 max-w-lg font-display text-[1.9rem] font-semibold leading-[1.15] tracking-tight text-white sm:text-[2.35rem]">
@@ -420,7 +420,7 @@ export function ProjectDashboard({
             <span className="absolute bottom-3 left-[5px] top-3 w-px bg-white/[0.07]" aria-hidden />
             {recent.map((item) => (
               <li key={item.id} className="relative">
-                <span className="absolute -left-3 top-[15px] h-[7px] w-[7px] rounded-full border border-emerald-400/50 bg-[#121314]" />
+                <span className="absolute -left-3 top-[15px] h-[7px] w-[7px] rounded-full border border-wo-accent/50 bg-[#15110e]" />
                 <Link href={item.href} className="wo-row !py-2">
                   <span className="min-w-0 flex-1 truncate text-[13px] text-wo-secondary">{item.title}</span>
                   <span className="shrink-0 text-[11px] text-wo-dim">{item.when}</span>

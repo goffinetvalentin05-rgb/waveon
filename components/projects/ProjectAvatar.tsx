@@ -7,11 +7,12 @@ export type ProjectAvatarSource = {
   color?: string | null;
 };
 
-const SIZE_CLASS: Record<"xs" | "sm" | "md" | "lg", string> = {
+const SIZE_CLASS: Record<"xs" | "sm" | "md" | "lg" | "xl", string> = {
   xs: "h-5 w-5 rounded-md text-[10px]",
   sm: "h-8 w-8 rounded-lg text-xs",
   md: "h-10 w-10 rounded-[12px] text-sm",
   lg: "h-14 w-14 rounded-2xl text-xl",
+  xl: "h-16 w-16 rounded-2xl text-2xl",
 };
 
 export function ProjectAvatar({
@@ -21,7 +22,7 @@ export function ProjectAvatar({
   inverted = false,
 }: {
   project: ProjectAvatarSource;
-  size?: "xs" | "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
   className?: string;
   inverted?: boolean;
 }) {

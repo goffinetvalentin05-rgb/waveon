@@ -188,8 +188,8 @@ function LoginPageContent() {
 
 function MessageBox({ tone, children }: { tone: "error" | "success"; children: React.ReactNode }) {
   const tones = {
-    error: "border-rose-200 bg-rose-50 text-rose-700",
-    success: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    error: "border-rose-400/20 bg-rose-400/10 text-rose-200",
+    success: "border-wo-accent/25 bg-wo-accent-soft text-[#f3a35c]",
   } as const;
   return (
     <p className={`rounded-xl border px-3 py-2 text-xs ${tones[tone]}`}>{children}</p>

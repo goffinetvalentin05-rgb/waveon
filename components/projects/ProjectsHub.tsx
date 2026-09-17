@@ -53,14 +53,18 @@ export function ProjectsHub({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className={ui.h1}>Projets</h1>
-          <p className="mt-1 text-sm text-wo-muted">Choisissez un espace collaboratif, puis travaillez dedans.</p>
+          <h1 className={ui.h1}>Gérer les projets</h1>
+          <p className="mt-1 text-sm text-wo-muted">Modifiez, archivez ou supprimez un espace de prospection.</p>
         </div>
         <button type="button" className={ui.btnPrimary} onClick={() => setCreate(true)}>
           <IconPlus className="h-4 w-4" />
           Nouveau projet
         </button>
       </div>
+
+      <Link href="/projects" className="text-sm text-wo-muted transition hover:text-wo-text">
+        ← Tous les projets
+      </Link>
 
       <div className={ui.subNav}>
         {(["active", "archived"] as const).map((id) => (
