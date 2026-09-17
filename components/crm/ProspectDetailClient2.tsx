@@ -910,7 +910,7 @@ export function ProspectDetailClient2({
   const statusSelector = (
     <StatusSelect
       value={prospect.status}
-      className={ui.input + " w-[min(16rem,100%)]"}
+      className={ui.input + " w-full lg:w-[min(16rem,100%)]"}
       disabled={pending || interactionSaving}
       onChange={(next) => {
         if (next === prospect.status) return;
@@ -1065,8 +1065,8 @@ export function ProspectDetailClient2({
   ].filter(Boolean) as { label: string; node: ReactNode }[];
 
   return (
-    <div className={`space-y-5 crm-animate-in ${editMode ? "pb-24 sm:pb-0" : ""}`}>
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <div className={`space-y-3 crm-animate-in lg:space-y-5 ${editMode ? "pb-24 sm:pb-0" : ""}`}>
+      <header className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
         <div className="min-w-0">
           <Link
             href={backHref}
@@ -1076,7 +1076,7 @@ export function ProspectDetailClient2({
             {backLabel}
             {prospect.project?.name ? ` · ${prospect.project.name}` : ""}
           </Link>
-          <h1 className="mt-2 font-display text-[1.85rem] font-semibold tracking-tight text-wo-text sm:text-[2.1rem]">
+          <h1 className="mt-2 font-display text-[1.45rem] font-semibold leading-tight tracking-tight text-wo-text lg:text-[2.1rem]">
             {prospect.club_name}
           </h1>
           {contextLine ? <p className="mt-1.5 text-[13.5px] text-wo-muted">{contextLine}</p> : null}
@@ -1096,16 +1096,16 @@ export function ProspectDetailClient2({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-          {!editMode ? statusSelector : null}
+        <div className="grid grid-cols-2 gap-2 lg:flex lg:flex-wrap lg:items-center lg:justify-end">
+          {!editMode ? <div className="col-span-2 lg:col-auto">{statusSelector}</div> : null}
           {editMode ? (
             <>
-              <button type="button" className={ui.btnSecondary} onClick={() => setEditMode(false)} disabled={pending}>
+              <button type="button" className={`${ui.btnSecondary} w-full`} onClick={() => setEditMode(false)} disabled={pending}>
                 Annuler
               </button>
               <button
                 type="button"
-                className={ui.btnPrimary}
+                className={`${ui.btnPrimary} w-full`}
                 disabled={pending || !draft.club_name.trim()}
                 onClick={() => handleSaveDraft()}
               >
@@ -1114,31 +1114,14 @@ export function ProspectDetailClient2({
             </>
           ) : (
             <>
-              <button type="button" className={ui.btnSecondary} onClick={enterEditMode}>
+              <button type="button" className={`${ui.btnSecondary} w-full`} onClick={enterEditMode}>
                 <IconEdit className="h-4 w-4" stroke={1.75} />
                 Modifier
               </button>
-              <button
-                type="button"
-                className={ui.btnSecondary}
-                onClick={() => setAddContactKey((n) => n + 1)}
-              >
-                <IconUserPlus className="h-4 w-4" />
-                Ajouter un contact
-              </button>
-              <button
-                type="button"
-                className={ui.btnPrimary}
-                disabled={busy || isArchived}
-                onClick={() => setInteractionChannel("email")}
-              >
-                <IconMail className="h-4 w-4" />
-                Contacter
-              </button>
-              <div className="relative" ref={moreRef}>
+              <div className="relative lg:order-last" ref={moreRef}>
                 <button
                   type="button"
-                  className={ui.btnSecondary}
+                  className={`${ui.btnSecondary} w-full`}
                   onClick={() => setMoreOpen((v) => !v)}
                 >
                   <IconDots className="h-4 w-4" />
@@ -1221,6 +1204,23 @@ export function ProspectDetailClient2({
                   </div>
                 ) : null}
               </div>
+              <button
+                type="button"
+                className={`${ui.btnSecondary} hidden w-full lg:inline-flex`}
+                onClick={() => setAddContactKey((n) => n + 1)}
+              >
+                <IconUserPlus className="h-4 w-4" />
+                Ajouter un contact
+              </button>
+              <button
+                type="button"
+                className={`${ui.btnPrimary} col-span-2 w-full lg:col-auto lg:w-auto`}
+                disabled={busy || isArchived}
+                onClick={() => setInteractionChannel("email")}
+              >
+                <IconMail className="h-4 w-4" />
+                Contacter
+              </button>
             </>
           )}
         </div>
@@ -1229,8 +1229,9 @@ export function ProspectDetailClient2({
       {msg ? <p className={ui.alertInfo}>{msg}</p> : null}
       {errorMsg ? <p className={ui.alertError}>{errorMsg}</p> : null}
 
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,0.9fr)]">
-        <div className="space-y-5">
+      <div className="grid items-start gap-3 lg:gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,0.9fr)]">
+        <div className="contents xl:flex xl:flex-col xl:gap-5">
+          <div className="order-1">
           <ProspectFollowUpCard
             prospect={prospect}
             lastActivity={lastCommercialActivity(activities)}
@@ -1242,8 +1243,9 @@ export function ProspectDetailClient2({
             }}
             onEditDemo={() => setScheduleDemoOpen(true)}
           />
+          </div>
 
-          <section className={`${ui.card} p-5 sm:p-6`}>
+          <section className={`${ui.card} order-3 p-4 lg:p-6`}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h2 className={ui.h2}>Informations générales</h2>
@@ -1311,6 +1313,7 @@ export function ProspectDetailClient2({
             )}
           </section>
 
+          <div className="order-8">
           <ProspectTimeline
             activities={activities}
             canUndo={!editMode && canUndo}
@@ -1341,10 +1344,11 @@ export function ProspectDetailClient2({
               });
             }}
           />
+          </div>
         </div>
 
-        <div className="space-y-5">
-          <section className={`${ui.card} p-5`}>
+        <div className="contents xl:flex xl:flex-col xl:gap-5">
+          <section className={`${ui.card} order-2 p-4 lg:p-5`}>
             <h2 className={ui.h2}>Actions rapides</h2>
             {isArchived ? (
               <p className="mt-3 text-sm text-wo-muted">
@@ -1395,14 +1399,16 @@ export function ProspectDetailClient2({
             )}
           </section>
 
+          <div className="order-4">
           <ProspectContactsPanel
             prospectId={prospect.id}
             openAddKey={addContactKey}
             onCountChange={setContactCount}
             onChanged={() => void refreshAll()}
           />
+          </div>
 
-          <section className={`${ui.card} p-5`}>
+          <section className={`${ui.card} order-5 p-4 lg:p-5`}>
             <div className="flex items-center justify-between gap-3">
               <h2 className={ui.h2}>Notes</h2>
               {!editMode && hasNotes && !notesEditing ? (
@@ -1457,11 +1463,13 @@ export function ProspectDetailClient2({
             )}
           </section>
 
+          <div className="order-6">
           <ProspectLinkedTasks
             prospectId={prospect.id}
             projectId={prospect.project_id}
             openCreateKey={taskCreateKey}
           />
+          </div>
         </div>
       </div>
 
@@ -1476,11 +1484,11 @@ export function ProspectDetailClient2({
               : "Archiver retire le prospect de la liste. Supprimer efface toutes les données liées."}
         </p>
 
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           {isArchived ? (
             <button
               type="button"
-              className={ui.btnSecondary}
+              className={`${ui.btnSecondary} w-full sm:w-auto`}
               disabled={pending || archiveLoading || deleteLoading}
               onClick={restoreProspect}
             >
@@ -1490,7 +1498,7 @@ export function ProspectDetailClient2({
           ) : (
             <button
               type="button"
-              className={ui.btnSecondary}
+              className={`${ui.btnSecondary} w-full sm:w-auto`}
               disabled={pending || archiveLoading || deleteLoading}
               onClick={archiveProspect}
             >
@@ -1500,7 +1508,7 @@ export function ProspectDetailClient2({
           )}
           <button
             type="button"
-            className="inline-flex items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-medium text-rose-300 transition hover:bg-rose-500/10 disabled:opacity-50"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-medium text-rose-300 transition hover:bg-rose-500/10 disabled:opacity-50 sm:w-auto"
             disabled={pending || archiveLoading || deleteLoading}
             onClick={() => {
               setDeleteError(null);

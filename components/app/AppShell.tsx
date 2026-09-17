@@ -192,12 +192,14 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
         <SidebarBody {...sidebarProps} />
       </aside>
 
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-wo-border bg-[#0b0907]/85 px-4 backdrop-blur-xl lg:hidden">
-        <Link href={ravenHref} className="flex items-center gap-2.5">
-          <span className="wo-brand-mark !h-8 !w-8">R</span>
-          <span className="text-sm font-semibold text-wo-text">{currentProject?.name ?? brand.shortName}</span>
+      <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-wo-border bg-[#0b0907]/90 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] backdrop-blur-xl lg:hidden">
+        <Link href={ravenHref} className="flex min-w-0 items-center gap-2">
+          <span className="wo-brand-mark !h-7 !w-7 !rounded-[10px] !text-[11px]">R</span>
+          <span className="truncate text-[14px] font-semibold tracking-tight text-wo-text">
+            {currentProject?.name ?? brand.shortName}
+          </span>
         </Link>
-        <div className="flex items-center gap-0.5">
+        <div className="flex shrink-0 items-center">
           <button type="button" className="wo-icon-btn h-10 w-10" onClick={openSearch} aria-label="Recherche">
             <IconSearch className="h-5 w-5" stroke={1.6} />
           </button>
@@ -219,11 +221,11 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
             onClick={() => setMobileOpen(false)}
             aria-label="Fermer"
           />
-          <aside className="wo-sidebar absolute inset-y-0 left-0 flex w-[min(20rem,86vw)] flex-col overflow-hidden">
-            <div className="flex h-16 items-center justify-between px-4">
-              <Link href={ravenHref} className="flex items-center gap-2.5 text-sm font-semibold text-wo-text" onClick={() => setMobileOpen(false)}>
+          <aside className="wo-sidebar absolute inset-y-0 left-0 flex w-[min(20rem,88vw)] flex-col overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+            <div className="flex h-14 shrink-0 items-center justify-between px-4">
+              <Link href={ravenHref} className="flex min-w-0 items-center gap-2.5 text-sm font-semibold text-wo-text" onClick={() => setMobileOpen(false)}>
                 <span className="wo-brand-mark !h-8 !w-8">R</span>
-                {brand.name}
+                <span className="truncate">{currentProject?.name ?? brand.name}</span>
               </Link>
               <button type="button" className="wo-icon-btn" onClick={() => setMobileOpen(false)}>
                 <IconX className="h-5 w-5" />
@@ -234,7 +236,7 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
         </div>
       ) : null}
 
-      <main className={`min-h-screen flex-1 pb-[4.5rem] lg:pb-0 ${collapsed ? "lg:ml-[76px]" : "lg:ml-[244px]"}`}>
+      <main className={`min-h-screen flex-1 pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-0 ${collapsed ? "lg:ml-[76px]" : "lg:ml-[244px]"}`}>
         <div className="sticky top-0 z-30 hidden h-[72px] items-center justify-between gap-6 border-b border-wo-border bg-[#0b0907]/70 px-8 backdrop-blur-xl lg:flex">
           <div className="min-w-0">
             {meta.hideTitle ? null : (
@@ -269,10 +271,10 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
           </div>
         </div>
 
-        <div className="mx-auto w-full max-w-[1480px] px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
-          {meta.hideTitle ? null : (
-            <div className="mb-5 lg:hidden">
-              <h1 className="wo-h1">{meta.title}</h1>
+        <div className="mx-auto w-full max-w-[1480px] px-3 py-3 sm:px-6 sm:py-5 lg:px-8 lg:py-7">
+          {meta.hideTitle || meta.hideMobileTitle ? null : (
+            <div className="mb-4 lg:hidden">
+              <h1 className="wo-h1 text-[1.35rem]">{meta.title}</h1>
               {meta.subtitle ? <p className="mt-1 text-[13px] text-wo-dim">{meta.subtitle}</p> : null}
             </div>
           )}
@@ -282,7 +284,7 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
 
       <nav
         aria-label="Navigation principale"
-        className="fixed inset-x-0 bottom-0 z-30 flex border-t border-wo-border bg-[#0d0b09]/95 backdrop-blur-xl lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 flex border-t border-wo-border bg-[#0d0b09]/96 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
       >
         {[
           {
@@ -309,11 +311,14 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
             <Link
               key={item.label}
               href={item.href}
-              className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 py-2.5 text-[10px] font-medium transition ${
+              className={`relative flex min-h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-2 text-[11px] font-medium transition ${
                 item.active ? "text-wo-accent" : "text-wo-dim"
               }`}
             >
-              <Icon className="h-[18px] w-[18px]" stroke={item.active ? 1.9 : 1.5} />
+              {item.active ? (
+                <span className="absolute top-0 h-[2px] w-7 rounded-full bg-wo-accent shadow-[0_0_8px_rgba(217,119,50,0.8)]" />
+              ) : null}
+              <Icon className="h-5 w-5" stroke={item.active ? 1.9 : 1.5} />
               <span className="truncate">{item.label}</span>
             </Link>
           );
@@ -373,6 +378,7 @@ function SidebarBody({
 
   return (
     <>
+      {hideCollapse ? null : (
       <div className={`flex h-[72px] items-center ${compact ? "justify-center px-2" : "justify-between px-4"}`}>
         <Link href={ravenHref} className="flex min-w-0 items-center gap-2.5" onClick={onNavigate}>
           <span className="wo-brand-mark">R</span>
@@ -393,6 +399,7 @@ function SidebarBody({
           </button>
         ) : null}
       </div>
+      )}
 
       {compact && onCollapse ? (
         <div className="flex justify-center pb-2">

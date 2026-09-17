@@ -65,7 +65,7 @@ export function ProspectTimeline({
   const hiddenCount = Math.max(0, timeline.length - PREVIEW);
 
   return (
-    <section className={`${ui.card} p-5 sm:p-6`}>
+    <section className={`${ui.card} p-4 lg:p-6`}>
       <div className="mb-5 flex items-center justify-between gap-3">
         <div>
           <h2 className={ui.h2}>Historique</h2>

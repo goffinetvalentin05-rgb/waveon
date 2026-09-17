@@ -60,7 +60,7 @@ export function ProspectContactsPanel({
   };
 
   return (
-    <section className={`${ui.card} p-5`}>
+    <section className={`${ui.card} p-4 lg:p-5`}>
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className={ui.h2}>Contacts</h2>

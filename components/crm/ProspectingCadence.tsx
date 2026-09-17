@@ -75,15 +75,15 @@ export function ProspectingCadence({
   );
 
   return (
-    <section className="wo-widget h-full p-5">
+    <section className="wo-widget h-full p-4 lg:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-[15px] font-semibold tracking-tight text-wo-text">Cadence de prospection</h2>
           <p className="mt-1 flex items-baseline gap-2">
-            <span className="font-display text-[1.9rem] font-semibold tabular-nums tracking-tight text-wo-text">
+            <span className="font-display text-[1.55rem] font-semibold tabular-nums tracking-tight text-wo-text lg:text-[1.9rem]">
               {total}
             </span>
-            <span className="text-[12.5px] text-wo-muted">actions sur {RANGE_LABELS[range].toLowerCase()}</span>
+            <span className="text-[12px] text-wo-muted lg:text-[12.5px]">actions sur {RANGE_LABELS[range].toLowerCase()}</span>
           </p>
         </div>
         <div className="wo-segment">
@@ -94,13 +94,14 @@ export function ProspectingCadence({
               onClick={() => setRange(id)}
               className={range === id ? "wo-segment-item wo-segment-item-active" : "wo-segment-item"}
             >
-              {RANGE_LABELS[id]}
+              <span className="lg:hidden">{id === "90" ? "3m" : `${id}j`}</span>
+              <span className="hidden lg:inline">{RANGE_LABELS[id]}</span>
             </button>
           ))}
         </div>
       </div>
 
-      <div className="mt-6 flex h-[172px] items-end gap-1.5 sm:gap-2">
+      <div className="mt-4 flex h-[118px] items-end gap-1 lg:mt-6 lg:h-[172px] lg:gap-2">
         {buckets.map((b) => {
           const isPeak = peak !== null && b.key === peak.key && b.total > 0;
           const height = b.total === 0 ? 3 : Math.max(8, (b.total / max) * 100);
@@ -108,7 +109,7 @@ export function ProspectingCadence({
             <div key={b.key} className="group flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2">
               <div className="relative flex w-full flex-1 items-end justify-center">
                 {isPeak ? (
-                  <span className="absolute -top-1 rounded-full border border-wo-accent/30 bg-wo-accent-soft px-2 py-0.5 text-[10px] font-semibold tabular-nums text-[#f3a35c]">
+                  <span className="absolute -top-1 hidden rounded-full border border-wo-accent/30 bg-wo-accent-soft px-2 py-0.5 text-[10px] font-semibold tabular-nums text-[#f3a35c] lg:inline">
                     {b.total}
                   </span>
                 ) : null}
@@ -128,7 +129,7 @@ export function ProspectingCadence({
         })}
       </div>
 
-      <div className="mt-5 grid grid-cols-3 gap-2 border-t border-wo-border pt-4">
+      <div className="mt-4 hidden grid-cols-3 gap-2 border-t border-wo-border pt-4 lg:mt-5 lg:grid">
         {[
           { label: "Nouveaux prospects", value: totals.prospects, dot: "bg-[#f3a35c]" },
           { label: "Contacts envoyés", value: totals.touches, dot: "bg-[#d97732]" },

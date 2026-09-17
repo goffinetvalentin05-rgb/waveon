@@ -359,13 +359,48 @@ export function ProspectsClient({
   const listReturnUrl = buildProspectListPath(params, listPath);
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+    <div className="space-y-3 lg:space-y-5">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-4">
+        <div className="min-w-0">
           {projectId ? null : <h1 className={ui.h1}>{clientsOnly ? "Clients" : "Ma pipeline"}</h1>}
-          <p className={`${projectId ? "" : "mt-1"} text-sm text-wo-muted`}>{resultLabel}</p>
+          <div className="flex items-center justify-between gap-3">
+            <p className={`${projectId ? "" : "mt-1"} text-sm text-wo-muted`}>{resultLabel}</p>
+            {!clientsOnly ? (
+              <div className="wo-segment lg:hidden">
+                {tableHref ? (
+                  <Link href={tableHref} className={view === "list" ? ui.segmentItemActive : ui.segmentItem}>
+                    Liste
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setView("list")}
+                    className={view === "list" ? ui.segmentItemActive : ui.segmentItem}
+                  >
+                    Liste
+                  </button>
+                )}
+                {pipelineHref ? (
+                  <Link href={pipelineHref} className={view === "pipeline" ? ui.segmentItemActive : ui.segmentItem}>
+                    Pipeline
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setView("pipeline");
+                      if (params.pageSize < 200) applyParams({ ...params, pageSize: 200, page: 1 });
+                    }}
+                    className={view === "pipeline" ? ui.segmentItemActive : ui.segmentItem}
+                  >
+                    Pipeline
+                  </button>
+                )}
+              </div>
+            ) : null}
+          </div>
           {!clientsOnly ? (
-            <div className="mt-4">
+            <div className="mt-3 lg:mt-4">
               <SmartViewBar
                 active={params.smartView}
                 counts={smartCounts}
@@ -374,9 +409,9 @@ export function ProspectsClient({
             </div>
           ) : null}
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           {!clientsOnly ? (
-            <div className="wo-segment">
+            <div className="wo-segment hidden lg:inline-flex">
               {tableHref ? (
                 <Link
                   href={tableHref}
@@ -418,7 +453,7 @@ export function ProspectsClient({
             <>
               <button
                 type="button"
-                className={ui.btnSecondary}
+                className={`${ui.btnSecondary} hidden lg:inline-flex`}
                 onClick={() => {
                   setImportMsg(null);
                   setShowImport(true);
@@ -427,7 +462,7 @@ export function ProspectsClient({
                 <IconUpload className="h-4 w-4" stroke={1.75} />
                 Importer
               </button>
-              <button type="button" className={ui.btnPrimary} onClick={() => setShowCreate(true)}>
+              <button type="button" className={`${ui.btnPrimary} w-full sm:w-auto`} onClick={() => setShowCreate(true)}>
                 <IconPlus className="h-4 w-4" stroke={2} />
                 Ajouter un prospect
               </button>
@@ -447,19 +482,19 @@ export function ProspectsClient({
         <PipelineStats prospects={prospects} />
       ) : null}
 
-      <div className="flex flex-col gap-2 rounded-2xl border border-wo-border bg-white/[0.025] p-2 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <IconSearch className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-wo-dim" />
+      <div className="flex gap-2 rounded-2xl border border-wo-border bg-white/[0.025] p-1.5">
+        <div className="relative min-w-0 flex-1">
+          <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-wo-dim" />
           <input
-            className="w-full rounded-xl border border-transparent bg-transparent py-2 pl-10 pr-3 text-sm text-wo-text outline-none transition placeholder:text-wo-dim focus:border-white/10 focus:bg-white/[0.04]"
-            placeholder="Rechercher un prospect, une entreprise, un contact…"
+            className="h-11 w-full rounded-xl border border-transparent bg-transparent py-2 pl-10 pr-3 text-sm text-wo-text outline-none transition placeholder:text-wo-dim focus:border-white/10 focus:bg-white/[0.04] lg:h-auto"
+            placeholder="Rechercher un prospect…"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
           />
         </div>
-        <button type="button" className={`${ui.btnSecondary} shrink-0`} onClick={openFilters}>
+        <button type="button" className={`${ui.btnSecondary} h-11 shrink-0 px-3 lg:h-auto`} onClick={openFilters}>
           <IconFilter className="h-4 w-4" stroke={1.75} />
-          Filtrer
+          <span className="hidden sm:inline">Filtrer</span>
           {activeFilterCount > 0 ? (
             <span className="rounded-full bg-wo-accent-soft px-1.5 text-[11px] font-semibold text-wo-accent">
               {activeFilterCount}

@@ -153,7 +153,7 @@ export function ProspectsPipeline({
 
       <div
         ref={boardRef}
-        className={`wo-pipeline-board -mx-4 flex gap-3 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 ${
+        className={`wo-pipeline-board -mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 ${
           isPanning ? "cursor-grabbing select-none" : "md:cursor-grab"
         }`}
         onScroll={() => syncScroll("board")}
@@ -167,7 +167,7 @@ export function ProspectsPipeline({
           return (
             <div
               key={col.id}
-              className="flex w-[272px] shrink-0 flex-col rounded-[20px] border border-white/[0.06] bg-[linear-gradient(158deg,rgba(255,255,255,0.05),rgba(255,255,255,0.012))] shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_20px_44px_-30px_rgba(0,0,0,0.95)]"
+              className="flex w-[min(78vw,240px)] shrink-0 snap-start flex-col rounded-[20px] border border-white/[0.06] bg-[linear-gradient(158deg,rgba(255,255,255,0.05),rgba(255,255,255,0.012))] shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_20px_44px_-30px_rgba(0,0,0,0.95)] lg:w-[272px]"
               onDragOver={(e) => {
                 if (onStatusChange) e.preventDefault();
               }}

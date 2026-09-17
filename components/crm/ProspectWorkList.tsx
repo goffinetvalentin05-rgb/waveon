@@ -51,7 +51,7 @@ export function ProspectListRow({
         <div onClick={(e) => e.stopPropagation()}>
           <StatusSelect
             value={prospect.status}
-            className="h-8 min-w-[10.5rem] rounded-full border-wo-border bg-transparent px-2.5 py-0 text-xs"
+            className="h-8 max-w-[9.5rem] min-w-0 rounded-full border-wo-border bg-transparent px-2.5 py-0 text-xs"
             onChange={(status) => onStatusChange(prospect.id, status)}
           />
         </div>

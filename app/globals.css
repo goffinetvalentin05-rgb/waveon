@@ -937,3 +937,88 @@ a.wo-stat:hover {
 .crm-prio-demo {
   color: #d97732;
 }
+
+/* ---------- Mobile layout system ---------- */
+
+@media (max-width: 1023px) {
+  .wo-app > main {
+    overflow-x: hidden;
+  }
+
+  .wo-card,
+  .wo-widget,
+  .wo-stat,
+  .wo-hero {
+    border-radius: 18px;
+  }
+
+  .wo-hero {
+    padding: 1.1rem 1.1rem 1.15rem;
+    border-radius: 20px;
+  }
+
+  .wo-stat {
+    display: flex;
+    height: 100%;
+    min-height: 124px;
+    flex-direction: column;
+    padding: 0.9rem 0.95rem;
+  }
+
+  .wo-widget,
+  .wo-card {
+    padding-left: 1.05rem;
+    padding-right: 1.05rem;
+  }
+
+  .wo-card-interactive:hover,
+  a.wo-stat:hover,
+  .wo-action-tile:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .wo-row {
+    min-height: 52px;
+    padding: 0.7rem 0.55rem;
+  }
+
+  .wo-tile {
+    height: 2rem;
+    width: 2rem;
+    border-radius: 10px;
+  }
+
+  .wo-btn {
+    min-height: 44px;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .wo-mobile-preview > li:nth-child(n + 5) {
+    display: none;
+  }
+
+  .wo-detail-stat {
+    padding: 0.75rem 0.85rem;
+    min-height: 76px;
+  }
+
+  .wo-action-tile {
+    min-height: 72px;
+    padding: 0.8rem 0.4rem;
+  }
+
+  .wo-segment {
+    width: fit-content;
+  }
+
+  .wo-segment-item {
+    min-height: 34px;
+    padding: 0.35rem 0.7rem;
+  }
+
+  .crm-table-wrap {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}

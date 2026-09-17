@@ -169,38 +169,38 @@ export function ProjectDashboard({
   }
 
   return (
-    <div className="space-y-4 crm-animate-in">
+    <div className="space-y-3 lg:space-y-4 crm-animate-in">
       {/* Hero */}
-      <section className="wo-hero grid gap-6 p-6 sm:p-7 lg:grid-cols-[1.35fr_1fr] lg:items-center">
+      <section className="wo-hero grid gap-4 p-5 lg:grid-cols-[1.35fr_1fr] lg:items-center lg:gap-6 lg:p-7">
         <div>
           <span className="inline-flex items-center gap-2 rounded-full border border-wo-accent/25 bg-wo-accent-soft px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#f3a35c]">
             <span className="h-1.5 w-1.5 rounded-full bg-wo-accent shadow-[0_0_8px_rgba(217,119,50,0.9)]" />
             {projectName}
           </span>
-          <h2 className="mt-4 max-w-lg font-display text-[1.9rem] font-semibold leading-[1.15] tracking-tight text-white sm:text-[2.35rem]">
+          <h2 className="mt-3 max-w-lg font-display text-[1.45rem] font-semibold leading-[1.2] tracking-tight text-white lg:mt-4 lg:text-[2.15rem]">
             {kpis.toContact > 0
               ? `${kpis.toContact} prospects attendent un premier contact.`
               : kpis.followUps > 0
                 ? `${kpis.followUps} relances à faire avancer.`
                 : "Votre pipeline est à jour."}
           </h2>
-          <p className="mt-3 max-w-md text-[13.5px] leading-relaxed text-wo-muted">
+          <p className="mt-2 max-w-md text-[13px] leading-relaxed text-wo-muted lg:mt-3 lg:text-[13.5px]">
             {kpis.prospects} prospects suivis
             {kpis.potentialValue > 0 ? ` · ${formatChf(kpis.potentialValue)} de potentiel` : ""}
             {kpis.overdue > 0 ? ` · ${kpis.overdue} échéances dépassées` : ""}.
           </p>
-          <div className="mt-6 flex flex-wrap gap-2">
-            <Link href={`${base}/prospects`} className={ui.btnPrimary}>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:mt-6">
+            <Link href={`${base}/prospects`} className={`${ui.btnPrimary} w-full justify-center sm:w-auto`}>
               <IconPlus className="h-4 w-4" />
               Ajouter un prospect
             </Link>
-            <Link href={`${base}/pipeline`} className={ui.btnSecondary}>
+            <Link href={`${base}/pipeline`} className={`${ui.btnSecondary} w-full justify-center sm:w-auto`}>
               Voir le pipeline
             </Link>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="hidden grid-cols-2 gap-3 lg:grid">
           {[
             { label: "Clients signés", value: String(kpis.clients) },
             {
@@ -224,45 +224,45 @@ export function ProjectDashboard({
       </section>
 
       {/* KPI */}
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4 lg:gap-3">
         {kpiCards.map((card) => {
           const Icon = card.icon;
           return (
             <Link key={card.label} href={card.href} className="wo-stat group">
               <div className="flex items-start justify-between gap-2">
                 <span className="wo-tile">
-                  <Icon className="h-[18px] w-[18px]" stroke={1.7} />
+                  <Icon className="h-4 w-4 lg:h-[18px] lg:w-[18px]" stroke={1.7} />
                 </span>
-                <IconArrowRight className="h-4 w-4 text-wo-dim opacity-0 transition group-hover:opacity-100" />
+                <IconArrowRight className="hidden h-4 w-4 text-wo-dim opacity-0 transition group-hover:opacity-100 lg:block" />
               </div>
-              <p className="mt-4 text-[12.5px] text-wo-muted">{card.label}</p>
-              <p className="mt-0.5 font-display text-[2rem] font-semibold tabular-nums leading-tight tracking-tight text-wo-text">
+              <p className="mt-3 text-[12px] text-wo-muted lg:mt-4 lg:text-[12.5px]">{card.label}</p>
+              <p className="mt-0.5 font-display text-[1.65rem] font-semibold tabular-nums leading-tight tracking-tight text-wo-text lg:text-[2rem]">
                 {card.value}
               </p>
-              <p className={`mt-1 text-[11.5px] ${card.alert ? "text-rose-300" : "text-wo-dim"}`}>{card.hint}</p>
+              <p className={`mt-auto pt-1 text-[11px] lg:text-[11.5px] ${card.alert ? "text-rose-300" : "text-wo-dim"}`}>{card.hint}</p>
             </Link>
           );
         })}
       </div>
 
-      {/* Cadence + Pipeline */}
-      <div className="grid gap-4 xl:grid-cols-5">
-        <div className="xl:col-span-3">
+      {/* Pipeline puis cadence sur mobile */}
+      <div className="grid gap-3 lg:gap-4 xl:grid-cols-5">
+        <div className="order-2 lg:order-1 xl:col-span-3">
           <ProspectingCadence series7={series7} series30={series30} series90={series90} />
         </div>
-        <div className="xl:col-span-2">
+        <div className="order-1 lg:order-2 xl:col-span-2">
           <PipelineFunnel stages={stages} projectId={projectId} />
         </div>
       </div>
 
       {/* Aujourd'hui · Agenda · To-do */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-3 lg:grid-cols-3 lg:gap-4">
         <Card
           title="Aujourd'hui"
           action={{ label: "Prospects", href: `${base}/prospects` }}
           empty={todayItems.length === 0 ? "Rien d'urgent aujourd'hui." : null}
         >
-          <ul className="space-y-0.5">
+          <ul className="wo-mobile-preview space-y-0.5">
             {todayItems.map((item) => (
               <li key={item.id}>
                 <Link href={item.href} className="wo-row">
@@ -300,7 +300,7 @@ export function ProjectDashboard({
           }
           empty={agenda.length === 0 ? "Aucune échéance à venir." : null}
         >
-          <ul className="space-y-0.5">
+          <ul className="wo-mobile-preview space-y-0.5">
             {agenda.map((item) => {
               const Icon = AGENDA_ICON[item.kind];
               return (
@@ -330,7 +330,7 @@ export function ProjectDashboard({
           }
           empty={todos.length === 0 ? "Aucune tâche en cours." : null}
         >
-          <ul className="space-y-0.5">
+          <ul className="wo-mobile-preview space-y-0.5">
             {todos.map((task) => (
               <li key={task.id}>
                 <Link href={task.href} className="wo-row">
@@ -356,13 +356,13 @@ export function ProjectDashboard({
       </div>
 
       {/* Relances · Spotlight · Activité */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-3 lg:grid-cols-3 lg:gap-4">
         <Card
           title="Prochaines relances"
           action={{ label: "Pipeline", href: `${base}/pipeline` }}
           empty={followUps.length === 0 ? "Aucune relance programmée." : null}
         >
-          <ul className="space-y-0.5">
+          <ul className="wo-mobile-preview space-y-0.5">
             {followUps.map((item) => (
               <li key={item.id}>
                 <Link href={item.href} className="wo-row">
@@ -379,6 +379,7 @@ export function ProjectDashboard({
           </ul>
         </Card>
 
+        <div className="hidden lg:block">
         <Card
           title="Prospects à suivre"
           icon={<IconFlame className="h-4 w-4 text-amber-300" stroke={1.8} />}
@@ -406,17 +407,18 @@ export function ProjectDashboard({
             ))}
           </ul>
         </Card>
+        </div>
 
         <Card
           title="Activité récente"
           action={
             hasModule(enabledModules, "activity")
               ? { label: "Historique", href: `${base}/activity` }
-              : undefined
+              : { label: "Voir tout", href: `${base}/prospects` }
           }
           empty={recent.length === 0 ? "Les actions apparaîtront ici." : null}
         >
-          <ol className="relative space-y-0.5 pl-3">
+          <ol className="wo-mobile-preview relative space-y-0.5 pl-3">
             <span className="absolute bottom-3 left-[5px] top-3 w-px bg-white/[0.07]" aria-hidden />
             {recent.map((item) => (
               <li key={item.id} className="relative">
@@ -448,8 +450,8 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="wo-widget p-5">
-      <div className="mb-4 flex items-center justify-between gap-3">
+    <section className="wo-widget p-4 lg:p-5">
+      <div className="mb-3 flex items-center justify-between gap-3 lg:mb-4">
         <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-wo-text">
           {icon}
           {title}

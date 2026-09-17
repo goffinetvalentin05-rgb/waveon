@@ -67,7 +67,7 @@ export function ProspectLinkedTasks({
   };
 
   return (
-    <section className={`${ui.card} p-5`}>
+    <section className={`${ui.card} p-4 lg:p-5`}>
       <div className="flex items-center justify-between gap-3">
         <h2 className={ui.h2}>Tâches liées</h2>
         <Link href={href} className="text-[12.5px] font-medium text-wo-muted transition hover:text-wo-text">

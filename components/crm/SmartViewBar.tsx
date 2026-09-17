@@ -29,7 +29,7 @@ export function SmartViewBar({
   onSelect: (id: SmartViewId) => void;
 }) {
   return (
-    <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+    <div className="-mx-1 flex snap-x gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {SMART_VIEWS.filter((view) => view.pin).map((view) => {
         const selected = active === view.id;
         const key = COUNT_KEY[view.id];
@@ -39,7 +39,7 @@ export function SmartViewBar({
             key={view.id}
             type="button"
             onClick={() => onSelect(view.id)}
-            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+            className={`inline-flex snap-start shrink-0 items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-medium transition ${
               selected
                 ? "border-wo-accent/30 bg-wo-accent-soft text-[#f3a35c]"
                 : "border-white/[0.06] bg-white/[0.03] text-wo-muted hover:border-white/15 hover:text-wo-text"

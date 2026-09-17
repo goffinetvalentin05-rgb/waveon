@@ -40,15 +40,17 @@ function Stat({
   hint,
   hintClass,
   children,
+  className,
 }: {
   label: string;
   value?: string;
   hint?: string | null;
   hintClass?: string;
   children?: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="wo-detail-stat">
+    <div className={`wo-detail-stat ${className ?? ""}`}>
       <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-wo-dim">{label}</p>
       {children ?? (
         <p className="mt-2 truncate text-[14.5px] font-medium tracking-tight text-wo-text">{value}</p>
@@ -96,11 +98,11 @@ export function ProspectFollowUpCard({
     : formatActionDate(prospect.next_follow_up) ?? (nextLabel || "À planifier");
 
   return (
-    <section className="wo-hero p-5 sm:p-6">
+    <section className="wo-hero p-4 lg:p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="wo-kicker">Synthèse</p>
-          <h2 className={`${ui.h2} mt-1.5 text-[17px]`}>Où en est ce prospect</h2>
+          <h2 className={`${ui.h2} mt-1.5 text-[16px] lg:text-[17px]`}>Où en est ce prospect</h2>
         </div>
         {demoScheduled && onEditDemo && !disabled ? (
           <button type="button" className={ui.btnGhost} onClick={onEditDemo}>
@@ -109,7 +111,7 @@ export function ProspectFollowUpCard({
         ) : null}
       </div>
 
-      <div className="mt-5 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+      <div className="mt-4 grid grid-cols-2 gap-2 lg:mt-5 lg:grid-cols-4 lg:gap-2.5">
         <Stat label="Étape" value={statusDisplayLabel(prospect.status)} />
         <Stat
           label="Prochaine action"
@@ -136,16 +138,16 @@ export function ProspectFollowUpCard({
           )}
         </Stat>
         <Stat label="Dernière interaction" value={formatLastInteractionLine(lastActivity)} />
-        <Stat label="Priorité" value={prospect.priority ?? "Normale"} />
-        {prospect.assignee?.name ? <Stat label="Responsable" value={prospect.assignee.name} /> : null}
-        {prospect.contact_channel ? <Stat label="Canal" value={prospect.contact_channel} /> : null}
+        <Stat label="Priorité" value={prospect.priority ?? "Normale"} className="hidden lg:block" />
+        {prospect.assignee?.name ? <Stat label="Responsable" value={prospect.assignee.name} className="hidden lg:block" /> : null}
+        {prospect.contact_channel ? <Stat label="Canal" value={prospect.contact_channel} className="hidden lg:block" /> : null}
         <Stat
           label="Contacts"
           value={`${contactCount ?? prospect.contact_count ?? 0}`}
           hint="personnes rattachées"
         />
         {prospect.potential_value ? (
-          <Stat label="Potentiel" value={formatChf(Number(prospect.potential_value))} />
+          <Stat label="Potentiel" value={formatChf(Number(prospect.potential_value))} className="hidden lg:block" />
         ) : null}
       </div>
     </section>

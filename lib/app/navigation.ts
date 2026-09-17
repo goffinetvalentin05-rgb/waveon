@@ -77,6 +77,7 @@ export type PageMeta = {
   title: string;
   subtitle?: string;
   hideTitle?: boolean;
+  hideMobileTitle?: boolean;
 };
 
 const PAGE_SUBTITLES: Record<string, string> = {
@@ -122,6 +123,7 @@ export function pageMetaFromPath(pathname: string | null, projectName?: string |
     return {
       title,
       subtitle: PAGE_SUBTITLES[title] ?? projectName ?? undefined,
+      hideMobileTitle: Boolean(item?.exact) || rest === "",
     };
   }
 
