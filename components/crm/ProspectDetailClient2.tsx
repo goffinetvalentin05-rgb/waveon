@@ -12,7 +12,6 @@ import {
   IconEdit,
   IconMail,
   IconMessage,
-  IconNote,
   IconPhone,
   IconPlus,
   IconPresentation,
@@ -23,6 +22,7 @@ import {
   IconUserX,
   IconCalendarEvent,
   IconChecklist,
+  IconUsers,
   IconWorld,
 } from "@tabler/icons-react";
 import { isClosedProspectStatus, isDemoScheduledStatus } from "@/lib/crm/closed";
@@ -33,6 +33,8 @@ import { ProspectBusinessFields } from "@/components/crm/ProspectBusinessFields"
 import { ProspectLinkedTasks } from "@/components/crm/ProspectLinkedTasks";
 import { ClosedReasonModal } from "@/components/crm/ClosedReasonModal";
 import { InteractionModal } from "@/components/crm/InteractionModal";
+import { MeetingComposer } from "@/components/crm/MeetingComposer";
+import { ProspectMeetingsPanel } from "@/components/crm/ProspectMeetingsPanel";
 import { ScheduleDemoModal } from "@/components/crm/ScheduleDemoModal";
 import { ProspectFollowUpCard } from "@/components/crm/ProspectFollowUpCard";
 import { ProspectTimeline } from "@/components/crm/ProspectTimeline";
@@ -53,6 +55,7 @@ import { parseStatusChangePayload } from "@/lib/crm/status";
 import { ui } from "@/lib/design/tokens";
 import { lastCommercialActivity } from "@/lib/crm/activity-display";
 import { defaultInteractionKindForStage, type InteractionChannel } from "@/lib/crm/interactions";
+import type { ProspectMeeting } from "@/lib/crm/meetings";
 
 function toDateInputValue(iso: string | null | undefined) {
   if (!iso) return "";
@@ -550,6 +553,8 @@ export function ProspectDetailClient2({
   const [contactCount, setContactCount] = useState(initial.contact_count ?? 0);
   const [notesEditing, setNotesEditing] = useState(false);
   const [showMoreInfo, setShowMoreInfo] = useState(false);
+  const [meetingOpen, setMeetingOpen] = useState(false);
+  const [meetings, setMeetings] = useState<ProspectMeeting[]>([]);
   const moreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -561,6 +566,12 @@ export function ProspectDetailClient2({
     return () => window.removeEventListener("mousedown", onClick);
   }, [moreOpen]);
 
+  const refreshMeetings = async () => {
+    const res = await fetch(`/api/prospects/${prospect.id}/meetings`);
+    const json = await res.json().catch(() => ({}));
+    if (res.ok && Array.isArray(json.meetings)) setMeetings(json.meetings);
+  };
+
   const refreshAll = async () => {
     const refreshed = await fetch(`/api/prospects/${prospect.id}`);
     const json = await refreshed.json();
@@ -569,8 +580,14 @@ export function ProspectDetailClient2({
       setActivities(json.activities as ProspectActivity[]);
       setNotes((json.prospect as Prospect).notes ?? "");
     }
+    await refreshMeetings();
     router.refresh();
   };
+
+  useEffect(() => {
+    void refreshMeetings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prospect.id]);
 
   const goToClientsList = () => {
     router.push(clientsHref);
@@ -1245,7 +1262,18 @@ export function ProspectDetailClient2({
           />
           </div>
 
-          <section className={`${ui.card} order-3 p-4 lg:p-6`}>
+          <div className="order-3">
+            <ProspectMeetingsPanel
+              meetings={meetings}
+              prospectId={prospect.id}
+              projectId={prospect.project_id}
+              onAdd={() => {
+                if (!isArchived) setMeetingOpen(true);
+              }}
+            />
+          </div>
+
+          <section className={`${ui.card} order-4 p-4 lg:p-6`}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h2 className={ui.h2}>Informations générales</h2>
@@ -1356,7 +1384,11 @@ export function ProspectDetailClient2({
               </p>
             ) : (
               <div className="mt-4 grid grid-cols-2 gap-2">
-                <button type="button" disabled={busy} className="wo-action-tile wo-action-tile-primary" onClick={() => setInteractionChannel("email")}>
+                <button type="button" disabled={busy} className="wo-action-tile wo-action-tile-primary" onClick={() => setMeetingOpen(true)}>
+                  <IconUsers className="h-[18px] w-[18px]" stroke={1.7} />
+                  Rencontre
+                </button>
+                <button type="button" disabled={busy} className="wo-action-tile" onClick={() => setInteractionChannel("email")}>
                   <IconMail className="h-[18px] w-[18px]" stroke={1.7} />
                   Email
                 </button>
@@ -1381,15 +1413,6 @@ export function ProspectDetailClient2({
                   type="button"
                   disabled={busy}
                   className="wo-action-tile"
-                  onClick={() => setNotesEditing(true)}
-                >
-                  <IconNote className="h-[18px] w-[18px]" stroke={1.7} />
-                  Note
-                </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  className="wo-action-tile"
                   onClick={() => setTaskCreateKey((n) => n + 1)}
                 >
                   <IconChecklist className="h-[18px] w-[18px]" stroke={1.7} />
@@ -1399,7 +1422,7 @@ export function ProspectDetailClient2({
             )}
           </section>
 
-          <div className="order-4">
+          <div className="order-5">
           <ProspectContactsPanel
             prospectId={prospect.id}
             openAddKey={addContactKey}
@@ -1408,7 +1431,7 @@ export function ProspectDetailClient2({
           />
           </div>
 
-          <section className={`${ui.card} order-5 p-4 lg:p-5`}>
+          <section className={`${ui.card} order-6 p-4 lg:p-5`}>
             <div className="flex items-center justify-between gap-3">
               <h2 className={ui.h2}>Notes</h2>
               {!editMode && hasNotes && !notesEditing ? (
@@ -1463,7 +1486,7 @@ export function ProspectDetailClient2({
             )}
           </section>
 
-          <div className="order-6">
+          <div className="order-7">
           <ProspectLinkedTasks
             prospectId={prospect.id}
             projectId={prospect.project_id}
@@ -1533,6 +1556,22 @@ export function ProspectDetailClient2({
           void saveScheduleDemo(payload);
         }}
         onCancelDemo={isDemoScheduledStatus(prospect.status) ? () => void cancelScheduledDemo() : undefined}
+      />
+
+      <MeetingComposer
+        open={meetingOpen}
+        prospectId={prospect.id}
+        clubName={prospect.club_name}
+        onClose={() => {
+          setMeetingOpen(false);
+          void refreshAll();
+        }}
+        onSaved={(meeting, nextActivities, nextProspect) => {
+          setMeetings((list) => [meeting, ...list.filter((item) => item.id !== meeting.id)]);
+          if (Array.isArray(nextActivities)) setActivities(nextActivities as ProspectActivity[]);
+          if (nextProspect) setProspect(nextProspect as Prospect);
+          setMsg("Compte-rendu enregistré.");
+        }}
       />
 
       <InteractionModal

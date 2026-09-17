@@ -106,6 +106,12 @@ export function pageMetaFromPath(pathname: string | null, projectName?: string |
   }
   if (pathname === "/settings") return { title: "Paramètres", subtitle: "Compte, projet, membres et préférences" };
   if (pathname.startsWith("/notifications")) return { title: "Notifications" };
+  if (pathname.startsWith("/crm/prospects/") && pathname.includes("/meetings/")) {
+    return { title: "Compte-rendu", hideTitle: true };
+  }
+  if (pathname.startsWith("/crm/prospects/") && pathname !== "/crm/prospects") {
+    return { title: "Prospect", hideTitle: true };
+  }
 
   const projectMatch = pathname.match(/^\/projects\/([^/]+)(?:\/(.*))?$/);
   if (projectMatch && projectMatch[1] !== "unassigned") {

@@ -116,6 +116,8 @@ export function formatTimelineActivity(activity: ProspectActivity): TimelineActi
                 ? "LinkedIn"
                 : activity.action_type === "meeting"
                   ? "Rencontre"
+                  : activity.action_type === "demo" || activity.action_type === "demo_done"
+                    ? "Démo"
                   : activity.interaction_type && isInteractionKind(activity.interaction_type)
                     ? INTERACTION_KIND_LABELS[activity.interaction_type]
                     : null;
@@ -163,6 +165,9 @@ export function formatLastInteractionLine(activity: ProspectActivity | null): st
       .join(" · ");
   }
   const channelKey = normalizeInteractionChannel(activity.channel) ?? normalizeInteractionChannel(activity.action_type);
+  if (activity.action_type === "meeting" || activity.channel === "Rencontre") {
+    return [when, activity.title || "Rencontre"].filter(Boolean).join(" · ");
+  }
   const channel = channelKey ? INTERACTION_CHANNEL_LABELS[channelKey] : activity.channel?.trim() || null;
   const kind =
     activity.interaction_type && isInteractionKind(activity.interaction_type)

@@ -13,6 +13,7 @@ import {
   IconTrash,
   IconUser,
   IconUserCheck,
+  IconUsers,
   IconUserX,
 } from "@tabler/icons-react";
 import {
@@ -30,7 +31,8 @@ function activityIcon(type: string) {
   if (type === "call_made" || type === "call") return IconPhone;
   if (type === "message" || type === "whatsapp" || type === "linkedin") return IconMessage;
   if (type === "note") return IconNote;
-  if (type === "demo_scheduled" || type === "demo" || type === "demo_done" || type === "meeting") return IconCalendarEvent;
+  if (type === "meeting") return IconUsers;
+  if (type === "demo_scheduled" || type === "demo" || type === "demo_done") return IconCalendarEvent;
   if (type === "status_change") return IconSwitchHorizontal;
   if (type === "client") return IconUserCheck;
   if (type === "refus") return IconUserX;
