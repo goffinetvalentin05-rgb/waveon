@@ -1,5 +1,6 @@
 import { PROSPECT_PRIORITIES, type ProspectPriority } from "@/lib/crm/prospect-fields";
 import { migrateProspectStatus } from "@/lib/crm/status";
+import { INITIAL_PIPELINE_STATUS } from "@/lib/crm/pipeline";
 import { CONTACT_CHANNELS } from "@/lib/crm/types";
 
 /** Convertit une valeur absente ou vide en NULL (jamais de chaîne vide en base). */
@@ -180,7 +181,7 @@ export function buildProspectInsertPayload(userId: string, input: ProspectInput)
   return {
     ...buildProspectFields(input),
     user_id: userId,
-    status: "À contacter" as const,
+    status: INITIAL_PIPELINE_STATUS,
     next_action: "Premier contact",
     last_action: "Créé",
     last_action_at: new Date().toISOString(),
@@ -191,7 +192,7 @@ export function buildProspectImportPayload(userId: string, input: ProspectInput)
   return {
     ...buildProspectFields(input),
     user_id: userId,
-    status: "À contacter" as const,
+    status: INITIAL_PIPELINE_STATUS,
     next_action: "Premier contact",
     last_action: "Importé",
     last_action_at: new Date().toISOString(),
@@ -221,7 +222,7 @@ export function normalizeProspectFromDb(row: Record<string, unknown>) {
     archived_at,
     tags,
     potential_value,
-    status: migrateProspectStatus(String(row.status ?? "À contacter")),
+    status: migrateProspectStatus(String(row.status ?? INITIAL_PIPELINE_STATUS)),
     next_action: row.next_action == null || row.next_action === "" ? null : String(row.next_action),
     closed_reason:
       row.closed_reason == null || row.closed_reason === "" ? null : String(row.closed_reason),

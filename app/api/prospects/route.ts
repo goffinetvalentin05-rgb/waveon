@@ -9,6 +9,10 @@ import { fetchProspectList } from "@/lib/crm/prospect-query";
 import { parseProspectListParams } from "@/lib/crm/prospect-list-params";
 import { logWorkspaceEvent } from "@/lib/workspace/events";
 import { enrichProspects } from "@/lib/crm/enrich-prospects";
+import {
+  ProspectPlacementError,
+  resolveProspectPlacement,
+} from "@/lib/crm/prospect-placement";
 
 export async function GET(request: Request) {
   const auth = await requireUser();
@@ -42,9 +46,16 @@ export async function POST(request: Request) {
   try {
     await getOrCreateSettings(supabase, user.id);
 
+    const placement = await resolveProspectPlacement(supabase, user.id, body.project_id);
+    const payload = buildProspectInsertPayload(user.id, {
+      ...body,
+      project_id: placement.projectId,
+    });
+    payload.status = placement.status;
+
     const { data, error } = await supabase
       .from("prospects")
-      .insert(buildProspectInsertPayload(user.id, body))
+      .insert(payload)
       .select("*")
       .single();
 
@@ -80,7 +91,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ prospect: normalizeProspectFromDb(data) }, { status: 201 });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Données invalides";
+    const message =
+      err instanceof ProspectPlacementError
+        ? err.message
+        : err instanceof Error
+          ? err.message
+          : "Données invalides";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

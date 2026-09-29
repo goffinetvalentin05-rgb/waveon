@@ -20,8 +20,11 @@ export type PipelineColumn = {
   status: ProspectStatus;
 };
 
+/** Stage initial d’un prospect (création manuelle et import). */
+export const INITIAL_PIPELINE_STATUS: ProspectStatus = "À contacter";
+
 export const PIPELINE_COLUMNS: PipelineColumn[] = [
-  { id: "to_contact", label: "À contacter", accent: "bg-[#8d8f8e]", status: "À contacter" },
+  { id: "to_contact", label: "À contacter", accent: "bg-[#8d8f8e]", status: INITIAL_PIPELINE_STATUS },
   { id: "follow_up_1", label: "Relance 1", accent: "bg-amber-400", status: "Relance 1" },
   { id: "follow_up_2", label: "Relance 2", accent: "bg-orange-400", status: "Relance 2" },
   { id: "relay", label: "Relais", accent: "bg-indigo-300", status: "Relais" },
@@ -31,6 +34,17 @@ export const PIPELINE_COLUMNS: PipelineColumn[] = [
   { id: "client", label: "Client", accent: "bg-emerald-400", status: "Client" },
   { id: "closed", label: "Perdu", accent: "bg-rose-400", status: "Fermé" },
 ];
+
+/** Colonne « À contacter » du pipeline courant — pas un stage d’un autre projet. */
+export function getInitialPipelineColumn(): PipelineColumn {
+  const column = PIPELINE_COLUMNS.find((c) => c.status === INITIAL_PIPELINE_STATUS);
+  if (!column) {
+    throw new Error(
+      'Aucun stage « À contacter » n’a été trouvé pour ce projet. L’import a été annulé.'
+    );
+  }
+  return column;
+}
 
 export function pipelineColumnId(prospect: Prospect): PipelineColumnId {
   const status = migrateProspectStatus(prospect.status);

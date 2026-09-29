@@ -339,6 +339,7 @@ export function ProspectsClient({
     if (result.skipped > 0) parts.push(`${result.skipped} ignoré${result.skipped > 1 ? "s" : ""}`);
     setImportMsg(parts.length ? `Import réussi : ${parts.join(", ")}.` : "Import terminé.");
     applyParams(params);
+    fetchCounts();
     setAllCount((n) => n + result.imported);
     router.refresh();
   };
@@ -551,6 +552,7 @@ export function ProspectsClient({
           open={showImport}
           onClose={() => setShowImport(false)}
           onImported={onImported}
+          projectId={projectId}
         />
       ) : null}
 

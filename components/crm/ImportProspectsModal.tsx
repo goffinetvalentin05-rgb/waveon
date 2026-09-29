@@ -36,9 +36,15 @@ type ImportProspectsModalProps = {
   open: boolean;
   onClose: () => void;
   onImported: (result: { imported: number; updated: number; skipped: number }) => void;
+  projectId?: string;
 };
 
-export function ImportProspectsModal({ open, onClose, onImported }: ImportProspectsModalProps) {
+export function ImportProspectsModal({
+  open,
+  onClose,
+  onImported,
+  projectId,
+}: ImportProspectsModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<Step>("select");
   const [fileName, setFileName] = useState("");
@@ -105,14 +111,15 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
       const res = await fetch("/api/prospects/import", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rows: mappedRows, duplicateStrategy }),
+        body: JSON.stringify({ rows: mappedRows, duplicateStrategy, project_id: projectId }),
       });
       const data = await res.json();
       if (res.ok) setPreviewCounts(data);
+      else if (data.error) setError(data.error);
     } catch {
       /* preview non bloquant */
     }
-  }, [mappedRows, duplicateStrategy, parsed?.totalRows]);
+  }, [mappedRows, duplicateStrategy, parsed?.totalRows, projectId]);
 
   useEffect(() => {
     if (step === "preview" && hasClubMapping) {
@@ -155,10 +162,10 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
       const res = await fetch("/api/prospects/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rows: mappedRows, duplicateStrategy }),
+        body: JSON.stringify({ rows: mappedRows, duplicateStrategy, project_id: projectId }),
       });
       const data = await res.json();
-      if (!res.ok) {
+      if (!res.ok || data.success === false) {
         setError(data.error ?? "Erreur lors de l'import.");
         if (data.errors?.length) {
           setError(`${data.error}\n${data.errors.slice(0, 3).join("\n")}`);

@@ -12,6 +12,8 @@ export type ExistingProspectKeys = {
   email: string | null;
   phone?: string | null;
   phone_number?: string | null;
+  status?: string | null;
+  project_id?: string | null;
 };
 
 export type DuplicateMatch = {
@@ -130,6 +132,26 @@ export function buildImportPlan(
   });
 
   return { plan, invalidRows };
+}
+
+/** Doublons déjà en base mais sans projet/stage : les rattacher au lieu de les ignorer ou recréer. */
+export function promoteUnplacedDuplicates(
+  plan: ImportPlanRow[],
+  existing: ExistingProspectKeys[]
+): ImportPlanRow[] {
+  const byId = new Map(existing.map((row) => [row.id, row]));
+  return plan.map((item) => {
+    if (item.action !== "skip" || !item.existingId) return item;
+    const row = byId.get(item.existingId);
+    if (!row) return item;
+    const status = (row.status ?? "").trim();
+    if (status && row.project_id) return item;
+    return {
+      ...item,
+      action: "update" as const,
+      duplicateReason: "Rattaché au projet (stage manquant)",
+    };
+  });
 }
 
 export function countImportActions(plan: ImportPlanRow[]) {

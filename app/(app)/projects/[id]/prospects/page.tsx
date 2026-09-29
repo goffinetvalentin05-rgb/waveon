@@ -4,6 +4,7 @@ import { enrichProspects } from "@/lib/crm/enrich-prospects";
 import { parseProspectListParams } from "@/lib/crm/prospect-list-params";
 import { fetchProspectList } from "@/lib/crm/prospect-query";
 import { requireProjectModule } from "@/lib/projects/guard";
+import { repairImportedProspectsForProjectPage } from "@/lib/crm/prospect-placement";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -27,6 +28,8 @@ export default async function ProjectProspectsPage({ params, searchParams }: Pro
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
+
+  await repairImportedProspectsForProjectPage(supabase, user.id, id);
 
   const sp = toUrlSearchParams(await searchParams);
   if (!sp.get("project")) sp.set("project", id);

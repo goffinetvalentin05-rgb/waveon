@@ -5,9 +5,12 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import * as XLSX from "xlsx";
-import { autoMapColumns, mapRowToProspect } from "./import-fields";
+import { autoMapColumns, mapRowToProspect, type ImportProspectRow } from "./import-fields";
 import { parseCsvFile, parseExcelBuffer } from "./import-parse";
 import { buildProspectImportPayload, buildProspectInsertPayload } from "./prospect-payload";
+import { getInitialPipelineColumn } from "./pipeline";
+import { promoteUnplacedDuplicates } from "./import-duplicates";
+import { prospectNeedsPipelinePlacement } from "./prospect-placement";
 
 let passed = 0;
 let failed = 0;
@@ -243,6 +246,51 @@ test("import Excel : toutes les valeurs mappées sont persistées sur le prospec
   assert.deepEqual(payload.tags, ["hot", "vip"]);
   assert.equal(payload.notes, "Relance après le salon");
   assert.equal("note" in payload, false);
+});
+
+test("pipeline : la colonne À contacter est le stage initial du projet", () => {
+  const column = getInitialPipelineColumn();
+  assert.equal(column.id, "to_contact");
+  assert.equal(column.status, "À contacter");
+  assert.equal(column.label, "À contacter");
+});
+
+test("import : le payload porte le projet courant et le stage À contacter", () => {
+  const payload = buildProspectImportPayload("user-1", {
+    club_name: "ACME",
+    project_id: "ikonera-project-id",
+  });
+  assert.equal(payload.project_id, "ikonera-project-id");
+  assert.equal(payload.status, "À contacter");
+  assert.equal(payload.next_action, "Premier contact");
+  assert.equal(payload.last_action, "Importé");
+
+  const created = buildProspectInsertPayload("user-1", {
+    club_name: "ACME",
+    project_id: "ikonera-project-id",
+  });
+  assert.equal(created.project_id, "ikonera-project-id");
+  assert.equal(created.status, "À contacter");
+});
+
+test("import : un doublon sans projet/stage est rattaché, pas recréé", () => {
+  assert.equal(prospectNeedsPipelinePlacement({ status: "À contacter", project_id: null }), true);
+  assert.equal(prospectNeedsPipelinePlacement({ status: "", project_id: "p1" }), true);
+  assert.equal(prospectNeedsPipelinePlacement({ status: "À contacter", project_id: "p1" }), false);
+
+  const plan = promoteUnplacedDuplicates(
+    [
+      {
+        row: { club_name: "ACME" } as ImportProspectRow,
+        rowIndex: 0,
+        action: "skip",
+        existingId: "existing-1",
+        duplicateReason: "Doublon (club_name)",
+      },
+    ],
+    [{ id: "existing-1", club_name: "ACME", email: null, status: "À contacter", project_id: null }]
+  );
+  assert.equal(plan[0].action, "update");
 });
 
 console.log(`\n${passed} ok, ${failed} ko`);
