@@ -1,4 +1,6 @@
+import { PROSPECT_PRIORITIES, type ProspectPriority } from "@/lib/crm/prospect-fields";
 import { migrateProspectStatus } from "@/lib/crm/status";
+import { CONTACT_CHANNELS } from "@/lib/crm/types";
 
 /** Convertit une valeur absente ou vide en NULL (jamais de chaîne vide en base). */
 export function nullIfEmpty(value: unknown): string | null {
@@ -23,6 +25,89 @@ export function normalizeNoteText(value: unknown): string | null {
  */
 export function resolveProspectNote(input: { note?: unknown; notes?: unknown }): string | null {
   return normalizeNoteText(input.note) ?? normalizeNoteText(input.notes);
+}
+
+function stripAccentsLower(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+/** Parse un montant (12'000, CHF 2500, 12 000,50) vers un nombre. */
+export function parsePotentialValue(value: unknown): number | null {
+  if (value == null || value === "") return null;
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+  const raw = String(value).trim();
+  if (!raw) return null;
+
+  let s = raw
+    .replace(/\u00a0/g, " ")
+    .replace(/(chf|eur|usd|frs|francs|€|\$)/gi, "")
+    .replace(/['’]/g, "")
+    .replace(/\s/g, "");
+
+  if (s.includes(",") && s.includes(".")) {
+    s = s.replace(/,/g, "");
+  } else if (s.includes(",")) {
+    const parts = s.split(",");
+    if (parts.length === 2 && parts[1].length <= 2) {
+      s = `${parts[0]}.${parts[1]}`;
+    } else {
+      s = s.replace(/,/g, "");
+    }
+  }
+
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+export function parseProspectTags(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map((t) => String(t).trim()).filter(Boolean);
+  }
+  if (typeof value === "string") {
+    return value
+      .split(/[,;|]/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+export function normalizeProspectPriority(value: unknown): ProspectPriority {
+  const raw = nullIfEmpty(value);
+  if (!raw) return "Normale";
+  if ((PROSPECT_PRIORITIES as readonly string[]).includes(raw)) {
+    return raw as ProspectPriority;
+  }
+  const key = stripAccentsLower(raw);
+  const aliases: Record<string, ProspectPriority> = {
+    faible: "Faible",
+    low: "Faible",
+    bas: "Faible",
+    normale: "Normale",
+    normal: "Normale",
+    medium: "Normale",
+    moyenne: "Normale",
+    haute: "Haute",
+    high: "Haute",
+    elevee: "Haute",
+    urgente: "Urgente",
+    urgent: "Urgente",
+  };
+  return aliases[key] ?? "Normale";
+}
+
+export function normalizeContactChannel(value: unknown): string | null {
+  const raw = nullIfEmpty(value);
+  if (!raw) return null;
+  const key = stripAccentsLower(raw);
+  const match = CONTACT_CHANNELS.find((channel) => stripAccentsLower(channel) === key);
+  return match ?? raw;
 }
 
 export type ProspectInput = {
@@ -62,23 +147,6 @@ export function buildProspectFields(input: ProspectInput) {
 
   const phone = nullIfEmpty(input.phone);
 
-  let potential_value: number | null = null;
-  if (input.potential_value != null && input.potential_value !== "") {
-    const n = Number(input.potential_value);
-    if (!Number.isNaN(n)) potential_value = n;
-  }
-
-  // tags est text[] NOT NULL DEFAULT '{}' — jamais null.
-  let tags: string[] = [];
-  if (Array.isArray(input.tags)) {
-    tags = input.tags.map((t) => String(t).trim()).filter(Boolean);
-  } else if (typeof input.tags === "string") {
-    tags = input.tags
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
-  }
-
   return {
     club_name,
     name: club_name,
@@ -93,9 +161,9 @@ export function buildProspectFields(input: ProspectInput) {
     notes: resolveProspectNote(input),
     project_id: nullIfEmpty(input.project_id),
     assigned_to: nullIfEmpty(input.assigned_to),
-    potential_value,
-    contact_channel: nullIfEmpty(input.contact_channel),
-    tags,
+    potential_value: parsePotentialValue(input.potential_value),
+    contact_channel: normalizeContactChannel(input.contact_channel),
+    tags: parseProspectTags(input.tags),
     next_follow_up: nullIfEmpty(input.next_follow_up),
     next_action: nullIfEmpty(input.next_action),
     ville: nullIfEmpty(input.ville),
@@ -104,7 +172,7 @@ export function buildProspectFields(input: ProspectInput) {
     country: nullIfEmpty(input.country),
     linkedin_url: nullIfEmpty(input.linkedin_url),
     source: nullIfEmpty(input.source),
-    priority: nullIfEmpty(input.priority) ?? "Normale",
+    priority: normalizeProspectPriority(input.priority),
   };
 }
 

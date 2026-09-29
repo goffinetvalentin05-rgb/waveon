@@ -29,6 +29,13 @@ type ExternalProspectInput = {
   address?: unknown;
   country?: unknown;
   tags?: unknown;
+  linkedin_url?: unknown;
+  source?: unknown;
+  contact_channel?: unknown;
+  priority?: unknown;
+  potential_value?: unknown;
+  sport?: unknown;
+  canton?: unknown;
 };
 
 type ItemError = {
@@ -321,6 +328,13 @@ export async function POST(request: Request) {
         address: item.address,
         country: item.country,
         tags: item.tags,
+        linkedin_url: item.linkedin_url,
+        source: item.source,
+        contact_channel: item.contact_channel,
+        priority: item.priority,
+        potential_value: item.potential_value,
+        sport: item.sport,
+        canton: item.canton,
         // Forcé — ignore toute valeur client éventuelle
         project_id: OBILLZ_PROJECT_ID,
       });
