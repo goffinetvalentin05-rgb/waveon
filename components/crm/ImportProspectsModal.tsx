@@ -227,6 +227,8 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
             <div className="space-y-4">
               <p className="text-sm text-wo-muted">
                 Formats acceptés : CSV, Excel (.xlsx, .xls). Encodage UTF-8 recommandé pour les CSV.
+                Une colonne « note » est enregistrée comme note du prospect. Dans un CSV, entourez-la
+                de guillemets si elle contient des sauts de ligne.
               </p>
 
               <label
@@ -368,7 +370,10 @@ export function ImportProspectsModal({ open, onClose, onImported }: ImportProspe
                       {previewRows.map((row, ri) => (
                         <tr key={ri} className="border-b border-wo-border last:border-0">
                           {row.map((cell, ci) => (
-                            <td key={ci} className="whitespace-nowrap px-3 py-2 text-wo-secondary">
+                            <td
+                              key={ci}
+                              className="max-w-[240px] whitespace-pre-wrap px-3 py-2 align-top text-wo-secondary"
+                            >
                               {cell || "—"}
                             </td>
                           ))}

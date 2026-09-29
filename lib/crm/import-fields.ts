@@ -7,7 +7,7 @@ export const IMPORT_FIELDS = [
   { key: "phone", label: "Téléphone", required: false },
   { key: "email", label: "Email", required: false },
   { key: "website", label: "Site web", required: false },
-  { key: "notes", label: "Notes", required: false },
+  { key: "notes", label: "Note", required: false },
 ] as const;
 
 export type ImportFieldKey = (typeof IMPORT_FIELDS)[number]["key"];
@@ -21,6 +21,8 @@ export type ImportProspectRow = {
   email: string | null;
   website: string | null;
   notes: string | null;
+  /** Alias JSON (`note`). Fusionné dans `notes` à l'enregistrement. */
+  note?: string | null;
 };
 
 export type DuplicateStrategy = "ignore" | "import_anyway" | "update";
@@ -125,7 +127,7 @@ export function autoMapColumns(columns: string[]): ColumnMapping {
 
 export function cellValue(raw: unknown): string {
   if (raw == null) return "";
-  return String(raw).trim();
+  return String(raw).replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
 }
 
 /** Applique le mapping colonnes → champs CRM sur une ligne brute. */

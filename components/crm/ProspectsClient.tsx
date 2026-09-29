@@ -631,6 +631,18 @@ function CreateProspectModal({
       }
     >
       <ProspectBusinessFields mode="create" />
+      <div className="mt-4 border-t border-white/[0.06] pt-4">
+        <label className={ui.label} htmlFor="create-prospect-note">
+          Note
+        </label>
+        <textarea
+          id="create-prospect-note"
+          name="notes"
+          rows={16}
+          className={`${ui.input} min-h-[360px] resize-y leading-relaxed`}
+          placeholder="Facultatif. Vous pouvez coller ici le mail de prospection préparé pour ce prospect."
+        />
+      </div>
       {error ? <p className="mt-3 text-sm text-rose-300">{error}</p> : null}
     </ScrollableModal>
   );

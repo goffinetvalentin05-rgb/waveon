@@ -7,6 +7,24 @@ export function nullIfEmpty(value: unknown): string | null {
   return s === "" ? null : s;
 }
 
+/**
+ * Note prospect : conserve paragraphes, sauts de ligne et caractères spéciaux.
+ * Seuls les espaces en bordure sont retirés.
+ */
+export function normalizeNoteText(value: unknown): string | null {
+  if (value == null) return null;
+  const s = String(value).replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
+  return s === "" ? null : s;
+}
+
+/**
+ * `note` (création / import) et `notes` (champ déjà stocké) écrivent la même colonne.
+ * Une valeur `note` non vide est prioritaire.
+ */
+export function resolveProspectNote(input: { note?: unknown; notes?: unknown }): string | null {
+  return normalizeNoteText(input.note) ?? normalizeNoteText(input.notes);
+}
+
 export type ProspectInput = {
   club_name?: unknown;
   sport?: unknown;
@@ -16,6 +34,8 @@ export type ProspectInput = {
   phone?: unknown;
   email?: unknown;
   website?: unknown;
+  /** Alias d'import / création. Écrit dans `notes`, pas une colonne séparée. */
+  note?: unknown;
   notes?: unknown;
   project_id?: unknown;
   assigned_to?: unknown;
@@ -70,7 +90,7 @@ export function buildProspectFields(input: ProspectInput) {
     phone_number: phone,
     email: nullIfEmpty(input.email),
     website: nullIfEmpty(input.website),
-    notes: nullIfEmpty(input.notes),
+    notes: resolveProspectNote(input),
     project_id: nullIfEmpty(input.project_id),
     assigned_to: nullIfEmpty(input.assigned_to),
     potential_value,

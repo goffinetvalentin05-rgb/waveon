@@ -21,61 +21,116 @@ function stripBom(text: string): string {
   return text.replace(/^\uFEFF/, "");
 }
 
-function splitCsvLine(line: string, separator: string): string[] {
-  const cells: string[] = [];
-  let current = "";
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (ch === separator && !inQuotes) {
-      cells.push(current.trim());
-      current = "";
-    } else {
-      current += ch;
-    }
-  }
-  cells.push(current.trim());
-  return cells.map((c) => c.replace(/^"|"$/g, "").trim());
-}
-
 function detectSeparator(headerLine: string): "," | ";" {
   const commas = (headerLine.match(/,/g) ?? []).length;
   const semis = (headerLine.match(/;/g) ?? []).length;
   return semis > commas ? ";" : ",";
 }
 
+/** Première ligne d'en-tête, sans couper un champ entre guillemets. */
+function headerRecord(text: string): string {
+  let inQuotes = false;
+  let header = "";
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"') {
+      if (inQuotes && text[i + 1] === '"') {
+        header += ch;
+        i++;
+        header += text[i];
+        continue;
+      }
+      inQuotes = !inQuotes;
+    }
+    if (!inQuotes && (ch === "\n" || ch === "\r")) break;
+    header += ch;
+  }
+  return header;
+}
+
+/**
+ * Découpe RFC 4180 : les sauts de ligne à l'intérieur de guillemets
+ * restent dans la cellule (mails de prospection, paragraphes).
+ */
+function parseCsvRecords(text: string, separator: string): string[][] {
+  const records: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let inQuotes = false;
+
+  const pushField = () => {
+    row.push(cellValue(field));
+    field = "";
+  };
+
+  const pushRow = () => {
+    pushField();
+    if (!isRowEmpty(row)) records.push(row);
+    row = [];
+  };
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else if (ch === "\r") {
+        field += "\n";
+        if (text[i + 1] === "\n") i++;
+      } else {
+        field += ch;
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      inQuotes = true;
+      continue;
+    }
+    if (ch === separator) {
+      pushField();
+      continue;
+    }
+    if (ch === "\n" || ch === "\r") {
+      if (ch === "\r" && text[i + 1] === "\n") i++;
+      pushRow();
+      continue;
+    }
+    field += ch;
+  }
+
+  if (field.length > 0 || row.length > 0) pushRow();
+  return records;
+}
+
 function isRowEmpty(row: string[]): boolean {
   return row.every((c) => !cellValue(c));
 }
 
-/** Parse un fichier CSV (UTF-8, virgule ou point-virgule). */
+/** Parse un fichier CSV (UTF-8, virgule ou point-virgule, champs multilignes). */
 export function parseCsvFile(text: string): ParsedImportFile {
   const cleaned = stripBom(text);
-  const rawLines = cleaned.split(/\r?\n/);
-  const nonEmptyLines = rawLines.filter((l) => l.trim().length > 0);
-
-  if (nonEmptyLines.length === 0) {
+  if (!cleaned.trim()) {
     throw new Error("Le fichier est vide.");
   }
 
-  const separator = detectSeparator(nonEmptyLines[0]);
-  const headers = splitCsvLine(nonEmptyLines[0], separator);
+  const separator = detectSeparator(headerRecord(cleaned));
+  const records = parseCsvRecords(cleaned, separator);
+  const headers = records[0] ?? [];
 
-  if (headers.every((h) => !h)) {
+  if (headers.length === 0 || headers.every((h) => !h)) {
     throw new Error("Aucune colonne détectée dans le fichier.");
   }
 
   const rows: string[][] = [];
-  for (let i = 1; i < nonEmptyLines.length; i++) {
-    const cells = splitCsvLine(nonEmptyLines[i], separator);
-    // Aligner le nombre de colonnes
+  for (let i = 1; i < records.length; i++) {
+    const cells = records[i].slice();
     while (cells.length < headers.length) cells.push("");
     const row = cells.slice(0, headers.length);
     if (!isRowEmpty(row)) rows.push(row);

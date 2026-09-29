@@ -23,6 +23,8 @@ type ExternalProspectInput = {
   email?: unknown;
   website?: unknown;
   ville?: unknown;
+  /** Première note du prospect (alias de `notes`). */
+  note?: unknown;
   notes?: unknown;
   address?: unknown;
   country?: unknown;
@@ -313,6 +315,7 @@ export async function POST(request: Request) {
         phone,
         email,
         website: item.website,
+        note: item.note,
         notes: item.notes,
         ville: item.ville,
         address: item.address,
