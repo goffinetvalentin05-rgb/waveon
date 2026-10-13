@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import {
   IconChevronLeft,
   IconChevronRight,
+  IconDownload,
   IconFilter,
   IconPlus,
   IconSearch,
@@ -14,7 +15,6 @@ import {
 import { ImportProspectsModal } from "@/components/crm/ImportProspectsModal";
 import { ProspectsFilterPanel } from "@/components/crm/ProspectsFilterPanel";
 import { PipelineStats, ProspectsPipeline } from "@/components/crm/ProspectsPipeline";
-import { SmartViewBar } from "@/components/crm/SmartViewBar";
 import { ProspectWorkSections } from "@/components/crm/ProspectWorkList";
 import { ProspectsTable } from "@/components/crm/ProspectsTable";
 import { ClosedReasonModal } from "@/components/crm/ClosedReasonModal";
@@ -24,8 +24,7 @@ import { ProspectBusinessFields } from "@/components/crm/ProspectBusinessFields"
 import type { Prospect, ProspectStatus } from "@/lib/crm/types";
 import { PROSPECT_STATUSES } from "@/lib/crm/types";
 import type { ClosedReason } from "@/lib/crm/closed";
-import type { ProspectWorkCounts } from "@/lib/crm/counters";
-import type { SmartViewId } from "@/lib/crm/smart-views";
+import { downloadImportTemplate } from "@/lib/crm/import-template";
 import {
   EMPTY_FILTERS,
   buildProspectListPath,
@@ -93,7 +92,6 @@ export function ProspectsClient({
   const [view, setView] = useState<"pipeline" | "list">(
     forcedView ?? (clientsOnly ? "list" : "list")
   );
-  const [smartCounts, setSmartCounts] = useState<ProspectWorkCounts | null>(null);
   const [closePrompt, setClosePrompt] = useState<{ id: string } | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
 
@@ -139,23 +137,6 @@ export function ProspectsClient({
     []
   );
 
-  const fetchCounts = useCallback(() => {
-    const project = projectId ?? params.projectId;
-    const sp = new URLSearchParams();
-    if (project) sp.set("project", project);
-    if (params.assignedTo) sp.set("assigned", params.assignedTo);
-    const qs = sp.toString();
-    void fetch(`/api/prospects/smart-counts${qs ? `?${qs}` : ""}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.counts) setSmartCounts(data.counts);
-      });
-  }, [projectId, params.projectId, params.assignedTo]);
-
-  useEffect(() => {
-    fetchCounts();
-  }, [fetchCounts, allCount]);
-
   const changeStatus = useCallback(
     (id: string, status: ProspectStatus, extra?: { closed_reason?: string; closed_note?: string }) => {
       if (status === "Fermé" && !extra?.closed_reason) {
@@ -196,10 +177,9 @@ export function ProspectsClient({
           const next = list.map((p) => (p.id === id ? { ...p, ...data.prospect } : p));
           return clientsOnly ? next.filter((p) => p.status === "Client") : next;
         });
-        fetchCounts();
       });
     },
-    [clientsOnly, fetchCounts]
+    [clientsOnly]
   );
 
   const confirmClose = (reason: ClosedReason, note: string) => {
@@ -207,19 +187,6 @@ export function ProspectsClient({
     const id = closePrompt.id;
     setClosePrompt(null);
     changeStatus(id, "Fermé", { closed_reason: reason, closed_note: note });
-  };
-
-  const applySmartView = (smartView: SmartViewId) => {
-    const next = {
-      ...params,
-      smartView,
-      followUpPreset: null,
-      statuses: [] as string[],
-      page: 1,
-      pageSize: smartView === "today_work" || smartView === "overdue" ? 200 : params.pageSize,
-    };
-    if (smartView !== "all") setView("list");
-    applyParams(next);
   };
 
   const applyParams = useCallback(
@@ -343,7 +310,6 @@ export function ProspectsClient({
     if (result.skipped > 0) parts.push(`${result.skipped} ignoré${result.skipped > 1 ? "s" : ""}`);
     setImportMsg(parts.length ? `Import réussi : ${parts.join(", ")}.` : "Import terminé.");
     applyParams(params);
-    fetchCounts();
     setAllCount((n) => n + result.imported);
     router.refresh();
   };
@@ -364,20 +330,11 @@ export function ProspectsClient({
   const listReturnUrl = buildProspectListPath(params, listPath);
 
   return (
-    <div className="space-y-3 lg:space-y-5">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-4">
+    <div className="space-y-3 lg:space-y-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
         <div className="min-w-0">
           {projectId ? null : <h1 className={ui.h1}>{clientsOnly ? "Clients" : "Ma pipeline"}</h1>}
           <p className={`${projectId ? "" : "mt-1"} text-sm text-wo-muted`}>{resultLabel}</p>
-          {!clientsOnly ? (
-            <div className="mt-3 lg:mt-4">
-              <SmartViewBar
-                active={params.smartView}
-                counts={smartCounts}
-                onSelect={applySmartView}
-              />
-            </div>
-          ) : null}
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           {projectId && projectId !== "unassigned" && !clientsOnly ? (
@@ -428,6 +385,14 @@ export function ProspectsClient({
           ) : null}
           {!clientsOnly ? (
             <>
+              <button
+                type="button"
+                className={`${ui.btnSecondary} hidden lg:inline-flex`}
+                onClick={() => downloadImportTemplate()}
+              >
+                <IconDownload className="h-4 w-4" stroke={1.75} />
+                Télécharger le modèle
+              </button>
               <button
                 type="button"
                 className={`${ui.btnSecondary} hidden lg:inline-flex`}

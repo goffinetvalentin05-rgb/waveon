@@ -5,6 +5,7 @@ import {
   IconAlertCircle,
   IconArrowLeft,
   IconCheck,
+  IconDownload,
   IconFileSpreadsheet,
   IconLoader2,
   IconUpload,
@@ -19,6 +20,7 @@ import {
   type ImportProspectRow,
   type ParsedImportFile,
 } from "@/lib/crm/import-fields";
+import { downloadImportTemplate } from "@/lib/crm/import-template";
 import { parseImportFile } from "@/lib/crm/import-parse";
 import { ui } from "@/lib/design/tokens";
 
@@ -237,6 +239,15 @@ export function ImportProspectsModal({
                 Une colonne « note » est enregistrée comme note du prospect. Dans un CSV, entourez-la
                 de guillemets si elle contient des sauts de ligne.
               </p>
+
+              <button
+                type="button"
+                className={`${ui.btnSecondary} w-full sm:w-auto`}
+                onClick={() => downloadImportTemplate()}
+              >
+                <IconDownload className="h-4 w-4" stroke={1.75} />
+                Télécharger le modèle Excel
+              </button>
 
               <label
                 className={`flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-wo-border bg-white/[0.02] px-6 py-10 transition hover:border-emerald-400/40 hover:bg-emerald-400/[0.06] ${loading ? "pointer-events-none opacity-60" : ""}`}
