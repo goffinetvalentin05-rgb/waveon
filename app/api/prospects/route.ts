@@ -13,6 +13,7 @@ import {
   ProspectPlacementError,
   resolveProspectPlacement,
 } from "@/lib/crm/prospect-placement";
+import { isProjectAssignee } from "@/lib/projects/assignee";
 
 export async function GET(request: Request) {
   const auth = await requireUser();
@@ -47,9 +48,28 @@ export async function POST(request: Request) {
     await getOrCreateSettings(supabase, user.id);
 
     const placement = await resolveProspectPlacement(supabase, user.id, body.project_id);
+
+    let assignedUserId =
+      typeof body.assigned_user_id === "string" && body.assigned_user_id.trim()
+        ? body.assigned_user_id.trim()
+        : user.id;
+
+    if (placement.projectId) {
+      const ok = await isProjectAssignee(supabase, placement.projectId, assignedUserId);
+      if (!ok) {
+        return NextResponse.json(
+          { error: "Le responsable doit être un membre du projet." },
+          { status: 400 }
+        );
+      }
+    } else {
+      assignedUserId = user.id;
+    }
+
     const payload = buildProspectInsertPayload(user.id, {
       ...body,
       project_id: placement.projectId,
+      assigned_user_id: assignedUserId,
     });
     payload.status = placement.status;
 

@@ -106,8 +106,12 @@ export function applyProspectListQuery(
   } else if (params.projectId) {
     query = query.eq("project_id", params.projectId);
   }
-  if (params.assignedTo) {
-    query = query.eq("assigned_to", params.assignedTo);
+  if (params.assignedTo === "me") {
+    query = query.eq("assigned_user_id", userId);
+  } else if (params.assignedTo === "unassigned") {
+    query = query.is("assigned_user_id", null);
+  } else if (params.assignedTo) {
+    query = query.eq("assigned_user_id", params.assignedTo);
   }
   if (params.channel) {
     query = query.eq("contact_channel", params.channel);
@@ -262,7 +266,13 @@ export async function fetchProspectList(
       legacyQuery = legacyQuery.lte("last_action_at", `${params.lastActionTo}T23:59:59`);
     }
     if (params.projectId) legacyQuery = legacyQuery.eq("project_id", params.projectId);
-    if (params.assignedTo) legacyQuery = legacyQuery.eq("assigned_to", params.assignedTo);
+    if (params.assignedTo === "me") {
+      legacyQuery = legacyQuery.eq("assigned_user_id", userId);
+    } else if (params.assignedTo === "unassigned") {
+      legacyQuery = legacyQuery.is("assigned_user_id", null);
+    } else if (params.assignedTo) {
+      legacyQuery = legacyQuery.eq("assigned_user_id", params.assignedTo);
+    }
     if (params.channel) legacyQuery = legacyQuery.eq("contact_channel", params.channel);
 
     legacyQuery = applyLegacyTextSearch(legacyQuery, params.q.trim());

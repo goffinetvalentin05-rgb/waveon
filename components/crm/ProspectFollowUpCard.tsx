@@ -139,7 +139,11 @@ export function ProspectFollowUpCard({
         </Stat>
         <Stat label="Dernière interaction" value={formatLastInteractionLine(lastActivity)} />
         <Stat label="Priorité" value={prospect.priority ?? "Normale"} className="hidden lg:block" />
-        {prospect.assignee?.name ? <Stat label="Responsable" value={prospect.assignee.name} className="hidden lg:block" /> : null}
+        <Stat
+          label="Responsable"
+          value={prospect.assignee?.name ?? "Non attribué"}
+          className="hidden lg:block"
+        />
         {prospect.contact_channel ? <Stat label="Canal" value={prospect.contact_channel} className="hidden lg:block" /> : null}
         <Stat
           label="Contacts"

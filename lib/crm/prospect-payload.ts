@@ -125,6 +125,7 @@ export type ProspectInput = {
   notes?: unknown;
   project_id?: unknown;
   assigned_to?: unknown;
+  assigned_user_id?: unknown;
   potential_value?: unknown;
   contact_channel?: unknown;
   tags?: unknown;
@@ -162,6 +163,7 @@ export function buildProspectFields(input: ProspectInput) {
     notes: resolveProspectNote(input),
     project_id: nullIfEmpty(input.project_id),
     assigned_to: nullIfEmpty(input.assigned_to),
+    assigned_user_id: nullIfEmpty(input.assigned_user_id),
     potential_value: parsePotentialValue(input.potential_value),
     contact_channel: normalizeContactChannel(input.contact_channel),
     tags: parseProspectTags(input.tags),
@@ -178,9 +180,11 @@ export function buildProspectFields(input: ProspectInput) {
 }
 
 export function buildProspectInsertPayload(userId: string, input: ProspectInput) {
+  const fields = buildProspectFields(input);
   return {
-    ...buildProspectFields(input),
+    ...fields,
     user_id: userId,
+    assigned_user_id: fields.assigned_user_id ?? userId,
     status: INITIAL_PIPELINE_STATUS,
     next_action: "Premier contact",
     last_action: "Créé",
@@ -189,9 +193,11 @@ export function buildProspectInsertPayload(userId: string, input: ProspectInput)
 }
 
 export function buildProspectImportPayload(userId: string, input: ProspectInput) {
+  const fields = buildProspectFields(input);
   return {
-    ...buildProspectFields(input),
+    ...fields,
     user_id: userId,
+    assigned_user_id: fields.assigned_user_id ?? userId,
     status: INITIAL_PIPELINE_STATUS,
     next_action: "Premier contact",
     last_action: "Importé",
@@ -222,6 +228,10 @@ export function normalizeProspectFromDb(row: Record<string, unknown>) {
     archived_at,
     tags,
     potential_value,
+    assigned_user_id:
+      row.assigned_user_id == null || row.assigned_user_id === ""
+        ? null
+        : String(row.assigned_user_id),
     status: migrateProspectStatus(String(row.status ?? INITIAL_PIPELINE_STATUS)),
     next_action: row.next_action == null || row.next_action === "" ? null : String(row.next_action),
     closed_reason:

@@ -18,6 +18,7 @@ import { SmartViewBar } from "@/components/crm/SmartViewBar";
 import { ProspectWorkSections } from "@/components/crm/ProspectWorkList";
 import { ProspectsTable } from "@/components/crm/ProspectsTable";
 import { ClosedReasonModal } from "@/components/crm/ClosedReasonModal";
+import { MemberAssigneeFilter } from "@/components/crm/MemberAssigneeFilter";
 import { ScrollableModal } from "@/components/ui/ScrollableModal";
 import { ProspectBusinessFields } from "@/components/crm/ProspectBusinessFields";
 import type { Prospect, ProspectStatus } from "@/lib/crm/types";
@@ -140,13 +141,16 @@ export function ProspectsClient({
 
   const fetchCounts = useCallback(() => {
     const project = projectId ?? params.projectId;
-    const sp = project ? `?project=${encodeURIComponent(project)}` : "";
-    void fetch(`/api/prospects/smart-counts${sp}`)
+    const sp = new URLSearchParams();
+    if (project) sp.set("project", project);
+    if (params.assignedTo) sp.set("assigned", params.assignedTo);
+    const qs = sp.toString();
+    void fetch(`/api/prospects/smart-counts${qs ? `?${qs}` : ""}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.counts) setSmartCounts(data.counts);
       });
-  }, [projectId, params.projectId]);
+  }, [projectId, params.projectId, params.assignedTo]);
 
   useEffect(() => {
     fetchCounts();
@@ -375,7 +379,14 @@ export function ProspectsClient({
             </div>
           ) : null}
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          {projectId && projectId !== "unassigned" && !clientsOnly ? (
+            <MemberAssigneeFilter
+              projectId={projectId}
+              value={params.assignedTo}
+              onChange={(assignedTo) => applyParams({ ...params, assignedTo, page: 1 })}
+            />
+          ) : null}
           {!clientsOnly ? (
             <div className="wo-segment inline-flex">
               {tableHref ? (

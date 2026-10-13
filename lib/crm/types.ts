@@ -162,6 +162,8 @@ export type Prospect = {
   updated_at: string;
   project_id: string | null;
   assigned_to: string | null;
+  /** Responsable = membre du projet (auth.users), distinct du créateur (user_id). */
+  assigned_user_id: string | null;
   potential_value: number | null;
   contact_channel: string | null;
   tags: string[];

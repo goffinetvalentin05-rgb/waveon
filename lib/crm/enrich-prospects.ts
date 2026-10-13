@@ -3,6 +3,7 @@ import { CONTACT_ACTIVITY_TYPES } from "@/lib/crm/next-action";
 import { migrateProspectStatus } from "@/lib/crm/status";
 import { normalizeProspectFromDb } from "@/lib/crm/prospect-payload";
 import type { Prospect } from "@/lib/crm/types";
+import { listProjectMembers, memberLabel } from "@/lib/projects/assignee";
 
 export async function enrichProspects(
   supabase: SupabaseClient,
@@ -15,17 +16,27 @@ export async function enrichProspects(
       ...normalized,
       status: migrateProspectStatus(String(normalized.status)),
       contact_count: 0,
+      assigned_user_id:
+        (normalized as Prospect).assigned_user_id ??
+        (typeof row.assigned_user_id === "string" ? row.assigned_user_id : null),
     };
   });
 
   if (!prospects.length) return prospects;
 
   const ids = prospects.map((p) => p.id);
-  const assigneeIds = [...new Set(prospects.map((p) => p.assigned_to).filter(Boolean))] as string[];
+  const projectIds = [...new Set(prospects.map((p) => p.project_id).filter(Boolean))] as string[];
 
-  const peopleResult = assigneeIds.length
-    ? await supabase.from("people").select("id, name").in("id", assigneeIds)
-    : { data: [] as { id: string; name: string }[], error: null };
+  const memberMaps = new Map<string, Map<string, string>>();
+  await Promise.all(
+    projectIds.map(async (projectId) => {
+      const members = await listProjectMembers(supabase, projectId);
+      memberMaps.set(
+        projectId,
+        new Map(members.map((m) => [m.user_id, memberLabel(m)]))
+      );
+    })
+  );
 
   const { data: activities } = await supabase
     .from("prospect_activities")
@@ -38,23 +49,27 @@ export async function enrichProspects(
     .select("prospect_id")
     .in("prospect_id", ids);
 
-  const people = peopleResult.data ?? [];
-
   const counts = new Map<string, number>();
   for (const a of activities ?? []) {
     counts.set(a.prospect_id, (counts.get(a.prospect_id) ?? 0) + 1);
   }
-  const peopleMap = new Map((people ?? []).map((p) => [p.id, p.name]));
 
   const peopleCounts = new Map<string, number>();
   for (const c of contactsError ? [] : contactRows ?? []) {
     peopleCounts.set(c.prospect_id, (peopleCounts.get(c.prospect_id) ?? 0) + 1);
   }
 
-  return prospects.map((p) => ({
-    ...p,
-    contact_count: counts.get(p.id) ?? 0,
-    people_count: peopleCounts.get(p.id) ?? 0,
-    assignee: p.assigned_to ? { id: p.assigned_to, name: peopleMap.get(p.assigned_to) ?? "—" } : null,
-  }));
+  return prospects.map((p) => {
+    const assigneeId = p.assigned_user_id;
+    const name =
+      assigneeId && p.project_id
+        ? memberMaps.get(p.project_id)?.get(assigneeId) ?? "Membre"
+        : null;
+    return {
+      ...p,
+      contact_count: counts.get(p.id) ?? 0,
+      people_count: peopleCounts.get(p.id) ?? 0,
+      assignee: assigneeId ? { id: assigneeId, name: name ?? "Membre" } : null,
+    };
+  });
 }

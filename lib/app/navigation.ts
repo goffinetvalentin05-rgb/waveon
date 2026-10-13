@@ -17,6 +17,7 @@ import {
   IconUserCheck,
   IconColumns3,
   IconFolders,
+  IconMessages,
 } from "@tabler/icons-react";
 
 export type NavLink = {
@@ -48,6 +49,7 @@ export type ProjectNavItem = {
 export const PROJECT_NAV: ProjectNavItem[] = [
   { key: "overview", label: "Dashboard", suffix: "", icon: IconLayoutDashboard, module: "overview", exact: true, always: true, group: "primary" },
   { key: "prospects", label: "Prospects", suffix: "/prospects", icon: IconUsers, module: "prospects", group: "primary" },
+  { key: "discussions", label: "Discussions", suffix: "/discussions", icon: IconMessages, module: "prospects", group: "primary" },
   { key: "pipeline", label: "Pipeline", suffix: "/pipeline", icon: IconColumns3, module: "prospects", group: "primary" },
   { key: "calendar", label: "Calendrier", suffix: "/calendar", icon: IconCalendarEvent, module: "calendar", group: "primary" },
   { key: "tasks", label: "To-do list", suffix: "/tasks", icon: IconChecklist, module: "tasks", group: "primary" },
@@ -83,6 +85,7 @@ export type PageMeta = {
 const PAGE_SUBTITLES: Record<string, string> = {
   Dashboard: "Vue d’ensemble de votre prospection",
   Prospects: "Tous les prospects du projet",
+  Discussions: "Échanges entre membres du projet",
   Pipeline: "Avancement par étape",
   Calendrier: "Rendez-vous et échéances du projet",
   "To-do list": "Vos tâches sur ce projet",

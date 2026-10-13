@@ -88,6 +88,7 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [createProject, setCreateProject] = useState(false);
   const [notifCount, setNotifCount] = useState(0);
+  const [discussionUnread, setDiscussionUnread] = useState(0);
   const [collapsed, setCollapsed] = useStoredFlag(SIDEBAR_COLLAPSED_KEY);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const storedWorkspaceId = useStoredId(ACTIVE_PROJECT_STORAGE_KEY);
@@ -119,6 +120,21 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
       .then((d) => setNotifCount(d.count ?? 0))
       .catch(() => null);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!workspaceId) {
+      setDiscussionUnread(0);
+      return;
+    }
+    if (pathname?.includes(`/projects/${workspaceId}/discussions`)) {
+      setDiscussionUnread(0);
+      return;
+    }
+    void fetch(`/api/projects/${workspaceId}/discussions/unread`)
+      .then((r) => r.json())
+      .then((d) => setDiscussionUnread(typeof d.unread === "number" ? d.unread : 0))
+      .catch(() => setDiscussionUnread(0));
+  }, [pathname, workspaceId]);
 
   useEffect(() => {
     if (!switcherOpen) return;
@@ -170,6 +186,7 @@ export function AppShell({ profile, projects, children }: AppShellProps) {
     currentProject: currentProject ?? null,
     visiblePrimary,
     ravenHref,
+    discussionUnread,
     onCollapse: () => setCollapsed(!collapsed),
     onCreateProject: () => setCreateProject(true),
     onNavigate: () => {
@@ -348,6 +365,7 @@ function SidebarBody({
   currentProject,
   visiblePrimary,
   ravenHref,
+  discussionUnread = 0,
   onCollapse,
   onCreateProject,
   onNavigate,
@@ -364,6 +382,7 @@ function SidebarBody({
   currentProject: Project | null;
   visiblePrimary: ProjectNavItem[];
   ravenHref: string;
+  discussionUnread?: number;
   onCollapse?: () => void;
   onCreateProject: () => void;
   onNavigate: () => void;
@@ -520,6 +539,7 @@ function SidebarBody({
                     active={isProjectNavActive(pathname, href, item.exact)}
                     compact={compact}
                     onClick={onNavigate}
+                    badge={item.key === "discussions" && discussionUnread > 0}
                   />
                 );
               })}
@@ -578,6 +598,7 @@ function SideLink({
   active,
   onClick,
   compact,
+  badge,
 }: {
   href: string;
   label: string;
@@ -585,6 +606,7 @@ function SideLink({
   active: boolean;
   onClick?: () => void;
   compact?: boolean;
+  badge?: boolean;
 }) {
   return (
     <Link
@@ -593,8 +615,18 @@ function SideLink({
       title={label}
       className={`wo-nav-link ${active ? "wo-nav-link-active" : ""} ${compact ? "justify-center px-0" : ""}`}
     >
-      <Icon className="wo-nav-icon h-[17px] w-[17px] shrink-0" stroke={1.7} />
-      {compact ? null : <span className="flex-1 truncate">{label}</span>}
+      <span className="relative shrink-0">
+        <Icon className="wo-nav-icon h-[17px] w-[17px]" stroke={1.7} />
+        {badge && compact ? (
+          <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-wo-accent" />
+        ) : null}
+      </span>
+      {compact ? null : (
+        <>
+          <span className="flex-1 truncate">{label}</span>
+          {badge ? <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-wo-accent" /> : null}
+        </>
+      )}
     </Link>
   );
 }

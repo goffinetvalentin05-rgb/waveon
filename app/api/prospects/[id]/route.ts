@@ -6,6 +6,7 @@ import { syncProspectFollowUpTask } from "@/lib/crm/sync-follow-up-task";
 import { migrateProspectStatus } from "@/lib/crm/status";
 import { isClosedProspectStatus } from "@/lib/crm/closed";
 import type { Prospect } from "@/lib/crm/types";
+import { isProjectAssignee, resolveAssigneeName } from "@/lib/projects/assignee";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -32,15 +33,11 @@ export async function GET(_request: Request, { params }: Params) {
     .order("created_at", { ascending: false });
 
   const normalized = normalizeProspectFromDb(prospect as Record<string, unknown>) as Prospect;
-  let assignee: { id: string; name: string } | null = null;
-  if (normalized.assigned_to) {
-    const { data: person } = await supabase
-      .from("people")
-      .select("id, name")
-      .eq("id", normalized.assigned_to)
-      .maybeSingle();
-    if (person) assignee = person;
-  }
+  const assignee = await resolveAssigneeName(
+    supabase,
+    normalized.project_id,
+    normalized.assigned_user_id
+  );
 
   const { data: contacts } = await supabase
     .from("prospect_contacts")
@@ -76,6 +73,7 @@ export async function PATCH(request: Request, { params }: Params) {
     "notes",
     "project_id",
     "assigned_to",
+    "assigned_user_id",
     "potential_value",
     "contact_channel",
     "tags",
@@ -124,6 +122,29 @@ export async function PATCH(request: Request, { params }: Params) {
 
   if (patch.club_name && typeof patch.club_name === "string") {
     patch.name = patch.club_name;
+  }
+
+  if ("assigned_user_id" in patch && patch.assigned_user_id) {
+    const { data: current } = await supabase
+      .from("prospects")
+      .select("project_id")
+      .eq("id", id)
+      .maybeSingle();
+    const projectId =
+      (typeof patch.project_id === "string" && patch.project_id) || current?.project_id || null;
+    if (!projectId) {
+      return NextResponse.json(
+        { error: "Impossible d’attribuer un responsable hors projet." },
+        { status: 400 }
+      );
+    }
+    const ok = await isProjectAssignee(supabase, projectId, String(patch.assigned_user_id));
+    if (!ok) {
+      return NextResponse.json(
+        { error: "Le responsable doit être un membre du projet." },
+        { status: 400 }
+      );
+    }
   }
 
   const { data, error } = await supabase

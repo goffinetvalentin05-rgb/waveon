@@ -38,6 +38,7 @@ import { ProspectMeetingsPanel } from "@/components/crm/ProspectMeetingsPanel";
 import { ScheduleDemoModal } from "@/components/crm/ScheduleDemoModal";
 import { ProspectFollowUpCard } from "@/components/crm/ProspectFollowUpCard";
 import { ProspectTimeline } from "@/components/crm/ProspectTimeline";
+import { AssigneeMemberSelect } from "@/components/crm/AssigneeMemberSelect";
 import { QUICK_ACTION_LABELS } from "@/lib/crm/actions";
 import {
   businessFormToApiPayload,
@@ -515,6 +516,7 @@ export function ProspectDetailClient2({
     ...prospectToBusinessForm(initial),
     notes: initial.notes ?? "",
     status: initial.status as ProspectStatus,
+    assigned_user_id: initial.assigned_user_id ?? "",
   }));
 
   const enterEditMode = () => {
@@ -522,9 +524,27 @@ export function ProspectDetailClient2({
       ...prospectToBusinessForm(prospect),
       notes: prospect.notes ?? "",
       status: prospect.status as ProspectStatus,
+      assigned_user_id: prospect.assigned_user_id ?? "",
     });
     setEditMode(true);
     setMsg(null);
+  };
+
+  const changeAssignee = (userId: string | null) => {
+    startTransition(async () => {
+      const res = await fetch(`/api/prospects/${prospect.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assigned_user_id: userId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMsg(data.error ?? "Impossible de changer le responsable.");
+        return;
+      }
+      setMsg("Responsable mis à jour.");
+      await refreshAll();
+    });
   };
 
   const [confirm, setConfirm] = useState<{
@@ -750,11 +770,12 @@ export function ProspectDetailClient2({
     const nextStatus = draft.status as ProspectStatus;
 
     const doSave = async () => {
-      const { notes, status, ...business } = draft;
+      const { notes, status, assigned_user_id, ...business } = draft;
       void status;
       const patchBody = {
         ...businessFormToApiPayload(business as ProspectBusinessFormValues),
         notes,
+        assigned_user_id: assigned_user_id || null,
       };
 
       const patchRes = await fetch(`/api/prospects/${prospect.id}`, {
@@ -1248,7 +1269,7 @@ export function ProspectDetailClient2({
 
       <div className="grid items-start gap-3 lg:gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,0.9fr)]">
         <div className="contents xl:flex xl:flex-col xl:gap-5">
-          <div className="order-1">
+          <div className="order-1 space-y-3">
           <ProspectFollowUpCard
             prospect={prospect}
             lastActivity={lastCommercialActivity(activities)}
@@ -1260,6 +1281,17 @@ export function ProspectDetailClient2({
             }}
             onEditDemo={() => setScheduleDemoOpen(true)}
           />
+          {!editMode && prospect.project_id ? (
+            <div className={`${ui.card} p-4`}>
+              <label className={ui.label}>Responsable</label>
+              <AssigneeMemberSelect
+                projectId={prospect.project_id}
+                value={prospect.assigned_user_id}
+                onChange={changeAssignee}
+                disabled={isArchived || busy}
+              />
+            </div>
+          ) : null}
           </div>
 
           <section className={`${ui.card} order-3 p-4 lg:p-6`}>
@@ -1319,6 +1351,17 @@ export function ProspectDetailClient2({
                   values={draft}
                   onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))}
                 />
+                <div>
+                  <label className={ui.label}>Responsable</label>
+                  <AssigneeMemberSelect
+                    projectId={prospect.project_id}
+                    value={draft.assigned_user_id || null}
+                    onChange={(userId) =>
+                      setDraft((d) => ({ ...d, assigned_user_id: userId ?? "" }))
+                    }
+                    disabled={isArchived || busy}
+                  />
+                </div>
                 <div>
                   <label className={ui.label}>Statut</label>
                   <StatusSelect
